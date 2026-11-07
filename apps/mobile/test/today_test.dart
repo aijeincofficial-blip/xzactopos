@@ -84,6 +84,8 @@ void main() {
 
   testWidgets('"No, keep it" leaves the sale alone', (tester) async {
     final store = await openToday(tester);
+    await tester.ensureVisible(find.byKey(const Key('sale-s1'))); // the cards above push older sales below the fold
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('sale-s1')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('cancel-sale')));
