@@ -529,5 +529,80 @@
   "exportSales": "Sales",
   "exportUtang": "Utang",
   "exportStock": "Stock",
-  "exportFailed": "Could not share the file. Try again."
+  "exportFailed": "Could not share the file. Try again.",
+  "expensesTitle": "Expenses",
+  "expensesSpentToday": "Spent today",
+  "expensesNone": "No expenses today",
+  "expenseAdd": "Add expense",
+  "expenseAmount": "Amount",
+  "expenseNote": "Note (optional)",
+  "expensePaidFrom": "Paid from",
+  "expensePaidCash": "Cash",
+  "expensePaidEwallet": "E-wallet",
+  "expenseCategoryStockPurchase": "Stock purchase",
+  "expenseCategoryUtilities": "Electric, water",
+  "expenseCategoryTransport": "Transport",
+  "expenseCategoryWages": "Wages",
+  "expenseCategoryRent": "Rent",
+  "expenseCategoryOther": "Other",
+  "expenseVoidTitle": "Cancel this expense?",
+  "expenseVoidBody": "It stays in the list, crossed out, and no longer counts.",
+  "expenseVoidReason": "Reason (optional)",
+  "expenseVoidYes": "Cancel expense",
+  "expenseCancelled": "Cancelled",
+  "expenseNeedsPin": "Needs supervisor PIN",
+  "approvalTitle": "Supervisor PIN",
+  "approvalBody": "A supervisor must approve this. Enter the supervisor's PIN (needs signal).",
+  "approvalPin": "PIN",
+  "approvalApprove": "Approve",
+  "approvalWrongPin": "Wrong PIN. Try again.",
+  "approvalLocked": "Too many wrong tries. Wait a few minutes.",
+  "approvalNoPin": "This person has not set a PIN yet.",
+  "approvalNeedsSignal": "No signal. The PIN can only be checked online.",
+  "approvalRefused": "This approval was refused.",
+  "dayCloseTitle": "Close the day",
+  "dayCloseExpected": "Cash that should be in the drawer",
+  "dayCloseHelp": "Cash sales + utang payments - cash expenses",
+  "dayCloseCounted": "Cash you counted",
+  "dayCloseNote": "Note (optional)",
+  "dayCloseExact": "Exact. Nothing short or over.",
+  "dayCloseSave": "Save count",
+  "dayCloseSaved": "Day closed",
+  "dayCloseAgain": "Count again",
+  "dayCloseNeedsPin": "Needs supervisor PIN",
+  "dayCloseShort": "Short by {amount}",
+  "@dayCloseShort": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "dayCloseOver": "Over by {amount}",
+  "@dayCloseOver": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "dayCloseLast": "Last count: {amount} at {time}",
+  "@dayCloseLast": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "expensesCount": "{count, plural, =1{{count} expense} other{{count} expenses}}",
+  "@expensesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

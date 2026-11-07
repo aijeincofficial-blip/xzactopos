@@ -8,11 +8,15 @@ import '../data/sales_models.dart';
 import '../l10n/app_localizations.dart';
 import '../sync/store_session.dart';
 import '../sync/sync_badge.dart';
+import '../backend.dart';
+import 'day_close_screen.dart';
+import 'expenses_screen.dart';
 import 'receipt_screen.dart';
 
 /// Today's takings and the sales made today, newest first. Tap a sale to see its receipt (and cancel it).
 class TodayScreen extends StatelessWidget {
-  const TodayScreen({super.key});
+  const TodayScreen({super.key, required this.backend});
+  final Backend backend;
 
   @override
   Widget build(BuildContext context) {
@@ -94,6 +98,45 @@ class TodayScreen extends StatelessWidget {
               );
             },
           ),
+          if (scope.canManageStock)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: Gap.xl, vertical: Gap.xs),
+              child: Row(children: [
+                Expanded(
+                  child: StreamBuilder<ExpenseTotals>(
+                    stream: scope.store.watchTodayExpenses(),
+                    builder: (context, snap) => AppCard(
+                      key: const Key('tile-expenses'),
+                      padding: const EdgeInsets.all(Gap.m),
+                      radius: Gap.radiusL,
+                      onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute<void>(builder: (_) => scope.wrap(ExpensesScreen(backend: backend)))),
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Text(t.expensesTitle, style: TextStyle(fontSize: 12, color: scheme.outline, fontWeight: FontWeight.w700)),
+                        const SizedBox(height: 2),
+                        Text(money((snap.data ?? const ExpenseTotals()).total),
+                            key: const Key('today-expenses'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                      ]),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: Gap.m),
+                Expanded(
+                  child: AppCard(
+                    key: const Key('tile-close-day'),
+                    padding: const EdgeInsets.all(Gap.m),
+                    radius: Gap.radiusL,
+                    onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(builder: (_) => scope.wrap(DayCloseScreen(backend: backend)))),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(t.dayCloseTitle, style: TextStyle(fontSize: 12, color: scheme.outline, fontWeight: FontWeight.w700)),
+                      const SizedBox(height: 2),
+                      Icon(Icons.lock_clock_rounded, size: 22, color: scheme.primary),
+                    ]),
+                  ),
+                ),
+              ]),
+            ),
           StreamBuilder<List<SaleSummary>>(
             stream: scope.store.watchSales(),
             builder: (context, snap) {

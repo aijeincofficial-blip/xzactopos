@@ -225,7 +225,7 @@ class HomeScreen extends StatelessWidget {
                 final moneyStr = Money(d.total, scope.store.baseCurrency).format(locale);
                 return SummaryCard(
                   key: const Key('tile-today'),
-                  onTap: () => open(const TodayScreen()),
+                  onTap: () => open(TodayScreen(backend: backend)),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [

@@ -942,4 +942,153 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get exportFailed => 'Hindi naipadala ang file. Subukan ulit.';
+
+  @override
+  String get expensesTitle => 'Mga gastos';
+
+  @override
+  String get expensesSpentToday => 'Nagastos ngayon';
+
+  @override
+  String get expensesNone => 'Wala pang gastos ngayon';
+
+  @override
+  String get expenseAdd => 'Magdagdag ng gastos';
+
+  @override
+  String get expenseAmount => 'Halaga';
+
+  @override
+  String get expenseNote => 'Paalala (opsyonal)';
+
+  @override
+  String get expensePaidFrom => 'Galing sa';
+
+  @override
+  String get expensePaidCash => 'Cash';
+
+  @override
+  String get expensePaidEwallet => 'E-wallet';
+
+  @override
+  String get expenseCategoryStockPurchase => 'Pambili ng paninda';
+
+  @override
+  String get expenseCategoryUtilities => 'Kuryente, tubig';
+
+  @override
+  String get expenseCategoryTransport => 'Pamasahe';
+
+  @override
+  String get expenseCategoryWages => 'Sahod';
+
+  @override
+  String get expenseCategoryRent => 'Upa';
+
+  @override
+  String get expenseCategoryOther => 'Iba pa';
+
+  @override
+  String get expenseVoidTitle => 'Kanselahin ang gastos na ito?';
+
+  @override
+  String get expenseVoidBody =>
+      'Mananatili ito sa listahan, may guhit, at hindi na bibilangin.';
+
+  @override
+  String get expenseVoidReason => 'Dahilan (opsyonal)';
+
+  @override
+  String get expenseVoidYes => 'Kanselahin';
+
+  @override
+  String get expenseCancelled => 'Kanselado';
+
+  @override
+  String get expenseNeedsPin => 'Kailangan ng PIN ng supervisor';
+
+  @override
+  String get approvalTitle => 'PIN ng supervisor';
+
+  @override
+  String get approvalBody =>
+      'Kailangang aprubahan ito ng supervisor. Ilagay ang PIN ng supervisor (kailangan ng signal).';
+
+  @override
+  String get approvalPin => 'PIN';
+
+  @override
+  String get approvalApprove => 'Aprubahan';
+
+  @override
+  String get approvalWrongPin => 'Maling PIN. Subukan ulit.';
+
+  @override
+  String get approvalLocked =>
+      'Sobra ang maling subok. Maghintay ng ilang minuto.';
+
+  @override
+  String get approvalNoPin => 'Wala pang PIN ang taong ito.';
+
+  @override
+  String get approvalNeedsSignal =>
+      'Walang signal. Online lang ma-check ang PIN.';
+
+  @override
+  String get approvalRefused => 'Hindi pinayagan ang approval.';
+
+  @override
+  String get dayCloseTitle => 'Isara ang araw';
+
+  @override
+  String get dayCloseExpected => 'Dapat nasa kaha';
+
+  @override
+  String get dayCloseHelp => 'Cash na benta + bayad sa utang - gastos na cash';
+
+  @override
+  String get dayCloseCounted => 'Binilang mong cash';
+
+  @override
+  String get dayCloseNote => 'Paalala (opsyonal)';
+
+  @override
+  String get dayCloseExact => 'Tama. Walang kulang o sobra.';
+
+  @override
+  String get dayCloseSave => 'I-save ang bilang';
+
+  @override
+  String get dayCloseSaved => 'Naisara na ang araw';
+
+  @override
+  String get dayCloseAgain => 'Bilangin ulit';
+
+  @override
+  String get dayCloseNeedsPin => 'Kailangan ng PIN ng supervisor';
+
+  @override
+  String dayCloseShort(String amount) {
+    return 'Kulang ng $amount';
+  }
+
+  @override
+  String dayCloseOver(String amount) {
+    return 'Sobra ng $amount';
+  }
+
+  @override
+  String dayCloseLast(String amount, String time) {
+    return 'Huling bilang: $amount nang $time';
+  }
+
+  @override
+  String expensesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count gastos',
+    );
+    return '$_temp0';
+  }
 }

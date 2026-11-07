@@ -935,4 +935,153 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get exportFailed => 'Could not share the file. Try again.';
+
+  @override
+  String get expensesTitle => 'Expenses';
+
+  @override
+  String get expensesSpentToday => 'Spent today';
+
+  @override
+  String get expensesNone => 'No expenses today';
+
+  @override
+  String get expenseAdd => 'Add expense';
+
+  @override
+  String get expenseAmount => 'Amount';
+
+  @override
+  String get expenseNote => 'Note (optional)';
+
+  @override
+  String get expensePaidFrom => 'Paid from';
+
+  @override
+  String get expensePaidCash => 'Cash';
+
+  @override
+  String get expensePaidEwallet => 'E-wallet';
+
+  @override
+  String get expenseCategoryStockPurchase => 'Stock purchase';
+
+  @override
+  String get expenseCategoryUtilities => 'Electric, water';
+
+  @override
+  String get expenseCategoryTransport => 'Transport';
+
+  @override
+  String get expenseCategoryWages => 'Wages';
+
+  @override
+  String get expenseCategoryRent => 'Rent';
+
+  @override
+  String get expenseCategoryOther => 'Other';
+
+  @override
+  String get expenseVoidTitle => 'Cancel this expense?';
+
+  @override
+  String get expenseVoidBody =>
+      'It stays in the list, crossed out, and no longer counts.';
+
+  @override
+  String get expenseVoidReason => 'Reason (optional)';
+
+  @override
+  String get expenseVoidYes => 'Cancel expense';
+
+  @override
+  String get expenseCancelled => 'Cancelled';
+
+  @override
+  String get expenseNeedsPin => 'Needs supervisor PIN';
+
+  @override
+  String get approvalTitle => 'Supervisor PIN';
+
+  @override
+  String get approvalBody =>
+      'A supervisor must approve this. Enter the supervisor\'s PIN (needs signal).';
+
+  @override
+  String get approvalPin => 'PIN';
+
+  @override
+  String get approvalApprove => 'Approve';
+
+  @override
+  String get approvalWrongPin => 'Wrong PIN. Try again.';
+
+  @override
+  String get approvalLocked => 'Too many wrong tries. Wait a few minutes.';
+
+  @override
+  String get approvalNoPin => 'This person has not set a PIN yet.';
+
+  @override
+  String get approvalNeedsSignal =>
+      'No signal. The PIN can only be checked online.';
+
+  @override
+  String get approvalRefused => 'This approval was refused.';
+
+  @override
+  String get dayCloseTitle => 'Close the day';
+
+  @override
+  String get dayCloseExpected => 'Cash that should be in the drawer';
+
+  @override
+  String get dayCloseHelp => 'Cash sales + utang payments - cash expenses';
+
+  @override
+  String get dayCloseCounted => 'Cash you counted';
+
+  @override
+  String get dayCloseNote => 'Note (optional)';
+
+  @override
+  String get dayCloseExact => 'Exact. Nothing short or over.';
+
+  @override
+  String get dayCloseSave => 'Save count';
+
+  @override
+  String get dayCloseSaved => 'Day closed';
+
+  @override
+  String get dayCloseAgain => 'Count again';
+
+  @override
+  String get dayCloseNeedsPin => 'Needs supervisor PIN';
+
+  @override
+  String dayCloseShort(String amount) {
+    return 'Short by $amount';
+  }
+
+  @override
+  String dayCloseOver(String amount) {
+    return 'Over by $amount';
+  }
+
+  @override
+  String dayCloseLast(String amount, String time) {
+    return 'Last count: $amount at $time';
+  }
+
+  @override
+  String expensesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count expenses',
+      one: '$count expense',
+    );
+    return '$_temp0';
+  }
 }

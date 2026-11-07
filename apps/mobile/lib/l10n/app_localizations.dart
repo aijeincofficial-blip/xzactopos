@@ -1621,6 +1621,270 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not share the file. Try again.'**
   String get exportFailed;
+
+  /// No description provided for @expensesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Expenses'**
+  String get expensesTitle;
+
+  /// No description provided for @expensesSpentToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Spent today'**
+  String get expensesSpentToday;
+
+  /// No description provided for @expensesNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No expenses today'**
+  String get expensesNone;
+
+  /// No description provided for @expenseAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add expense'**
+  String get expenseAdd;
+
+  /// No description provided for @expenseAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount'**
+  String get expenseAmount;
+
+  /// No description provided for @expenseNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Note (optional)'**
+  String get expenseNote;
+
+  /// No description provided for @expensePaidFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid from'**
+  String get expensePaidFrom;
+
+  /// No description provided for @expensePaidCash.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash'**
+  String get expensePaidCash;
+
+  /// No description provided for @expensePaidEwallet.
+  ///
+  /// In en, this message translates to:
+  /// **'E-wallet'**
+  String get expensePaidEwallet;
+
+  /// No description provided for @expenseCategoryStockPurchase.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock purchase'**
+  String get expenseCategoryStockPurchase;
+
+  /// No description provided for @expenseCategoryUtilities.
+  ///
+  /// In en, this message translates to:
+  /// **'Electric, water'**
+  String get expenseCategoryUtilities;
+
+  /// No description provided for @expenseCategoryTransport.
+  ///
+  /// In en, this message translates to:
+  /// **'Transport'**
+  String get expenseCategoryTransport;
+
+  /// No description provided for @expenseCategoryWages.
+  ///
+  /// In en, this message translates to:
+  /// **'Wages'**
+  String get expenseCategoryWages;
+
+  /// No description provided for @expenseCategoryRent.
+  ///
+  /// In en, this message translates to:
+  /// **'Rent'**
+  String get expenseCategoryRent;
+
+  /// No description provided for @expenseCategoryOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get expenseCategoryOther;
+
+  /// No description provided for @expenseVoidTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel this expense?'**
+  String get expenseVoidTitle;
+
+  /// No description provided for @expenseVoidBody.
+  ///
+  /// In en, this message translates to:
+  /// **'It stays in the list, crossed out, and no longer counts.'**
+  String get expenseVoidBody;
+
+  /// No description provided for @expenseVoidReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason (optional)'**
+  String get expenseVoidReason;
+
+  /// No description provided for @expenseVoidYes.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel expense'**
+  String get expenseVoidYes;
+
+  /// No description provided for @expenseCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get expenseCancelled;
+
+  /// No description provided for @expenseNeedsPin.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs supervisor PIN'**
+  String get expenseNeedsPin;
+
+  /// No description provided for @approvalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Supervisor PIN'**
+  String get approvalTitle;
+
+  /// No description provided for @approvalBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A supervisor must approve this. Enter the supervisor\'s PIN (needs signal).'**
+  String get approvalBody;
+
+  /// No description provided for @approvalPin.
+  ///
+  /// In en, this message translates to:
+  /// **'PIN'**
+  String get approvalPin;
+
+  /// No description provided for @approvalApprove.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve'**
+  String get approvalApprove;
+
+  /// No description provided for @approvalWrongPin.
+  ///
+  /// In en, this message translates to:
+  /// **'Wrong PIN. Try again.'**
+  String get approvalWrongPin;
+
+  /// No description provided for @approvalLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many wrong tries. Wait a few minutes.'**
+  String get approvalLocked;
+
+  /// No description provided for @approvalNoPin.
+  ///
+  /// In en, this message translates to:
+  /// **'This person has not set a PIN yet.'**
+  String get approvalNoPin;
+
+  /// No description provided for @approvalNeedsSignal.
+  ///
+  /// In en, this message translates to:
+  /// **'No signal. The PIN can only be checked online.'**
+  String get approvalNeedsSignal;
+
+  /// No description provided for @approvalRefused.
+  ///
+  /// In en, this message translates to:
+  /// **'This approval was refused.'**
+  String get approvalRefused;
+
+  /// No description provided for @dayCloseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Close the day'**
+  String get dayCloseTitle;
+
+  /// No description provided for @dayCloseExpected.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash that should be in the drawer'**
+  String get dayCloseExpected;
+
+  /// No description provided for @dayCloseHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash sales + utang payments - cash expenses'**
+  String get dayCloseHelp;
+
+  /// No description provided for @dayCloseCounted.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash you counted'**
+  String get dayCloseCounted;
+
+  /// No description provided for @dayCloseNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Note (optional)'**
+  String get dayCloseNote;
+
+  /// No description provided for @dayCloseExact.
+  ///
+  /// In en, this message translates to:
+  /// **'Exact. Nothing short or over.'**
+  String get dayCloseExact;
+
+  /// No description provided for @dayCloseSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save count'**
+  String get dayCloseSave;
+
+  /// No description provided for @dayCloseSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Day closed'**
+  String get dayCloseSaved;
+
+  /// No description provided for @dayCloseAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Count again'**
+  String get dayCloseAgain;
+
+  /// No description provided for @dayCloseNeedsPin.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs supervisor PIN'**
+  String get dayCloseNeedsPin;
+
+  /// No description provided for @dayCloseShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Short by {amount}'**
+  String dayCloseShort(String amount);
+
+  /// No description provided for @dayCloseOver.
+  ///
+  /// In en, this message translates to:
+  /// **'Over by {amount}'**
+  String dayCloseOver(String amount);
+
+  /// No description provided for @dayCloseLast.
+  ///
+  /// In en, this message translates to:
+  /// **'Last count: {amount} at {time}'**
+  String dayCloseLast(String amount, String time);
+
+  /// No description provided for @expensesCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{{count} expense} other{{count} expenses}}'**
+  String expensesCount(int count);
 }
 
 class _AppLocalizationsDelegate

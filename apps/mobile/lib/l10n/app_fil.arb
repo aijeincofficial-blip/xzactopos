@@ -529,5 +529,80 @@
   "exportSales": "Mga benta",
   "exportUtang": "Utang",
   "exportStock": "Stock",
-  "exportFailed": "Hindi naipadala ang file. Subukan ulit."
+  "exportFailed": "Hindi naipadala ang file. Subukan ulit.",
+  "expensesTitle": "Mga gastos",
+  "expensesSpentToday": "Nagastos ngayon",
+  "expensesNone": "Wala pang gastos ngayon",
+  "expenseAdd": "Magdagdag ng gastos",
+  "expenseAmount": "Halaga",
+  "expenseNote": "Paalala (opsyonal)",
+  "expensePaidFrom": "Galing sa",
+  "expensePaidCash": "Cash",
+  "expensePaidEwallet": "E-wallet",
+  "expenseCategoryStockPurchase": "Pambili ng paninda",
+  "expenseCategoryUtilities": "Kuryente, tubig",
+  "expenseCategoryTransport": "Pamasahe",
+  "expenseCategoryWages": "Sahod",
+  "expenseCategoryRent": "Upa",
+  "expenseCategoryOther": "Iba pa",
+  "expenseVoidTitle": "Kanselahin ang gastos na ito?",
+  "expenseVoidBody": "Mananatili ito sa listahan, may guhit, at hindi na bibilangin.",
+  "expenseVoidReason": "Dahilan (opsyonal)",
+  "expenseVoidYes": "Kanselahin",
+  "expenseCancelled": "Kanselado",
+  "expenseNeedsPin": "Kailangan ng PIN ng supervisor",
+  "approvalTitle": "PIN ng supervisor",
+  "approvalBody": "Kailangang aprubahan ito ng supervisor. Ilagay ang PIN ng supervisor (kailangan ng signal).",
+  "approvalPin": "PIN",
+  "approvalApprove": "Aprubahan",
+  "approvalWrongPin": "Maling PIN. Subukan ulit.",
+  "approvalLocked": "Sobra ang maling subok. Maghintay ng ilang minuto.",
+  "approvalNoPin": "Wala pang PIN ang taong ito.",
+  "approvalNeedsSignal": "Walang signal. Online lang ma-check ang PIN.",
+  "approvalRefused": "Hindi pinayagan ang approval.",
+  "dayCloseTitle": "Isara ang araw",
+  "dayCloseExpected": "Dapat nasa kaha",
+  "dayCloseHelp": "Cash na benta + bayad sa utang - gastos na cash",
+  "dayCloseCounted": "Binilang mong cash",
+  "dayCloseNote": "Paalala (opsyonal)",
+  "dayCloseExact": "Tama. Walang kulang o sobra.",
+  "dayCloseSave": "I-save ang bilang",
+  "dayCloseSaved": "Naisara na ang araw",
+  "dayCloseAgain": "Bilangin ulit",
+  "dayCloseNeedsPin": "Kailangan ng PIN ng supervisor",
+  "dayCloseShort": "Kulang ng {amount}",
+  "@dayCloseShort": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "dayCloseOver": "Sobra ng {amount}",
+  "@dayCloseOver": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "dayCloseLast": "Huling bilang: {amount} nang {time}",
+  "@dayCloseLast": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "expensesCount": "{count, plural, other{{count} gastos}}",
+  "@expensesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }
