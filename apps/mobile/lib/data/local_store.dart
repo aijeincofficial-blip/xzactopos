@@ -66,6 +66,7 @@ class ProductView {
     this.trackStock = true,
     this.taxRate = 0,
     this.cost = 0,
+    this.reorderPoint = 0,
   });
 
   final String id;
@@ -92,6 +93,9 @@ class ProductView {
 
   /// Base-currency minor units, copied onto each sale line for margins.
   final int cost;
+
+  /// Warn when stock is at or below this (0 = no warning).
+  final double reorderPoint;
 }
 
 class ProductDraft {
@@ -105,6 +109,7 @@ class ProductDraft {
     this.barcode,
     this.cost,
     this.openingQty,
+    this.reorderPoint,
   });
 
   final String id;
@@ -119,6 +124,9 @@ class ProductDraft {
   final int? cost;
   final double? openingQty;
 
+  /// Warn when stock is at or below this; null keeps the current value.
+  final double? reorderPoint;
+
   /// Payload for the upsert_product RPC.
   Map<String, dynamic> toPayload() => {
         'id': id,
@@ -130,6 +138,7 @@ class ProductDraft {
           if (sku != null && sku!.isNotEmpty) 'sku': sku,
           'barcode': (barcode == null || barcode!.isEmpty) ? null : barcode,
           if (cost != null) 'cost': cost,
+          'reorder_point': ?reorderPoint,
         },
       };
 }

@@ -37,6 +37,8 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
   final _stock = TextEditingController();
   late final _unit = TextEditingController(text: widget.product?.unit ?? 'pc');
   final _cost = TextEditingController();
+  late final _reorder = TextEditingController(
+      text: (widget.product?.reorderPoint ?? 0) > 0 ? widget.product!.reorderPoint.toString().replaceAll(RegExp(r'\.0$'), '') : '');
   bool _busy = false;
   String? _barcodeError;
   Uint8List? _newPhoto;
@@ -50,7 +52,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
 
   @override
   void dispose() {
-    for (final c in [_name, _price, _barcode, _stock, _unit, _cost]) {
+    for (final c in [_name, _price, _barcode, _stock, _unit, _cost, _reorder]) {
       c.dispose();
     }
     super.dispose();
@@ -83,6 +85,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
         barcode: code,
         cost: _cost.text.trim().isEmpty ? null : Money.parse(_cost.text, currency).amount,
         openingQty: _stock.text.trim().isEmpty ? null : double.parse(_stock.text.trim()),
+        reorderPoint: _reorder.text.trim().isEmpty ? null : double.parse(_reorder.text.trim().replaceAll(',', '.')),
       ),
       opId: const Uuid().v7(),
     );
@@ -262,6 +265,18 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   decoration: InputDecoration(labelText: t.costOptional, prefixText: '$symbol '),
                   validator: (v) => _money(v, t, required: false),
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  key: const Key('field-reorder'),
+                  controller: _reorder,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: InputDecoration(labelText: t.reorderPoint, helperText: t.reorderPointHelp),
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) return null;
+                    final q = double.tryParse(v.trim().replaceAll(',', '.'));
+                    return (q == null || q < 0) ? t.errBadAmount : null;
+                  },
                 ),
                 const SizedBox(height: 12),
               ],

@@ -925,6 +925,126 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No, keep it'**
   String get saleCancelNo;
+
+  /// No description provided for @stockTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock'**
+  String get stockTitle;
+
+  /// No description provided for @stockAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get stockAll;
+
+  /// No description provided for @stockLowCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Low} =1{{count} low} other{{count} low}}'**
+  String stockLowCount(int count);
+
+  /// No description provided for @stockNoneLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing is running low.'**
+  String get stockNoneLow;
+
+  /// No description provided for @stockNotCounted.
+  ///
+  /// In en, this message translates to:
+  /// **'Not counted'**
+  String get stockNotCounted;
+
+  /// No description provided for @stockRunningLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Running low'**
+  String get stockRunningLow;
+
+  /// No description provided for @stockNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Now: {n}'**
+  String stockNow(String n);
+
+  /// No description provided for @stockIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock in'**
+  String get stockIn;
+
+  /// No description provided for @stockCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Count'**
+  String get stockCount;
+
+  /// No description provided for @stockInTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock in: {name}'**
+  String stockInTitle(String name);
+
+  /// No description provided for @stockInQty.
+  ///
+  /// In en, this message translates to:
+  /// **'How many came in?'**
+  String get stockInQty;
+
+  /// No description provided for @stockInCost.
+  ///
+  /// In en, this message translates to:
+  /// **'Cost each (optional)'**
+  String get stockInCost;
+
+  /// No description provided for @stockCountTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Count: {name}'**
+  String stockCountTitle(String name);
+
+  /// No description provided for @stockCountQty.
+  ///
+  /// In en, this message translates to:
+  /// **'How many do you have now?'**
+  String get stockCountQty;
+
+  /// No description provided for @reasonCounted.
+  ///
+  /// In en, this message translates to:
+  /// **'Counted'**
+  String get reasonCounted;
+
+  /// No description provided for @reasonDamage.
+  ///
+  /// In en, this message translates to:
+  /// **'Damaged / expired'**
+  String get reasonDamage;
+
+  /// No description provided for @reasonOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get reasonOther;
+
+  /// No description provided for @reorderPoint.
+  ///
+  /// In en, this message translates to:
+  /// **'Warn me when stock is at or below'**
+  String get reorderPoint;
+
+  /// No description provided for @reorderPointHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave empty for no warning'**
+  String get reorderPointHelp;
+
+  /// No description provided for @sellStockLow.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} left, running low'**
+  String sellStockLow(String n);
 }
 
 class _AppLocalizationsDelegate

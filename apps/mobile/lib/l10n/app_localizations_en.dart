@@ -498,4 +498,81 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get saleCancelNo => 'No, keep it';
+
+  @override
+  String get stockTitle => 'Stock';
+
+  @override
+  String get stockAll => 'All';
+
+  @override
+  String stockLowCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count low',
+      one: '$count low',
+      zero: 'Low',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get stockNoneLow => 'Nothing is running low.';
+
+  @override
+  String get stockNotCounted => 'Not counted';
+
+  @override
+  String get stockRunningLow => 'Running low';
+
+  @override
+  String stockNow(String n) {
+    return 'Now: $n';
+  }
+
+  @override
+  String get stockIn => 'Stock in';
+
+  @override
+  String get stockCount => 'Count';
+
+  @override
+  String stockInTitle(String name) {
+    return 'Stock in: $name';
+  }
+
+  @override
+  String get stockInQty => 'How many came in?';
+
+  @override
+  String get stockInCost => 'Cost each (optional)';
+
+  @override
+  String stockCountTitle(String name) {
+    return 'Count: $name';
+  }
+
+  @override
+  String get stockCountQty => 'How many do you have now?';
+
+  @override
+  String get reasonCounted => 'Counted';
+
+  @override
+  String get reasonDamage => 'Damaged / expired';
+
+  @override
+  String get reasonOther => 'Other';
+
+  @override
+  String get reorderPoint => 'Warn me when stock is at or below';
+
+  @override
+  String get reorderPointHelp => 'Leave empty for no warning';
+
+  @override
+  String sellStockLow(String n) {
+    return '$n left, running low';
+  }
 }

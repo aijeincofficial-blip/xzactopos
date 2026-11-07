@@ -79,6 +79,11 @@ class _StoreSessionState extends State<StoreSession> {
     _engine.start();
   }
 
+  bool get _canManageStock {
+    final role = widget.access['role'];
+    return role == null || role == 'superadmin' || role == 'admin';
+  }
+
   Future<void> _closeQuietly() async {
     if (!_opened) return;
     _opened = false;
@@ -122,7 +127,8 @@ class _StoreSessionState extends State<StoreSession> {
             ),
           );
         }
-        return CatalogScope(store: _store, engine: _engine, photos: _photos, child: widget.child);
+        return CatalogScope(
+            store: _store, engine: _engine, photos: _photos, canManageStock: _canManageStock, child: widget.child);
       },
     );
   }
@@ -134,6 +140,7 @@ class CatalogScope extends InheritedWidget {
     required this.store,
     required this.engine,
     required this.photos,
+    this.canManageStock = true,
     required super.child,
   });
 
@@ -141,8 +148,12 @@ class CatalogScope extends InheritedWidget {
   final SyncEngine engine;
   final PhotoLoader photos;
 
+  /// Superadmin and admins may stock in and count; cashiers and warehouse staff only look.
+  final bool canManageStock;
+
   /// Same scope around [child]; for screens pushed on the navigator (they sit outside this widget).
-  CatalogScope wrap(Widget child) => CatalogScope(store: store, engine: engine, photos: photos, child: child);
+  CatalogScope wrap(Widget child) =>
+      CatalogScope(store: store, engine: engine, photos: photos, canManageStock: canManageStock, child: child);
 
   static CatalogScope of(BuildContext context) {
     final scope = context.dependOnInheritedWidgetOfExactType<CatalogScope>();

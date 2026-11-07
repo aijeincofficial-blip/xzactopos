@@ -494,6 +494,7 @@ mixin DriftSales implements SalesStore {
               trackStock: true,
               taxRate: r.read<double>('tax_rate'),
               cost: r.read<int>('cost'),
+              reorderPoint: r.read<double>('reorder_point'),
             ),
             qty: r.read<bool>('counted') ? r.read<double>('qty') : null,
             reorderPoint: r.read<double>('reorder_point'),
@@ -528,7 +529,7 @@ mixin DriftSales implements SalesStore {
     final rows = await db.customSelect(
       '''
       select p.id, v.id as variant_id, p.name, p.unit, v.sku, v.barcode, pr.price, p.photo_path, p.active,
-             p.track_stock, p.tax_rate, v.cost,
+             p.track_stock, p.tax_rate, v.cost, v.reorder_point,
              exists (select 1 from outbox o where o.entity_id = p.id) as pending
       from products p
       join variants v on v.product_id = p.id and v.is_default = 1 and v.deleted_at is null
@@ -562,6 +563,7 @@ mixin DriftSales implements SalesStore {
           trackStock: r.read<bool>('track_stock'),
           taxRate: r.read<double>('tax_rate'),
           cost: r.read<int>('cost'),
+          reorderPoint: r.read<double>('reorder_point'),
         )
     ];
   }

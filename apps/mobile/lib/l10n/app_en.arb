@@ -259,5 +259,60 @@
   "saleCancelTitle": "Cancel this sale?",
   "saleCancelBody": "The items go back to your stock and any utang from this sale is removed.",
   "saleCancelYes": "Yes, cancel it",
-  "saleCancelNo": "No, keep it"
+  "saleCancelNo": "No, keep it",
+  "stockTitle": "Stock",
+  "stockAll": "All",
+  "stockLowCount": "{count, plural, =0{Low} =1{{count} low} other{{count} low}}",
+  "@stockLowCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "stockNoneLow": "Nothing is running low.",
+  "stockNotCounted": "Not counted",
+  "stockRunningLow": "Running low",
+  "stockNow": "Now: {n}",
+  "@stockNow": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "stockIn": "Stock in",
+  "stockCount": "Count",
+  "stockInTitle": "Stock in: {name}",
+  "@stockInTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "stockInQty": "How many came in?",
+  "stockInCost": "Cost each (optional)",
+  "stockCountTitle": "Count: {name}",
+  "@stockCountTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "stockCountQty": "How many do you have now?",
+  "reasonCounted": "Counted",
+  "reasonDamage": "Damaged / expired",
+  "reasonOther": "Other",
+  "reorderPoint": "Warn me when stock is at or below",
+  "reorderPointHelp": "Leave empty for no warning",
+  "sellStockLow": "{n} left, running low",
+  "@sellStockLow": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  }
 }

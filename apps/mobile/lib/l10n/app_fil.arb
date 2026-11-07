@@ -259,5 +259,60 @@
   "saleCancelTitle": "Kanselahin ang benta na ito?",
   "saleCancelBody": "Ibabalik sa stock ang mga item at aalisin ang utang mula sa benta na ito.",
   "saleCancelYes": "Oo, kanselahin",
-  "saleCancelNo": "Hindi, ituloy"
+  "saleCancelNo": "Hindi, ituloy",
+  "stockTitle": "Stock",
+  "stockAll": "Lahat",
+  "stockLowCount": "{count, plural, =0{Paubos} =1{{count} paubos} other{{count} paubos}}",
+  "@stockLowCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "stockNoneLow": "Walang paubos na.",
+  "stockNotCounted": "Hindi pa nabibilang",
+  "stockRunningLow": "Paubos na",
+  "stockNow": "Ngayon: {n}",
+  "@stockNow": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "stockIn": "Dagdag stock",
+  "stockCount": "Bilangin",
+  "stockInTitle": "Dagdag stock: {name}",
+  "@stockInTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "stockInQty": "Ilan ang dumating?",
+  "stockInCost": "Puhunan bawat isa (kung meron)",
+  "stockCountTitle": "Bilang: {name}",
+  "@stockCountTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "stockCountQty": "Ilan ang meron ka ngayon?",
+  "reasonCounted": "Binilang",
+  "reasonDamage": "Sira / expired",
+  "reasonOther": "Iba pa",
+  "reorderPoint": "Pagsabihan ako kapag ang stock ay",
+  "reorderPointHelp": "Iwanang walang laman kung ayaw ng paalala",
+  "sellStockLow": "{n} na lang, paubos na",
+  "@sellStockLow": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  }
 }

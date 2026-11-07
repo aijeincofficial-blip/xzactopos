@@ -265,7 +265,7 @@ class _SellScreenState extends State<SellScreen> {
               key: Key('result-${p.id}'),
               leading: ProductThumb(productId: p.id, path: p.photoPath),
               title: Text(p.name, style: const TextStyle(fontSize: 18)),
-              subtitle: left == null ? null : _StockText(left: left),
+              subtitle: left == null ? null : _StockText(left: left, reorderPoint: p.reorderPoint),
               trailing: Text(p.price == null ? '—' : _money(p.price!),
                   style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
               onTap: () {
@@ -282,17 +282,19 @@ class _SellScreenState extends State<SellScreen> {
 }
 
 class _StockText extends StatelessWidget {
-  const _StockText({required this.left});
+  const _StockText({required this.left, this.reorderPoint = 0});
   final double left;
+  final double reorderPoint;
 
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
     final out = left <= 0;
+    final low = !out && reorderPoint > 0 && left <= reorderPoint;
     final n = left == left.roundToDouble() ? left.toInt().toString() : left.toStringAsFixed(1);
     return Text(
-      out ? t.sellOutOfStock : t.sellStockLeft(n),
-      style: TextStyle(color: out ? Theme.of(context).colorScheme.error : null, fontSize: 13),
+      out ? t.sellOutOfStock : (low ? t.sellStockLow(n) : t.sellStockLeft(n)),
+      style: TextStyle(color: (out || low) ? Theme.of(context).colorScheme.error : null, fontSize: 13),
     );
   }
 }
@@ -330,7 +332,7 @@ class _Tile extends StatelessWidget {
               if (left != null)
                 DefaultTextStyle.merge(
                   style: TextStyle(color: left! <= 0 ? scheme.error : scheme.onPrimaryContainer),
-                  child: _StockText(left: left!),
+                  child: _StockText(left: left!, reorderPoint: product.reorderPoint),
                 ),
             ],
           ),

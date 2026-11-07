@@ -40,7 +40,7 @@ class DriftStore with DriftSales implements LocalStore {
 
   static const _productSql = '''
     select p.id, v.id as variant_id, p.name, p.unit, v.sku, v.barcode, pr.price, p.photo_path, p.active,
-           p.track_stock, p.tax_rate, v.cost,
+           p.track_stock, p.tax_rate, v.cost, v.reorder_point,
            exists (select 1 from outbox o where o.entity_id = p.id) as pending
     from products p
     join variants v on v.product_id = p.id and v.is_default = 1 and v.deleted_at is null
@@ -63,6 +63,7 @@ class DriftStore with DriftSales implements LocalStore {
         trackStock: r.read<bool>('track_stock'),
         taxRate: r.read<double>('tax_rate'),
         cost: r.read<int>('cost'),
+        reorderPoint: r.read<double>('reorder_point'),
       );
 
   /// Every word must appear in the name (accents ignored); an exact barcode or SKU also matches.
@@ -134,6 +135,7 @@ class DriftStore with DriftSales implements LocalStore {
             barcode: Value((d.barcode == null || d.barcode!.trim().isEmpty) ? null : d.barcode!.trim()),
             isDefault: const Value(true),
             cost: d.cost == null ? const Value.absent() : Value(d.cost!),
+            reorderPoint: d.reorderPoint == null ? const Value.absent() : Value(d.reorderPoint!),
             deletedAt: const Value(null),
           ));
       await db.into(db.prices).insertOnConflictUpdate(PricesCompanion(

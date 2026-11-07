@@ -504,4 +504,81 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get saleCancelNo => 'Hindi, ituloy';
+
+  @override
+  String get stockTitle => 'Stock';
+
+  @override
+  String get stockAll => 'Lahat';
+
+  @override
+  String stockLowCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count paubos',
+      one: '$count paubos',
+      zero: 'Paubos',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get stockNoneLow => 'Walang paubos na.';
+
+  @override
+  String get stockNotCounted => 'Hindi pa nabibilang';
+
+  @override
+  String get stockRunningLow => 'Paubos na';
+
+  @override
+  String stockNow(String n) {
+    return 'Ngayon: $n';
+  }
+
+  @override
+  String get stockIn => 'Dagdag stock';
+
+  @override
+  String get stockCount => 'Bilangin';
+
+  @override
+  String stockInTitle(String name) {
+    return 'Dagdag stock: $name';
+  }
+
+  @override
+  String get stockInQty => 'Ilan ang dumating?';
+
+  @override
+  String get stockInCost => 'Puhunan bawat isa (kung meron)';
+
+  @override
+  String stockCountTitle(String name) {
+    return 'Bilang: $name';
+  }
+
+  @override
+  String get stockCountQty => 'Ilan ang meron ka ngayon?';
+
+  @override
+  String get reasonCounted => 'Binilang';
+
+  @override
+  String get reasonDamage => 'Sira / expired';
+
+  @override
+  String get reasonOther => 'Iba pa';
+
+  @override
+  String get reorderPoint => 'Pagsabihan ako kapag ang stock ay';
+
+  @override
+  String get reorderPointHelp => 'Iwanang walang laman kung ayaw ng paalala';
+
+  @override
+  String sellStockLow(String n) {
+    return '$n na lang, paubos na';
+  }
 }
