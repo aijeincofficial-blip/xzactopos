@@ -118,6 +118,14 @@ extension AppColors on ColorScheme {
 
   /// Accent used for the language/reports badges (follows the palette).
   Color get accent => tertiary;
+
+  /// Bright accent that stays readable on [obsidian].
+  Color get glow => isDark ? secondary : const Color(0xFF34D399);
+
+  /// Payment-type colors for reports: cash, e-wallet, utang.
+  Color get payCash => success;
+  Color get payEwallet => primary;
+  Color get payUtang => tertiary;
 }
 
 ThemeData buildTheme(AppPalette palette, Brightness brightness) {

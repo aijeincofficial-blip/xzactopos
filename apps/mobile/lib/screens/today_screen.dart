@@ -20,7 +20,6 @@ class TodayScreen extends StatelessWidget {
     final scope = CatalogScope.of(context);
     final locale = Localizations.localeOf(context).languageCode;
     final scheme = Theme.of(context).colorScheme;
-    final dark = scheme.brightness == Brightness.dark;
     String money(int a) => Money(a, scope.store.baseCurrency).format(locale);
     final now = DateTime.now();
     bool isToday(DateTime d) => d.year == now.year && d.month == now.month && d.day == now.day;
@@ -53,7 +52,7 @@ class TodayScreen extends StatelessWidget {
                         StatusPill(
                           label: t.todayCount(d.count),
                           textKey: const Key('today-count'),
-                          color: dark ? scheme.primaryContainer : const Color(0xFF0F172A),
+                          color: scheme.obsidian,
                           textColor: Colors.white,
                         ),
                       ],
@@ -73,19 +72,19 @@ class TodayScreen extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                       decoration: BoxDecoration(
-                        color: dark ? const Color(0xFF192237) : const Color(0xFFF8FAFC),
+                        color: scheme.chipFill,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: dark ? scheme.outlineVariant : const Color(0xFFE2E8F0),
+                          color: scheme.outlineVariant,
                         ),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceAround,
                         children: [
                           _Stat(label: t.todayCash, value: money(d.cash), keyName: 'today-cash'),
-                          Container(width: 1, height: 24, color: dark ? scheme.outlineVariant : const Color(0xFFE2E8F0)),
+                          Container(width: 1, height: 24, color: scheme.outlineVariant),
                           _Stat(label: t.payEwallet, value: money(d.ewallet), keyName: 'today-ewallet'),
-                          Container(width: 1, height: 24, color: dark ? scheme.outlineVariant : const Color(0xFFE2E8F0)),
+                          Container(width: 1, height: 24, color: scheme.outlineVariant),
                           _Stat(label: t.todayUtang, value: money(d.utang), keyName: 'today-utang'),
                         ],
                       ),

@@ -151,7 +151,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       height: 52,
                       child: FilledButton(
                         style: FilledButton.styleFrom(
-                          backgroundColor: dark ? scheme.primary : const Color(0xFF0F172A),
+                          backgroundColor: scheme.obsidian,
                           foregroundColor: dark ? scheme.onPrimary : Colors.white,
                           shape: const StadiumBorder(),
                           elevation: 3,

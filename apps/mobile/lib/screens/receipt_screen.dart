@@ -112,7 +112,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
             key: const Key('receipt-next'),
             style: FilledButton.styleFrom(
               minimumSize: const Size.fromHeight(52),
-              backgroundColor: dark ? scheme.primary : const Color(0xFF0F172A),
+              backgroundColor: scheme.obsidian,
               foregroundColor: dark ? scheme.onPrimary : Colors.white,
               shape: const StadiumBorder(),
               elevation: 3,
@@ -342,7 +342,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
     bool isWarning = false,
   }) {
     Color? color;
-    if (isDiscount) color = const Color(0xFF10B981);
+    if (isDiscount) color = scheme.payCash;
     if (isAccent) color = scheme.primary;
     if (isWarning) color = scheme.error;
 

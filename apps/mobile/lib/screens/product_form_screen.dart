@@ -395,7 +395,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
             child: FilledButton(
               key: const Key('save-product'),
               style: FilledButton.styleFrom(
-                backgroundColor: dark ? scheme.primary : const Color(0xFF0F172A),
+                backgroundColor: scheme.obsidian,
                 foregroundColor: dark ? scheme.onPrimary : Colors.white,
                 shape: const StadiumBorder(),
                 elevation: 4,

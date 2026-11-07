@@ -116,7 +116,6 @@ class _PayScreenState extends State<PayScreen> {
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
     final scheme = Theme.of(context).colorScheme;
-    final dark = scheme.brightness == Brightness.dark;
     return Scaffold(
       appBar: AppBar(title: Text(t.payTitle)),
       bottomNavigationBar: SafeArea(
@@ -126,14 +125,14 @@ class _PayScreenState extends State<PayScreen> {
             key: const Key('pay-done'),
             style: FilledButton.styleFrom(
               minimumSize: const Size.fromHeight(60),
-              backgroundColor: const Color(0xFF0F172A),
+              backgroundColor: scheme.obsidian,
               foregroundColor: Colors.white,
-              disabledBackgroundColor: const Color(0xFFE2E8F0),
-              disabledForegroundColor: const Color(0xFF94A3B8),
+              disabledBackgroundColor: scheme.outlineVariant,
+              disabledForegroundColor: scheme.outline,
               shape: const StadiumBorder(),
               textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: 0.5),
             ),
-            icon: const Icon(Icons.check_circle_rounded, color: Color(0xFF34D399), size: 22),
+            icon: Icon(Icons.check_circle_rounded, color: scheme.glow, size: 22),
             onPressed: _valid && !_saving ? _finish : null,
             label: Text(t.payDone),
           ),
@@ -150,7 +149,7 @@ class _PayScreenState extends State<PayScreen> {
               children: [
                 CoinBadge(
                   icon: _method == 'cash' ? Icons.payments_rounded : Icons.phone_android_rounded,
-                  color: const Color(0xFF10B981),
+                  color: scheme.payCash,
                   size: 40,
                 ),
                 const SizedBox(width: Gap.m),
@@ -181,7 +180,7 @@ class _PayScreenState extends State<PayScreen> {
                 ),
                 StatusPill(
                   label: _method == 'cash' ? t.payCash : t.payEwallet,
-                  color: dark ? scheme.primaryContainer : const Color(0xFF0F172A),
+                  color: scheme.obsidian,
                   textColor: Colors.white,
                 ),
               ],
@@ -249,14 +248,14 @@ class _PayScreenState extends State<PayScreen> {
           // Sukli / Change Card
           if (_change > 0)
             AppCard(
-              color: dark ? scheme.secondaryContainer : const Color(0xFFECFDF5),
+              color: scheme.secondaryContainer,
               padding: const EdgeInsets.symmetric(horizontal: Gap.l, vertical: Gap.m),
               radius: Gap.radiusM,
               child: Row(
                 children: [
-                  const CoinBadge(
+                  CoinBadge(
                     icon: Icons.currency_exchange_rounded,
-                    color: Color(0xFF059669),
+                    color: scheme.success,
                     size: 38,
                   ),
                   const SizedBox(width: Gap.m),
@@ -266,12 +265,12 @@ class _PayScreenState extends State<PayScreen> {
                       children: [
                         Text(
                           t.payChange.toUpperCase(),
-                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF065F46), letterSpacing: 0.5),
+                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: scheme.onSecondaryContainer, letterSpacing: 0.5),
                         ),
                         Text(
                           _money(_change),
                           key: const Key('pay-change'),
-                          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Color(0xFF064E3B), letterSpacing: -0.8),
+                          style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: scheme.onSecondaryContainer, letterSpacing: -0.8),
                         ),
                       ],
                     ),
@@ -283,7 +282,7 @@ class _PayScreenState extends State<PayScreen> {
           // Utang / Receivables Card
           if (_utang > 0)
             AppCard(
-              color: dark ? scheme.primaryContainer : const Color(0xFFEFF6FF),
+              color: scheme.primaryContainer,
               padding: const EdgeInsets.all(Gap.m),
               radius: Gap.radiusM,
               child: Column(
@@ -292,7 +291,7 @@ class _PayScreenState extends State<PayScreen> {
                   Text(
                     t.payOnUtang(_money(_utang)),
                     key: const Key('pay-utang'),
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF1E40AF)),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: scheme.onPrimaryContainer),
                   ),
                   const SizedBox(height: Gap.s),
                   OutlinedButton.icon(

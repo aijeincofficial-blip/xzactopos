@@ -146,7 +146,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
   ) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final dark = scheme.brightness == Brightness.dark;
 
     final totals = (l.data['totals'] as Map).cast<String, dynamic>();
     final net = (totals['net'] as num).toInt();
@@ -232,7 +231,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   ),
                   StatusPill(
                     label: t.todayCount(txns),
-                    color: dark ? scheme.surfaceContainerHighest : const Color(0xFFF1F5F9),
+                    color: scheme.chipFill,
                     textColor: scheme.onSurface,
                   ),
                 ],
@@ -271,8 +270,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
                       child: Text(
                         t.reportsProfit(money(profit)),
                         key: const Key('report-profit'),
-                        style: const TextStyle(
-                          color: Color(0xFF059669),
+                        style: TextStyle(
+                          color: scheme.success,
                           fontWeight: FontWeight.w700,
                           fontSize: 13,
                         ),
@@ -303,9 +302,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
               // 3-Column Payment Breakdown
               Row(
                 children: [
-                  _Stat(t.todayCash, money(cashAmount), 'report-cash', Icons.payments_outlined, const Color(0xFF10B981)),
-                  _Stat(t.payEwallet, money(ewalletAmount), 'report-ewallet', Icons.account_balance_wallet_outlined, const Color(0xFF3B82F6)),
-                  _Stat(t.todayUtang, money(utangAmount), 'report-utang', Icons.assignment_late_outlined, const Color(0xFFF59E0B)),
+                  _Stat(t.todayCash, money(cashAmount), 'report-cash', Icons.payments_outlined, scheme.payCash),
+                  _Stat(t.payEwallet, money(ewalletAmount), 'report-ewallet', Icons.account_balance_wallet_outlined, scheme.payEwallet),
+                  _Stat(t.todayUtang, money(utangAmount), 'report-utang', Icons.assignment_late_outlined, scheme.payUtang),
                 ],
               ),
               const SizedBox(height: Gap.m),
@@ -319,17 +318,17 @@ class _ReportsScreenState extends State<ReportsScreen> {
                       if (cashPct > 0)
                         Expanded(
                           flex: cashPct,
-                          child: Container(height: 6, color: const Color(0xFF10B981)),
+                          child: Container(height: 6, color: scheme.payCash),
                         ),
                       if (ewalletPct > 0)
                         Expanded(
                           flex: ewalletPct,
-                          child: Container(height: 6, color: const Color(0xFF3B82F6)),
+                          child: Container(height: 6, color: scheme.payEwallet),
                         ),
                       if (utangPct > 0)
                         Expanded(
                           flex: utangPct,
-                          child: Container(height: 6, color: const Color(0xFFF59E0B)),
+                          child: Container(height: 6, color: scheme.payUtang),
                         ),
                     ],
                   ),
@@ -338,9 +337,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('$cashPct% Cash', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFF10B981))),
-                    Text('$ewalletPct% E-Wallet', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFF3B82F6))),
-                    Text('$utangPct% Utang', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFFF59E0B))),
+                    Text('$cashPct% Cash', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: scheme.payCash)),
+                    Text('$ewalletPct% E-Wallet', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: scheme.payEwallet)),
+                    Text('$utangPct% Utang', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: scheme.payUtang)),
                   ],
                 ),
               ],
@@ -473,8 +472,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         leading: CircleAvatar(
                           radius: 14,
                           backgroundColor: i == 0
-                              ? const Color(0xFFF59E0B)
-                              : (dark ? scheme.surfaceContainerHighest : const Color(0xFFE2E8F0)),
+                              ? scheme.payUtang
+                              : (scheme.outlineVariant),
                           foregroundColor: i == 0 ? Colors.white : scheme.onSurface,
                           child: Text('${i + 1}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
                         ),
@@ -545,7 +544,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 children: [
                   CoinBadge(
                     icon: lowList.isEmpty ? Icons.check_circle_outline_rounded : Icons.warning_amber_rounded,
-                    color: lowList.isEmpty ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
+                    color: lowList.isEmpty ? scheme.payCash : scheme.payUtang,
                     size: 38,
                   ),
                   const SizedBox(width: Gap.m),
