@@ -4,6 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:xzactopos_mobile/app.dart';
 import 'package:xzactopos_mobile/backend.dart';
+import 'package:drift/drift.dart' show driftRuntimeOptions;
+import 'package:drift/native.dart';
+import 'package:xzactopos_mobile/data/db.dart';
+import 'package:xzactopos_mobile/data/drift_store.dart';
+
+DriftStore memoryStore({bool safeMode = false}) => DriftStore(AppDatabase(NativeDatabase.memory()));
 
 class FakeBackend implements Backend {
   FakeBackend({this.signedInAtStart = false});
@@ -29,6 +35,14 @@ class FakeBackend implements Backend {
   @override
   Future<Map<String, dynamic>?> myAccess() async => access;
   @override
+  Future<Map<String, dynamic>> pullCatalog(Map<String, dynamic> cursors, {int limit = 500}) async => {};
+  final pushed = <String>[];
+  @override
+  Future<void> upsertProduct(String opId, Map<String, dynamic> payload) async => pushed.add('upsert_product');
+  @override
+  Future<void> archiveProduct(String opId, String productId) async => pushed.add('archive_product');
+
+  @override
   Future<void> provisionSoloStore({
     required String tenantId,
     required String locationId,
@@ -37,15 +51,17 @@ class FakeBackend implements Backend {
   }) async {
     calls.add({'tenant': tenantId, 'location': locationId, 'name': storeName, 'locale': locale});
     access = {
-      'tenant': {'name': storeName},
+      'tenant': {'id': tenantId, 'name': storeName, 'base_currency': 'PHP'},
     };
   }
 }
 
 void main() {
+  driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
+
   testWidgets('signed-in user with no store names it and lands on Home', (tester) async {
     final backend = FakeBackend(signedInAtStart: true);
-    await tester.pumpWidget(App(backend: backend));
+    await tester.pumpWidget(App(backend: backend, openStore: memoryStore));
     await tester.pumpAndSettle();
 
     // Filipino is the default language
@@ -66,10 +82,15 @@ void main() {
     expect(backend.calls.single['locale'], 'fil');
     expect(backend.calls.single['tenant']!.length, 36); // client-made UUID
     expect(find.text('Maligayang pagdating, Aling Nena!'), findsOneWidget);
+    expect(find.text('Wala pang produkto sa phone na ito'), findsOneWidget);
+
+    // leave the session so the store closes and sync timers stop
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpAndSettle();
   });
 
   testWidgets('language switch changes the screen text', (tester) async {
-    await tester.pumpWidget(App(backend: FakeBackend(signedInAtStart: true)));
+    await tester.pumpWidget(App(backend: FakeBackend(signedInAtStart: true), openStore: memoryStore));
     await tester.pumpAndSettle();
     await tester.tap(find.text('EN'));
     await tester.pumpAndSettle();
@@ -77,7 +98,7 @@ void main() {
   });
 
   testWidgets('signed-out user sees the sign-up form', (tester) async {
-    await tester.pumpWidget(App(backend: FakeBackend()));
+    await tester.pumpWidget(App(backend: FakeBackend(), openStore: memoryStore));
     await tester.pumpAndSettle();
     expect(find.text('Gumawa ng account'), findsOneWidget);
     expect(find.byType(TextFormField), findsNWidgets(2));

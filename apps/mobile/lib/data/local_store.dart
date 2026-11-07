@@ -1,0 +1,130 @@
+/// The device's copy of the catalog plus the outbox. Screens and the sync engine depend on this
+/// interface only (CLAUDE.md: local store behind a `LocalStore` interface); Drift implements it.
+abstract class LocalStore {
+  /// Clears everything when the device is used for a different business. Returns true if it cleared.
+  Future<bool> ensureTenant(String tenantId, {required String baseCurrency});
+  String get baseCurrency;
+
+  // ---- reads (work offline) ----
+  Stream<List<ProductView>> watchProducts({String query = ''});
+  Future<ProductView?> findByBarcode(String barcode);
+  Future<int> productCount();
+
+  // ---- local writes: applied at once, queued for the server in the same transaction ----
+  Future<void> saveProduct(ProductDraft draft, {required String opId});
+  Future<void> archiveProduct(String productId, {required String opId});
+
+  // ---- sync ----
+  Future<Map<String, dynamic>> cursors();
+
+  /// Applies one sync_pull_catalog response and its cursors atomically. Rows for products with
+  /// unsent local changes are skipped; the server copy arrives again after the push succeeds.
+  Future<void> applyPull(Map<String, dynamic> response);
+  Future<List<OutboxOp>> nextOps({int limit = 50});
+  Future<void> opDone(String opId);
+  Future<void> opFailed(String opId, String error);
+  Future<void> opRetryLater(String opId, String error);
+  Stream<OutboxCounts> watchOutboxCounts();
+  Future<List<OutboxOp>> failedOps();
+
+  /// Drops a rejected op, removes a never-synced product it created, and forces a full re-pull.
+  Future<void> discardFailed(String opId);
+
+  Future<void> close();
+}
+
+class ProductView {
+  const ProductView({
+    required this.id,
+    required this.variantId,
+    required this.name,
+    required this.unit,
+    required this.sku,
+    this.barcode,
+    this.price,
+    required this.currency,
+    this.photoPath,
+    required this.active,
+    required this.pending,
+  });
+
+  final String id;
+  final String variantId;
+  final String name;
+  final String unit;
+  final String sku;
+  final String? barcode;
+
+  /// Base-currency minor units; null if no price row yet.
+  final int? price;
+  final String currency;
+  final String? photoPath;
+  final bool active;
+
+  /// Has local changes the server has not confirmed yet.
+  final bool pending;
+}
+
+class ProductDraft {
+  const ProductDraft({
+    required this.id,
+    required this.variantId,
+    required this.name,
+    required this.price,
+    this.unit = 'pc',
+    this.sku,
+    this.barcode,
+    this.cost,
+    this.openingQty,
+  });
+
+  final String id;
+  final String variantId;
+  final String name;
+
+  /// Base-currency minor units.
+  final int price;
+  final String unit;
+  final String? sku;
+  final String? barcode;
+  final int? cost;
+  final double? openingQty;
+
+  /// Payload for the upsert_product RPC.
+  Map<String, dynamic> toPayload() => {
+        'id': id,
+        'name': name,
+        'price': price,
+        'unit': unit,
+        'variant': {
+          'id': variantId,
+          if (sku != null && sku!.isNotEmpty) 'sku': sku,
+          'barcode': (barcode == null || barcode!.isEmpty) ? null : barcode,
+          if (cost != null) 'cost': cost,
+        },
+      };
+}
+
+class OutboxOp {
+  const OutboxOp({
+    required this.opId,
+    required this.kind,
+    required this.entityId,
+    required this.payload,
+    required this.attempts,
+    this.lastError,
+  });
+
+  final String opId;
+  final String kind; // upsert_product | archive_product
+  final String entityId;
+  final Map<String, dynamic> payload;
+  final int attempts;
+  final String? lastError;
+}
+
+class OutboxCounts {
+  const OutboxCounts(this.pending, this.failed);
+  final int pending;
+  final int failed;
+}

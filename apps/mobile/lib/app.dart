@@ -8,10 +8,14 @@ import 'l10n/app_localizations.dart';
 import 'screens/auth_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/store_name_screen.dart';
+import 'sync/store_session.dart';
 
 class App extends StatefulWidget {
-  const App({super.key, required this.backend, this.initialLocale = 'fil'});
+  const App({super.key, required this.backend, required this.openStore, this.initialLocale = 'fil'});
   final Backend backend;
+
+  /// Opens the device database; called once per signed-in session (again with safeMode if that fails).
+  final OpenStore openStore;
   final String initialLocale;
 
   @override
@@ -34,33 +38,51 @@ class _AppState extends State<App> {
         GlobalCupertinoLocalizations.delegate,
       ],
       theme: ThemeData(colorSchemeSeed: Colors.teal, useMaterial3: true),
-      builder: (context, child) => Stack(children: [
-        child!,
-        Positioned(
-          right: 8,
-          bottom: 8,
-          child: SafeArea(
-            child: SegmentedButton<String>(
-              segments: const [
-                ButtonSegment(value: 'fil', label: Text('FIL')),
-                ButtonSegment(value: 'en', label: Text('EN')),
-              ],
-              selected: {_locale},
-              onSelectionChanged: (s) => setState(() => _locale = s.first),
-            ),
-          ),
-        ),
-      ]),
-      home: Gate(backend: widget.backend, locale: _locale),
+      builder: (context, child) => LocaleScope(
+        locale: _locale,
+        setLocale: (l) => setState(() => _locale = l),
+        child: child!,
+      ),
+      home: Gate(backend: widget.backend, locale: _locale, openStore: widget.openStore),
+    );
+  }
+}
+
+/// Current UI language and a way to change it, for the language button in app bars.
+class LocaleScope extends InheritedWidget {
+  const LocaleScope({super.key, required this.locale, required this.setLocale, required super.child});
+  final String locale;
+  final void Function(String) setLocale;
+
+  static LocaleScope? maybeOf(BuildContext context) => context.dependOnInheritedWidgetOfExactType<LocaleScope>();
+
+  @override
+  bool updateShouldNotify(LocaleScope old) => locale != old.locale;
+}
+
+/// App-bar button that shows the other language (FIL <-> EN) and switches to it.
+class LanguageButton extends StatelessWidget {
+  const LanguageButton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final scope = LocaleScope.maybeOf(context);
+    if (scope == null) return const SizedBox.shrink();
+    final other = scope.locale == 'fil' ? 'en' : 'fil';
+    return TextButton(
+      key: const Key('language-button'),
+      onPressed: () => scope.setLocale(other),
+      child: Text(other.toUpperCase()),
     );
   }
 }
 
 /// Signed out -> sign in. Signed in with no store -> name your store. Otherwise Home.
 class Gate extends StatefulWidget {
-  const Gate({super.key, required this.backend, required this.locale});
+  const Gate({super.key, required this.backend, required this.locale, required this.openStore});
   final Backend backend;
   final String locale;
+  final OpenStore openStore;
 
   @override
   State<Gate> createState() => _GateState();
@@ -75,7 +97,8 @@ class _GateState extends State<Gate> {
   void initState() {
     super.initState();
     _sub = widget.backend.signedInChanges.listen((v) {
-      if (!mounted) return;
+      // the stream repeats the current state on start and on token refresh; only real changes matter
+      if (!mounted || v == _signedIn) return;
       setState(() {
         _signedIn = v;
         _access = v ? widget.backend.myAccess() : null;
@@ -122,7 +145,12 @@ class _GateState extends State<Gate> {
               backend: widget.backend, locale: widget.locale, onDone: _reload);
         }
         final name = ((access['tenant'] as Map?)?['name'] as String?) ?? '';
-        return HomeScreen(backend: widget.backend, storeName: name);
+        return StoreSession(
+          backend: widget.backend,
+          access: access,
+          openStore: widget.openStore,
+          child: HomeScreen(backend: widget.backend, storeName: name),
+        );
       },
     );
   }

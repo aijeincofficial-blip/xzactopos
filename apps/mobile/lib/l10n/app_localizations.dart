@@ -217,6 +217,300 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Check your email to confirm, then sign in.'**
   String get checkEmail;
+
+  /// No description provided for @syncSynced.
+  ///
+  /// In en, this message translates to:
+  /// **'Synced'**
+  String get syncSynced;
+
+  /// No description provided for @syncSyncing.
+  ///
+  /// In en, this message translates to:
+  /// **'Syncing…'**
+  String get syncSyncing;
+
+  /// No description provided for @syncOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline'**
+  String get syncOffline;
+
+  /// No description provided for @syncPending.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{{count} waiting to send} other{{count} waiting to send}}'**
+  String syncPending(int count);
+
+  /// No description provided for @syncOfflinePending.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Offline, {count} saved on this phone} other{Offline, {count} saved on this phone}}'**
+  String syncOfflinePending(int count);
+
+  /// No description provided for @syncNeedsAttention.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{{count} needs attention} other{{count} need attention}}'**
+  String syncNeedsAttention(int count);
+
+  /// No description provided for @productsOnDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No products on this phone yet} =1{{count} product on this phone} other{{count} products on this phone}}'**
+  String productsOnDevice(int count);
+
+  /// No description provided for @errStoreOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open the data on this phone.'**
+  String get errStoreOpen;
+
+  /// No description provided for @tryAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get tryAgain;
+
+  /// No description provided for @products.
+  ///
+  /// In en, this message translates to:
+  /// **'Products'**
+  String get products;
+
+  /// No description provided for @sell.
+  ///
+  /// In en, this message translates to:
+  /// **'Sell'**
+  String get sell;
+
+  /// No description provided for @comingSoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Coming soon'**
+  String get comingSoon;
+
+  /// No description provided for @addProduct.
+  ///
+  /// In en, this message translates to:
+  /// **'Add product'**
+  String get addProduct;
+
+  /// No description provided for @editProduct.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit product'**
+  String get editProduct;
+
+  /// No description provided for @searchProducts.
+  ///
+  /// In en, this message translates to:
+  /// **'Search name or barcode'**
+  String get searchProducts;
+
+  /// No description provided for @clear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get clear;
+
+  /// No description provided for @noProductsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No products yet. Tap \"Add product\" to add your first one.'**
+  String get noProductsYet;
+
+  /// No description provided for @noMatches.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing found.'**
+  String get noMatches;
+
+  /// No description provided for @notSentYet.
+  ///
+  /// In en, this message translates to:
+  /// **'Not sent yet'**
+  String get notSentYet;
+
+  /// No description provided for @review.
+  ///
+  /// In en, this message translates to:
+  /// **'Review'**
+  String get review;
+
+  /// No description provided for @needsAttentionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Changes the server did not accept'**
+  String get needsAttentionTitle;
+
+  /// No description provided for @nothingToFix.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to fix.'**
+  String get nothingToFix;
+
+  /// No description provided for @removedProduct.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed product'**
+  String get removedProduct;
+
+  /// No description provided for @discardChange.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard'**
+  String get discardChange;
+
+  /// No description provided for @close.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get close;
+
+  /// No description provided for @cancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancel;
+
+  /// No description provided for @save.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get save;
+
+  /// No description provided for @archive.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get archive;
+
+  /// No description provided for @archiveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {name}?'**
+  String archiveTitle(String name);
+
+  /// No description provided for @archiveBody.
+  ///
+  /// In en, this message translates to:
+  /// **'It will disappear from your list. Past sales keep it.'**
+  String get archiveBody;
+
+  /// No description provided for @productName.
+  ///
+  /// In en, this message translates to:
+  /// **'Product name'**
+  String get productName;
+
+  /// No description provided for @productNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Kape 3-in-1'**
+  String get productNameHint;
+
+  /// No description provided for @sellingPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Selling price'**
+  String get sellingPrice;
+
+  /// No description provided for @barcodeOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Barcode (optional)'**
+  String get barcodeOptional;
+
+  /// No description provided for @barcodeUsedBy.
+  ///
+  /// In en, this message translates to:
+  /// **'This barcode is already used by {name}'**
+  String barcodeUsedBy(String name);
+
+  /// No description provided for @openingStockOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'How many do you have now? (optional)'**
+  String get openingStockOptional;
+
+  /// No description provided for @openingStockHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'You can fix this later.'**
+  String get openingStockHelp;
+
+  /// No description provided for @more.
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get more;
+
+  /// No description provided for @unit.
+  ///
+  /// In en, this message translates to:
+  /// **'Unit'**
+  String get unit;
+
+  /// No description provided for @unitHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'pc, pack, kg, bottle…'**
+  String get unitHelp;
+
+  /// No description provided for @costOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Your cost (optional)'**
+  String get costOptional;
+
+  /// No description provided for @errBadAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a number, like 12.50'**
+  String get errBadAmount;
+
+  /// No description provided for @errDuplicateBarcode.
+  ///
+  /// In en, this message translates to:
+  /// **'Another product already has this barcode.'**
+  String get errDuplicateBarcode;
+
+  /// No description provided for @errLimitProducts.
+  ///
+  /// In en, this message translates to:
+  /// **'You reached the product limit of your plan.'**
+  String get errLimitProducts;
+
+  /// No description provided for @errNotAllowed.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account cannot change products.'**
+  String get errNotAllowed;
+
+  /// No description provided for @errProductArchived.
+  ///
+  /// In en, this message translates to:
+  /// **'This product was removed.'**
+  String get errProductArchived;
+
+  /// No description provided for @scanBarcode.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan barcode'**
+  String get scanBarcode;
+
+  /// No description provided for @unknownBarcodeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New barcode'**
+  String get unknownBarcodeTitle;
+
+  /// No description provided for @unknownBarcodeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'No product has barcode {code} yet. Add it now?'**
+  String unknownBarcodeBody(String code);
 }
 
 class _AppLocalizationsDelegate

@@ -168,3 +168,36 @@ Cards `docs/tasks/P2-00..P2-07` (overview + 7). Decisions are listed in P2-00; c
   'full' for everyone fails 6 tests. `pnpm check` green.
 - Gotcha: Supabase grants EXECUTE to anon on new functions; every client RPC needs `revoke execute ... from public, anon` (guard test 003 #6 catches it).
 - Not verified from a clean `supabase db reset` (kept the local demo data); the migration was applied with `supabase migration up`.
+
+### P2-03 local store + sync, P2-04 products UI, P2-05 search and scan: done (branch `flutter-solo`, one commit)
+Built together while automated; one commit because later cards changed earlier files (search column, store fallback).
+- **Local store (P2-03):** Drift (SQLite) behind `LocalStore` (`lib/data/local_store.dart`), implemented by `DriftStore`. Schema v2 (`lib/data/db.dart`):
+  categories, products (+ `search_name`), variants, prices, sync_cursors, outbox, opening_stock, meta. v1 -> v2 migration backfills `search_name`.
+  Device data is wiped when a different tenant signs in (`ensureTenant`); pending ops of the old tenant are lost then (known gap).
+- **Sync (P2-03):** `lib/sync/sync_engine.dart`: push outbox in order, then pull `sync_pull_catalog` pages. Runs on start, 2 s after a local
+  change, every 120 s idle; failures back off 15 s -> 15 min. No Realtime. Transient errors keep the op (same op id = server dedupes);
+  refusals (`isPermanent` in backend.dart) park it as failed -> "needs attention" banner with Discard (drops it, removes a never-synced
+  product, forces a full re-pull). Pull skips rows of products that still have local unsent ops.
+- **Money (P2-03):** `lib/core/money.dart`, port of the TS money utils (parse, format, multiply half-up, allocate). 12 tests.
+- **Products (P2-04):** Home has big tiles (Products; Sell = coming soon). List with search, price, "not sent yet" icon; one-screen quick add
+  (name, price, barcode, opening stock; unit and cost under More); edit; remove with confirm; local duplicate-barcode check.
+  No "variant", "SKU" or "tax" words in the UI. Language switch moved from a floating overlay (it covered the add button) to an app-bar button.
+- **Search and scan (P2-05):** every word must match, accents and case ignored (`lib/core/search.dart`); order: exact barcode, name prefix, rest.
+  2,000 products: 7 ms in tests. Keyboard-wedge/USB/Bluetooth scanners: scan icon focuses the search box; Enter on a known barcode opens it,
+  an unknown barcode offers "Add product" with it prefilled. **Camera scan deferred** (needs the Android toolchain to test).
+- **Web storage:** `web/sqlite3.wasm` (from the sqlite3.dart release `sqlite3-3.5.2`, SHA-256 matches the hash in the pub package) and
+  `web/drift_worker.js` (compiled locally: `dart compile js -O2 -o web/drift_worker.js tool/drift_worker.dart`; rebuild after a Drift upgrade).
+  If the normal open fails, `StoreSession` retries once in safe mode (SQLite in the page, IndexedDB). Needed because the Claude desktop
+  in-app browser blocks network requests from SharedWorkers (verified with a probe); regular Chrome does not. Error screen + Try again otherwise.
+  Hosting must serve `.wasm` as `application/wasm` (Python's http.server on Windows does not by default).
+- **Bugs found and fixed:** setState arrow returning a Future (retry button); Filipino plurals: gen-l10n maps `=1` to CLDR "one", which in
+  `fil` also covers 2, 3, 5... so "1 produkto" showed for 3. Every plural branch now uses `{count}`; a test guards it.
+- **Verified in the browser** (release build, local Supabase, test user `nena.s02test@example.com`, 3 seeded server products): pull shows all 3
+  with prices; data survives reload; simulated offline (requests to :54321 blocked in the page): added "Pancit Canton" -> shows at once with
+  the pending icon and "Walang signal, 1 naka-save sa phone"; scanned a known barcode offline -> opens it; unknown barcode -> add dialog;
+  back online + tap badge -> server has the product with the same SKU, one processed op and a `product.create` audit row.
+- Tests: `flutter test` 47 (money, store, sync engine, products widgets, search, scanner flow, safe-mode fallback, plurals); `flutter analyze` clean;
+  `pnpm check` green (Flutter is still not part of it).
+- **Gaps for P2-07:** offline *first load* of the web app needs a service worker that caches the app, `sqlite3.wasm` and `drift_worker.js`
+  (and canvaskit is loaded from gstatic by default: build with `--no-web-resources-cdn` for offline). Camera scan. Phone test (Android toolchain).
+  Opening stock is stored on the device only until Phase 4. Product photos are P2-06.

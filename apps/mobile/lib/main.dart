@@ -3,6 +3,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'app.dart';
 import 'backend.dart';
+import 'data/db.dart';
+import 'data/drift_store.dart';
 import 'l10n/app_localizations.dart';
 
 // Anon key only. Never the service role key. Pass with --dart-define (see run-web.ps1).
@@ -16,7 +18,7 @@ Future<void> main() async {
     return;
   }
   await Supabase.initialize(url: _url, publishableKey: _anonKey);
-  runApp(App(backend: SupabaseBackend()));
+  runApp(App(backend: SupabaseBackend(), openStore: ({bool safeMode = false}) => DriftStore(AppDatabase.open(safeMode: safeMode))));
 }
 
 class _NotConfigured extends StatelessWidget {

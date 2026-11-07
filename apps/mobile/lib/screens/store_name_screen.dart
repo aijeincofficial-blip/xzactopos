@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
+import '../app.dart' show LanguageButton;
 import '../backend.dart';
 import '../l10n/app_localizations.dart';
 
@@ -70,6 +71,7 @@ class _StoreNameScreenState extends State<StoreNameScreen> {
       appBar: AppBar(
         title: Text(t.appTitle),
         actions: [
+          const LanguageButton(),
           TextButton(onPressed: widget.backend.signOut, child: Text(t.signOut)),
         ],
       ),
