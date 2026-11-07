@@ -9,6 +9,9 @@ import 'sync_engine.dart';
 class SyncBadge extends StatelessWidget {
   const SyncBadge({super.key});
 
+  /// Screens narrower than this (phones) get the compact badge.
+  static const compactBelowWidth = 600.0;
+
   @override
   Widget build(BuildContext context) {
     final scope = CatalogScope.of(context);
@@ -28,6 +31,20 @@ class SyncBadge extends StatelessWidget {
             SyncPhase.idle when counts.pending > 0 => (Icons.cloud_upload_outlined, t.syncPending(counts.pending), null),
             SyncPhase.idle => (Icons.cloud_done_outlined, t.syncSynced, Colors.green),
           };
+          // On a phone the full sentence does not fit next to the store name and the other buttons:
+          // show the icon and the number only; the sentence stays in the tooltip and for screen readers.
+          if (MediaQuery.sizeOf(context).width < compactBelowWidth) {
+            final n = counts.failed > 0 ? counts.failed : counts.pending;
+            return Tooltip(
+              message: label,
+              child: TextButton.icon(
+                key: const Key('sync-badge'),
+                onPressed: scope.engine.syncNow,
+                icon: Icon(icon, color: color, size: 20, semanticLabel: label),
+                label: Text(n > 0 ? '$n' : '', style: TextStyle(color: color, fontWeight: FontWeight.w600)),
+              ),
+            );
+          }
           return TextButton.icon(
             key: const Key('sync-badge'),
             onPressed: scope.engine.syncNow,
