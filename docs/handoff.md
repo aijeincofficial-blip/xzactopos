@@ -13,7 +13,18 @@ Updated at the end of every task. Read this first in a fresh session.
     5 users (superadmin, admin, cashier, warehouse, deactivated) x 10 tables x 5 metrics (own read, own update, foreign read,
     foreign update, delete blocked) against an explicit expectation table. Mutation-tested: a leaky locations policy fails it.
     **When adding a tenant table, add a row per role to `expected` and a probe entry**, or the coverage check fails.
-  - Next: P1-05 admin RPCs + permission keys (Opus). RPC refusal tests for deactivated users and suspended tenants go there.
+  - P1-05 RPCs + permissions: done. Migration `20261107000400_admin_rpcs.sql`, pgTAP `005_admin_rpcs.test.sql` (53 tests),
+    `packages/core/src/permissions.ts` + 25 Vitest tests.
+    RPCs: `provision_tenant` (service role / platform admin; takes the owner's existing auth user id), `complete_setup`,
+    `set_modules`, `upsert_location` (client UUIDv7 id, limit check, warehouse needs module, type fixed), `archive_location`,
+    `set_user_role` (ends old assignments), `assign_location` / `revoke_location` (managers: cashiers into stores they manage,
+    no positions), `set_user_active` (no self-deactivation), `get_my_access` (client permission context in one call).
+    Last-superadmin protection on demote and deactivate. Every change writes `audit_log`.
+    Errors: 42501 not allowed, 22023 bad argument, P0001 business rule with a stable `hint` key for i18n
+    (last_superadmin, limit_locations, base_currency_locked, location_type_locked, self_deactivate, user_has_tenant, ...).
+  - `can(ctx, key, locationId?)` / `check()` mirror the §5 matrix; build ctx with `contextFromAccess(get_my_access())`.
+    Without a location id it answers "in at least one of my locations". UI hint only; RPCs are the gate.
+  - Next: P1-06 Edge Functions `create_user` and `invite_user`.
 - **RLS shape:** reads follow the §5 matrix; direct client writes only for simple master data
   (tenant name/timezone/tax_mode, settings, currency rates, location name/address/active, own profile name/locale).
   Modules, roles, assignments, new locations, bins: RPC only (P1-05). Column-level grants enforce the editable columns.
