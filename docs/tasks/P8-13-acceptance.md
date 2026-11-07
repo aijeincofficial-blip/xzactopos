@@ -32,7 +32,7 @@ Selling and pinning on Sell, load entries and float moves, tingi (product form a
 
 ## Findings to fix (go into the UI revamp)
 1. ~~Expense dialog is cramped with the keyboard open~~ FIXED: now a bottom sheet (screenshot `11_expense_sheet.png`). The Save button still needs a scroll below the note.
-2. **Filipino labels are truncated** on the Load & e-wallet action buttons ("Magbenta n...", "Galawin an...").
+2. ~~Filipino labels are truncated~~ on the Load & e-wallet action buttons ("Magbenta n...", "Galawin an..."): the four buttons now allow two lines (not re-checked on the device).
 3. Today: the Expenses and Close-the-day cards are now the same height (fixed); the screen is still busy and is the main target of the bottom-tab step.
 4. **Day close has no opening cash (sukli).** With only an expense and no sales, expected cash is negative (-125.50). Add an optional starting cash to the day close.
 5. **E-wallet sale payments and e-wallet expenses do not move the wallet float** (no wallet is named). The owner corrects with a float adjustment.
