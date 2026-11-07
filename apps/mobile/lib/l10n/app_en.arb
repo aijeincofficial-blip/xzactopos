@@ -369,5 +369,16 @@
         "type": "int"
       }
     }
-  }
+  },
+  "syncSignIn": "Session ended. Sign out and sign in again; nothing is lost.",
+  "unsentTitle": "Unsent changes",
+  "unsentBody": "{count, plural, =1{This phone still has {count} change from another business that was never sent.} other{This phone still has {count} changes from another business that were never sent.}} Sign in to that business to send them, or discard them and continue.",
+  "@unsentBody": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "unsentDiscard": "Discard them and continue"
 }

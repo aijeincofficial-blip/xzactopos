@@ -144,6 +144,7 @@ void main() {
     await store.saveProduct(const ProductDraft(id: _p1, variantId: _v1, name: 'Kape', price: 1), opId: 'a');
     expect(await store.ensureTenant('tenant-a', baseCurrency: 'PHP'), isFalse);
     expect(await store.productCount(), 1);
+    await store.opDone('a'); // sent: nothing is lost by switching
     expect(await store.ensureTenant('tenant-b', baseCurrency: 'PHP'), isTrue);
     expect(await store.productCount(), 0);
     expect(await store.nextOps(), isEmpty);

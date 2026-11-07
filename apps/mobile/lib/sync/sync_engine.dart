@@ -35,7 +35,14 @@ class OpRejected implements Exception {
   String toString() => 'OpRejected($hint)';
 }
 
-enum SyncPhase { idle, syncing, offline }
+/// The session is no longer valid (expired or revoked). Nothing is lost: sign in again and the queue continues.
+class AuthExpired implements Exception {
+  const AuthExpired();
+  @override
+  String toString() => 'AuthExpired';
+}
+
+enum SyncPhase { idle, syncing, offline, needsSignIn }
 
 @immutable
 class SyncStatus {
@@ -129,7 +136,8 @@ class SyncEngine {
     } catch (e) {
       final next = _backoff == null ? _minBackoff : _backoff! * 2;
       _backoff = next > _maxBackoff ? _maxBackoff : next;
-      status.value = SyncStatus(phase: SyncPhase.offline, lastSyncedAt: status.value.lastSyncedAt);
+      status.value = SyncStatus(
+          phase: e is AuthExpired ? SyncPhase.needsSignIn : SyncPhase.offline, lastSyncedAt: status.value.lastSyncedAt);
       if (_started) _schedule(_backoff!);
     }
   }

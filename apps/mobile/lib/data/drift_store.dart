@@ -20,11 +20,16 @@ class DriftStore with DriftSales implements LocalStore {
   String get baseCurrency => _base;
 
   @override
-  Future<bool> ensureTenant(String tenantId, {required String baseCurrency, String? locationId}) async {
+  Future<bool> ensureTenant(String tenantId,
+      {required String baseCurrency, String? locationId, bool discardUnsent = false}) async {
     _base = baseCurrency;
     this.locationId = locationId;
     final row = await (db.select(db.meta)..where((m) => m.key.equals('tenant_id'))).getSingleOrNull();
     if (row?.value == tenantId) return false;
+    if (row != null && !discardUnsent) {
+      final unsent = (await db.select(db.outbox).get()).length;
+      if (unsent > 0) throw UnsentChangesException(unsent);
+    }
     await db.transaction(() async {
       for (final t in db.allTables) {
         await db.delete(t).go();

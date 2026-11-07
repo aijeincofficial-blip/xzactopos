@@ -20,7 +20,7 @@ class ReceiptScreen extends StatefulWidget {
 }
 
 class _ReceiptScreenState extends State<ReceiptScreen> {
-  late Future<SaleDetail?> _detail;
+  late Stream<SaleDetail?> _detail;
   late Future<String?> _storeName;
   bool _loaded = false;
 
@@ -30,7 +30,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
     if (_loaded) return;
     _loaded = true;
     final store = CatalogScope.of(context).store;
-    _detail = store.getSale(widget.saleId);
+    _detail = store.watchSale(widget.saleId);
     _storeName = store.meta('store_name');
   }
 
@@ -51,11 +51,6 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
     if (yes != true) return;
     await scope.store.voidSale(widget.saleId, opId: const Uuid().v7());
     scope.engine.poke();
-    if (!mounted) return;
-    final next = scope.store.getSale(widget.saleId);
-    setState(() {
-      _detail = next;
-    });
   }
 
   @override
@@ -77,11 +72,11 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
           ),
         ),
       ),
-      body: FutureBuilder<SaleDetail?>(
-        future: _detail,
+      body: StreamBuilder<SaleDetail?>(
+        stream: _detail,
         builder: (context, snap) {
           final d = snap.data;
-          if (snap.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator());
+          if (!snap.hasData && snap.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator());
           if (d == null) return Center(child: Text(t.errGeneric));
           final s = d.summary;
           final cash = d.payments.where((p) => p.method == 'cash').fold<int>(0, (a, p) => a + p.tendered!);

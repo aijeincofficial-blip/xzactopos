@@ -6,7 +6,10 @@ import 'sales_models.dart';
 /// interface only (CLAUDE.md: local store behind a `LocalStore` interface); Drift implements it.
 abstract class LocalStore implements SalesStore {
   /// Clears everything when the device is used for a different business. Returns true if it cleared.
-  Future<bool> ensureTenant(String tenantId, {required String baseCurrency, String? locationId});
+  /// Throws [UnsentChangesException] instead when that would throw away changes never sent to the server,
+  /// unless [discardUnsent] is true.
+  Future<bool> ensureTenant(String tenantId,
+      {required String baseCurrency, String? locationId, bool discardUnsent = false});
   String get baseCurrency;
 
   // ---- reads (work offline) ----
@@ -48,6 +51,14 @@ abstract class LocalStore implements SalesStore {
   Future<void> discardFailed(String opId);
 
   Future<void> close();
+}
+
+/// A different business signed in on this phone while changes of the previous one were still unsent.
+class UnsentChangesException implements Exception {
+  const UnsentChangesException(this.count);
+  final int count;
+  @override
+  String toString() => 'UnsentChangesException($count)';
 }
 
 class ProductView {

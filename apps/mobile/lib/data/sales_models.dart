@@ -215,6 +215,9 @@ abstract class SalesStore {
   Stream<List<LedgerEntryView>> watchLedger(String customerId);
   Stream<List<SaleSummary>> watchSales({int limit = 200});
   Future<SaleDetail?> getSale(String saleId);
+
+  /// Same as [getSale], and again whenever the sale or its sending state changes (e.g. the server confirmed it).
+  Stream<SaleDetail?> watchSale(String saleId);
   Stream<TodayTotals> watchToday();
 
   /// Stock coming in. [cost] is the cost per unit in centavos (optional).

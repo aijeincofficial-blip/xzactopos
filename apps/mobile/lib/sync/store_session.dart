@@ -41,6 +41,7 @@ class _StoreSessionState extends State<StoreSession> {
   }
 
   bool _opened = false;
+  bool _discardUnsent = false;
 
   /// Opens a fresh connection each time, so "Try again" never reuses a connection that failed to start.
   /// If the normal open fails (e.g. a browser that blocks the shared worker from loading SQLite),
@@ -49,6 +50,8 @@ class _StoreSessionState extends State<StoreSession> {
     if (retry) await _closeQuietly();
     try {
       await _start(safeMode: false);
+    } on UnsentChangesException {
+      rethrow; // not a storage problem: safe mode would hit the same thing
     } catch (e) {
       debugPrint('StoreSession: normal open failed ($e); trying safe mode');
       await _closeQuietly();
@@ -74,7 +77,8 @@ class _StoreSessionState extends State<StoreSession> {
     await _store.ensureTenant(tenant['id'] as String? ?? '',
         baseCurrency: tenant['base_currency'] as String? ?? 'PHP',
         // a solo business has one store; with several, the server picks per user (the sale then names no store)
-        locationId: stores.length == 1 ? stores.first['id'] as String? : null);
+        locationId: stores.length == 1 ? stores.first['id'] as String? : null,
+        discardUnsent: _discardUnsent);
     await _store.setMeta('store_name', tenant['name'] as String?);
     _engine.start();
   }
@@ -106,6 +110,37 @@ class _StoreSessionState extends State<StoreSession> {
       builder: (context, snap) {
         if (snap.connectionState != ConnectionState.done) {
           return const Scaffold(body: Center(child: CircularProgressIndicator()));
+        }
+        if (snap.error is UnsentChangesException) {
+          final n = (snap.error! as UnsentChangesException).count;
+          final t = AppLocalizations.of(context);
+          return Scaffold(
+            appBar: AppBar(title: Text(t.unsentTitle)),
+            body: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                Text(t.unsentBody(n), key: const Key('unsent-body'), style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 24),
+                FilledButton(
+                  key: const Key('unsent-signout'),
+                  onPressed: widget.backend.signOut,
+                  child: Text(t.signOut),
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton(
+                  key: const Key('unsent-discard'),
+                  onPressed: () {
+                    _discardUnsent = true;
+                    final next = _open(retry: true);
+                    setState(() {
+                      _ready = next;
+                    });
+                  },
+                  child: Text(t.unsentDiscard),
+                ),
+              ]),
+            ),
+          );
         }
         if (snap.hasError) {
           return Scaffold(

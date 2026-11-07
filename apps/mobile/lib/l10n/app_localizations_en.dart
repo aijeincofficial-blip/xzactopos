@@ -639,4 +639,27 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get syncSignIn =>
+      'Session ended. Sign out and sign in again; nothing is lost.';
+
+  @override
+  String get unsentTitle => 'Unsent changes';
+
+  @override
+  String unsentBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'This phone still has $count changes from another business that were never sent.',
+      one:
+          'This phone still has $count change from another business that was never sent.',
+    );
+    return '$_temp0 Sign in to that business to send them, or discard them and continue.';
+  }
+
+  @override
+  String get unsentDiscard => 'Discard them and continue';
 }

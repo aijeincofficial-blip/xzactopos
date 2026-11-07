@@ -41,7 +41,7 @@ Future<void> addProduct(WidgetTester tester, {required String name, required Str
 class BrokenStore extends DriftStore {
   BrokenStore() : super(AppDatabase(NativeDatabase.memory()));
   @override
-  Future<bool> ensureTenant(String tenantId, {required String baseCurrency, String? locationId}) =>
+  Future<bool> ensureTenant(String tenantId, {required String baseCurrency, String? locationId, bool discardUnsent = false}) =>
       Future.error(StateError('TypeError: Failed to fetch'));
 }
 

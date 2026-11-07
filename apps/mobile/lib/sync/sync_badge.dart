@@ -20,6 +20,7 @@ class SyncBadge extends StatelessWidget {
         builder: (context, snap) {
           final counts = snap.data ?? const OutboxCounts(0, 0);
           final (IconData icon, String label, Color? color) = switch (status.phase) {
+            SyncPhase.needsSignIn => (Icons.lock_outline, t.syncSignIn, Colors.red),
             _ when counts.failed > 0 => (Icons.error_outline, t.syncNeedsAttention(counts.failed), Colors.red),
             SyncPhase.syncing => (Icons.sync, t.syncSyncing, null),
             SyncPhase.idle when status.lastSyncedAt == null => (Icons.sync, t.syncSyncing, null),

@@ -647,4 +647,27 @@ class AppLocalizationsFil extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get syncSignIn =>
+      'Tapos na ang session. Mag-sign out at mag-sign in ulit; walang mawawala.';
+
+  @override
+  String get unsentTitle => 'Hindi pa naipapadala';
+
+  @override
+  String unsentBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'May $count pagbabago pa sa phone na ito mula sa ibang negosyo na hindi naipadala.',
+      one:
+          'May $count pagbabago pa sa phone na ito mula sa ibang negosyo na hindi naipadala.',
+    );
+    return '$_temp0 Mag-sign in sa negosyong iyon para maipadala, o itapon ang mga ito at magpatuloy.';
+  }
+
+  @override
+  String get unsentDiscard => 'Itapon at magpatuloy';
 }

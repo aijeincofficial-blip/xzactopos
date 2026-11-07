@@ -362,6 +362,12 @@ mixin DriftSales implements SalesStore {
   }
 
   @override
+  Stream<SaleDetail?> watchSale(String saleId) => db
+      .customSelect('select 1', readsFrom: {db.sales, db.saleItems, db.salePayments, db.outbox, db.customers})
+      .watch()
+      .asyncMap((_) => getSale(saleId));
+
+  @override
   Stream<TodayTotals> watchToday() {
     final n = DateTime.now();
     final from = _iso(DateTime(n.year, n.month, n.day));

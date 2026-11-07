@@ -81,28 +81,41 @@ class SupabaseBackend implements Backend {
     await _c.auth.refreshSession();
   }
 
+  /// An expired or revoked session is not a network problem: the engine tells the user to sign in again.
+  Future<T> _auth<T>(Future<T> Function() call) async {
+    try {
+      return await call();
+    } on PostgrestException catch (e) {
+      if (isAuthExpired(e.code, e.message)) throw const AuthExpired();
+      rethrow;
+    } on AuthException catch (e) {
+      if (e.statusCode == '401' || e.message.toLowerCase().contains('refresh')) throw const AuthExpired();
+      rethrow;
+    }
+  }
+
   @override
   Future<Map<String, dynamic>> reportSummary(DateTime from, DateTime to) async {
     String d(DateTime x) => '${x.year.toString().padLeft(4, '0')}-${x.month.toString().padLeft(2, '0')}-${x.day.toString().padLeft(2, '0')}';
-    final res = await _c.rpc('report_summary', params: {'p_from': d(from), 'p_to': d(to)});
+    final res = await _auth(() => _c.rpc('report_summary', params: {'p_from': d(from), 'p_to': d(to)}));
     return (res as Map).cast<String, dynamic>();
   }
 
   @override
   Future<Map<String, dynamic>> pullCatalog(Map<String, dynamic> cursors, {int limit = 500}) async {
-    final res = await _c.rpc('sync_pull_catalog', params: {'p_cursors': cursors, 'p_limit': limit});
+    final res = await _auth(() => _c.rpc('sync_pull_catalog', params: {'p_cursors': cursors, 'p_limit': limit}));
     return (res as Map).cast<String, dynamic>();
   }
 
   @override
   Future<Map<String, dynamic>> pullPos(Map<String, dynamic> cursors, {int limit = 500}) async {
-    final res = await _c.rpc('sync_pull_pos', params: {'p_cursors': cursors, 'p_limit': limit});
+    final res = await _auth(() => _c.rpc('sync_pull_pos', params: {'p_cursors': cursors, 'p_limit': limit}));
     return (res as Map).cast<String, dynamic>();
   }
 
   @override
   Future<List<Map<String, dynamic>>> syncPush(List<Map<String, dynamic>> ops) async {
-    final res = await _c.rpc('sync_push', params: {'p_ops': ops});
+    final res = await _auth(() => _c.rpc('sync_push', params: {'p_ops': ops}));
     return (res as List).map((e) => (e as Map).cast<String, dynamic>()).toList();
   }
 
@@ -141,13 +154,17 @@ class SupabaseBackend implements Backend {
   /// stays a normal exception so the engine retries it later with the same op id.
   Future<void> _op(Future<dynamic> Function() call) async {
     try {
-      await call();
+      await _auth(call);
     } on PostgrestException catch (e) {
       if (isPermanent(e.code, e.hint)) throw OpRejected(e.hint ?? e.code ?? 'rejected');
       rethrow;
     }
   }
 }
+
+/// PostgREST answers 401 with PGRST301 or "JWT expired" when the token is no longer accepted.
+bool isAuthExpired(String? code, String message) =>
+    code == 'PGRST301' || code == 'PGRST303' || message.toLowerCase().contains('jwt expired');
 
 const _permanentCodes = {'22023', '23505', '23514', '22P02', 'P0001'};
 const _permanentDenials = {'not_allowed', 'cost_and_sku_only', 'module_disabled'};

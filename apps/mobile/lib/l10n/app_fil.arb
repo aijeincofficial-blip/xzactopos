@@ -369,5 +369,16 @@
         "type": "int"
       }
     }
-  }
+  },
+  "syncSignIn": "Tapos na ang session. Mag-sign out at mag-sign in ulit; walang mawawala.",
+  "unsentTitle": "Hindi pa naipapadala",
+  "unsentBody": "{count, plural, =1{May {count} pagbabago pa sa phone na ito mula sa ibang negosyo na hindi naipadala.} other{May {count} pagbabago pa sa phone na ito mula sa ibang negosyo na hindi naipadala.}} Mag-sign in sa negosyong iyon para maipadala, o itapon ang mga ito at magpatuloy.",
+  "@unsentBody": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "unsentDiscard": "Itapon at magpatuloy"
 }

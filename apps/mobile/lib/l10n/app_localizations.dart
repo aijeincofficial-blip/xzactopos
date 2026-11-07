@@ -1123,6 +1123,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{{count} sale or change is not sent yet and is not included.} other{{count} sales or changes are not sent yet and are not included.}}'**
   String reportsNotSent(int count);
+
+  /// No description provided for @syncSignIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Session ended. Sign out and sign in again; nothing is lost.'**
+  String get syncSignIn;
+
+  /// No description provided for @unsentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsent changes'**
+  String get unsentTitle;
+
+  /// No description provided for @unsentBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{This phone still has {count} change from another business that was never sent.} other{This phone still has {count} changes from another business that were never sent.}} Sign in to that business to send them, or discard them and continue.'**
+  String unsentBody(int count);
+
+  /// No description provided for @unsentDiscard.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard them and continue'**
+  String get unsentDiscard;
 }
 
 class _AppLocalizationsDelegate
