@@ -1,17 +1,14 @@
 import 'package:flutter/material.dart';
 
-import '../app.dart' show LanguageButton;
 import '../backend.dart';
 import '../core/money.dart';
 import '../core/theme.dart';
 import '../core/ui.dart';
 import '../data/local_store.dart';
 import '../data/sales_models.dart';
-import '../core/theme_picker.dart';
 import '../l10n/app_localizations.dart';
 import '../sync/store_session.dart';
 import '../sync/sync_badge.dart';
-import 'password_screens.dart';
 import 'products_screen.dart';
 import 'reports_screen.dart';
 import 'sell_screen.dart';
@@ -35,7 +32,6 @@ class HomeScreen extends StatelessWidget {
     final scheme = theme.colorScheme;
     final locale = Localizations.localeOf(context).languageCode;
     final dark = scheme.brightness == Brightness.dark;
-    final themeScope = ThemeScope.maybeOf(context);
 
     void open(Widget screen) =>
         Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => scope.wrap(screen)));
@@ -46,7 +42,7 @@ class HomeScreen extends StatelessWidget {
         icon: Icons.menu_book_rounded,
         color: scheme.primary,
         label: t.utangTitle,
-        subLabel: 'Talaan ng pautang',
+        subLabel: t.tileUtangSub,
         onTap: () => open(const UtangScreen()),
       ),
       StreamBuilder<List<StockRow>>(
@@ -58,7 +54,7 @@ class HomeScreen extends StatelessWidget {
             icon: Icons.inventory_2_rounded,
             color: scheme.tertiary,
             label: t.stockTitle,
-            subLabel: lowCount > 0 ? '$lowCount paubos' : 'Balanse ng gamit',
+            subLabel: lowCount > 0 ? t.tileStockLow(lowCount) : t.tileStockSub,
             badge: lowCount,
             onTap: () => open(const StockScreen()),
           );
@@ -69,16 +65,16 @@ class HomeScreen extends StatelessWidget {
         icon: Icons.category_rounded,
         color: scheme.secondary,
         label: t.products,
-        subLabel: 'Katalogo at presyo',
+        subLabel: t.tileProductsSub,
         onTap: () => open(const ProductsScreen()),
       ),
       if (scope.canManageStock)
         _Tile(
           key: const Key('tile-reports'),
           icon: Icons.bar_chart_rounded,
-          color: dark ? scheme.primary : const Color(0xFF6366F1),
+          color: scheme.accent,
           label: t.reportsTitle,
-          subLabel: 'Benta at kita',
+          subLabel: t.tileReportsSub,
           onTap: () => open(ReportsScreen(backend: backend)),
         ),
     ];
@@ -129,7 +125,7 @@ class HomeScreen extends StatelessWidget {
                     width: 9,
                     height: 9,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF10B981),
+                      color: scheme.success,
                       shape: BoxShape.circle,
                       border: Border.all(color: theme.scaffoldBackgroundColor, width: 1.5),
                     ),
@@ -145,7 +141,7 @@ class HomeScreen extends StatelessWidget {
             color: dark ? scheme.surface : Colors.white,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: dark ? scheme.outlineVariant.withValues(alpha: 0.4) : const Color(0xFFE2E8F0),
+              color: scheme.outlineVariant,
               width: 1,
             ),
           ),
@@ -172,21 +168,12 @@ class HomeScreen extends StatelessWidget {
           const SyncBadge(),
           IconButton(
             key: const Key('btn-settings'),
-            tooltip: locale == 'fil' ? 'Mga Setting' : 'Settings',
+            tooltip: t.settingsTitle,
             icon: const Icon(Icons.settings_outlined, size: 20),
             constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
             padding: const EdgeInsets.all(4),
             visualDensity: VisualDensity.compact,
             onPressed: () => open(SettingsScreen(backend: backend, storeName: storeName)),
-          ),
-          IconButton(
-            key: const Key('change-password'),
-            tooltip: t.changePassword,
-            icon: const Icon(Icons.shield_outlined, size: 20),
-            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-            padding: const EdgeInsets.all(4),
-            visualDensity: VisualDensity.compact,
-            onPressed: () => showChangePasswordDialog(context, backend),
           ),
         ],
       ),
@@ -261,8 +248,8 @@ class HomeScreen extends StatelessWidget {
                           const SizedBox(width: Gap.s),
                           StatusPill(
                             label: t.todayCount(d.count),
-                            color: dark ? scheme.primaryContainer : const Color(0xFF0F172A),
-                            textColor: Colors.white,
+                            color: scheme.obsidian,
+                            textColor: scheme.onObsidian,
                           ),
                         ],
                       ),
@@ -290,9 +277,7 @@ class HomeScreen extends StatelessWidget {
                                   ),
                                 ),
                                 Text(
-                                  d.count == 0
-                                      ? (locale == 'fil' ? 'Simulan ang unang benta' : 'Start your first sale')
-                                      : (locale == 'fil' ? 'Kabuuang benta ngayong araw' : 'Total sales today'),
+                                  d.count == 0 ? t.startFirstSale : t.totalSalesToday,
                                   style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w500,
@@ -306,7 +291,7 @@ class HomeScreen extends StatelessWidget {
                             width: 32,
                             height: 32,
                             decoration: BoxDecoration(
-                              color: dark ? scheme.surface : const Color(0xFFF1F5F9),
+                              color: scheme.chipFill,
                               shape: BoxShape.circle,
                             ),
                             child: Icon(Icons.arrow_forward_rounded, size: 16, color: scheme.outline),
@@ -363,12 +348,12 @@ class HomeScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            locale == 'fil' ? 'Mga Setting ng Tindahan' : 'Store Settings',
+                            t.storeSettings,
                             style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
                           ),
                           const SizedBox(height: 1),
                           Text(
-                            locale == 'fil' ? 'Tema, liwanag, wika, at account' : 'Theme, mode, language, & account',
+                            t.storeSettingsHint,
                             style: TextStyle(fontSize: 12, color: scheme.outline),
                           ),
                         ],
@@ -378,7 +363,7 @@ class HomeScreen extends StatelessWidget {
                       width: 28,
                       height: 28,
                       decoration: BoxDecoration(
-                        color: dark ? scheme.surface : const Color(0xFFF1F5F9),
+                        color: scheme.chipFill,
                         shape: BoxShape.circle,
                       ),
                       child: Icon(Icons.arrow_forward_ios_rounded, size: 12, color: scheme.outline),
@@ -403,8 +388,7 @@ class _ObsidianSellButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final dark = scheme.brightness == Brightness.dark;
-    final bg = dark ? const Color(0xFF1E293B) : const Color(0xFF0F172A);
+    final bg = scheme.obsidian;
 
     return Material(
       color: bg,
@@ -435,10 +419,10 @@ class _ObsidianSellButton extends StatelessWidget {
               Expanded(
                 child: Text(
                   label,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w800,
-                    color: Colors.white,
+                    color: scheme.onObsidian,
                     letterSpacing: 0.5,
                   ),
                 ),

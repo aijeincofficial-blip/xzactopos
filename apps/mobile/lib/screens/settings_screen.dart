@@ -6,7 +6,6 @@ import '../core/theme.dart';
 import '../core/ui.dart';
 import '../core/theme_picker.dart';
 import '../l10n/app_localizations.dart';
-import '../sync/store_session.dart';
 import '../sync/sync_badge.dart';
 import 'password_screens.dart';
 
@@ -27,12 +26,11 @@ class SettingsScreen extends StatelessWidget {
     final locale = Localizations.localeOf(context).languageCode;
     final themeScope = ThemeScope.maybeOf(context);
     final localeScope = LocaleScope.maybeOf(context);
-    final catalogScope = CatalogScope.of(context);
 
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          locale == 'fil' ? 'Mga Setting' : 'Settings',
+          t.settingsTitle,
           style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
         ),
       ),
@@ -66,8 +64,8 @@ class SettingsScreen extends StatelessWidget {
                     child: Center(
                       child: Text(
                         storeName.isNotEmpty ? storeName[0].toUpperCase() : 'X',
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: scheme.onPrimary,
                           fontWeight: FontWeight.w900,
                           fontSize: 22,
                         ),
@@ -93,14 +91,14 @@ class SettingsScreen extends StatelessWidget {
                             Container(
                               width: 8,
                               height: 8,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFF10B981),
+                              decoration: BoxDecoration(
+                                color: scheme.success,
                                 shape: BoxShape.circle,
                               ),
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              locale == 'fil' ? 'Aktibong Tindahan' : 'Active Store',
+                              t.activeStore,
                               style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: scheme.outline),
                             ),
                           ],
@@ -116,7 +114,7 @@ class SettingsScreen extends StatelessWidget {
             const SizedBox(height: Gap.l),
 
             // Appearance & Theme Card
-            _SectionHeader(title: locale == 'fil' ? 'ITSURA AT TEMA' : 'APPEARANCE & THEME'),
+            _SectionHeader(title: t.settingsAppearance.toUpperCase()),
             AppCard(
               padding: const EdgeInsets.all(Gap.l),
               child: Column(
@@ -156,7 +154,7 @@ class SettingsScreen extends StatelessWidget {
                               const Icon(Icons.tune_rounded, size: 16),
                               const SizedBox(width: 6),
                               Text(
-                                locale == 'fil' ? 'Palitan' : 'Change',
+                                t.change,
                                 style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
                               ),
                             ],
@@ -204,23 +202,23 @@ class SettingsScreen extends StatelessWidget {
             const SizedBox(height: Gap.l),
 
             // Regional & Language Card
-            _SectionHeader(title: locale == 'fil' ? 'WIKA AT REHIYON' : 'LANGUAGE & REGION'),
+            _SectionHeader(title: t.settingsLanguageRegion.toUpperCase()),
             AppCard(
               padding: const EdgeInsets.all(Gap.l),
               child: Row(
                 children: [
-                  CoinBadge(icon: Icons.translate_rounded, color: const Color(0xFF6366F1), size: 36),
+                  CoinBadge(icon: Icons.translate_rounded, color: scheme.accent, size: 36),
                   const SizedBox(width: Gap.m),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          locale == 'fil' ? 'Wika ng Sistema' : 'System Language',
+                          t.systemLanguage,
                           style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
                         ),
                         Text(
-                          locale == 'fil' ? 'Filipino (Tagalog)' : 'English (US)',
+                          t.languageCurrentName,
                           style: TextStyle(fontSize: 12, color: scheme.outline),
                         ),
                       ],
@@ -236,7 +234,7 @@ class SettingsScreen extends StatelessWidget {
                       ),
                       onPressed: () => localeScope.setLocale(locale == 'fil' ? 'en' : 'fil'),
                       child: Text(
-                        locale == 'fil' ? 'Switch to EN' : 'Lumipat sa FIL',
+                        t.switchLanguage,
                         style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
                       ),
                     ),
@@ -247,7 +245,7 @@ class SettingsScreen extends StatelessWidget {
             const SizedBox(height: Gap.l),
 
             // Security & Credentials Card
-            _SectionHeader(title: locale == 'fil' ? 'SEGURIDAD AT AKLAT' : 'SECURITY & ACCOUNT'),
+            _SectionHeader(title: t.settingsSecurity.toUpperCase()),
             AppCard(
               padding: const EdgeInsets.all(Gap.l),
               child: Column(
@@ -265,7 +263,7 @@ class SettingsScreen extends StatelessWidget {
                               style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
                             ),
                             Text(
-                              locale == 'fil' ? 'I-update ang login password' : 'Update your login password',
+                              t.updatePasswordHint,
                               style: TextStyle(fontSize: 12, color: scheme.outline),
                             ),
                           ],
@@ -280,7 +278,7 @@ class SettingsScreen extends StatelessWidget {
                         ),
                         onPressed: () => showChangePasswordDialog(context, backend),
                         child: Text(
-                          locale == 'fil' ? 'Baguhin' : 'Change',
+                          t.change,
                           style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
                         ),
                       ),
@@ -304,7 +302,7 @@ class SettingsScreen extends StatelessWidget {
                               style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: scheme.error),
                             ),
                             Text(
-                              locale == 'fil' ? 'Tapusin ang sesyon sa device na ito' : 'End session on this phone',
+                              t.endSessionHint,
                               style: TextStyle(fontSize: 12, color: scheme.outline),
                             ),
                           ],
@@ -347,7 +345,7 @@ class SettingsScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    locale == 'fil' ? 'Lokal na database: Naka-sync at protektado' : 'Local database: Encrypted & synced',
+                    t.localDbNote,
                     style: TextStyle(
                       fontSize: 11,
                       color: scheme.outline.withValues(alpha: 0.6),

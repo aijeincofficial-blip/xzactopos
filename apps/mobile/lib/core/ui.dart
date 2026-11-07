@@ -31,7 +31,7 @@ class AppCard extends StatelessWidget {
         color: color ?? scheme.surface,
         borderRadius: r,
         border: Border.all(
-          color: dark ? scheme.outlineVariant.withValues(alpha: 0.5) : const Color(0xFFE4E9F2),
+          color: dark ? scheme.outlineVariant.withValues(alpha: 0.5) : scheme.outlineVariant,
           width: 1.0,
         ),
         boxShadow: dark
@@ -226,7 +226,7 @@ class EmptyState extends StatelessWidget {
               decoration: BoxDecoration(
                 color: scheme.surface,
                 shape: BoxShape.circle,
-                border: Border.all(color: const Color(0xFFE4E9F2)),
+                border: Border.all(color: scheme.outlineVariant),
               ),
               child: Icon(icon, size: 36, color: scheme.outline),
             ),

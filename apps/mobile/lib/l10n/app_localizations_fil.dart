@@ -779,4 +779,94 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String get receiptPrintFailed =>
       'Hindi mabuksan ang printer. Subukan ang Ipadala.';
+
+  @override
+  String get settingsTitle => 'Mga Setting';
+
+  @override
+  String get activeStore => 'Aktibong tindahan';
+
+  @override
+  String get settingsAppearance => 'Itsura at tema';
+
+  @override
+  String get change => 'Baguhin';
+
+  @override
+  String get settingsLanguageRegion => 'Wika at rehiyon';
+
+  @override
+  String get systemLanguage => 'Wika ng sistema';
+
+  @override
+  String get languageCurrentName => 'Filipino (Tagalog)';
+
+  @override
+  String get switchLanguage => 'Switch to EN';
+
+  @override
+  String get settingsSecurity => 'Seguridad at account';
+
+  @override
+  String get updatePasswordHint => 'I-update ang login password';
+
+  @override
+  String get endSessionHint => 'Tapusin ang sesyon sa phone na ito';
+
+  @override
+  String get localDbNote => 'Lokal na database: naka-sync at protektado';
+
+  @override
+  String get storeSettings => 'Mga setting ng tindahan';
+
+  @override
+  String get storeSettingsHint => 'Tema, liwanag, wika, at account';
+
+  @override
+  String get startFirstSale => 'Simulan ang unang benta';
+
+  @override
+  String get totalSalesToday => 'Kabuuang benta ngayong araw';
+
+  @override
+  String get tileUtangSub => 'Talaan ng pautang';
+
+  @override
+  String get tileStockSub => 'Balanse ng gamit';
+
+  @override
+  String get tileProductsSub => 'Katalogo at presyo';
+
+  @override
+  String get tileReportsSub => 'Benta at kita';
+
+  @override
+  String get reportsRevenueSub => 'Kabuuang benta ng tindahan';
+
+  @override
+  String get reportsAvgOrder => 'Karaniwang benta';
+
+  @override
+  String get reportsTotalOrders => 'Kabuuang transaksyon';
+
+  @override
+  String get reportsInventoryHealth => 'Kalagayan ng imbentaryo';
+
+  @override
+  String get reportsAllHealthy => 'Sapat ang lahat ng produkto';
+
+  @override
+  String tileStockLow(int count) {
+    return '$count paubos';
+  }
+
+  @override
+  String reportsNeedReorder(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count produkto ang dapat nang i-reorder',
+    );
+    return '$_temp0';
+  }
 }

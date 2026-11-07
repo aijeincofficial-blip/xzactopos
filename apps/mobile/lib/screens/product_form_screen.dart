@@ -139,7 +139,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
               borderRadius: BorderRadius.circular(Gap.radiusM),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.06),
+                  color: Colors.black.withValues(alpha: 0.06),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -399,7 +399,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                 foregroundColor: dark ? scheme.onPrimary : Colors.white,
                 shape: const StadiumBorder(),
                 elevation: 4,
-                shadowColor: Colors.black.withOpacity(0.3),
+                shadowColor: Colors.black.withValues(alpha: 0.3),
                 textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, letterSpacing: 0.3),
               ),
               onPressed: _busy ? null : _save,

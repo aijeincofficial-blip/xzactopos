@@ -428,5 +428,46 @@
   "scanWithCamera": "Scan with camera",
   "receiptPrint": "Print",
   "receiptShare": "Share",
-  "receiptPrintFailed": "Could not open the printer. Try Share instead."
+  "receiptPrintFailed": "Could not open the printer. Try Share instead.",
+  "settingsTitle": "Settings",
+  "activeStore": "Active store",
+  "settingsAppearance": "Appearance & theme",
+  "change": "Change",
+  "settingsLanguageRegion": "Language & region",
+  "systemLanguage": "System language",
+  "languageCurrentName": "English (US)",
+  "switchLanguage": "Lumipat sa FIL",
+  "settingsSecurity": "Security & account",
+  "updatePasswordHint": "Update your login password",
+  "endSessionHint": "End session on this phone",
+  "localDbNote": "Local database: encrypted & synced",
+  "storeSettings": "Store settings",
+  "storeSettingsHint": "Theme, mode, language & account",
+  "startFirstSale": "Start your first sale",
+  "totalSalesToday": "Total sales today",
+  "tileUtangSub": "Who owes you",
+  "tileStockSub": "What you have left",
+  "tileProductsSub": "Catalog & prices",
+  "tileReportsSub": "Sales & profit",
+  "reportsRevenueSub": "Total store revenue",
+  "reportsAvgOrder": "Average order",
+  "reportsTotalOrders": "Total orders",
+  "reportsInventoryHealth": "Inventory health",
+  "reportsAllHealthy": "All tracked stocks healthy",
+  "tileStockLow": "{count} low",
+  "@tileStockLow": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reportsNeedReorder": "{count, plural, =1{{count} item needs reordering} other{{count} items need reordering}}",
+  "@reportsNeedReorder": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

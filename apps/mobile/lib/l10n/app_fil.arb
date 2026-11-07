@@ -428,5 +428,46 @@
   "scanWithCamera": "I-scan gamit ang camera",
   "receiptPrint": "I-print",
   "receiptShare": "Ipadala",
-  "receiptPrintFailed": "Hindi mabuksan ang printer. Subukan ang Ipadala."
+  "receiptPrintFailed": "Hindi mabuksan ang printer. Subukan ang Ipadala.",
+  "settingsTitle": "Mga Setting",
+  "activeStore": "Aktibong tindahan",
+  "settingsAppearance": "Itsura at tema",
+  "change": "Baguhin",
+  "settingsLanguageRegion": "Wika at rehiyon",
+  "systemLanguage": "Wika ng sistema",
+  "languageCurrentName": "Filipino (Tagalog)",
+  "switchLanguage": "Switch to EN",
+  "settingsSecurity": "Seguridad at account",
+  "updatePasswordHint": "I-update ang login password",
+  "endSessionHint": "Tapusin ang sesyon sa phone na ito",
+  "localDbNote": "Lokal na database: naka-sync at protektado",
+  "storeSettings": "Mga setting ng tindahan",
+  "storeSettingsHint": "Tema, liwanag, wika, at account",
+  "startFirstSale": "Simulan ang unang benta",
+  "totalSalesToday": "Kabuuang benta ngayong araw",
+  "tileUtangSub": "Talaan ng pautang",
+  "tileStockSub": "Balanse ng gamit",
+  "tileProductsSub": "Katalogo at presyo",
+  "tileReportsSub": "Benta at kita",
+  "reportsRevenueSub": "Kabuuang benta ng tindahan",
+  "reportsAvgOrder": "Karaniwang benta",
+  "reportsTotalOrders": "Kabuuang transaksyon",
+  "reportsInventoryHealth": "Kalagayan ng imbentaryo",
+  "reportsAllHealthy": "Sapat ang lahat ng produkto",
+  "tileStockLow": "{count} paubos",
+  "@tileStockLow": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reportsNeedReorder": "{count, plural, other{{count} produkto ang dapat nang i-reorder}}",
+  "@reportsNeedReorder": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

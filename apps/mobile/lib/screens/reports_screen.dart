@@ -224,7 +224,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                           ),
                         ),
                         Text(
-                          locale == 'fil' ? 'Kabuuang benta ng tindahan' : 'Total store revenue',
+                          t.reportsRevenueSub,
                           style: TextStyle(fontSize: 11, color: scheme.outline),
                         ),
                       ],
@@ -265,7 +265,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF10B981).withOpacity(0.14),
+                        color: scheme.success.withValues(alpha: 0.14),
                         borderRadius: BorderRadius.circular(Gap.radiusS),
                       ),
                       child: Text(
@@ -282,7 +282,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: scheme.primary.withOpacity(0.12),
+                          color: scheme.primary.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(Gap.radiusS),
                         ),
                         child: Text(
@@ -297,7 +297,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   ],
                 ),
               const SizedBox(height: Gap.l),
-              Divider(height: 1, color: scheme.outlineVariant.withOpacity(0.4)),
+              Divider(height: 1, color: scheme.outlineVariant.withValues(alpha: 0.4)),
               const SizedBox(height: Gap.l),
 
               // 3-Column Payment Breakdown
@@ -361,7 +361,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      locale == 'fil' ? 'Karaniwang Benta' : 'Average Order',
+                      t.reportsAvgOrder,
                       style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: scheme.outline),
                     ),
                     const SizedBox(height: 2),
@@ -381,7 +381,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      locale == 'fil' ? 'Kabuuang Transaksyon' : 'Total Orders',
+                      t.reportsTotalOrders,
                       style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: scheme.outline),
                     ),
                     const SizedBox(height: 2),
@@ -512,7 +512,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
               ),
               if (debtors.isNotEmpty) ...[
                 const SizedBox(height: Gap.s),
-                Divider(height: 1, color: scheme.outlineVariant.withOpacity(0.4)),
+                Divider(height: 1, color: scheme.outlineVariant.withValues(alpha: 0.4)),
                 const SizedBox(height: Gap.s),
                 for (var i = 0; i < debtors.length && i < 5; i++)
                   ListTile(
@@ -554,13 +554,13 @@ class _ReportsScreenState extends State<ReportsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          locale == 'fil' ? 'Kalagayan ng Imbentaryo' : 'Inventory Health',
+                          t.reportsInventoryHealth,
                           style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
                         ),
                         Text(
                           lowList.isEmpty
-                                ? (locale == 'fil' ? 'Sapat ang lahat ng produkto' : 'All tracked stocks healthy')
-                                : (locale == 'fil' ? '${lowList.length} produkto ang dapat nang i-reorder' : '${lowList.length} items need reordering'),
+                                ? t.reportsAllHealthy
+                                : t.reportsNeedReorder(lowList.length),
                           style: TextStyle(fontSize: 12, color: scheme.outline),
                         ),
                       ],

@@ -771,4 +771,95 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get receiptPrintFailed =>
       'Could not open the printer. Try Share instead.';
+
+  @override
+  String get settingsTitle => 'Settings';
+
+  @override
+  String get activeStore => 'Active store';
+
+  @override
+  String get settingsAppearance => 'Appearance & theme';
+
+  @override
+  String get change => 'Change';
+
+  @override
+  String get settingsLanguageRegion => 'Language & region';
+
+  @override
+  String get systemLanguage => 'System language';
+
+  @override
+  String get languageCurrentName => 'English (US)';
+
+  @override
+  String get switchLanguage => 'Lumipat sa FIL';
+
+  @override
+  String get settingsSecurity => 'Security & account';
+
+  @override
+  String get updatePasswordHint => 'Update your login password';
+
+  @override
+  String get endSessionHint => 'End session on this phone';
+
+  @override
+  String get localDbNote => 'Local database: encrypted & synced';
+
+  @override
+  String get storeSettings => 'Store settings';
+
+  @override
+  String get storeSettingsHint => 'Theme, mode, language & account';
+
+  @override
+  String get startFirstSale => 'Start your first sale';
+
+  @override
+  String get totalSalesToday => 'Total sales today';
+
+  @override
+  String get tileUtangSub => 'Who owes you';
+
+  @override
+  String get tileStockSub => 'What you have left';
+
+  @override
+  String get tileProductsSub => 'Catalog & prices';
+
+  @override
+  String get tileReportsSub => 'Sales & profit';
+
+  @override
+  String get reportsRevenueSub => 'Total store revenue';
+
+  @override
+  String get reportsAvgOrder => 'Average order';
+
+  @override
+  String get reportsTotalOrders => 'Total orders';
+
+  @override
+  String get reportsInventoryHealth => 'Inventory health';
+
+  @override
+  String get reportsAllHealthy => 'All tracked stocks healthy';
+
+  @override
+  String tileStockLow(int count) {
+    return '$count low';
+  }
+
+  @override
+  String reportsNeedReorder(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items need reordering',
+      one: '$count item needs reordering',
+    );
+    return '$_temp0';
+  }
 }

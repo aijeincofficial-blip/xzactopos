@@ -100,6 +100,26 @@ const _goldDark = _P(
   textMuted: Color(0xFF94A3B8),
 );
 
+/// Semantic colors derived from the active palette, so screens never hard-code hex values.
+extension AppColors on ColorScheme {
+  bool get isDark => brightness == Brightness.dark;
+
+  /// Positive state (online, healthy, paid).
+  Color get success => secondary;
+
+  /// Dark "obsidian" surface for the primary action pill.
+  Color get obsidian => isDark ? const Color(0xFF1E293B) : const Color(0xFF0F172A);
+
+  /// Text/icons on [obsidian].
+  Color get onObsidian => Colors.white;
+
+  /// Quiet fill for small circular chips (arrows, counters).
+  Color get chipFill => isDark ? surface : primaryContainer;
+
+  /// Accent used for the language/reports badges (follows the palette).
+  Color get accent => tertiary;
+}
+
 ThemeData buildTheme(AppPalette palette, Brightness brightness) {
   final dark = brightness == Brightness.dark;
   final p = switch (palette) {

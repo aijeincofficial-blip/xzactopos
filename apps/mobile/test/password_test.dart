@@ -84,7 +84,10 @@ void main() {
 
   testWidgets('a signed-in user changes their password from Home', (tester) async {
     await openHome(tester);
-    await tester.tap(find.byKey(const Key('change-password')));
+    await tester.tap(find.byKey(const Key('btn-settings')));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const Key('settings-change-password')));
+    await tester.tap(find.byKey(const Key('settings-change-password')));
     await tester.pumpAndSettle();
     await tester.enterText(find.byKey(const Key('change-password-field')), '123');
     await tester.tap(find.byKey(const Key('change-password-save')));

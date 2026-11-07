@@ -130,7 +130,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w900,
-                      color: (dark ? scheme.onPrimary : Colors.white).withOpacity(0.6),
+                      color: (dark ? scheme.onPrimary : Colors.white).withValues(alpha: 0.6),
                       letterSpacing: 2,
                     ),
                   ),
@@ -191,7 +191,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                     Text(
                       DateFormat.yMMMd(locale).add_jm().format(s.soldAt),
                       textAlign: TextAlign.center,
-                      style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant.withOpacity(0.8)),
+                      style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant.withValues(alpha: 0.8)),
                     ),
                     if (s.voided)
                       Padding(

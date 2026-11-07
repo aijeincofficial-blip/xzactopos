@@ -1351,6 +1351,168 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not open the printer. Try Share instead.'**
   String get receiptPrintFailed;
+
+  /// No description provided for @settingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get settingsTitle;
+
+  /// No description provided for @activeStore.
+  ///
+  /// In en, this message translates to:
+  /// **'Active store'**
+  String get activeStore;
+
+  /// No description provided for @settingsAppearance.
+  ///
+  /// In en, this message translates to:
+  /// **'Appearance & theme'**
+  String get settingsAppearance;
+
+  /// No description provided for @change.
+  ///
+  /// In en, this message translates to:
+  /// **'Change'**
+  String get change;
+
+  /// No description provided for @settingsLanguageRegion.
+  ///
+  /// In en, this message translates to:
+  /// **'Language & region'**
+  String get settingsLanguageRegion;
+
+  /// No description provided for @systemLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'System language'**
+  String get systemLanguage;
+
+  /// No description provided for @languageCurrentName.
+  ///
+  /// In en, this message translates to:
+  /// **'English (US)'**
+  String get languageCurrentName;
+
+  /// No description provided for @switchLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Lumipat sa FIL'**
+  String get switchLanguage;
+
+  /// No description provided for @settingsSecurity.
+  ///
+  /// In en, this message translates to:
+  /// **'Security & account'**
+  String get settingsSecurity;
+
+  /// No description provided for @updatePasswordHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Update your login password'**
+  String get updatePasswordHint;
+
+  /// No description provided for @endSessionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'End session on this phone'**
+  String get endSessionHint;
+
+  /// No description provided for @localDbNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Local database: encrypted & synced'**
+  String get localDbNote;
+
+  /// No description provided for @storeSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Store settings'**
+  String get storeSettings;
+
+  /// No description provided for @storeSettingsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Theme, mode, language & account'**
+  String get storeSettingsHint;
+
+  /// No description provided for @startFirstSale.
+  ///
+  /// In en, this message translates to:
+  /// **'Start your first sale'**
+  String get startFirstSale;
+
+  /// No description provided for @totalSalesToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Total sales today'**
+  String get totalSalesToday;
+
+  /// No description provided for @tileUtangSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Who owes you'**
+  String get tileUtangSub;
+
+  /// No description provided for @tileStockSub.
+  ///
+  /// In en, this message translates to:
+  /// **'What you have left'**
+  String get tileStockSub;
+
+  /// No description provided for @tileProductsSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Catalog & prices'**
+  String get tileProductsSub;
+
+  /// No description provided for @tileReportsSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Sales & profit'**
+  String get tileReportsSub;
+
+  /// No description provided for @reportsRevenueSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Total store revenue'**
+  String get reportsRevenueSub;
+
+  /// No description provided for @reportsAvgOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Average order'**
+  String get reportsAvgOrder;
+
+  /// No description provided for @reportsTotalOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Total orders'**
+  String get reportsTotalOrders;
+
+  /// No description provided for @reportsInventoryHealth.
+  ///
+  /// In en, this message translates to:
+  /// **'Inventory health'**
+  String get reportsInventoryHealth;
+
+  /// No description provided for @reportsAllHealthy.
+  ///
+  /// In en, this message translates to:
+  /// **'All tracked stocks healthy'**
+  String get reportsAllHealthy;
+
+  /// No description provided for @tileStockLow.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} low'**
+  String tileStockLow(int count);
+
+  /// No description provided for @reportsNeedReorder.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{{count} item needs reordering} other{{count} items need reordering}}'**
+  String reportsNeedReorder(int count);
 }
 
 class _AppLocalizationsDelegate
