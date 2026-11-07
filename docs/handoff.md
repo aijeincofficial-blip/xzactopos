@@ -5,6 +5,7 @@ Updated at the end of every task. Read this first in a fresh session.
 ## Status
 - Phase 0 (Foundation): done, committed (6d59c99).
 - **Phase 3 (solo Sell screen, utang, stock ledger): done** (cards P3-01..P3-08, report at the end of this file). Phase 2 (solo catalog) accepted before it. Next: Phase 4.
+- **Phase 4 (solo stock in, count, low-stock, average cost): done** (cards P4-01..P4-05, report at the end of this file).
 - **Phase 1 (Tenancy, Auth, RBAC): done, accepted (P1-08).** Cards in docs/tasks/P1-01..P1-08. Next: Phase 2 (catalog and local store).
   - P1-01 core schema: done. Migration `20261107000100_core_tenancy.sql`, pgTAP `001_core_schema.test.sql` (38 tests).
   - P1-02 hook + helpers: done. Migration `20261107000200_auth_hook_and_helpers.sql`, pgTAP `002_auth_helpers.test.sql` (42 tests).
@@ -251,7 +252,7 @@ and fails on the old code (verified) / passes on the fix.
 - Opening stock lives on the device until Phase 4 (stock ledger). Camera barcode scan deferred.
 - `flutter test` is not part of `pnpm check`.
 
-**Next:** Phase 3 is done (see the Phase 3 section below). Phase 4 is next.
+**Next:** Phases 3 and 4 are done (sections at the end of this file). Phase 6 (reduced reports) and Phase 7 (APK, camera, printing) are next.
 
 ## Phase 3 (solo): Sell screen, cash, utang, receipt, stock ledger - done (branch `claude/phase3-sell-8261d3`, cards `docs/tasks/P3-00..P3-08`)
 Decisions are in `P3-00-overview-solo-sell.md` (confirmed by the user, including the e-wallet label, cancel sale, and Flutter in `pnpm check`).
@@ -298,4 +299,32 @@ Run 2026-11-07/08 against the local stack, release web build served by `tool/ser
 - Discarding a rejected sale or void removes it locally and drops its stock/utang effect; the sync cursors are reset (full re-pull), as for catalog ops.
 - Phone/APK still untested (another session owns the Android build). Offline first load of the web app is still a Phase 7 gap.
 
-**Next:** Phase 4 (stock in, adjustments, low-stock warning, never-counted products), then Phase 6 (reports). Opus for stock math.
+**Next:** done in Phase 4 (see below).
+
+## Phase 4 (solo): stock in, count, low-stock, average cost - done (cards `docs/tasks/P4-00..P4-05`)
+- **P4-01** (`20261108000700_stock_ops.sql`): movement types `receipt`, `count_correction`, `damage`; `stock_levels.avg_cost` kept by the movement trigger (weighted average, moved only by a receipt that carries a cost);
+  `op_receive_stock` and `op_adjust_stock` through `sync_push` (same permission as opening stock: superadmin or admin manager). A count sends the number counted; the server computes the difference from the level at that moment,
+  so a late sale or a retry never skews it, and a difference of 0 writes nothing. pgTAP `013` (29) includes a 300-operation property test: every level equals the sum of its movements.
+- **P4-02** (`20261108000800_stock_counted.sql`): `stock_levels.counted` = someone has stated how many there are (opening, receipt, count, damage). Sales alone never set it, so a never-counted product shows "Not counted"
+  (not "None left"). `sync_pull_pos` returns `avg_cost` and `counted`. Drift v5 (`stock_levels.avg_cost/counted`, `local_movements.counts`; v4 -> v5 resets the stock-level cursor so flags arrive; tested).
+  `receiveStock`, `adjustStock` (local effect = counted - stock shown now), `watchStockList`; sale lines copy the pulled average cost as `unit_cost`.
+- **P4-03/P4-04 screens:** Stock (search, All / Low chips, stock in with optional cost, count with reason Counted / Damaged / Other, pending icon, read-only for cashiers via `CatalogScope.canManageStock`),
+  reorder point under "More" in the product form (synced as `reorder_point`), red "low" count on the Home Stock tile, Sell screen shows "N left, running low" at or below the reorder point.
+
+### Phase 4 acceptance report (P4-05)
+| Criterion | Result |
+| --- | --- |
+| Levels equal the sum of movements after random sales, voids, stock-ins and counts | **Pass.** pgTAP `013`: 300 pseudo-random operations, zero mismatching levels |
+| Products that do not track stock write no movements | **Pass.** pgTAP `012` (untracked sale writes none) and the Stock list hides them |
+| Numbers on the phone match the server after a sync | **Pass.** Fake-server test with a lost reply (count applied once, same number before and after the level arrives); browser: existing Drift v4 data upgraded to v5, all 4 products "Not counted" (including Kape and Pancit, which had sales), stock in of 24 for Kape made offline showed 21 (24 minus the 3 already sold) with the pending icon and "1 saved on this phone"; after going online: receipt +24 in `stock_movements`, level 21, `counted = true`; the phone showed 21 and "Synced" |
+| `pnpm check` | **Pass.** pgTAP 1511 tests (13 files), Flutter analyze clean, 128 tests |
+
+Not re-checked in the browser: a count from the UI and the Low filter / Home badge (widget-tested).
+
+### Known gaps (carry forward)
+- Average cost only moves on a stock in that has a cost; the local screens do not show it (it is copied onto sales as the cost snapshot). Margin reports are Phase 6.
+- A count of exactly what the phone already shows writes nothing, so counting a never-counted product as 0 leaves it "Not counted".
+- Stock in has no supplier, note or receipt document (Phase 5 goods receipts). Transfers, cycle counts and bins are Phase 5/5b.
+- Stock is per store; with several stores the sale/stock ops still rely on the server picking the only store (see the Phase 3 gaps).
+
+**Next:** Phase 6 (reduced reports: daily/weekly sales, top items, utang balance) and Phase 7 (APK, camera scan, printing). Then the Full-mode phases.
