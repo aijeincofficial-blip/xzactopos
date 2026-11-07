@@ -134,3 +134,6 @@ Solo sari-sari focus + Flutter client: see `docs/recalibration-solo-flutter.md`.
 - Bug caught by tests: `setState(() => _access = future)` returned a Future; use a block body.
 - Gotchas: `intl` is pinned to 0.20.2 by flutter_localizations; `l10n.yaml` needs `nullable-getter: false`; heredocs with quotes can break the Bash tool, use the Write tool.
 - Not done: Android toolchain (`cmdline-tools` + licenses missing in `flutter doctor`) blocks the phone APK. Flutter is not wired into `pnpm check`/CI yet. Local test user `nena.s02test@example.com` exists in the dev DB only.
+
+### Phase 2 (solo) planned
+Cards `docs/tasks/P2-00..P2-07` (overview + 7). Decisions are listed in P2-00; confirm them before P2-01. Next: P2-01 catalog schema (Opus).
