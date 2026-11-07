@@ -150,7 +150,7 @@ class DriftStore with DriftSales implements LocalStore {
         final queued = await (db.select(db.outbox)..where((o) => o.opId.equals(oid))).get();
         if (already.isEmpty && queued.isEmpty) {
           await db.into(db.localMovements).insert(
-              LocalMovementsCompanion.insert(opId: oid, variantId: d.variantId, qty: d.openingQty!));
+              LocalMovementsCompanion.insert(opId: oid, variantId: d.variantId, qty: d.openingQty!, counts: const Value(true)));
           await _enqueue(oid, 'post_opening_stock', d.id, {'variant_id': d.variantId, 'qty': d.openingQty});
         }
       }

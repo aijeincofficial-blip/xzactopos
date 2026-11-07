@@ -180,6 +180,22 @@ class LedgerEntryView {
   final bool pending;
 }
 
+/// One product on the Stock screen. [qty] is null when nobody has counted it yet.
+class StockRow {
+  const StockRow({required this.product, required this.qty, required this.reorderPoint, required this.pending});
+  final ProductView product;
+  final double? qty;
+  final double reorderPoint;
+
+  /// Has a stock change the server has not confirmed yet.
+  final bool pending;
+
+  bool get counted => qty != null;
+
+  /// At or below the reorder point (only when a reorder point is set and the product is counted).
+  bool get low => qty != null && reorderPoint > 0 && qty! <= reorderPoint;
+}
+
 /// Everything the Sell, Utang and Today screens need from the device.
 abstract class SalesStore {
   /// The store (location) this device sells for; sent with every sale.
@@ -201,7 +217,17 @@ abstract class SalesStore {
   Future<SaleDetail?> getSale(String saleId);
   Stream<TodayTotals> watchToday();
 
-  /// Stock left per variant (server level plus what this device sold or received and the server has not caught up on).
+  /// Stock coming in. [cost] is the cost per unit in centavos (optional).
+  Future<void> receiveStock({required String variantId, required double qty, int? cost, required String opId});
+
+  /// "I counted [counted]": writes the difference between this and the stock shown now. [reason]: counted | damage | other.
+  Future<void> adjustStock({required String variantId, required double counted, String reason = 'counted', required String opId});
+
+  /// Stock screen rows (tracked products only), search by name, low ones first.
+  Stream<List<StockRow>> watchStockList({String query = ''});
+
+  /// Stock left per counted variant (server level plus what this device did that the server has not caught up on).
+  /// Variants nobody has counted are left out.
   Stream<Map<String, double>> watchStock();
   Future<double> stockLeft(String variantId);
 

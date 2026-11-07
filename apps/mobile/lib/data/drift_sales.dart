@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:drift/drift.dart';
 
+import '../core/search.dart';
 import 'db.dart';
 import 'local_store.dart';
 import 'sales_models.dart';
@@ -73,6 +74,12 @@ mixin DriftSales implements SalesStore {
       final localNo = await _nextReceiptNo(d.soldAt.toLocal());
       final soldAt = _iso(d.soldAt);
       final tax = d.lines.fold<int>(0, (a, l) => a + l.lineTax);
+      // cost snapshot: the average cost the server reported for this product, else the cost on the line
+      final avgCost = <String, int>{
+        for (final r in await db.select(db.stockLevels).get())
+          if (r.avgCost != null) r.variantId: r.avgCost!
+      };
+      int costOf(SaleLine l) => avgCost[l.variantId] ?? l.unitCost;
 
       await db.into(db.sales).insert(SalesCompanion.insert(
             id: d.id,
@@ -91,7 +98,7 @@ mixin DriftSales implements SalesStore {
               name: l.name,
               qty: l.qty,
               unitPrice: l.unitPrice,
-              unitCost: Value(l.unitCost),
+              unitCost: Value(costOf(l)),
               tax: Value(l.lineTax),
               lineTotal: l.lineTotal,
               tracked: Value(l.tracked),
@@ -137,7 +144,7 @@ mixin DriftSales implements SalesStore {
               'name': l.name,
               'qty': l.qty,
               'unit_price': l.unitPrice,
-              'unit_cost': l.unitCost,
+              'unit_cost': costOf(l),
               'tax': l.lineTax,
               'line_total': l.lineTotal,
             }
@@ -392,15 +399,116 @@ mixin DriftSales implements SalesStore {
       .customSelect(
         '''
         select variant_id, sum(q) as q from (
-          select variant_id, qty as q from stock_levels
+          select variant_id, qty as q, counted as c from stock_levels
           union all
-          select variant_id, qty as q from local_movements
-        ) group by variant_id
+          select variant_id, qty as q, counts as c from local_movements
+        ) group by variant_id having max(c) = 1
         ''',
         readsFrom: {db.stockLevels, db.localMovements},
       )
       .watch()
       .map((rows) => {for (final r in rows) r.read<String>('variant_id'): r.read<double>('q')});
+
+  @override
+  Future<void> receiveStock({required String variantId, required double qty, int? cost, required String opId}) {
+    if (qty <= 0) throw ArgumentError('Quantity must be above zero');
+    return db.transaction(() async {
+      await db.into(db.localMovements).insert(
+          LocalMovementsCompanion.insert(opId: opId, variantId: variantId, qty: qty, counts: const Value(true)));
+      await enqueue(opId, 'receive_stock', variantId, {
+        'variant_id': variantId,
+        'qty': qty,
+        'unit_cost': ?cost,
+        'location_id': ?locationId,
+      });
+    });
+  }
+
+  @override
+  Future<void> adjustStock({
+    required String variantId,
+    required double counted,
+    String reason = 'counted',
+    required String opId,
+  }) {
+    if (counted < 0) throw ArgumentError('Count cannot be negative');
+    return db.transaction(() async {
+      final delta = counted - await stockLeft(variantId);
+      if (delta.abs() < 0.0005) return; // already right: the server would write nothing either
+      await db.into(db.localMovements).insert(
+          LocalMovementsCompanion.insert(opId: opId, variantId: variantId, qty: delta, counts: const Value(true)));
+      await enqueue(opId, 'adjust_stock', variantId, {
+        'variant_id': variantId,
+        'counted': counted,
+        'reason': reason,
+        'location_id': ?locationId,
+      });
+    });
+  }
+
+  @override
+  Stream<List<StockRow>> watchStockList({String query = ''}) {
+    final words = searchWords(query);
+    final vars = <Variable<Object>>[Variable.withString(baseCurrency)];
+    final wordSql = <String>[];
+    for (final w in words) {
+      vars.add(Variable.withString(w));
+      wordSql.add("p.search_name like '%' || ?${vars.length} || '%'");
+    }
+    final where = wordSql.isEmpty ? '' : ' and (${wordSql.join(' and ')})';
+    return db
+        .customSelect(
+          '''
+          select p.id, v.id as variant_id, p.name, p.unit, v.sku, v.barcode, pr.price, p.photo_path, p.active,
+                 p.track_stock, p.tax_rate, v.cost, v.reorder_point,
+                 exists (select 1 from outbox o where o.entity_id = p.id or o.entity_id = v.id) as pending,
+                 coalesce((select sum(l.qty) from stock_levels l where l.variant_id = v.id), 0)
+               + coalesce((select sum(m.qty) from local_movements m where m.variant_id = v.id), 0) as qty,
+                 (coalesce((select max(l.counted) from stock_levels l where l.variant_id = v.id), 0)
+                  or coalesce((select max(m.counts) from local_movements m where m.variant_id = v.id), 0)) as counted
+          from products p
+          join variants v on v.product_id = p.id and v.is_default = 1 and v.deleted_at is null
+          left join prices pr on pr.variant_id = v.id and pr.currency = ?1 and pr.deleted_at is null
+          where p.deleted_at is null and p.track_stock = 1$where
+          ''',
+          variables: vars,
+          readsFrom: {db.products, db.variants, db.prices, db.stockLevels, db.localMovements, db.outbox},
+        )
+        .watch()
+        .map((rows) {
+      final list = [
+        for (final r in rows)
+          StockRow(
+            product: ProductView(
+              id: r.read<String>('id'),
+              variantId: r.read<String>('variant_id'),
+              name: r.read<String>('name'),
+              unit: r.read<String>('unit'),
+              sku: r.read<String>('sku'),
+              barcode: r.readNullable<String>('barcode'),
+              price: r.readNullable<int>('price'),
+              currency: baseCurrency,
+              photoPath: r.readNullable<String>('photo_path'),
+              active: r.read<bool>('active'),
+              pending: false,
+              trackStock: true,
+              taxRate: r.read<double>('tax_rate'),
+              cost: r.read<int>('cost'),
+            ),
+            qty: r.read<bool>('counted') ? r.read<double>('qty') : null,
+            reorderPoint: r.read<double>('reorder_point'),
+            pending: r.read<bool>('pending'),
+          )
+      ];
+      // low first, then counted by name, then not counted
+      int rank(StockRow x) => x.low ? 0 : (x.counted ? 1 : 2);
+      list.sort((a, b) {
+        final c = rank(a).compareTo(rank(b));
+        return c != 0 ? c : a.product.name.toLowerCase().compareTo(b.product.name.toLowerCase());
+      });
+      return list;
+    });
+  }
 
   @override
   Future<double> stockLeft(String variantId) async {
@@ -484,6 +592,8 @@ mixin DriftSales implements SalesStore {
               locationId: r['location_id'] as String,
               variantId: r['variant_id'] as String,
               qty: (r['qty_on_hand'] as num).toDouble(),
+              avgCost: Value((r['avg_cost'] as num?)?.toInt()),
+              counted: Value(r['counted'] as bool? ?? false),
               updatedAt: r['updated_at'] as String,
             ));
       }

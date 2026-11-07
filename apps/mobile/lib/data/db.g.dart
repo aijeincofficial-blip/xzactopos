@@ -5211,6 +5211,32 @@ class $StockLevelsTable extends StockLevels
     type: DriftSqlType.double,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _avgCostMeta = const VerificationMeta(
+    'avgCost',
+  );
+  @override
+  late final GeneratedColumn<int> avgCost = GeneratedColumn<int>(
+    'avg_cost',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _countedMeta = const VerificationMeta(
+    'counted',
+  );
+  @override
+  late final GeneratedColumn<bool> counted = GeneratedColumn<bool>(
+    'counted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("counted" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
   );
@@ -5223,7 +5249,14 @@ class $StockLevelsTable extends StockLevels
     requiredDuringInsert: true,
   );
   @override
-  List<GeneratedColumn> get $columns => [locationId, variantId, qty, updatedAt];
+  List<GeneratedColumn> get $columns => [
+    locationId,
+    variantId,
+    qty,
+    avgCost,
+    counted,
+    updatedAt,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -5260,6 +5293,18 @@ class $StockLevelsTable extends StockLevels
     } else if (isInserting) {
       context.missing(_qtyMeta);
     }
+    if (data.containsKey('avg_cost')) {
+      context.handle(
+        _avgCostMeta,
+        avgCost.isAcceptableOrUnknown(data['avg_cost']!, _avgCostMeta),
+      );
+    }
+    if (data.containsKey('counted')) {
+      context.handle(
+        _countedMeta,
+        counted.isAcceptableOrUnknown(data['counted']!, _countedMeta),
+      );
+    }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
@@ -5289,6 +5334,14 @@ class $StockLevelsTable extends StockLevels
         DriftSqlType.double,
         data['${effectivePrefix}qty'],
       )!,
+      avgCost: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}avg_cost'],
+      ),
+      counted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}counted'],
+      )!,
       updatedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}updated_at'],
@@ -5306,11 +5359,17 @@ class StockLevel extends DataClass implements Insertable<StockLevel> {
   final String locationId;
   final String variantId;
   final double qty;
+  final int? avgCost;
+
+  /// Someone has told the system how many there are (opening stock, stock in, a count). Sales alone do not count.
+  final bool counted;
   final String updatedAt;
   const StockLevel({
     required this.locationId,
     required this.variantId,
     required this.qty,
+    this.avgCost,
+    required this.counted,
     required this.updatedAt,
   });
   @override
@@ -5319,6 +5378,10 @@ class StockLevel extends DataClass implements Insertable<StockLevel> {
     map['location_id'] = Variable<String>(locationId);
     map['variant_id'] = Variable<String>(variantId);
     map['qty'] = Variable<double>(qty);
+    if (!nullToAbsent || avgCost != null) {
+      map['avg_cost'] = Variable<int>(avgCost);
+    }
+    map['counted'] = Variable<bool>(counted);
     map['updated_at'] = Variable<String>(updatedAt);
     return map;
   }
@@ -5328,6 +5391,10 @@ class StockLevel extends DataClass implements Insertable<StockLevel> {
       locationId: Value(locationId),
       variantId: Value(variantId),
       qty: Value(qty),
+      avgCost: avgCost == null && nullToAbsent
+          ? const Value.absent()
+          : Value(avgCost),
+      counted: Value(counted),
       updatedAt: Value(updatedAt),
     );
   }
@@ -5341,6 +5408,8 @@ class StockLevel extends DataClass implements Insertable<StockLevel> {
       locationId: serializer.fromJson<String>(json['locationId']),
       variantId: serializer.fromJson<String>(json['variantId']),
       qty: serializer.fromJson<double>(json['qty']),
+      avgCost: serializer.fromJson<int?>(json['avgCost']),
+      counted: serializer.fromJson<bool>(json['counted']),
       updatedAt: serializer.fromJson<String>(json['updatedAt']),
     );
   }
@@ -5351,6 +5420,8 @@ class StockLevel extends DataClass implements Insertable<StockLevel> {
       'locationId': serializer.toJson<String>(locationId),
       'variantId': serializer.toJson<String>(variantId),
       'qty': serializer.toJson<double>(qty),
+      'avgCost': serializer.toJson<int?>(avgCost),
+      'counted': serializer.toJson<bool>(counted),
       'updatedAt': serializer.toJson<String>(updatedAt),
     };
   }
@@ -5359,11 +5430,15 @@ class StockLevel extends DataClass implements Insertable<StockLevel> {
     String? locationId,
     String? variantId,
     double? qty,
+    Value<int?> avgCost = const Value.absent(),
+    bool? counted,
     String? updatedAt,
   }) => StockLevel(
     locationId: locationId ?? this.locationId,
     variantId: variantId ?? this.variantId,
     qty: qty ?? this.qty,
+    avgCost: avgCost.present ? avgCost.value : this.avgCost,
+    counted: counted ?? this.counted,
     updatedAt: updatedAt ?? this.updatedAt,
   );
   StockLevel copyWithCompanion(StockLevelsCompanion data) {
@@ -5373,6 +5448,8 @@ class StockLevel extends DataClass implements Insertable<StockLevel> {
           : this.locationId,
       variantId: data.variantId.present ? data.variantId.value : this.variantId,
       qty: data.qty.present ? data.qty.value : this.qty,
+      avgCost: data.avgCost.present ? data.avgCost.value : this.avgCost,
+      counted: data.counted.present ? data.counted.value : this.counted,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
@@ -5383,13 +5460,16 @@ class StockLevel extends DataClass implements Insertable<StockLevel> {
           ..write('locationId: $locationId, ')
           ..write('variantId: $variantId, ')
           ..write('qty: $qty, ')
+          ..write('avgCost: $avgCost, ')
+          ..write('counted: $counted, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(locationId, variantId, qty, updatedAt);
+  int get hashCode =>
+      Object.hash(locationId, variantId, qty, avgCost, counted, updatedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -5397,6 +5477,8 @@ class StockLevel extends DataClass implements Insertable<StockLevel> {
           other.locationId == this.locationId &&
           other.variantId == this.variantId &&
           other.qty == this.qty &&
+          other.avgCost == this.avgCost &&
+          other.counted == this.counted &&
           other.updatedAt == this.updatedAt);
 }
 
@@ -5404,12 +5486,16 @@ class StockLevelsCompanion extends UpdateCompanion<StockLevel> {
   final Value<String> locationId;
   final Value<String> variantId;
   final Value<double> qty;
+  final Value<int?> avgCost;
+  final Value<bool> counted;
   final Value<String> updatedAt;
   final Value<int> rowid;
   const StockLevelsCompanion({
     this.locationId = const Value.absent(),
     this.variantId = const Value.absent(),
     this.qty = const Value.absent(),
+    this.avgCost = const Value.absent(),
+    this.counted = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -5417,6 +5503,8 @@ class StockLevelsCompanion extends UpdateCompanion<StockLevel> {
     required String locationId,
     required String variantId,
     required double qty,
+    this.avgCost = const Value.absent(),
+    this.counted = const Value.absent(),
     required String updatedAt,
     this.rowid = const Value.absent(),
   }) : locationId = Value(locationId),
@@ -5427,6 +5515,8 @@ class StockLevelsCompanion extends UpdateCompanion<StockLevel> {
     Expression<String>? locationId,
     Expression<String>? variantId,
     Expression<double>? qty,
+    Expression<int>? avgCost,
+    Expression<bool>? counted,
     Expression<String>? updatedAt,
     Expression<int>? rowid,
   }) {
@@ -5434,6 +5524,8 @@ class StockLevelsCompanion extends UpdateCompanion<StockLevel> {
       if (locationId != null) 'location_id': locationId,
       if (variantId != null) 'variant_id': variantId,
       if (qty != null) 'qty': qty,
+      if (avgCost != null) 'avg_cost': avgCost,
+      if (counted != null) 'counted': counted,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -5443,6 +5535,8 @@ class StockLevelsCompanion extends UpdateCompanion<StockLevel> {
     Value<String>? locationId,
     Value<String>? variantId,
     Value<double>? qty,
+    Value<int?>? avgCost,
+    Value<bool>? counted,
     Value<String>? updatedAt,
     Value<int>? rowid,
   }) {
@@ -5450,6 +5544,8 @@ class StockLevelsCompanion extends UpdateCompanion<StockLevel> {
       locationId: locationId ?? this.locationId,
       variantId: variantId ?? this.variantId,
       qty: qty ?? this.qty,
+      avgCost: avgCost ?? this.avgCost,
+      counted: counted ?? this.counted,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
     );
@@ -5467,6 +5563,12 @@ class StockLevelsCompanion extends UpdateCompanion<StockLevel> {
     if (qty.present) {
       map['qty'] = Variable<double>(qty.value);
     }
+    if (avgCost.present) {
+      map['avg_cost'] = Variable<int>(avgCost.value);
+    }
+    if (counted.present) {
+      map['counted'] = Variable<bool>(counted.value);
+    }
     if (updatedAt.present) {
       map['updated_at'] = Variable<String>(updatedAt.value);
     }
@@ -5482,6 +5584,8 @@ class StockLevelsCompanion extends UpdateCompanion<StockLevel> {
           ..write('locationId: $locationId, ')
           ..write('variantId: $variantId, ')
           ..write('qty: $qty, ')
+          ..write('avgCost: $avgCost, ')
+          ..write('counted: $counted, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -5537,6 +5641,19 @@ class $LocalMovementsTable extends LocalMovements
     type: DriftSqlType.double,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _countsMeta = const VerificationMeta('counts');
+  @override
+  late final GeneratedColumn<bool> counts = GeneratedColumn<bool>(
+    'counts',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("counts" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _confirmedAfterMeta = const VerificationMeta(
     'confirmedAfter',
   );
@@ -5554,6 +5671,7 @@ class $LocalMovementsTable extends LocalMovements
     opId,
     variantId,
     qty,
+    counts,
     confirmedAfter,
   ];
   @override
@@ -5595,6 +5713,12 @@ class $LocalMovementsTable extends LocalMovements
     } else if (isInserting) {
       context.missing(_qtyMeta);
     }
+    if (data.containsKey('counts')) {
+      context.handle(
+        _countsMeta,
+        counts.isAcceptableOrUnknown(data['counts']!, _countsMeta),
+      );
+    }
     if (data.containsKey('confirmed_after')) {
       context.handle(
         _confirmedAfterMeta,
@@ -5629,6 +5753,10 @@ class $LocalMovementsTable extends LocalMovements
         DriftSqlType.double,
         data['${effectivePrefix}qty'],
       )!,
+      counts: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}counts'],
+      )!,
       confirmedAfter: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}confirmed_after'],
@@ -5647,12 +5775,16 @@ class LocalMovement extends DataClass implements Insertable<LocalMovement> {
   final String opId;
   final String variantId;
   final double qty;
+
+  /// Opening stock, stock in or a count: makes the product "counted". A sale does not.
+  final bool counts;
   final String? confirmedAfter;
   const LocalMovement({
     required this.id,
     required this.opId,
     required this.variantId,
     required this.qty,
+    required this.counts,
     this.confirmedAfter,
   });
   @override
@@ -5662,6 +5794,7 @@ class LocalMovement extends DataClass implements Insertable<LocalMovement> {
     map['op_id'] = Variable<String>(opId);
     map['variant_id'] = Variable<String>(variantId);
     map['qty'] = Variable<double>(qty);
+    map['counts'] = Variable<bool>(counts);
     if (!nullToAbsent || confirmedAfter != null) {
       map['confirmed_after'] = Variable<String>(confirmedAfter);
     }
@@ -5674,6 +5807,7 @@ class LocalMovement extends DataClass implements Insertable<LocalMovement> {
       opId: Value(opId),
       variantId: Value(variantId),
       qty: Value(qty),
+      counts: Value(counts),
       confirmedAfter: confirmedAfter == null && nullToAbsent
           ? const Value.absent()
           : Value(confirmedAfter),
@@ -5690,6 +5824,7 @@ class LocalMovement extends DataClass implements Insertable<LocalMovement> {
       opId: serializer.fromJson<String>(json['opId']),
       variantId: serializer.fromJson<String>(json['variantId']),
       qty: serializer.fromJson<double>(json['qty']),
+      counts: serializer.fromJson<bool>(json['counts']),
       confirmedAfter: serializer.fromJson<String?>(json['confirmedAfter']),
     );
   }
@@ -5701,6 +5836,7 @@ class LocalMovement extends DataClass implements Insertable<LocalMovement> {
       'opId': serializer.toJson<String>(opId),
       'variantId': serializer.toJson<String>(variantId),
       'qty': serializer.toJson<double>(qty),
+      'counts': serializer.toJson<bool>(counts),
       'confirmedAfter': serializer.toJson<String?>(confirmedAfter),
     };
   }
@@ -5710,12 +5846,14 @@ class LocalMovement extends DataClass implements Insertable<LocalMovement> {
     String? opId,
     String? variantId,
     double? qty,
+    bool? counts,
     Value<String?> confirmedAfter = const Value.absent(),
   }) => LocalMovement(
     id: id ?? this.id,
     opId: opId ?? this.opId,
     variantId: variantId ?? this.variantId,
     qty: qty ?? this.qty,
+    counts: counts ?? this.counts,
     confirmedAfter: confirmedAfter.present
         ? confirmedAfter.value
         : this.confirmedAfter,
@@ -5726,6 +5864,7 @@ class LocalMovement extends DataClass implements Insertable<LocalMovement> {
       opId: data.opId.present ? data.opId.value : this.opId,
       variantId: data.variantId.present ? data.variantId.value : this.variantId,
       qty: data.qty.present ? data.qty.value : this.qty,
+      counts: data.counts.present ? data.counts.value : this.counts,
       confirmedAfter: data.confirmedAfter.present
           ? data.confirmedAfter.value
           : this.confirmedAfter,
@@ -5739,13 +5878,15 @@ class LocalMovement extends DataClass implements Insertable<LocalMovement> {
           ..write('opId: $opId, ')
           ..write('variantId: $variantId, ')
           ..write('qty: $qty, ')
+          ..write('counts: $counts, ')
           ..write('confirmedAfter: $confirmedAfter')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, opId, variantId, qty, confirmedAfter);
+  int get hashCode =>
+      Object.hash(id, opId, variantId, qty, counts, confirmedAfter);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -5754,6 +5895,7 @@ class LocalMovement extends DataClass implements Insertable<LocalMovement> {
           other.opId == this.opId &&
           other.variantId == this.variantId &&
           other.qty == this.qty &&
+          other.counts == this.counts &&
           other.confirmedAfter == this.confirmedAfter);
 }
 
@@ -5762,12 +5904,14 @@ class LocalMovementsCompanion extends UpdateCompanion<LocalMovement> {
   final Value<String> opId;
   final Value<String> variantId;
   final Value<double> qty;
+  final Value<bool> counts;
   final Value<String?> confirmedAfter;
   const LocalMovementsCompanion({
     this.id = const Value.absent(),
     this.opId = const Value.absent(),
     this.variantId = const Value.absent(),
     this.qty = const Value.absent(),
+    this.counts = const Value.absent(),
     this.confirmedAfter = const Value.absent(),
   });
   LocalMovementsCompanion.insert({
@@ -5775,6 +5919,7 @@ class LocalMovementsCompanion extends UpdateCompanion<LocalMovement> {
     required String opId,
     required String variantId,
     required double qty,
+    this.counts = const Value.absent(),
     this.confirmedAfter = const Value.absent(),
   }) : opId = Value(opId),
        variantId = Value(variantId),
@@ -5784,6 +5929,7 @@ class LocalMovementsCompanion extends UpdateCompanion<LocalMovement> {
     Expression<String>? opId,
     Expression<String>? variantId,
     Expression<double>? qty,
+    Expression<bool>? counts,
     Expression<String>? confirmedAfter,
   }) {
     return RawValuesInsertable({
@@ -5791,6 +5937,7 @@ class LocalMovementsCompanion extends UpdateCompanion<LocalMovement> {
       if (opId != null) 'op_id': opId,
       if (variantId != null) 'variant_id': variantId,
       if (qty != null) 'qty': qty,
+      if (counts != null) 'counts': counts,
       if (confirmedAfter != null) 'confirmed_after': confirmedAfter,
     });
   }
@@ -5800,6 +5947,7 @@ class LocalMovementsCompanion extends UpdateCompanion<LocalMovement> {
     Value<String>? opId,
     Value<String>? variantId,
     Value<double>? qty,
+    Value<bool>? counts,
     Value<String?>? confirmedAfter,
   }) {
     return LocalMovementsCompanion(
@@ -5807,6 +5955,7 @@ class LocalMovementsCompanion extends UpdateCompanion<LocalMovement> {
       opId: opId ?? this.opId,
       variantId: variantId ?? this.variantId,
       qty: qty ?? this.qty,
+      counts: counts ?? this.counts,
       confirmedAfter: confirmedAfter ?? this.confirmedAfter,
     );
   }
@@ -5826,6 +5975,9 @@ class LocalMovementsCompanion extends UpdateCompanion<LocalMovement> {
     if (qty.present) {
       map['qty'] = Variable<double>(qty.value);
     }
+    if (counts.present) {
+      map['counts'] = Variable<bool>(counts.value);
+    }
     if (confirmedAfter.present) {
       map['confirmed_after'] = Variable<String>(confirmedAfter.value);
     }
@@ -5839,6 +5991,7 @@ class LocalMovementsCompanion extends UpdateCompanion<LocalMovement> {
           ..write('opId: $opId, ')
           ..write('variantId: $variantId, ')
           ..write('qty: $qty, ')
+          ..write('counts: $counts, ')
           ..write('confirmedAfter: $confirmedAfter')
           ..write(')'))
         .toString();
@@ -10345,6 +10498,8 @@ typedef $$StockLevelsTableCreateCompanionBuilder =
       required String locationId,
       required String variantId,
       required double qty,
+      Value<int?> avgCost,
+      Value<bool> counted,
       required String updatedAt,
       Value<int> rowid,
     });
@@ -10353,6 +10508,8 @@ typedef $$StockLevelsTableUpdateCompanionBuilder =
       Value<String> locationId,
       Value<String> variantId,
       Value<double> qty,
+      Value<int?> avgCost,
+      Value<bool> counted,
       Value<String> updatedAt,
       Value<int> rowid,
     });
@@ -10378,6 +10535,16 @@ class $$StockLevelsTableFilterComposer
 
   ColumnFilters<double> get qty => $composableBuilder(
     column: $table.qty,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get avgCost => $composableBuilder(
+    column: $table.avgCost,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get counted => $composableBuilder(
+    column: $table.counted,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -10411,6 +10578,16 @@ class $$StockLevelsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get avgCost => $composableBuilder(
+    column: $table.avgCost,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get counted => $composableBuilder(
+    column: $table.counted,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get updatedAt => $composableBuilder(
     column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
@@ -10436,6 +10613,12 @@ class $$StockLevelsTableAnnotationComposer
 
   GeneratedColumn<double> get qty =>
       $composableBuilder(column: $table.qty, builder: (column) => column);
+
+  GeneratedColumn<int> get avgCost =>
+      $composableBuilder(column: $table.avgCost, builder: (column) => column);
+
+  GeneratedColumn<bool> get counted =>
+      $composableBuilder(column: $table.counted, builder: (column) => column);
 
   GeneratedColumn<String> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
@@ -10475,12 +10658,16 @@ class $$StockLevelsTableTableManager
                 Value<String> locationId = const Value.absent(),
                 Value<String> variantId = const Value.absent(),
                 Value<double> qty = const Value.absent(),
+                Value<int?> avgCost = const Value.absent(),
+                Value<bool> counted = const Value.absent(),
                 Value<String> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => StockLevelsCompanion(
                 locationId: locationId,
                 variantId: variantId,
                 qty: qty,
+                avgCost: avgCost,
+                counted: counted,
                 updatedAt: updatedAt,
                 rowid: rowid,
               ),
@@ -10489,12 +10676,16 @@ class $$StockLevelsTableTableManager
                 required String locationId,
                 required String variantId,
                 required double qty,
+                Value<int?> avgCost = const Value.absent(),
+                Value<bool> counted = const Value.absent(),
                 required String updatedAt,
                 Value<int> rowid = const Value.absent(),
               }) => StockLevelsCompanion.insert(
                 locationId: locationId,
                 variantId: variantId,
                 qty: qty,
+                avgCost: avgCost,
+                counted: counted,
                 updatedAt: updatedAt,
                 rowid: rowid,
               ),
@@ -10529,6 +10720,7 @@ typedef $$LocalMovementsTableCreateCompanionBuilder =
       required String opId,
       required String variantId,
       required double qty,
+      Value<bool> counts,
       Value<String?> confirmedAfter,
     });
 typedef $$LocalMovementsTableUpdateCompanionBuilder =
@@ -10537,6 +10729,7 @@ typedef $$LocalMovementsTableUpdateCompanionBuilder =
       Value<String> opId,
       Value<String> variantId,
       Value<double> qty,
+      Value<bool> counts,
       Value<String?> confirmedAfter,
     });
 
@@ -10566,6 +10759,11 @@ class $$LocalMovementsTableFilterComposer
 
   ColumnFilters<double> get qty => $composableBuilder(
     column: $table.qty,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get counts => $composableBuilder(
+    column: $table.counts,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -10604,6 +10802,11 @@ class $$LocalMovementsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get counts => $composableBuilder(
+    column: $table.counts,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get confirmedAfter => $composableBuilder(
     column: $table.confirmedAfter,
     builder: (column) => ColumnOrderings(column),
@@ -10630,6 +10833,9 @@ class $$LocalMovementsTableAnnotationComposer
 
   GeneratedColumn<double> get qty =>
       $composableBuilder(column: $table.qty, builder: (column) => column);
+
+  GeneratedColumn<bool> get counts =>
+      $composableBuilder(column: $table.counts, builder: (column) => column);
 
   GeneratedColumn<String> get confirmedAfter => $composableBuilder(
     column: $table.confirmedAfter,
@@ -10674,12 +10880,14 @@ class $$LocalMovementsTableTableManager
                 Value<String> opId = const Value.absent(),
                 Value<String> variantId = const Value.absent(),
                 Value<double> qty = const Value.absent(),
+                Value<bool> counts = const Value.absent(),
                 Value<String?> confirmedAfter = const Value.absent(),
               }) => LocalMovementsCompanion(
                 id: id,
                 opId: opId,
                 variantId: variantId,
                 qty: qty,
+                counts: counts,
                 confirmedAfter: confirmedAfter,
               ),
           createCompanionCallback:
@@ -10688,12 +10896,14 @@ class $$LocalMovementsTableTableManager
                 required String opId,
                 required String variantId,
                 required double qty,
+                Value<bool> counts = const Value.absent(),
                 Value<String?> confirmedAfter = const Value.absent(),
               }) => LocalMovementsCompanion.insert(
                 id: id,
                 opId: opId,
                 variantId: variantId,
                 qty: qty,
+                counts: counts,
                 confirmedAfter: confirmedAfter,
               ),
           withReferenceMapper: (p0) => p0

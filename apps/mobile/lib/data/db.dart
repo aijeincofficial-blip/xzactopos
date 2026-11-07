@@ -183,6 +183,10 @@ class StockLevels extends Table {
   TextColumn get locationId => text()();
   TextColumn get variantId => text()();
   RealColumn get qty => real()();
+  IntColumn get avgCost => integer().nullable()();
+
+  /// Someone has told the system how many there are (opening stock, stock in, a count). Sales alone do not count.
+  BoolColumn get counted => boolean().withDefault(const Constant(false))();
   TextColumn get updatedAt => text()();
 
   @override
@@ -195,6 +199,9 @@ class LocalMovements extends Table {
   TextColumn get opId => text()();
   TextColumn get variantId => text()();
   RealColumn get qty => real()();
+
+  /// Opening stock, stock in or a count: makes the product "counted". A sale does not.
+  BoolColumn get counts => boolean().withDefault(const Constant(false))();
   TextColumn get confirmedAfter => text().nullable()();
 }
 
@@ -274,7 +281,7 @@ class AppDatabase extends _$AppDatabase {
   static const _name = 'xzactopos';
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -305,7 +312,7 @@ class AppDatabase extends _$AppDatabase {
               if (v == null || o.qty <= 0) continue;
               final opId = openingOpId(o.variantId);
               await into(localMovements).insert(
-                  LocalMovementsCompanion.insert(opId: opId, variantId: o.variantId, qty: o.qty));
+                  LocalMovementsCompanion.insert(opId: opId, variantId: o.variantId, qty: o.qty, counts: const Value(true)));
               await into(outbox).insert(OutboxCompanion.insert(
                 opId: opId,
                 kind: 'post_opening_stock',
@@ -315,6 +322,15 @@ class AppDatabase extends _$AppDatabase {
               ));
             }
             if (hasOpening.isNotEmpty) await delete(openingStock).go();
+          }
+          if (from >= 4 && from < 5) {
+            await m.addColumn(stockLevels, stockLevels.avgCost);
+            await m.addColumn(stockLevels, stockLevels.counted);
+            await m.addColumn(localMovements, localMovements.counts);
+            await customStatement(
+                "update local_movements set counts = 1 where op_id in (select op_id from outbox where kind = 'post_opening_stock')");
+            // levels pulled before the flag existed must come again
+            await customStatement("delete from sync_cursors where table_key = 'stock_levels'");
           }
         },
       );

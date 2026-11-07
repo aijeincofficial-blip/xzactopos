@@ -134,7 +134,7 @@ class SyncEngine {
     }
   }
 
-  static const posKinds = {'record_sale', 'void_sale', 'upsert_customer', 'record_utang_payment', 'post_opening_stock'};
+  static const posKinds = {'record_sale', 'void_sale', 'upsert_customer', 'record_utang_payment', 'post_opening_stock', 'receive_stock', 'adjust_stock'};
 
   /// One batch through sync_push. Results are applied in order; a transient `error` stops the batch.
   /// Returns how many ops were settled (applied or refused).

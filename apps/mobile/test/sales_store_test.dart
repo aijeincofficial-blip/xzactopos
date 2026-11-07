@@ -36,7 +36,7 @@ Map<String, dynamic> posPage({
 }
 
 Map<String, dynamic> level(String variant, num qty, String at) =>
-    {'location_id': _loc, 'variant_id': variant, 'qty_on_hand': qty, 'updated_at': at};
+    {'location_id': _loc, 'variant_id': variant, 'qty_on_hand': qty, 'avg_cost': null, 'counted': true, 'updated_at': at};
 
 SaleDraft sale(String id, List<SaleLine> lines, List<PaymentDraft> pays, {int discount = 0, String? customerId, DateTime? at}) =>
     SaleDraft(id: id, soldAt: at ?? DateTime.now(), lines: lines, payments: pays, discount: discount, customerId: customerId);
@@ -212,7 +212,7 @@ void main() {
     test('watchStock lists every variant with a count', () async {
       await store.applyPullPos(posPage(levels: [level(_v1, 5, '2026-11-08T00:00:00+00:00')]));
       await store.commitSale(sale('s1', [line(_v1, 1, 100), line(_v2, 2, 100)], [const PaymentDraft('cash', 300)]), opId: 'o1');
-      expect(await store.watchStock().first, {_v1: 4.0, _v2: -2.0});
+      expect(await store.watchStock().first, {_v1: 4.0}, reason: 'never-counted products are left out');
     });
   });
 
