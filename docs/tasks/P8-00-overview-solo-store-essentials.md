@@ -24,7 +24,7 @@ A tindera can run a whole day in the app: sell fast, take cash-in/out and load, 
 | P8-03 Expenses + day close screens | add expense, Today shows expenses, count drawer, over/short, fil + en, supervisor PIN retry. DONE | Sonnet |
 | P8-04 Net profit in Reports | profit after expenses (stock purchases excluded: already in cost of goods), from the rollup. DONE | Sonnet |
 | P8-05 Restock list | derived list from low stock + last cost, copy as text, receive from the list. DONE | Sonnet |
-| P8-06 Load / e-wallet service ledger | migration, `op_service_txn`, float balance, fee rules, pgTAP property test | Opus |
+| P8-06 Load / e-wallet service ledger | migration, `record_service_txn` / `void_service_txn` ops, float balance, fee rules, pgTAP property test, Drift v7 + store API + sync. DONE (money model, API and what P8-07 calls: `P8-06-load-ewallet-ledger.md`) | Opus |
 | P8-07 Load / e-wallet screens | cash-in/out/load entry, float, daily fee total | Sonnet |
 | P8-08 Tingi / repack | ratio on product, conversion op, stock math tests | Opus |
 | P8-09 Tingi UI | set ratio, "open a pack" action | Sonnet |

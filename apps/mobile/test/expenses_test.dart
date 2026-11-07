@@ -160,6 +160,9 @@ class ExpenseServer implements SyncApi {
   @override
   Future<Map<String, dynamic>> pullDayCloses(Map<String, dynamic>? cursor, {int limit = 100}) async =>
       _page(closes.values, cursor);
+  @override
+  Future<Map<String, dynamic>> pullService(Map<String, dynamic>? cursor, {int limit = 100}) async =>
+      {'rows': <dynamic>[], 'has_more': false};
 
   @override
   Future<Map<String, dynamic>> pullPos(Map<String, dynamic> cursors, {int limit = 500}) async {
@@ -493,6 +496,9 @@ void main() {
     await v5.recordUtangPayment(customerId: _cus, amount: 500, opId: 'o2');
     await v5.db.customStatement('drop table expenses');
     await v5.db.customStatement('drop table day_closes');
+    await v5.db.customStatement('drop table service_txns');
+    await v5.db.customStatement('drop table wallet_float');
+    await v5.db.customStatement('drop table local_float_effects');
     await v5.db.customStatement('PRAGMA user_version = 5');
     await v5.close();
 
@@ -507,7 +513,7 @@ void main() {
     expect(await v6.expectedCash(today()), 4000 + 500 - 1000);
     expect((await v6.watchLatestDayClose(today()).first)!.difference, 3500 - 3500);
     final version = await v6.db.customSelect('PRAGMA user_version').getSingle();
-    expect(version.data.values.single, 6);
+    expect(version.data.values.single, 7);
     await v6.close();
     dir.deleteSync(recursive: true);
   });

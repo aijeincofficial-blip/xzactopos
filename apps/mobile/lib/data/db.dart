@@ -303,6 +303,75 @@ class DayCloses extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+// ---- Phase 8: load / e-wallet services (schema v7) ----
+
+/// Load / e-wallet service entries (cash-in, cash-out, load, float moves): made here (record_service_txn op) or pulled
+/// (sync_pull_service). A void sets [voidedAt] (void_service_txn op); nothing is deleted. [updatedAt] is the server's,
+/// null until the server's copy has been pulled. Money model: `serviceCashEffect` / `serviceFloatEffect` in
+/// sales_models.dart.
+@TableIndex(name: 'service_txns_txn_at', columns: {#txnAt})
+class ServiceTxns extends Table {
+  TextColumn get id => text()();
+  TextColumn get locationId => text().nullable()();
+
+  /// cash_in | cash_out | load | float_topup | float_withdraw | float_adjust
+  TextColumn get kind => text()();
+
+  /// gcash | maya | load | other
+  TextColumn get wallet => text()();
+
+  /// Centavos; > 0, except a float_adjust (signed, never 0).
+  IntColumn get amount => integer()();
+  IntColumn get fee => integer().withDefault(const Constant(0))();
+
+  /// Cash the customer paid for a load (load only).
+  IntColumn get price => integer().nullable()();
+  TextColumn get currency => text()();
+
+  /// Customer reference (phone, wallet reference no.). Sensitive: shown in the list only.
+  TextColumn get ref => text().nullable()();
+  TextColumn get note => text().nullable()();
+
+  /// UTC ISO-8601, normalised (same format as `sales.sold_at`).
+  TextColumn get txnAt => text()();
+  TextColumn get createdBy => text().nullable()();
+  TextColumn get approvedBy => text().nullable()();
+  TextColumn get voidedAt => text().nullable()();
+  TextColumn get voidReason => text().nullable()();
+  TextColumn get voidApprovedBy => text().nullable()();
+  TextColumn get updatedAt => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// The server's float balance per store and wallet, as of the last sync_pull_service (`floats`).
+class WalletFloats extends Table {
+  @override
+  String get tableName => 'wallet_float';
+
+  TextColumn get locationId => text()();
+  TextColumn get wallet => text()();
+  IntColumn get balance => integer()();
+  IntColumn get txnCount => integer().withDefault(const Constant(0))();
+  TextColumn get updatedAt => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {locationId, wallet};
+}
+
+/// Float effects of service ops made on this device (a record, or the reversal of a void), counted on top of
+/// [WalletFloats] until a pulled balance covers them (`confirmedAfter` = when the server applied the op; dropped once a
+/// float snapshot at or after that time has been pulled). Like `local_movements` for stock.
+class LocalFloatEffects extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get opId => text()();
+  TextColumn get txnId => text()();
+  TextColumn get wallet => text()();
+  IntColumn get amount => integer()();
+  TextColumn get confirmedAfter => text().nullable()();
+}
+
 /// Small key/value facts about this device's data (e.g. which tenant it belongs to).
 class Meta extends Table {
   TextColumn get key => text()();
@@ -315,7 +384,7 @@ class Meta extends Table {
 @DriftDatabase(tables: [
   Categories, Products, Variants, Prices, SyncCursors, Outbox, OpeningStock, Meta, PhotoUploads, PhotoCache,
   Customers, ServerLedger, LocalLedger, StockLevels, LocalMovements, Sales, SaleItems, SalePayments,
-  Expenses, DayCloses,
+  Expenses, DayCloses, ServiceTxns, WalletFloats, LocalFloatEffects,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
@@ -336,7 +405,7 @@ class AppDatabase extends _$AppDatabase {
   static const _name = 'xzactopos';
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -391,6 +460,16 @@ class AppDatabase extends _$AppDatabase {
             // new tables only; every existing row stays as it is
             await m.createTable(expenses);
             await m.createTable(dayCloses);
+          }
+          if (from < 7) {
+            // new tables only; every existing row stays as it is (createTable is IF NOT EXISTS)
+            await m.createTable(serviceTxns);
+            await m.createTable(walletFloats);
+            await m.createTable(localFloatEffects);
+            await customStatement('CREATE INDEX IF NOT EXISTS service_txns_txn_at ON service_txns (txn_at)');
+            // the v6 step created its tables without their indexes
+            await customStatement('CREATE INDEX IF NOT EXISTS expenses_spent_at ON expenses (spent_at)');
+            await customStatement('CREATE INDEX IF NOT EXISTS day_closes_day ON day_closes (day)');
           }
         },
       );

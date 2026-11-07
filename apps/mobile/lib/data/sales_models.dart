@@ -296,6 +296,118 @@ class DayCloseView {
   final String? rejectedHint;
 }
 
+// ---- Phase 8: load / e-wallet services (P8-06) ----
+
+/// Service kinds the server accepts (op_record_service_txn). UI labels come from ARB keys, never these strings.
+const serviceKinds = ['cash_in', 'cash_out', 'load', 'float_topup', 'float_withdraw', 'float_adjust'];
+
+/// The kinds a customer pays a fee for (counted in [ServiceTotals.count]); the other three move the store's own float.
+const customerServiceKinds = ['cash_in', 'cash_out', 'load'];
+
+/// The store's wallets: GCash, Maya, the prepaid-load float, anything else. cash_in / cash_out never use `load`.
+const serviceWallets = ['gcash', 'maya', 'load', 'other'];
+
+/// What a service entry does to the drawer, in centavos (the fee is always collected in cash, on top of the principal):
+/// cash_in +amount+fee, cash_out -amount+fee, load +price, float_topup -amount, float_withdraw +amount, float_adjust 0.
+int serviceCashEffect(String kind, int amount, int fee, int? price) => switch (kind) {
+      'cash_in' => amount + fee,
+      'cash_out' => fee - amount,
+      'load' => price ?? amount + fee,
+      'float_topup' => -amount,
+      'float_withdraw' => amount,
+      _ => 0,
+    };
+
+/// What a service entry does to its wallet float, in centavos: cash_in / load / float_withdraw -amount,
+/// cash_out / float_topup +amount, float_adjust +amount (signed).
+int serviceFloatEffect(String kind, int amount) => switch (kind) {
+      'cash_in' || 'load' || 'float_withdraw' => -amount,
+      _ => amount,
+    };
+
+class ServiceTxnView {
+  const ServiceTxnView({
+    required this.id,
+    required this.kind,
+    required this.wallet,
+    required this.amount,
+    required this.fee,
+    this.price,
+    this.ref,
+    this.note,
+    required this.txnAt,
+    this.voidedAt,
+    this.voidReason,
+    this.approvedBy,
+    required this.pending,
+    this.rejectedHint,
+  });
+
+  final String id;
+  final String kind;
+  final String wallet;
+
+  /// Centavos: the principal (cash_in / cash_out), what the wallet paid (load), the float moved; signed for float_adjust.
+  final int amount;
+
+  /// The store's income for this entry (load: price - amount).
+  final int fee;
+
+  /// Cash the customer paid (load only).
+  final int? price;
+
+  /// Customer reference (phone, wallet reference no.).
+  final String? ref;
+  final String? note;
+  final DateTime txnAt;
+  final DateTime? voidedAt;
+  final String? voidReason;
+  final String? approvedBy;
+
+  /// An op for this entry (record or void) has not reached the server yet.
+  final bool pending;
+
+  /// The server refused an op for this entry (e.g. `approval_expired`, `not_allowed`); it waits for the user.
+  final String? rejectedHint;
+
+  bool get voided => voidedAt != null;
+  int get cashEffect => serviceCashEffect(kind, amount, fee, price);
+  int get floatEffect => serviceFloatEffect(kind, amount);
+}
+
+/// Today's service entries that count (voided ones left out). Centavos.
+class ServiceTotals {
+  const ServiceTotals({this.count = 0, this.fees = 0, this.cashIn = 0, this.cashOut = 0, this.loadSales = 0, this.cash = 0});
+
+  /// Customer services (cash_in + cash_out + load).
+  final int count;
+
+  /// Service income (fees and load margins).
+  final int fees;
+
+  /// Principal of the cash-ins and of the cash-outs; cash taken for loads (price).
+  final int cashIn;
+  final int cashOut;
+  final int loadSales;
+
+  /// What all service entries (float moves included) did to the drawer; part of [SalesStore.expectedCash].
+  final int cash;
+}
+
+class WalletFloatView {
+  const WalletFloatView({required this.wallet, required this.balance, required this.pending});
+  final String wallet;
+
+  /// Server balance + what this device did that the server's balance does not include yet. Centavos.
+  final int balance;
+
+  /// Includes effects of ops not yet covered by a pulled balance.
+  final bool pending;
+
+  /// Below zero: the wallet needs a top-up (allowed, never blocks an entry).
+  bool get negative => balance < 0;
+}
+
 /// Everything the Sell, Utang and Today screens need from the device.
 abstract class SalesStore {
   /// The store (location) this device sells for; sent with every sale.
@@ -377,8 +489,9 @@ abstract class SalesStore {
   Stream<ExpenseTotals> watchTodayExpenses();
 
   /// Cash that should be in the drawer for the local day of [day]: cash taken by completed sales + utang payments
-  /// - cash expenses that are not voided. Includes what this device has not sent yet. Centavos; may be below zero.
-  /// (Opening float is not part of it.)
+  /// - cash expenses that are not voided + the cash effect of service entries not voided (cash-in +amount+fee,
+  /// cash-out -amount+fee, load +price, float top-up -amount, float withdraw +amount; see [serviceCashEffect]).
+  /// Includes what this device has not sent yet. Centavos; may be below zero. (Opening float is not part of it.)
   Future<int> expectedCash(DateTime day);
   Stream<int> watchExpectedCash(DateTime day);
 
@@ -396,8 +509,50 @@ abstract class SalesStore {
   /// The newest close for the local day of [day] (null when the day was not closed).
   Stream<DayCloseView?> watchLatestDayClose(DateTime day);
 
-  /// Puts a parked (failed) record_expense / void_expense / close_day op back in the queue with a new supervisor
-  /// approval id, after the server refused it with one of [approvalHints]. Same op id: a refused op left nothing on
+  // ---- load / e-wallet services (P8-06) ----
+  //
+  // cash_in / cash_out / load: anyone who sells, offline, no extra step. float_topup / float_withdraw and every void:
+  // owner and store managers offline; a store SUPERVISOR needs a single-use approval per op (action
+  // 'record_service_txn' with the new txn id, or 'void_service_txn' with the txn id), exactly like expenses.
+  // float_adjust (and voiding one): owner or store manager only. A cashier's float / void op is refused (`not_allowed`).
+  // The PIN never comes here: only the approval id travels.
+
+  /// Records a service entry; shown at once and queued as one `record_service_txn` op. Money in centavos.
+  /// [kind] one of [serviceKinds]; [wallet] one of [serviceWallets] (cash_in / cash_out not `load`).
+  /// [amount] > 0 (signed, non-zero for float_adjust). [fee] >= 0 for cash_in / cash_out, 0 for float kinds.
+  /// A load needs [price] (>= amount; the cash the customer pays); its fee is price - amount ([fee] may be left 0).
+  /// float_adjust needs a [note]. [ref] is the customer's phone / reference (trimmed, max 200).
+  Future<void> recordServiceTxn({
+    required String id,
+    required String kind,
+    required String wallet,
+    required int amount,
+    int fee = 0,
+    int? price,
+    String? ref,
+    String? note,
+    DateTime? txnAt,
+    String? approvalId,
+    required String opId,
+  });
+
+  /// Voids a service entry (a reversing state, never a delete): its cash and float effects are taken back.
+  /// Queued as one `void_service_txn` op.
+  Future<void> voidServiceTxn({required String txnId, String? reason, String? approvalId, required String opId});
+
+  /// Service entries in [from, to) (local times), newest first, voided ones included (marked).
+  Stream<List<ServiceTxnView>> watchServiceTxns({required DateTime from, required DateTime to});
+
+  /// Today's (device local day) service totals, voided ones left out.
+  Stream<ServiceTotals> watchTodayServices();
+
+  /// Float per wallet: the last pulled server balance + the effects of this device's ops it does not include yet
+  /// (unsent, refused-but-not-discarded, or applied after that balance was read). Wallets in [serviceWallets] order;
+  /// only wallets that have a balance or a local effect. Filtered to [locationId] when it is set.
+  Stream<List<WalletFloatView>> watchWalletFloat();
+
+  /// Puts a parked (failed) record_expense / void_expense / close_day / record_service_txn / void_service_txn op back
+  /// in the queue with a new supervisor approval id, after the server refused it with one of [approvalHints]. Same op id: a refused op left nothing on
   /// the server, so it is applied once.
   Future<void> requeueWithApproval({required String opId, required String approvalId});
 
@@ -418,4 +573,9 @@ abstract class SalesStore {
 
   /// Applies one sync_pull_day_closes response, same rules as [applyPullExpenses].
   Future<void> applyPullDayCloses(Map<String, dynamic> response);
+
+  /// Applies one sync_pull_service response: entries like [applyPullExpenses]; `floats` replace the stored balances,
+  /// and local float effects the server applied at or before the response's `server_time` are dropped (that balance
+  /// includes them).
+  Future<void> applyPullService(Map<String, dynamic> response);
 }

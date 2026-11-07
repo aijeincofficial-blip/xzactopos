@@ -631,7 +631,7 @@ mixin DriftSales implements SalesStore {
   // Supervisors: the approval id comes from Backend.approveSupervisorAction (needs signal); the PIN never comes here.
   // ---------------------------------------------------------------------------
 
-  static const approvalKinds = {'record_expense', 'void_expense', 'close_day'};
+  static const approvalKinds = {'record_expense', 'void_expense', 'close_day', 'record_service_txn', 'void_service_txn'};
 
   /// [from, to) of the local calendar day of [day], as normalised UTC ISO strings.
   static (String, String) _dayBounds(DateTime day) =>
@@ -774,14 +774,23 @@ mixin DriftSales implements SalesStore {
                 where l.kind = 'payment' and l.occurred_at >= ?1 and l.occurred_at < ?2), 0)
     - coalesce((select sum(e.amount) from expenses e
                 where e.voided_at is null and e.paid_from = 'cash' and e.spent_at >= ?1 and e.spent_at < ?2), 0)
+    + coalesce((select sum($_serviceCashSql) from service_txns t
+                where t.voided_at is null and t.txn_at >= ?1 and t.txn_at < ?2), 0)
       as expected
+  ''';
+
+  /// [serviceCashEffect] in SQL, for a `service_txns t` row.
+  static const _serviceCashSql = '''
+    case t.kind when 'cash_in' then t.amount + t.fee when 'cash_out' then t.fee - t.amount
+                when 'load' then coalesce(t.price, t.amount + t.fee)
+                when 'float_topup' then -t.amount when 'float_withdraw' then t.amount else 0 end
   ''';
 
   Selectable<QueryRow> _expectedCashQuery(DateTime day) {
     final (from, to) = _dayBounds(day);
     return db.customSelect(_expectedCashSql,
         variables: [Variable.withString(from), Variable.withString(to)],
-        readsFrom: {db.sales, db.salePayments, db.serverLedger, db.localLedger, db.expenses});
+        readsFrom: {db.sales, db.salePayments, db.serverLedger, db.localLedger, db.expenses, db.serviceTxns});
   }
 
   @override
@@ -863,6 +872,251 @@ mixin DriftSales implements SalesStore {
               rejectedHint: rows.first.readNullable<String>('rejected'),
             ));
 
+  // ---------------------------------------------------------------------------
+  // Load / e-wallet services (P8-06)
+  //
+  // An entry is one row, like an expense (the server's copy replaces it when pulled). The float is NOT summed from the
+  // rows (the server's balance covers years of entries and other devices): it is the pulled balance per wallet plus
+  // `local_float_effects`, one row per record / void made here, dropped once a pulled balance includes it.
+  // ---------------------------------------------------------------------------
+
+  @override
+  Future<void> recordServiceTxn({
+    required String id,
+    required String kind,
+    required String wallet,
+    required int amount,
+    int fee = 0,
+    int? price,
+    String? ref,
+    String? note,
+    DateTime? txnAt,
+    String? approvalId,
+    required String opId,
+  }) {
+    if (!serviceKinds.contains(kind)) throw ArgumentError('Unknown service kind: $kind');
+    if (!serviceWallets.contains(wallet)) throw ArgumentError('Unknown wallet: $wallet');
+    if ((kind == 'cash_in' || kind == 'cash_out') && wallet == 'load') {
+      throw ArgumentError('A cash-in or cash-out uses an e-wallet, not the load wallet');
+    }
+    if (amount == 0 || (kind != 'float_adjust' && amount < 0)) throw ArgumentError('Amount must be above zero');
+    if (fee < 0) throw ArgumentError('Fee cannot be negative');
+    var f = fee;
+    if (kind == 'load') {
+      if (price == null || price < amount) throw ArgumentError('A load needs a price of at least the amount');
+      if (fee != 0 && fee != price - amount) throw ArgumentError('A load fee is price - amount');
+      f = price - amount;
+    } else {
+      if (price != null) throw ArgumentError('Only a load has a price');
+      if (!customerServiceKinds.contains(kind) && fee != 0) throw ArgumentError('Moving float has no fee');
+    }
+    final r = _text200(ref);
+    final n = _text200(note);
+    if (kind == 'float_adjust' && n == null) throw ArgumentError('A float correction needs a note');
+    return db.transaction(() async {
+      if (await (db.select(db.serviceTxns)..where((t) => t.id.equals(id))).getSingleOrNull() != null) {
+        throw StateError('Service entry id already used');
+      }
+      final at = _iso(txnAt ?? DateTime.now());
+      await db.into(db.serviceTxns).insert(ServiceTxnsCompanion.insert(
+            id: id,
+            locationId: Value(locationId),
+            kind: kind,
+            wallet: wallet,
+            amount: amount,
+            fee: Value(f),
+            price: Value(kind == 'load' ? price : null),
+            currency: baseCurrency,
+            ref: Value(r),
+            note: Value(n),
+            txnAt: at,
+          ));
+      await db.into(db.localFloatEffects).insert(LocalFloatEffectsCompanion.insert(
+          opId: opId, txnId: id, wallet: wallet, amount: serviceFloatEffect(kind, amount)));
+      await enqueue(opId, 'record_service_txn', id, {
+        'id': id,
+        'kind': kind,
+        'wallet': wallet,
+        'amount': amount,
+        'fee': f,
+        if (kind == 'load') 'price': price,
+        'ref': ?r,
+        'note': ?n,
+        'txn_at': at,
+        'location_id': ?locationId,
+        'approval_id': ?approvalId,
+      });
+    });
+  }
+
+  @override
+  Future<void> voidServiceTxn({required String txnId, String? reason, String? approvalId, required String opId}) {
+    return db.transaction(() async {
+      final t = await (db.select(db.serviceTxns)..where((x) => x.id.equals(txnId))).getSingleOrNull();
+      if (t == null) throw StateError('Unknown service entry');
+      if (t.voidedAt != null) throw StateError('Service entry is already voided');
+      final r = _text200(reason);
+      await (db.update(db.serviceTxns)..where((x) => x.id.equals(txnId)))
+          .write(ServiceTxnsCompanion(voidedAt: Value(_iso(DateTime.now())), voidReason: Value(r)));
+      await db.into(db.localFloatEffects).insert(LocalFloatEffectsCompanion.insert(
+          opId: opId, txnId: txnId, wallet: t.wallet, amount: -serviceFloatEffect(t.kind, t.amount)));
+      await enqueue(opId, 'void_service_txn', txnId, {'txn_id': txnId, 'reason': ?r, 'approval_id': ?approvalId});
+    });
+  }
+
+  static DateTime? _localOrNull(String? iso) => iso == null ? null : DateTime.parse(iso).toLocal();
+
+  @override
+  Stream<List<ServiceTxnView>> watchServiceTxns({required DateTime from, required DateTime to}) => db
+      .customSelect(
+        '''
+        select x.id, x.kind, x.wallet, x.amount, x.fee, x.price, x.ref, x.note, x.txn_at, x.voided_at, x.void_reason,
+               x.approved_by, $_pendingSql
+        from service_txns x
+        where x.txn_at >= ?1 and x.txn_at < ?2
+        order by x.txn_at desc, x.id desc
+        ''',
+        variables: [Variable.withString(_iso(from)), Variable.withString(_iso(to))],
+        readsFrom: {db.serviceTxns, db.outbox},
+      )
+      .watch()
+      .map((rows) => [
+            for (final r in rows)
+              ServiceTxnView(
+                id: r.read<String>('id'),
+                kind: r.read<String>('kind'),
+                wallet: r.read<String>('wallet'),
+                amount: r.read<int>('amount'),
+                fee: r.read<int>('fee'),
+                price: r.readNullable<int>('price'),
+                ref: r.readNullable<String>('ref'),
+                note: r.readNullable<String>('note'),
+                txnAt: DateTime.parse(r.read<String>('txn_at')).toLocal(),
+                voidedAt: _localOrNull(r.readNullable<String>('voided_at')),
+                voidReason: r.readNullable<String>('void_reason'),
+                approvedBy: r.readNullable<String>('approved_by'),
+                pending: r.read<bool>('pending'),
+                rejectedHint: r.readNullable<String>('rejected'),
+              )
+          ]);
+
+  @override
+  Stream<ServiceTotals> watchTodayServices() {
+    final (from, to) = _dayBounds(DateTime.now());
+    return db
+        .customSelect(
+          '''
+          select coalesce(sum(t.kind in ('cash_in', 'cash_out', 'load')), 0) as n,
+                 coalesce(sum(t.fee), 0) as fees,
+                 coalesce(sum(case when t.kind = 'cash_in' then t.amount end), 0) as cash_in,
+                 coalesce(sum(case when t.kind = 'cash_out' then t.amount end), 0) as cash_out,
+                 coalesce(sum(case when t.kind = 'load' then coalesce(t.price, t.amount + t.fee) end), 0) as load_sales,
+                 coalesce(sum($_serviceCashSql), 0) as cash
+          from service_txns t
+          where t.voided_at is null and t.txn_at >= ?1 and t.txn_at < ?2
+          ''',
+          variables: [Variable.withString(from), Variable.withString(to)],
+          readsFrom: {db.serviceTxns},
+        )
+        .watchSingle()
+        .map((r) => ServiceTotals(
+              count: r.read<int>('n'),
+              fees: r.read<int>('fees'),
+              cashIn: r.read<int>('cash_in'),
+              cashOut: r.read<int>('cash_out'),
+              loadSales: r.read<int>('load_sales'),
+              cash: r.read<int>('cash'),
+            ));
+  }
+
+  @override
+  Stream<List<WalletFloatView>> watchWalletFloat() => db
+      .customSelect(
+        '''
+        select wallet, sum(b) as balance, max(p) as pending from (
+          select w.wallet, w.balance as b, 0 as p from wallet_float w where ?1 is null or w.location_id = ?1
+          union all
+          select e.wallet, e.amount as b, 1 as p from local_float_effects e
+        ) group by wallet
+        ''',
+        variables: [Variable<String>(locationId)],
+        readsFrom: {db.walletFloats, db.localFloatEffects},
+      )
+      .watch()
+      .map((rows) {
+        final list = [
+          for (final r in rows)
+            WalletFloatView(wallet: r.read<String>('wallet'), balance: r.read<int>('balance'), pending: r.read<bool>('pending'))
+        ];
+        int rank(String w) {
+          final i = serviceWallets.indexOf(w);
+          return i < 0 ? serviceWallets.length : i;
+        }
+
+        return list..sort((a, b) => rank(a.wallet).compareTo(rank(b.wallet)));
+      });
+
+  @override
+  Future<void> applyPullService(Map<String, dynamic> response) {
+    return db.transaction(() async {
+      final rows = ((response['rows'] as List?) ?? const []).cast<Map<String, dynamic>>();
+      final unsent = (await db.select(db.outbox).get()).map((o) => o.entityId).toSet();
+      for (final r in rows) {
+        final id = r['id'] as String;
+        var voidedAt = r['voided_at'] == null ? null : _utc(r['voided_at'] as String);
+        var voidReason = r['void_reason'] as String?;
+        if (voidedAt == null && unsent.contains(id)) {
+          // a void made here is still on its way: keep it until the server's voided copy comes
+          final local = await (db.select(db.serviceTxns)..where((t) => t.id.equals(id))).getSingleOrNull();
+          if (local?.voidedAt != null) {
+            voidedAt = local!.voidedAt;
+            voidReason = local.voidReason;
+          }
+        }
+        await db.into(db.serviceTxns).insertOnConflictUpdate(ServiceTxnsCompanion.insert(
+              id: id,
+              locationId: Value(r['location_id'] as String?),
+              kind: r['kind'] as String,
+              wallet: r['wallet'] as String,
+              amount: (r['amount'] as num).toInt(),
+              fee: Value((r['fee'] as num?)?.toInt() ?? 0),
+              price: Value((r['price'] as num?)?.toInt()),
+              currency: (r['currency'] as String).trim(),
+              ref: Value(r['ref'] as String?),
+              note: Value(r['note'] as String?),
+              txnAt: _utc(r['txn_at'] as String),
+              createdBy: Value(r['created_by'] as String?),
+              approvedBy: Value(r['approved_by'] as String?),
+              voidedAt: Value(voidedAt),
+              voidReason: Value(voidReason),
+              voidApprovedBy: Value(r['void_approved_by'] as String?),
+              updatedAt: Value(r['updated_at'] as String?),
+            ));
+      }
+      final floats = response['floats'];
+      final st = response['server_time'];
+      if (floats is List && st is String) {
+        for (final f in floats.cast<Map<String, dynamic>>()) {
+          await db.into(db.walletFloats).insertOnConflictUpdate(WalletFloatsCompanion.insert(
+                locationId: f['location_id'] as String,
+                wallet: f['wallet'] as String,
+                balance: (f['balance'] as num).toInt(),
+                txnCount: Value((f['txn_count'] as num?)?.toInt() ?? 0),
+                updatedAt: Value(f['updated_at'] as String?),
+              ));
+        }
+        // the balance was read at server_time: every op the server applied before then is in it
+        final asOf = DateTime.parse(st);
+        for (final e in await (db.select(db.localFloatEffects)..where((x) => x.confirmedAfter.isNotNull())).get()) {
+          if (!DateTime.parse(e.confirmedAfter!).isAfter(asOf)) {
+            await (db.delete(db.localFloatEffects)..where((x) => x.id.equals(e.id))).go();
+          }
+        }
+      }
+      await _saveCursor('service_txns', response['cursor']);
+    });
+  }
+
   @override
   Future<void> requeueWithApproval({required String opId, required String approvalId}) {
     return db.transaction(() async {
@@ -881,6 +1135,7 @@ mixin DriftSales implements SalesStore {
   }
 
   /// Takes back what a discarded (refused) op did on this device. A refused op left nothing on the server.
+  /// (Its stock, utang and float effects are removed by op id in `discardFailed`.)
   Future<void> undoLocalOp(String kind, String entityId) async {
     switch (kind) {
       case 'record_expense':
@@ -890,6 +1145,11 @@ mixin DriftSales implements SalesStore {
             .write(const ExpensesCompanion(voidedAt: Value(null), voidReason: Value(null)));
       case 'close_day':
         await (db.delete(db.dayCloses)..where((d) => d.id.equals(entityId) & d.updatedAt.isNull())).go();
+      case 'record_service_txn':
+        await (db.delete(db.serviceTxns)..where((t) => t.id.equals(entityId) & t.updatedAt.isNull())).go();
+      case 'void_service_txn':
+        await (db.update(db.serviceTxns)..where((t) => t.id.equals(entityId)))
+            .write(const ServiceTxnsCompanion(voidedAt: Value(null), voidReason: Value(null)));
     }
   }
 
@@ -975,6 +1235,8 @@ mixin DriftSales implements SalesStore {
         .write(LocalMovementsCompanion(confirmedAfter: Value(at)));
     await (db.update(db.localLedger)..where((m) => m.opId.equals(opId)))
         .write(LocalLedgerCompanion(confirmedAfter: Value(at)));
+    await (db.update(db.localFloatEffects)..where((m) => m.opId.equals(opId)))
+        .write(LocalFloatEffectsCompanion(confirmedAfter: Value(at)));
   }
 
   static String _utc(String iso) => DateTime.parse(iso).toUtc().toIso8601String();

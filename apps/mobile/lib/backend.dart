@@ -48,7 +48,8 @@ abstract class Backend implements SyncApi {
   Future<PinResult> setMyPin(String newPin, {String? currentPin});
 
   /// Asks the server for a single-use supervisor approval of [action] (`record_expense` | `void_expense` |
-  /// `close_day`) on [refId] (the expense / day close id, made BEFORE asking). [approverId] null = the signed-in
+  /// `close_day` | `record_service_txn` (float top-up / withdraw) | `void_service_txn`) on [refId] (the expense /
+  /// day close / service entry id, made BEFORE asking). [approverId] null = the signed-in
   /// supervisor confirms with her own PIN; else a manager's or the owner's user id, who types their PIN.
   /// Needs signal now; the returned approval id then rides in the queued op, which may wait up to 12 h offline.
   /// Result hints: `pin_wrong`, `pin_locked`, `pin_not_set`, and the refusals `not_allowed`, `approver_invalid`,
@@ -217,6 +218,12 @@ class SupabaseBackend implements Backend {
   @override
   Future<Map<String, dynamic>> pullDayCloses(Map<String, dynamic>? cursor, {int limit = 100}) async {
     final res = await _auth(() => _c.rpc('sync_pull_day_closes', params: {'p_cursor': cursor, 'p_limit': limit}));
+    return (res as Map).cast<String, dynamic>();
+  }
+
+  @override
+  Future<Map<String, dynamic>> pullService(Map<String, dynamic>? cursor, {int limit = 100}) async {
+    final res = await _auth(() => _c.rpc('sync_pull_service', params: {'p_cursor': cursor, 'p_limit': limit}));
     return (res as Map).cast<String, dynamic>();
   }
 

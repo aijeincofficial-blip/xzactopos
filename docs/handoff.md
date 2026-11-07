@@ -428,6 +428,18 @@ Share was checked on the emulator (Android share sheet with `LL3-261107-0001.pdf
   and pulls both tables, `Backend.setMyPin` / `approveSupervisorAction`. 17 new tests (201 total). No screens yet: P8-03 uses
   `docs/tasks/P8-02c-expenses-client-and-day-close.md`. Also fixed `password_test` (broken since P8-12: Settings got taller).
   Gap: utang payments have no store on the server, so `server_expected_cash` counts them tenant-wide.
+- P8-06 (`20261108001400_service_ledger.sql`): load / e-wallet ledger. `service_txns` (append-only, void only; kinds cash_in,
+  cash_out, load, float_topup, float_withdraw, float_adjust; wallets gcash, maya, load, other; fee always cash, = income),
+  trigger-kept `wallet_float` and `daily_service_summary`, ops `record_service_txn` / `void_service_txn` (sellers record customer
+  services; float moves and voids: owner/manager, supervisor with a `record_service_txn` / `void_service_txn` approval;
+  float_adjust owner/manager only), `sync_pull_service` (rows + current floats in one response), audit `service.record` /
+  `service.void` without the customer ref. `day_close_server_expected` adds service cash; `report_summary` gained `services`.
+  pgTAP `019` (109, incl. a 340-op seeded property test) + 150 matrix rows; suite 2313 (19 files).
+  Flutter: Drift v7 (`service_txns`, `wallet_float`, `local_float_effects`), `SalesStore.recordServiceTxn` / `voidServiceTxn` /
+  `watchServiceTxns` / `watchTodayServices` / `watchWalletFloat` / `applyPullService`, `expectedCash` includes service cash,
+  sync engine pushes both kinds and pulls `pullService`. 14 new tests (222 total). No screens yet: P8-07 uses
+  `docs/tasks/P8-06-load-ewallet-ledger.md`.
+  Gap: e-wallet sale payments and e-wallet expenses name no wallet, so they do not move `wallet_float` (correct with float_adjust).
 
 ## Antigravity Session: Neo-Fintech Design, Settings Screen, Theme Fix, & Reports Enrichment
 Read `docs/START-HERE-claude.md` for the complete handoff from Antigravity.

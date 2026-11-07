@@ -9268,6 +9268,1731 @@ class DayClosesCompanion extends UpdateCompanion<DayClose> {
   }
 }
 
+class $ServiceTxnsTable extends ServiceTxns
+    with TableInfo<$ServiceTxnsTable, ServiceTxn> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ServiceTxnsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _locationIdMeta = const VerificationMeta(
+    'locationId',
+  );
+  @override
+  late final GeneratedColumn<String> locationId = GeneratedColumn<String>(
+    'location_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _kindMeta = const VerificationMeta('kind');
+  @override
+  late final GeneratedColumn<String> kind = GeneratedColumn<String>(
+    'kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _walletMeta = const VerificationMeta('wallet');
+  @override
+  late final GeneratedColumn<String> wallet = GeneratedColumn<String>(
+    'wallet',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _amountMeta = const VerificationMeta('amount');
+  @override
+  late final GeneratedColumn<int> amount = GeneratedColumn<int>(
+    'amount',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _feeMeta = const VerificationMeta('fee');
+  @override
+  late final GeneratedColumn<int> fee = GeneratedColumn<int>(
+    'fee',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _priceMeta = const VerificationMeta('price');
+  @override
+  late final GeneratedColumn<int> price = GeneratedColumn<int>(
+    'price',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _currencyMeta = const VerificationMeta(
+    'currency',
+  );
+  @override
+  late final GeneratedColumn<String> currency = GeneratedColumn<String>(
+    'currency',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _refMeta = const VerificationMeta('ref');
+  @override
+  late final GeneratedColumn<String> ref = GeneratedColumn<String>(
+    'ref',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _noteMeta = const VerificationMeta('note');
+  @override
+  late final GeneratedColumn<String> note = GeneratedColumn<String>(
+    'note',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _txnAtMeta = const VerificationMeta('txnAt');
+  @override
+  late final GeneratedColumn<String> txnAt = GeneratedColumn<String>(
+    'txn_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdByMeta = const VerificationMeta(
+    'createdBy',
+  );
+  @override
+  late final GeneratedColumn<String> createdBy = GeneratedColumn<String>(
+    'created_by',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _approvedByMeta = const VerificationMeta(
+    'approvedBy',
+  );
+  @override
+  late final GeneratedColumn<String> approvedBy = GeneratedColumn<String>(
+    'approved_by',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _voidedAtMeta = const VerificationMeta(
+    'voidedAt',
+  );
+  @override
+  late final GeneratedColumn<String> voidedAt = GeneratedColumn<String>(
+    'voided_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _voidReasonMeta = const VerificationMeta(
+    'voidReason',
+  );
+  @override
+  late final GeneratedColumn<String> voidReason = GeneratedColumn<String>(
+    'void_reason',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _voidApprovedByMeta = const VerificationMeta(
+    'voidApprovedBy',
+  );
+  @override
+  late final GeneratedColumn<String> voidApprovedBy = GeneratedColumn<String>(
+    'void_approved_by',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    locationId,
+    kind,
+    wallet,
+    amount,
+    fee,
+    price,
+    currency,
+    ref,
+    note,
+    txnAt,
+    createdBy,
+    approvedBy,
+    voidedAt,
+    voidReason,
+    voidApprovedBy,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'service_txns';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ServiceTxn> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('location_id')) {
+      context.handle(
+        _locationIdMeta,
+        locationId.isAcceptableOrUnknown(data['location_id']!, _locationIdMeta),
+      );
+    }
+    if (data.containsKey('kind')) {
+      context.handle(
+        _kindMeta,
+        kind.isAcceptableOrUnknown(data['kind']!, _kindMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_kindMeta);
+    }
+    if (data.containsKey('wallet')) {
+      context.handle(
+        _walletMeta,
+        wallet.isAcceptableOrUnknown(data['wallet']!, _walletMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_walletMeta);
+    }
+    if (data.containsKey('amount')) {
+      context.handle(
+        _amountMeta,
+        amount.isAcceptableOrUnknown(data['amount']!, _amountMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_amountMeta);
+    }
+    if (data.containsKey('fee')) {
+      context.handle(
+        _feeMeta,
+        fee.isAcceptableOrUnknown(data['fee']!, _feeMeta),
+      );
+    }
+    if (data.containsKey('price')) {
+      context.handle(
+        _priceMeta,
+        price.isAcceptableOrUnknown(data['price']!, _priceMeta),
+      );
+    }
+    if (data.containsKey('currency')) {
+      context.handle(
+        _currencyMeta,
+        currency.isAcceptableOrUnknown(data['currency']!, _currencyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_currencyMeta);
+    }
+    if (data.containsKey('ref')) {
+      context.handle(
+        _refMeta,
+        ref.isAcceptableOrUnknown(data['ref']!, _refMeta),
+      );
+    }
+    if (data.containsKey('note')) {
+      context.handle(
+        _noteMeta,
+        note.isAcceptableOrUnknown(data['note']!, _noteMeta),
+      );
+    }
+    if (data.containsKey('txn_at')) {
+      context.handle(
+        _txnAtMeta,
+        txnAt.isAcceptableOrUnknown(data['txn_at']!, _txnAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_txnAtMeta);
+    }
+    if (data.containsKey('created_by')) {
+      context.handle(
+        _createdByMeta,
+        createdBy.isAcceptableOrUnknown(data['created_by']!, _createdByMeta),
+      );
+    }
+    if (data.containsKey('approved_by')) {
+      context.handle(
+        _approvedByMeta,
+        approvedBy.isAcceptableOrUnknown(data['approved_by']!, _approvedByMeta),
+      );
+    }
+    if (data.containsKey('voided_at')) {
+      context.handle(
+        _voidedAtMeta,
+        voidedAt.isAcceptableOrUnknown(data['voided_at']!, _voidedAtMeta),
+      );
+    }
+    if (data.containsKey('void_reason')) {
+      context.handle(
+        _voidReasonMeta,
+        voidReason.isAcceptableOrUnknown(data['void_reason']!, _voidReasonMeta),
+      );
+    }
+    if (data.containsKey('void_approved_by')) {
+      context.handle(
+        _voidApprovedByMeta,
+        voidApprovedBy.isAcceptableOrUnknown(
+          data['void_approved_by']!,
+          _voidApprovedByMeta,
+        ),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ServiceTxn map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ServiceTxn(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      locationId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}location_id'],
+      ),
+      kind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}kind'],
+      )!,
+      wallet: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}wallet'],
+      )!,
+      amount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}amount'],
+      )!,
+      fee: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}fee'],
+      )!,
+      price: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}price'],
+      ),
+      currency: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}currency'],
+      )!,
+      ref: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}ref'],
+      ),
+      note: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}note'],
+      ),
+      txnAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}txn_at'],
+      )!,
+      createdBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}created_by'],
+      ),
+      approvedBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}approved_by'],
+      ),
+      voidedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}voided_at'],
+      ),
+      voidReason: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}void_reason'],
+      ),
+      voidApprovedBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}void_approved_by'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      ),
+    );
+  }
+
+  @override
+  $ServiceTxnsTable createAlias(String alias) {
+    return $ServiceTxnsTable(attachedDatabase, alias);
+  }
+}
+
+class ServiceTxn extends DataClass implements Insertable<ServiceTxn> {
+  final String id;
+  final String? locationId;
+
+  /// cash_in | cash_out | load | float_topup | float_withdraw | float_adjust
+  final String kind;
+
+  /// gcash | maya | load | other
+  final String wallet;
+
+  /// Centavos; > 0, except a float_adjust (signed, never 0).
+  final int amount;
+  final int fee;
+
+  /// Cash the customer paid for a load (load only).
+  final int? price;
+  final String currency;
+
+  /// Customer reference (phone, wallet reference no.). Sensitive: shown in the list only.
+  final String? ref;
+  final String? note;
+
+  /// UTC ISO-8601, normalised (same format as `sales.sold_at`).
+  final String txnAt;
+  final String? createdBy;
+  final String? approvedBy;
+  final String? voidedAt;
+  final String? voidReason;
+  final String? voidApprovedBy;
+  final String? updatedAt;
+  const ServiceTxn({
+    required this.id,
+    this.locationId,
+    required this.kind,
+    required this.wallet,
+    required this.amount,
+    required this.fee,
+    this.price,
+    required this.currency,
+    this.ref,
+    this.note,
+    required this.txnAt,
+    this.createdBy,
+    this.approvedBy,
+    this.voidedAt,
+    this.voidReason,
+    this.voidApprovedBy,
+    this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    if (!nullToAbsent || locationId != null) {
+      map['location_id'] = Variable<String>(locationId);
+    }
+    map['kind'] = Variable<String>(kind);
+    map['wallet'] = Variable<String>(wallet);
+    map['amount'] = Variable<int>(amount);
+    map['fee'] = Variable<int>(fee);
+    if (!nullToAbsent || price != null) {
+      map['price'] = Variable<int>(price);
+    }
+    map['currency'] = Variable<String>(currency);
+    if (!nullToAbsent || ref != null) {
+      map['ref'] = Variable<String>(ref);
+    }
+    if (!nullToAbsent || note != null) {
+      map['note'] = Variable<String>(note);
+    }
+    map['txn_at'] = Variable<String>(txnAt);
+    if (!nullToAbsent || createdBy != null) {
+      map['created_by'] = Variable<String>(createdBy);
+    }
+    if (!nullToAbsent || approvedBy != null) {
+      map['approved_by'] = Variable<String>(approvedBy);
+    }
+    if (!nullToAbsent || voidedAt != null) {
+      map['voided_at'] = Variable<String>(voidedAt);
+    }
+    if (!nullToAbsent || voidReason != null) {
+      map['void_reason'] = Variable<String>(voidReason);
+    }
+    if (!nullToAbsent || voidApprovedBy != null) {
+      map['void_approved_by'] = Variable<String>(voidApprovedBy);
+    }
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<String>(updatedAt);
+    }
+    return map;
+  }
+
+  ServiceTxnsCompanion toCompanion(bool nullToAbsent) {
+    return ServiceTxnsCompanion(
+      id: Value(id),
+      locationId: locationId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(locationId),
+      kind: Value(kind),
+      wallet: Value(wallet),
+      amount: Value(amount),
+      fee: Value(fee),
+      price: price == null && nullToAbsent
+          ? const Value.absent()
+          : Value(price),
+      currency: Value(currency),
+      ref: ref == null && nullToAbsent ? const Value.absent() : Value(ref),
+      note: note == null && nullToAbsent ? const Value.absent() : Value(note),
+      txnAt: Value(txnAt),
+      createdBy: createdBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdBy),
+      approvedBy: approvedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(approvedBy),
+      voidedAt: voidedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(voidedAt),
+      voidReason: voidReason == null && nullToAbsent
+          ? const Value.absent()
+          : Value(voidReason),
+      voidApprovedBy: voidApprovedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(voidApprovedBy),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
+    );
+  }
+
+  factory ServiceTxn.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ServiceTxn(
+      id: serializer.fromJson<String>(json['id']),
+      locationId: serializer.fromJson<String?>(json['locationId']),
+      kind: serializer.fromJson<String>(json['kind']),
+      wallet: serializer.fromJson<String>(json['wallet']),
+      amount: serializer.fromJson<int>(json['amount']),
+      fee: serializer.fromJson<int>(json['fee']),
+      price: serializer.fromJson<int?>(json['price']),
+      currency: serializer.fromJson<String>(json['currency']),
+      ref: serializer.fromJson<String?>(json['ref']),
+      note: serializer.fromJson<String?>(json['note']),
+      txnAt: serializer.fromJson<String>(json['txnAt']),
+      createdBy: serializer.fromJson<String?>(json['createdBy']),
+      approvedBy: serializer.fromJson<String?>(json['approvedBy']),
+      voidedAt: serializer.fromJson<String?>(json['voidedAt']),
+      voidReason: serializer.fromJson<String?>(json['voidReason']),
+      voidApprovedBy: serializer.fromJson<String?>(json['voidApprovedBy']),
+      updatedAt: serializer.fromJson<String?>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'locationId': serializer.toJson<String?>(locationId),
+      'kind': serializer.toJson<String>(kind),
+      'wallet': serializer.toJson<String>(wallet),
+      'amount': serializer.toJson<int>(amount),
+      'fee': serializer.toJson<int>(fee),
+      'price': serializer.toJson<int?>(price),
+      'currency': serializer.toJson<String>(currency),
+      'ref': serializer.toJson<String?>(ref),
+      'note': serializer.toJson<String?>(note),
+      'txnAt': serializer.toJson<String>(txnAt),
+      'createdBy': serializer.toJson<String?>(createdBy),
+      'approvedBy': serializer.toJson<String?>(approvedBy),
+      'voidedAt': serializer.toJson<String?>(voidedAt),
+      'voidReason': serializer.toJson<String?>(voidReason),
+      'voidApprovedBy': serializer.toJson<String?>(voidApprovedBy),
+      'updatedAt': serializer.toJson<String?>(updatedAt),
+    };
+  }
+
+  ServiceTxn copyWith({
+    String? id,
+    Value<String?> locationId = const Value.absent(),
+    String? kind,
+    String? wallet,
+    int? amount,
+    int? fee,
+    Value<int?> price = const Value.absent(),
+    String? currency,
+    Value<String?> ref = const Value.absent(),
+    Value<String?> note = const Value.absent(),
+    String? txnAt,
+    Value<String?> createdBy = const Value.absent(),
+    Value<String?> approvedBy = const Value.absent(),
+    Value<String?> voidedAt = const Value.absent(),
+    Value<String?> voidReason = const Value.absent(),
+    Value<String?> voidApprovedBy = const Value.absent(),
+    Value<String?> updatedAt = const Value.absent(),
+  }) => ServiceTxn(
+    id: id ?? this.id,
+    locationId: locationId.present ? locationId.value : this.locationId,
+    kind: kind ?? this.kind,
+    wallet: wallet ?? this.wallet,
+    amount: amount ?? this.amount,
+    fee: fee ?? this.fee,
+    price: price.present ? price.value : this.price,
+    currency: currency ?? this.currency,
+    ref: ref.present ? ref.value : this.ref,
+    note: note.present ? note.value : this.note,
+    txnAt: txnAt ?? this.txnAt,
+    createdBy: createdBy.present ? createdBy.value : this.createdBy,
+    approvedBy: approvedBy.present ? approvedBy.value : this.approvedBy,
+    voidedAt: voidedAt.present ? voidedAt.value : this.voidedAt,
+    voidReason: voidReason.present ? voidReason.value : this.voidReason,
+    voidApprovedBy: voidApprovedBy.present
+        ? voidApprovedBy.value
+        : this.voidApprovedBy,
+    updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+  );
+  ServiceTxn copyWithCompanion(ServiceTxnsCompanion data) {
+    return ServiceTxn(
+      id: data.id.present ? data.id.value : this.id,
+      locationId: data.locationId.present
+          ? data.locationId.value
+          : this.locationId,
+      kind: data.kind.present ? data.kind.value : this.kind,
+      wallet: data.wallet.present ? data.wallet.value : this.wallet,
+      amount: data.amount.present ? data.amount.value : this.amount,
+      fee: data.fee.present ? data.fee.value : this.fee,
+      price: data.price.present ? data.price.value : this.price,
+      currency: data.currency.present ? data.currency.value : this.currency,
+      ref: data.ref.present ? data.ref.value : this.ref,
+      note: data.note.present ? data.note.value : this.note,
+      txnAt: data.txnAt.present ? data.txnAt.value : this.txnAt,
+      createdBy: data.createdBy.present ? data.createdBy.value : this.createdBy,
+      approvedBy: data.approvedBy.present
+          ? data.approvedBy.value
+          : this.approvedBy,
+      voidedAt: data.voidedAt.present ? data.voidedAt.value : this.voidedAt,
+      voidReason: data.voidReason.present
+          ? data.voidReason.value
+          : this.voidReason,
+      voidApprovedBy: data.voidApprovedBy.present
+          ? data.voidApprovedBy.value
+          : this.voidApprovedBy,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ServiceTxn(')
+          ..write('id: $id, ')
+          ..write('locationId: $locationId, ')
+          ..write('kind: $kind, ')
+          ..write('wallet: $wallet, ')
+          ..write('amount: $amount, ')
+          ..write('fee: $fee, ')
+          ..write('price: $price, ')
+          ..write('currency: $currency, ')
+          ..write('ref: $ref, ')
+          ..write('note: $note, ')
+          ..write('txnAt: $txnAt, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('approvedBy: $approvedBy, ')
+          ..write('voidedAt: $voidedAt, ')
+          ..write('voidReason: $voidReason, ')
+          ..write('voidApprovedBy: $voidApprovedBy, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    locationId,
+    kind,
+    wallet,
+    amount,
+    fee,
+    price,
+    currency,
+    ref,
+    note,
+    txnAt,
+    createdBy,
+    approvedBy,
+    voidedAt,
+    voidReason,
+    voidApprovedBy,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ServiceTxn &&
+          other.id == this.id &&
+          other.locationId == this.locationId &&
+          other.kind == this.kind &&
+          other.wallet == this.wallet &&
+          other.amount == this.amount &&
+          other.fee == this.fee &&
+          other.price == this.price &&
+          other.currency == this.currency &&
+          other.ref == this.ref &&
+          other.note == this.note &&
+          other.txnAt == this.txnAt &&
+          other.createdBy == this.createdBy &&
+          other.approvedBy == this.approvedBy &&
+          other.voidedAt == this.voidedAt &&
+          other.voidReason == this.voidReason &&
+          other.voidApprovedBy == this.voidApprovedBy &&
+          other.updatedAt == this.updatedAt);
+}
+
+class ServiceTxnsCompanion extends UpdateCompanion<ServiceTxn> {
+  final Value<String> id;
+  final Value<String?> locationId;
+  final Value<String> kind;
+  final Value<String> wallet;
+  final Value<int> amount;
+  final Value<int> fee;
+  final Value<int?> price;
+  final Value<String> currency;
+  final Value<String?> ref;
+  final Value<String?> note;
+  final Value<String> txnAt;
+  final Value<String?> createdBy;
+  final Value<String?> approvedBy;
+  final Value<String?> voidedAt;
+  final Value<String?> voidReason;
+  final Value<String?> voidApprovedBy;
+  final Value<String?> updatedAt;
+  final Value<int> rowid;
+  const ServiceTxnsCompanion({
+    this.id = const Value.absent(),
+    this.locationId = const Value.absent(),
+    this.kind = const Value.absent(),
+    this.wallet = const Value.absent(),
+    this.amount = const Value.absent(),
+    this.fee = const Value.absent(),
+    this.price = const Value.absent(),
+    this.currency = const Value.absent(),
+    this.ref = const Value.absent(),
+    this.note = const Value.absent(),
+    this.txnAt = const Value.absent(),
+    this.createdBy = const Value.absent(),
+    this.approvedBy = const Value.absent(),
+    this.voidedAt = const Value.absent(),
+    this.voidReason = const Value.absent(),
+    this.voidApprovedBy = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ServiceTxnsCompanion.insert({
+    required String id,
+    this.locationId = const Value.absent(),
+    required String kind,
+    required String wallet,
+    required int amount,
+    this.fee = const Value.absent(),
+    this.price = const Value.absent(),
+    required String currency,
+    this.ref = const Value.absent(),
+    this.note = const Value.absent(),
+    required String txnAt,
+    this.createdBy = const Value.absent(),
+    this.approvedBy = const Value.absent(),
+    this.voidedAt = const Value.absent(),
+    this.voidReason = const Value.absent(),
+    this.voidApprovedBy = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       kind = Value(kind),
+       wallet = Value(wallet),
+       amount = Value(amount),
+       currency = Value(currency),
+       txnAt = Value(txnAt);
+  static Insertable<ServiceTxn> custom({
+    Expression<String>? id,
+    Expression<String>? locationId,
+    Expression<String>? kind,
+    Expression<String>? wallet,
+    Expression<int>? amount,
+    Expression<int>? fee,
+    Expression<int>? price,
+    Expression<String>? currency,
+    Expression<String>? ref,
+    Expression<String>? note,
+    Expression<String>? txnAt,
+    Expression<String>? createdBy,
+    Expression<String>? approvedBy,
+    Expression<String>? voidedAt,
+    Expression<String>? voidReason,
+    Expression<String>? voidApprovedBy,
+    Expression<String>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (locationId != null) 'location_id': locationId,
+      if (kind != null) 'kind': kind,
+      if (wallet != null) 'wallet': wallet,
+      if (amount != null) 'amount': amount,
+      if (fee != null) 'fee': fee,
+      if (price != null) 'price': price,
+      if (currency != null) 'currency': currency,
+      if (ref != null) 'ref': ref,
+      if (note != null) 'note': note,
+      if (txnAt != null) 'txn_at': txnAt,
+      if (createdBy != null) 'created_by': createdBy,
+      if (approvedBy != null) 'approved_by': approvedBy,
+      if (voidedAt != null) 'voided_at': voidedAt,
+      if (voidReason != null) 'void_reason': voidReason,
+      if (voidApprovedBy != null) 'void_approved_by': voidApprovedBy,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ServiceTxnsCompanion copyWith({
+    Value<String>? id,
+    Value<String?>? locationId,
+    Value<String>? kind,
+    Value<String>? wallet,
+    Value<int>? amount,
+    Value<int>? fee,
+    Value<int?>? price,
+    Value<String>? currency,
+    Value<String?>? ref,
+    Value<String?>? note,
+    Value<String>? txnAt,
+    Value<String?>? createdBy,
+    Value<String?>? approvedBy,
+    Value<String?>? voidedAt,
+    Value<String?>? voidReason,
+    Value<String?>? voidApprovedBy,
+    Value<String?>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return ServiceTxnsCompanion(
+      id: id ?? this.id,
+      locationId: locationId ?? this.locationId,
+      kind: kind ?? this.kind,
+      wallet: wallet ?? this.wallet,
+      amount: amount ?? this.amount,
+      fee: fee ?? this.fee,
+      price: price ?? this.price,
+      currency: currency ?? this.currency,
+      ref: ref ?? this.ref,
+      note: note ?? this.note,
+      txnAt: txnAt ?? this.txnAt,
+      createdBy: createdBy ?? this.createdBy,
+      approvedBy: approvedBy ?? this.approvedBy,
+      voidedAt: voidedAt ?? this.voidedAt,
+      voidReason: voidReason ?? this.voidReason,
+      voidApprovedBy: voidApprovedBy ?? this.voidApprovedBy,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (locationId.present) {
+      map['location_id'] = Variable<String>(locationId.value);
+    }
+    if (kind.present) {
+      map['kind'] = Variable<String>(kind.value);
+    }
+    if (wallet.present) {
+      map['wallet'] = Variable<String>(wallet.value);
+    }
+    if (amount.present) {
+      map['amount'] = Variable<int>(amount.value);
+    }
+    if (fee.present) {
+      map['fee'] = Variable<int>(fee.value);
+    }
+    if (price.present) {
+      map['price'] = Variable<int>(price.value);
+    }
+    if (currency.present) {
+      map['currency'] = Variable<String>(currency.value);
+    }
+    if (ref.present) {
+      map['ref'] = Variable<String>(ref.value);
+    }
+    if (note.present) {
+      map['note'] = Variable<String>(note.value);
+    }
+    if (txnAt.present) {
+      map['txn_at'] = Variable<String>(txnAt.value);
+    }
+    if (createdBy.present) {
+      map['created_by'] = Variable<String>(createdBy.value);
+    }
+    if (approvedBy.present) {
+      map['approved_by'] = Variable<String>(approvedBy.value);
+    }
+    if (voidedAt.present) {
+      map['voided_at'] = Variable<String>(voidedAt.value);
+    }
+    if (voidReason.present) {
+      map['void_reason'] = Variable<String>(voidReason.value);
+    }
+    if (voidApprovedBy.present) {
+      map['void_approved_by'] = Variable<String>(voidApprovedBy.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ServiceTxnsCompanion(')
+          ..write('id: $id, ')
+          ..write('locationId: $locationId, ')
+          ..write('kind: $kind, ')
+          ..write('wallet: $wallet, ')
+          ..write('amount: $amount, ')
+          ..write('fee: $fee, ')
+          ..write('price: $price, ')
+          ..write('currency: $currency, ')
+          ..write('ref: $ref, ')
+          ..write('note: $note, ')
+          ..write('txnAt: $txnAt, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('approvedBy: $approvedBy, ')
+          ..write('voidedAt: $voidedAt, ')
+          ..write('voidReason: $voidReason, ')
+          ..write('voidApprovedBy: $voidApprovedBy, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $WalletFloatsTable extends WalletFloats
+    with TableInfo<$WalletFloatsTable, WalletFloat> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $WalletFloatsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _locationIdMeta = const VerificationMeta(
+    'locationId',
+  );
+  @override
+  late final GeneratedColumn<String> locationId = GeneratedColumn<String>(
+    'location_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _walletMeta = const VerificationMeta('wallet');
+  @override
+  late final GeneratedColumn<String> wallet = GeneratedColumn<String>(
+    'wallet',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _balanceMeta = const VerificationMeta(
+    'balance',
+  );
+  @override
+  late final GeneratedColumn<int> balance = GeneratedColumn<int>(
+    'balance',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _txnCountMeta = const VerificationMeta(
+    'txnCount',
+  );
+  @override
+  late final GeneratedColumn<int> txnCount = GeneratedColumn<int>(
+    'txn_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    locationId,
+    wallet,
+    balance,
+    txnCount,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'wallet_float';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<WalletFloat> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('location_id')) {
+      context.handle(
+        _locationIdMeta,
+        locationId.isAcceptableOrUnknown(data['location_id']!, _locationIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_locationIdMeta);
+    }
+    if (data.containsKey('wallet')) {
+      context.handle(
+        _walletMeta,
+        wallet.isAcceptableOrUnknown(data['wallet']!, _walletMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_walletMeta);
+    }
+    if (data.containsKey('balance')) {
+      context.handle(
+        _balanceMeta,
+        balance.isAcceptableOrUnknown(data['balance']!, _balanceMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_balanceMeta);
+    }
+    if (data.containsKey('txn_count')) {
+      context.handle(
+        _txnCountMeta,
+        txnCount.isAcceptableOrUnknown(data['txn_count']!, _txnCountMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {locationId, wallet};
+  @override
+  WalletFloat map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return WalletFloat(
+      locationId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}location_id'],
+      )!,
+      wallet: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}wallet'],
+      )!,
+      balance: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}balance'],
+      )!,
+      txnCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}txn_count'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      ),
+    );
+  }
+
+  @override
+  $WalletFloatsTable createAlias(String alias) {
+    return $WalletFloatsTable(attachedDatabase, alias);
+  }
+}
+
+class WalletFloat extends DataClass implements Insertable<WalletFloat> {
+  final String locationId;
+  final String wallet;
+  final int balance;
+  final int txnCount;
+  final String? updatedAt;
+  const WalletFloat({
+    required this.locationId,
+    required this.wallet,
+    required this.balance,
+    required this.txnCount,
+    this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['location_id'] = Variable<String>(locationId);
+    map['wallet'] = Variable<String>(wallet);
+    map['balance'] = Variable<int>(balance);
+    map['txn_count'] = Variable<int>(txnCount);
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<String>(updatedAt);
+    }
+    return map;
+  }
+
+  WalletFloatsCompanion toCompanion(bool nullToAbsent) {
+    return WalletFloatsCompanion(
+      locationId: Value(locationId),
+      wallet: Value(wallet),
+      balance: Value(balance),
+      txnCount: Value(txnCount),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
+    );
+  }
+
+  factory WalletFloat.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return WalletFloat(
+      locationId: serializer.fromJson<String>(json['locationId']),
+      wallet: serializer.fromJson<String>(json['wallet']),
+      balance: serializer.fromJson<int>(json['balance']),
+      txnCount: serializer.fromJson<int>(json['txnCount']),
+      updatedAt: serializer.fromJson<String?>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'locationId': serializer.toJson<String>(locationId),
+      'wallet': serializer.toJson<String>(wallet),
+      'balance': serializer.toJson<int>(balance),
+      'txnCount': serializer.toJson<int>(txnCount),
+      'updatedAt': serializer.toJson<String?>(updatedAt),
+    };
+  }
+
+  WalletFloat copyWith({
+    String? locationId,
+    String? wallet,
+    int? balance,
+    int? txnCount,
+    Value<String?> updatedAt = const Value.absent(),
+  }) => WalletFloat(
+    locationId: locationId ?? this.locationId,
+    wallet: wallet ?? this.wallet,
+    balance: balance ?? this.balance,
+    txnCount: txnCount ?? this.txnCount,
+    updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+  );
+  WalletFloat copyWithCompanion(WalletFloatsCompanion data) {
+    return WalletFloat(
+      locationId: data.locationId.present
+          ? data.locationId.value
+          : this.locationId,
+      wallet: data.wallet.present ? data.wallet.value : this.wallet,
+      balance: data.balance.present ? data.balance.value : this.balance,
+      txnCount: data.txnCount.present ? data.txnCount.value : this.txnCount,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('WalletFloat(')
+          ..write('locationId: $locationId, ')
+          ..write('wallet: $wallet, ')
+          ..write('balance: $balance, ')
+          ..write('txnCount: $txnCount, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(locationId, wallet, balance, txnCount, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is WalletFloat &&
+          other.locationId == this.locationId &&
+          other.wallet == this.wallet &&
+          other.balance == this.balance &&
+          other.txnCount == this.txnCount &&
+          other.updatedAt == this.updatedAt);
+}
+
+class WalletFloatsCompanion extends UpdateCompanion<WalletFloat> {
+  final Value<String> locationId;
+  final Value<String> wallet;
+  final Value<int> balance;
+  final Value<int> txnCount;
+  final Value<String?> updatedAt;
+  final Value<int> rowid;
+  const WalletFloatsCompanion({
+    this.locationId = const Value.absent(),
+    this.wallet = const Value.absent(),
+    this.balance = const Value.absent(),
+    this.txnCount = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  WalletFloatsCompanion.insert({
+    required String locationId,
+    required String wallet,
+    required int balance,
+    this.txnCount = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : locationId = Value(locationId),
+       wallet = Value(wallet),
+       balance = Value(balance);
+  static Insertable<WalletFloat> custom({
+    Expression<String>? locationId,
+    Expression<String>? wallet,
+    Expression<int>? balance,
+    Expression<int>? txnCount,
+    Expression<String>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (locationId != null) 'location_id': locationId,
+      if (wallet != null) 'wallet': wallet,
+      if (balance != null) 'balance': balance,
+      if (txnCount != null) 'txn_count': txnCount,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  WalletFloatsCompanion copyWith({
+    Value<String>? locationId,
+    Value<String>? wallet,
+    Value<int>? balance,
+    Value<int>? txnCount,
+    Value<String?>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return WalletFloatsCompanion(
+      locationId: locationId ?? this.locationId,
+      wallet: wallet ?? this.wallet,
+      balance: balance ?? this.balance,
+      txnCount: txnCount ?? this.txnCount,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (locationId.present) {
+      map['location_id'] = Variable<String>(locationId.value);
+    }
+    if (wallet.present) {
+      map['wallet'] = Variable<String>(wallet.value);
+    }
+    if (balance.present) {
+      map['balance'] = Variable<int>(balance.value);
+    }
+    if (txnCount.present) {
+      map['txn_count'] = Variable<int>(txnCount.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('WalletFloatsCompanion(')
+          ..write('locationId: $locationId, ')
+          ..write('wallet: $wallet, ')
+          ..write('balance: $balance, ')
+          ..write('txnCount: $txnCount, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $LocalFloatEffectsTable extends LocalFloatEffects
+    with TableInfo<$LocalFloatEffectsTable, LocalFloatEffect> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LocalFloatEffectsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _opIdMeta = const VerificationMeta('opId');
+  @override
+  late final GeneratedColumn<String> opId = GeneratedColumn<String>(
+    'op_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _txnIdMeta = const VerificationMeta('txnId');
+  @override
+  late final GeneratedColumn<String> txnId = GeneratedColumn<String>(
+    'txn_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _walletMeta = const VerificationMeta('wallet');
+  @override
+  late final GeneratedColumn<String> wallet = GeneratedColumn<String>(
+    'wallet',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _amountMeta = const VerificationMeta('amount');
+  @override
+  late final GeneratedColumn<int> amount = GeneratedColumn<int>(
+    'amount',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _confirmedAfterMeta = const VerificationMeta(
+    'confirmedAfter',
+  );
+  @override
+  late final GeneratedColumn<String> confirmedAfter = GeneratedColumn<String>(
+    'confirmed_after',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    opId,
+    txnId,
+    wallet,
+    amount,
+    confirmedAfter,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'local_float_effects';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<LocalFloatEffect> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('op_id')) {
+      context.handle(
+        _opIdMeta,
+        opId.isAcceptableOrUnknown(data['op_id']!, _opIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_opIdMeta);
+    }
+    if (data.containsKey('txn_id')) {
+      context.handle(
+        _txnIdMeta,
+        txnId.isAcceptableOrUnknown(data['txn_id']!, _txnIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_txnIdMeta);
+    }
+    if (data.containsKey('wallet')) {
+      context.handle(
+        _walletMeta,
+        wallet.isAcceptableOrUnknown(data['wallet']!, _walletMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_walletMeta);
+    }
+    if (data.containsKey('amount')) {
+      context.handle(
+        _amountMeta,
+        amount.isAcceptableOrUnknown(data['amount']!, _amountMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_amountMeta);
+    }
+    if (data.containsKey('confirmed_after')) {
+      context.handle(
+        _confirmedAfterMeta,
+        confirmedAfter.isAcceptableOrUnknown(
+          data['confirmed_after']!,
+          _confirmedAfterMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  LocalFloatEffect map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LocalFloatEffect(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      opId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}op_id'],
+      )!,
+      txnId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}txn_id'],
+      )!,
+      wallet: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}wallet'],
+      )!,
+      amount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}amount'],
+      )!,
+      confirmedAfter: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}confirmed_after'],
+      ),
+    );
+  }
+
+  @override
+  $LocalFloatEffectsTable createAlias(String alias) {
+    return $LocalFloatEffectsTable(attachedDatabase, alias);
+  }
+}
+
+class LocalFloatEffect extends DataClass
+    implements Insertable<LocalFloatEffect> {
+  final int id;
+  final String opId;
+  final String txnId;
+  final String wallet;
+  final int amount;
+  final String? confirmedAfter;
+  const LocalFloatEffect({
+    required this.id,
+    required this.opId,
+    required this.txnId,
+    required this.wallet,
+    required this.amount,
+    this.confirmedAfter,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['op_id'] = Variable<String>(opId);
+    map['txn_id'] = Variable<String>(txnId);
+    map['wallet'] = Variable<String>(wallet);
+    map['amount'] = Variable<int>(amount);
+    if (!nullToAbsent || confirmedAfter != null) {
+      map['confirmed_after'] = Variable<String>(confirmedAfter);
+    }
+    return map;
+  }
+
+  LocalFloatEffectsCompanion toCompanion(bool nullToAbsent) {
+    return LocalFloatEffectsCompanion(
+      id: Value(id),
+      opId: Value(opId),
+      txnId: Value(txnId),
+      wallet: Value(wallet),
+      amount: Value(amount),
+      confirmedAfter: confirmedAfter == null && nullToAbsent
+          ? const Value.absent()
+          : Value(confirmedAfter),
+    );
+  }
+
+  factory LocalFloatEffect.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LocalFloatEffect(
+      id: serializer.fromJson<int>(json['id']),
+      opId: serializer.fromJson<String>(json['opId']),
+      txnId: serializer.fromJson<String>(json['txnId']),
+      wallet: serializer.fromJson<String>(json['wallet']),
+      amount: serializer.fromJson<int>(json['amount']),
+      confirmedAfter: serializer.fromJson<String?>(json['confirmedAfter']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'opId': serializer.toJson<String>(opId),
+      'txnId': serializer.toJson<String>(txnId),
+      'wallet': serializer.toJson<String>(wallet),
+      'amount': serializer.toJson<int>(amount),
+      'confirmedAfter': serializer.toJson<String?>(confirmedAfter),
+    };
+  }
+
+  LocalFloatEffect copyWith({
+    int? id,
+    String? opId,
+    String? txnId,
+    String? wallet,
+    int? amount,
+    Value<String?> confirmedAfter = const Value.absent(),
+  }) => LocalFloatEffect(
+    id: id ?? this.id,
+    opId: opId ?? this.opId,
+    txnId: txnId ?? this.txnId,
+    wallet: wallet ?? this.wallet,
+    amount: amount ?? this.amount,
+    confirmedAfter: confirmedAfter.present
+        ? confirmedAfter.value
+        : this.confirmedAfter,
+  );
+  LocalFloatEffect copyWithCompanion(LocalFloatEffectsCompanion data) {
+    return LocalFloatEffect(
+      id: data.id.present ? data.id.value : this.id,
+      opId: data.opId.present ? data.opId.value : this.opId,
+      txnId: data.txnId.present ? data.txnId.value : this.txnId,
+      wallet: data.wallet.present ? data.wallet.value : this.wallet,
+      amount: data.amount.present ? data.amount.value : this.amount,
+      confirmedAfter: data.confirmedAfter.present
+          ? data.confirmedAfter.value
+          : this.confirmedAfter,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalFloatEffect(')
+          ..write('id: $id, ')
+          ..write('opId: $opId, ')
+          ..write('txnId: $txnId, ')
+          ..write('wallet: $wallet, ')
+          ..write('amount: $amount, ')
+          ..write('confirmedAfter: $confirmedAfter')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, opId, txnId, wallet, amount, confirmedAfter);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LocalFloatEffect &&
+          other.id == this.id &&
+          other.opId == this.opId &&
+          other.txnId == this.txnId &&
+          other.wallet == this.wallet &&
+          other.amount == this.amount &&
+          other.confirmedAfter == this.confirmedAfter);
+}
+
+class LocalFloatEffectsCompanion extends UpdateCompanion<LocalFloatEffect> {
+  final Value<int> id;
+  final Value<String> opId;
+  final Value<String> txnId;
+  final Value<String> wallet;
+  final Value<int> amount;
+  final Value<String?> confirmedAfter;
+  const LocalFloatEffectsCompanion({
+    this.id = const Value.absent(),
+    this.opId = const Value.absent(),
+    this.txnId = const Value.absent(),
+    this.wallet = const Value.absent(),
+    this.amount = const Value.absent(),
+    this.confirmedAfter = const Value.absent(),
+  });
+  LocalFloatEffectsCompanion.insert({
+    this.id = const Value.absent(),
+    required String opId,
+    required String txnId,
+    required String wallet,
+    required int amount,
+    this.confirmedAfter = const Value.absent(),
+  }) : opId = Value(opId),
+       txnId = Value(txnId),
+       wallet = Value(wallet),
+       amount = Value(amount);
+  static Insertable<LocalFloatEffect> custom({
+    Expression<int>? id,
+    Expression<String>? opId,
+    Expression<String>? txnId,
+    Expression<String>? wallet,
+    Expression<int>? amount,
+    Expression<String>? confirmedAfter,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (opId != null) 'op_id': opId,
+      if (txnId != null) 'txn_id': txnId,
+      if (wallet != null) 'wallet': wallet,
+      if (amount != null) 'amount': amount,
+      if (confirmedAfter != null) 'confirmed_after': confirmedAfter,
+    });
+  }
+
+  LocalFloatEffectsCompanion copyWith({
+    Value<int>? id,
+    Value<String>? opId,
+    Value<String>? txnId,
+    Value<String>? wallet,
+    Value<int>? amount,
+    Value<String?>? confirmedAfter,
+  }) {
+    return LocalFloatEffectsCompanion(
+      id: id ?? this.id,
+      opId: opId ?? this.opId,
+      txnId: txnId ?? this.txnId,
+      wallet: wallet ?? this.wallet,
+      amount: amount ?? this.amount,
+      confirmedAfter: confirmedAfter ?? this.confirmedAfter,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (opId.present) {
+      map['op_id'] = Variable<String>(opId.value);
+    }
+    if (txnId.present) {
+      map['txn_id'] = Variable<String>(txnId.value);
+    }
+    if (wallet.present) {
+      map['wallet'] = Variable<String>(wallet.value);
+    }
+    if (amount.present) {
+      map['amount'] = Variable<int>(amount.value);
+    }
+    if (confirmedAfter.present) {
+      map['confirmed_after'] = Variable<String>(confirmedAfter.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalFloatEffectsCompanion(')
+          ..write('id: $id, ')
+          ..write('opId: $opId, ')
+          ..write('txnId: $txnId, ')
+          ..write('wallet: $wallet, ')
+          ..write('amount: $amount, ')
+          ..write('confirmedAfter: $confirmedAfter')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -9291,6 +11016,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $SalePaymentsTable salePayments = $SalePaymentsTable(this);
   late final $ExpensesTable expenses = $ExpensesTable(this);
   late final $DayClosesTable dayCloses = $DayClosesTable(this);
+  late final $ServiceTxnsTable serviceTxns = $ServiceTxnsTable(this);
+  late final $WalletFloatsTable walletFloats = $WalletFloatsTable(this);
+  late final $LocalFloatEffectsTable localFloatEffects =
+      $LocalFloatEffectsTable(this);
   late final Index variantsBarcode = Index(
     'variants_barcode',
     'CREATE INDEX variants_barcode ON variants (barcode)',
@@ -9319,6 +11048,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'day_closes_day',
     'CREATE INDEX day_closes_day ON day_closes (day)',
   );
+  late final Index serviceTxnsTxnAt = Index(
+    'service_txns_txn_at',
+    'CREATE INDEX service_txns_txn_at ON service_txns (txn_at)',
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -9344,6 +11077,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     salePayments,
     expenses,
     dayCloses,
+    serviceTxns,
+    walletFloats,
+    localFloatEffects,
     variantsBarcode,
     variantsProduct,
     salesSoldAt,
@@ -9351,6 +11087,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     salePaymentsSale,
     expensesSpentAt,
     dayClosesDay,
+    serviceTxnsTxnAt,
   ];
 }
 
@@ -14095,6 +15832,872 @@ typedef $$DayClosesTableProcessedTableManager =
       DayClose,
       PrefetchHooks Function()
     >;
+typedef $$ServiceTxnsTableCreateCompanionBuilder =
+    ServiceTxnsCompanion Function({
+      required String id,
+      Value<String?> locationId,
+      required String kind,
+      required String wallet,
+      required int amount,
+      Value<int> fee,
+      Value<int?> price,
+      required String currency,
+      Value<String?> ref,
+      Value<String?> note,
+      required String txnAt,
+      Value<String?> createdBy,
+      Value<String?> approvedBy,
+      Value<String?> voidedAt,
+      Value<String?> voidReason,
+      Value<String?> voidApprovedBy,
+      Value<String?> updatedAt,
+      Value<int> rowid,
+    });
+typedef $$ServiceTxnsTableUpdateCompanionBuilder =
+    ServiceTxnsCompanion Function({
+      Value<String> id,
+      Value<String?> locationId,
+      Value<String> kind,
+      Value<String> wallet,
+      Value<int> amount,
+      Value<int> fee,
+      Value<int?> price,
+      Value<String> currency,
+      Value<String?> ref,
+      Value<String?> note,
+      Value<String> txnAt,
+      Value<String?> createdBy,
+      Value<String?> approvedBy,
+      Value<String?> voidedAt,
+      Value<String?> voidReason,
+      Value<String?> voidApprovedBy,
+      Value<String?> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$ServiceTxnsTableFilterComposer
+    extends Composer<_$AppDatabase, $ServiceTxnsTable> {
+  $$ServiceTxnsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get locationId => $composableBuilder(
+    column: $table.locationId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get wallet => $composableBuilder(
+    column: $table.wallet,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get amount => $composableBuilder(
+    column: $table.amount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get fee => $composableBuilder(
+    column: $table.fee,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get price => $composableBuilder(
+    column: $table.price,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get currency => $composableBuilder(
+    column: $table.currency,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get ref => $composableBuilder(
+    column: $table.ref,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get txnAt => $composableBuilder(
+    column: $table.txnAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get createdBy => $composableBuilder(
+    column: $table.createdBy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get approvedBy => $composableBuilder(
+    column: $table.approvedBy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get voidedAt => $composableBuilder(
+    column: $table.voidedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get voidReason => $composableBuilder(
+    column: $table.voidReason,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get voidApprovedBy => $composableBuilder(
+    column: $table.voidApprovedBy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ServiceTxnsTableOrderingComposer
+    extends Composer<_$AppDatabase, $ServiceTxnsTable> {
+  $$ServiceTxnsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get locationId => $composableBuilder(
+    column: $table.locationId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get wallet => $composableBuilder(
+    column: $table.wallet,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get amount => $composableBuilder(
+    column: $table.amount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get fee => $composableBuilder(
+    column: $table.fee,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get price => $composableBuilder(
+    column: $table.price,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get currency => $composableBuilder(
+    column: $table.currency,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get ref => $composableBuilder(
+    column: $table.ref,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get txnAt => $composableBuilder(
+    column: $table.txnAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get createdBy => $composableBuilder(
+    column: $table.createdBy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get approvedBy => $composableBuilder(
+    column: $table.approvedBy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get voidedAt => $composableBuilder(
+    column: $table.voidedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get voidReason => $composableBuilder(
+    column: $table.voidReason,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get voidApprovedBy => $composableBuilder(
+    column: $table.voidApprovedBy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ServiceTxnsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ServiceTxnsTable> {
+  $$ServiceTxnsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get locationId => $composableBuilder(
+    column: $table.locationId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
+
+  GeneratedColumn<String> get wallet =>
+      $composableBuilder(column: $table.wallet, builder: (column) => column);
+
+  GeneratedColumn<int> get amount =>
+      $composableBuilder(column: $table.amount, builder: (column) => column);
+
+  GeneratedColumn<int> get fee =>
+      $composableBuilder(column: $table.fee, builder: (column) => column);
+
+  GeneratedColumn<int> get price =>
+      $composableBuilder(column: $table.price, builder: (column) => column);
+
+  GeneratedColumn<String> get currency =>
+      $composableBuilder(column: $table.currency, builder: (column) => column);
+
+  GeneratedColumn<String> get ref =>
+      $composableBuilder(column: $table.ref, builder: (column) => column);
+
+  GeneratedColumn<String> get note =>
+      $composableBuilder(column: $table.note, builder: (column) => column);
+
+  GeneratedColumn<String> get txnAt =>
+      $composableBuilder(column: $table.txnAt, builder: (column) => column);
+
+  GeneratedColumn<String> get createdBy =>
+      $composableBuilder(column: $table.createdBy, builder: (column) => column);
+
+  GeneratedColumn<String> get approvedBy => $composableBuilder(
+    column: $table.approvedBy,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get voidedAt =>
+      $composableBuilder(column: $table.voidedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get voidReason => $composableBuilder(
+    column: $table.voidReason,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get voidApprovedBy => $composableBuilder(
+    column: $table.voidApprovedBy,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$ServiceTxnsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ServiceTxnsTable,
+          ServiceTxn,
+          $$ServiceTxnsTableFilterComposer,
+          $$ServiceTxnsTableOrderingComposer,
+          $$ServiceTxnsTableAnnotationComposer,
+          $$ServiceTxnsTableCreateCompanionBuilder,
+          $$ServiceTxnsTableUpdateCompanionBuilder,
+          (
+            ServiceTxn,
+            BaseReferences<_$AppDatabase, $ServiceTxnsTable, ServiceTxn>,
+          ),
+          ServiceTxn,
+          PrefetchHooks Function()
+        > {
+  $$ServiceTxnsTableTableManager(_$AppDatabase db, $ServiceTxnsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ServiceTxnsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ServiceTxnsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ServiceTxnsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String?> locationId = const Value.absent(),
+                Value<String> kind = const Value.absent(),
+                Value<String> wallet = const Value.absent(),
+                Value<int> amount = const Value.absent(),
+                Value<int> fee = const Value.absent(),
+                Value<int?> price = const Value.absent(),
+                Value<String> currency = const Value.absent(),
+                Value<String?> ref = const Value.absent(),
+                Value<String?> note = const Value.absent(),
+                Value<String> txnAt = const Value.absent(),
+                Value<String?> createdBy = const Value.absent(),
+                Value<String?> approvedBy = const Value.absent(),
+                Value<String?> voidedAt = const Value.absent(),
+                Value<String?> voidReason = const Value.absent(),
+                Value<String?> voidApprovedBy = const Value.absent(),
+                Value<String?> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ServiceTxnsCompanion(
+                id: id,
+                locationId: locationId,
+                kind: kind,
+                wallet: wallet,
+                amount: amount,
+                fee: fee,
+                price: price,
+                currency: currency,
+                ref: ref,
+                note: note,
+                txnAt: txnAt,
+                createdBy: createdBy,
+                approvedBy: approvedBy,
+                voidedAt: voidedAt,
+                voidReason: voidReason,
+                voidApprovedBy: voidApprovedBy,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                Value<String?> locationId = const Value.absent(),
+                required String kind,
+                required String wallet,
+                required int amount,
+                Value<int> fee = const Value.absent(),
+                Value<int?> price = const Value.absent(),
+                required String currency,
+                Value<String?> ref = const Value.absent(),
+                Value<String?> note = const Value.absent(),
+                required String txnAt,
+                Value<String?> createdBy = const Value.absent(),
+                Value<String?> approvedBy = const Value.absent(),
+                Value<String?> voidedAt = const Value.absent(),
+                Value<String?> voidReason = const Value.absent(),
+                Value<String?> voidApprovedBy = const Value.absent(),
+                Value<String?> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ServiceTxnsCompanion.insert(
+                id: id,
+                locationId: locationId,
+                kind: kind,
+                wallet: wallet,
+                amount: amount,
+                fee: fee,
+                price: price,
+                currency: currency,
+                ref: ref,
+                note: note,
+                txnAt: txnAt,
+                createdBy: createdBy,
+                approvedBy: approvedBy,
+                voidedAt: voidedAt,
+                voidReason: voidReason,
+                voidApprovedBy: voidApprovedBy,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ServiceTxnsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ServiceTxnsTable,
+      ServiceTxn,
+      $$ServiceTxnsTableFilterComposer,
+      $$ServiceTxnsTableOrderingComposer,
+      $$ServiceTxnsTableAnnotationComposer,
+      $$ServiceTxnsTableCreateCompanionBuilder,
+      $$ServiceTxnsTableUpdateCompanionBuilder,
+      (
+        ServiceTxn,
+        BaseReferences<_$AppDatabase, $ServiceTxnsTable, ServiceTxn>,
+      ),
+      ServiceTxn,
+      PrefetchHooks Function()
+    >;
+typedef $$WalletFloatsTableCreateCompanionBuilder =
+    WalletFloatsCompanion Function({
+      required String locationId,
+      required String wallet,
+      required int balance,
+      Value<int> txnCount,
+      Value<String?> updatedAt,
+      Value<int> rowid,
+    });
+typedef $$WalletFloatsTableUpdateCompanionBuilder =
+    WalletFloatsCompanion Function({
+      Value<String> locationId,
+      Value<String> wallet,
+      Value<int> balance,
+      Value<int> txnCount,
+      Value<String?> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$WalletFloatsTableFilterComposer
+    extends Composer<_$AppDatabase, $WalletFloatsTable> {
+  $$WalletFloatsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get locationId => $composableBuilder(
+    column: $table.locationId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get wallet => $composableBuilder(
+    column: $table.wallet,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get balance => $composableBuilder(
+    column: $table.balance,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get txnCount => $composableBuilder(
+    column: $table.txnCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$WalletFloatsTableOrderingComposer
+    extends Composer<_$AppDatabase, $WalletFloatsTable> {
+  $$WalletFloatsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get locationId => $composableBuilder(
+    column: $table.locationId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get wallet => $composableBuilder(
+    column: $table.wallet,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get balance => $composableBuilder(
+    column: $table.balance,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get txnCount => $composableBuilder(
+    column: $table.txnCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$WalletFloatsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $WalletFloatsTable> {
+  $$WalletFloatsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get locationId => $composableBuilder(
+    column: $table.locationId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get wallet =>
+      $composableBuilder(column: $table.wallet, builder: (column) => column);
+
+  GeneratedColumn<int> get balance =>
+      $composableBuilder(column: $table.balance, builder: (column) => column);
+
+  GeneratedColumn<int> get txnCount =>
+      $composableBuilder(column: $table.txnCount, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$WalletFloatsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $WalletFloatsTable,
+          WalletFloat,
+          $$WalletFloatsTableFilterComposer,
+          $$WalletFloatsTableOrderingComposer,
+          $$WalletFloatsTableAnnotationComposer,
+          $$WalletFloatsTableCreateCompanionBuilder,
+          $$WalletFloatsTableUpdateCompanionBuilder,
+          (
+            WalletFloat,
+            BaseReferences<_$AppDatabase, $WalletFloatsTable, WalletFloat>,
+          ),
+          WalletFloat,
+          PrefetchHooks Function()
+        > {
+  $$WalletFloatsTableTableManager(_$AppDatabase db, $WalletFloatsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$WalletFloatsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$WalletFloatsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$WalletFloatsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> locationId = const Value.absent(),
+                Value<String> wallet = const Value.absent(),
+                Value<int> balance = const Value.absent(),
+                Value<int> txnCount = const Value.absent(),
+                Value<String?> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => WalletFloatsCompanion(
+                locationId: locationId,
+                wallet: wallet,
+                balance: balance,
+                txnCount: txnCount,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String locationId,
+                required String wallet,
+                required int balance,
+                Value<int> txnCount = const Value.absent(),
+                Value<String?> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => WalletFloatsCompanion.insert(
+                locationId: locationId,
+                wallet: wallet,
+                balance: balance,
+                txnCount: txnCount,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$WalletFloatsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $WalletFloatsTable,
+      WalletFloat,
+      $$WalletFloatsTableFilterComposer,
+      $$WalletFloatsTableOrderingComposer,
+      $$WalletFloatsTableAnnotationComposer,
+      $$WalletFloatsTableCreateCompanionBuilder,
+      $$WalletFloatsTableUpdateCompanionBuilder,
+      (
+        WalletFloat,
+        BaseReferences<_$AppDatabase, $WalletFloatsTable, WalletFloat>,
+      ),
+      WalletFloat,
+      PrefetchHooks Function()
+    >;
+typedef $$LocalFloatEffectsTableCreateCompanionBuilder =
+    LocalFloatEffectsCompanion Function({
+      Value<int> id,
+      required String opId,
+      required String txnId,
+      required String wallet,
+      required int amount,
+      Value<String?> confirmedAfter,
+    });
+typedef $$LocalFloatEffectsTableUpdateCompanionBuilder =
+    LocalFloatEffectsCompanion Function({
+      Value<int> id,
+      Value<String> opId,
+      Value<String> txnId,
+      Value<String> wallet,
+      Value<int> amount,
+      Value<String?> confirmedAfter,
+    });
+
+class $$LocalFloatEffectsTableFilterComposer
+    extends Composer<_$AppDatabase, $LocalFloatEffectsTable> {
+  $$LocalFloatEffectsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get opId => $composableBuilder(
+    column: $table.opId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get txnId => $composableBuilder(
+    column: $table.txnId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get wallet => $composableBuilder(
+    column: $table.wallet,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get amount => $composableBuilder(
+    column: $table.amount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get confirmedAfter => $composableBuilder(
+    column: $table.confirmedAfter,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$LocalFloatEffectsTableOrderingComposer
+    extends Composer<_$AppDatabase, $LocalFloatEffectsTable> {
+  $$LocalFloatEffectsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get opId => $composableBuilder(
+    column: $table.opId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get txnId => $composableBuilder(
+    column: $table.txnId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get wallet => $composableBuilder(
+    column: $table.wallet,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get amount => $composableBuilder(
+    column: $table.amount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get confirmedAfter => $composableBuilder(
+    column: $table.confirmedAfter,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$LocalFloatEffectsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $LocalFloatEffectsTable> {
+  $$LocalFloatEffectsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get opId =>
+      $composableBuilder(column: $table.opId, builder: (column) => column);
+
+  GeneratedColumn<String> get txnId =>
+      $composableBuilder(column: $table.txnId, builder: (column) => column);
+
+  GeneratedColumn<String> get wallet =>
+      $composableBuilder(column: $table.wallet, builder: (column) => column);
+
+  GeneratedColumn<int> get amount =>
+      $composableBuilder(column: $table.amount, builder: (column) => column);
+
+  GeneratedColumn<String> get confirmedAfter => $composableBuilder(
+    column: $table.confirmedAfter,
+    builder: (column) => column,
+  );
+}
+
+class $$LocalFloatEffectsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $LocalFloatEffectsTable,
+          LocalFloatEffect,
+          $$LocalFloatEffectsTableFilterComposer,
+          $$LocalFloatEffectsTableOrderingComposer,
+          $$LocalFloatEffectsTableAnnotationComposer,
+          $$LocalFloatEffectsTableCreateCompanionBuilder,
+          $$LocalFloatEffectsTableUpdateCompanionBuilder,
+          (
+            LocalFloatEffect,
+            BaseReferences<
+              _$AppDatabase,
+              $LocalFloatEffectsTable,
+              LocalFloatEffect
+            >,
+          ),
+          LocalFloatEffect,
+          PrefetchHooks Function()
+        > {
+  $$LocalFloatEffectsTableTableManager(
+    _$AppDatabase db,
+    $LocalFloatEffectsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LocalFloatEffectsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LocalFloatEffectsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LocalFloatEffectsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> opId = const Value.absent(),
+                Value<String> txnId = const Value.absent(),
+                Value<String> wallet = const Value.absent(),
+                Value<int> amount = const Value.absent(),
+                Value<String?> confirmedAfter = const Value.absent(),
+              }) => LocalFloatEffectsCompanion(
+                id: id,
+                opId: opId,
+                txnId: txnId,
+                wallet: wallet,
+                amount: amount,
+                confirmedAfter: confirmedAfter,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String opId,
+                required String txnId,
+                required String wallet,
+                required int amount,
+                Value<String?> confirmedAfter = const Value.absent(),
+              }) => LocalFloatEffectsCompanion.insert(
+                id: id,
+                opId: opId,
+                txnId: txnId,
+                wallet: wallet,
+                amount: amount,
+                confirmedAfter: confirmedAfter,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$LocalFloatEffectsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $LocalFloatEffectsTable,
+      LocalFloatEffect,
+      $$LocalFloatEffectsTableFilterComposer,
+      $$LocalFloatEffectsTableOrderingComposer,
+      $$LocalFloatEffectsTableAnnotationComposer,
+      $$LocalFloatEffectsTableCreateCompanionBuilder,
+      $$LocalFloatEffectsTableUpdateCompanionBuilder,
+      (
+        LocalFloatEffect,
+        BaseReferences<
+          _$AppDatabase,
+          $LocalFloatEffectsTable,
+          LocalFloatEffect
+        >,
+      ),
+      LocalFloatEffect,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -14138,4 +16741,10 @@ class $AppDatabaseManager {
       $$ExpensesTableTableManager(_db, _db.expenses);
   $$DayClosesTableTableManager get dayCloses =>
       $$DayClosesTableTableManager(_db, _db.dayCloses);
+  $$ServiceTxnsTableTableManager get serviceTxns =>
+      $$ServiceTxnsTableTableManager(_db, _db.serviceTxns);
+  $$WalletFloatsTableTableManager get walletFloats =>
+      $$WalletFloatsTableTableManager(_db, _db.walletFloats);
+  $$LocalFloatEffectsTableTableManager get localFloatEffects =>
+      $$LocalFloatEffectsTableTableManager(_db, _db.localFloatEffects);
 }
