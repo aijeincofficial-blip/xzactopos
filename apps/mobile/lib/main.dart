@@ -5,6 +5,7 @@ import 'app.dart';
 import 'backend.dart';
 import 'data/db.dart';
 import 'data/drift_store.dart';
+import 'data/persist_storage_stub.dart' if (dart.library.js_interop) 'data/persist_storage_web.dart';
 import 'l10n/app_localizations.dart';
 
 // Anon key only. Never the service role key. Pass with --dart-define (see run-web.ps1).
@@ -18,6 +19,7 @@ Future<void> main() async {
     return;
   }
   await Supabase.initialize(url: _url, publishableKey: _anonKey);
+  requestPersistentStorage(); // not awaited: the answer does not change what we do
   runApp(App(backend: SupabaseBackend(), openStore: ({bool safeMode = false}) => DriftStore(AppDatabase.open(safeMode: safeMode))));
 }
 
