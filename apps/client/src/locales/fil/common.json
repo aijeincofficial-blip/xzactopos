@@ -1,5 +1,15 @@
 {
   "appName": "POS Platform",
-  "actions": { "retry": "Subukan muli", "save": "I-save", "cancel": "Kanselahin" },
-  "language": { "label": "Wika", "en": "Ingles", "fil": "Filipino" }
+  "actions": {
+    "retry": "Subukan muli",
+    "save": "I-save",
+    "cancel": "Kanselahin",
+    "signOut": "Mag-sign out",
+    "back": "Bumalik",
+    "next": "Susunod",
+    "edit": "I-edit",
+    "close": "Isara"
+  },
+  "saved": "Na-save na.",
+  "language": { "label": "Wika", "en": "English", "fil": "Filipino" }
 }
