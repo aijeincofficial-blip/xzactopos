@@ -15,6 +15,7 @@ import 'password_screens.dart';
 import 'products_screen.dart';
 import 'reports_screen.dart';
 import 'sell_screen.dart';
+import 'settings_screen.dart';
 import 'stock_screen.dart';
 import 'today_screen.dart';
 import 'utang_screen.dart';
@@ -85,7 +86,7 @@ class HomeScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         titleSpacing: Gap.s,
-        leadingWidth: 52,
+        leadingWidth: 50,
         leading: Padding(
           padding: const EdgeInsets.only(left: Gap.m),
           child: Center(
@@ -93,8 +94,8 @@ class HomeScreen extends StatelessWidget {
               clipBehavior: Clip.none,
               children: [
                 Container(
-                  width: 38,
-                  height: 38,
+                  width: 36,
+                  height: 36,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: LinearGradient(
@@ -169,17 +170,23 @@ class HomeScreen extends StatelessWidget {
         ),
         actions: [
           const SyncBadge(),
-          Padding(
-            padding: const EdgeInsets.only(right: Gap.m, left: Gap.xs),
-            child: IconButton(
-              key: const Key('change-password'),
-              tooltip: t.changePassword,
-              icon: const Icon(Icons.shield_outlined, size: 20),
-              constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
-              padding: const EdgeInsets.all(4),
-              visualDensity: VisualDensity.compact,
-              onPressed: () => showChangePasswordDialog(context, backend),
-            ),
+          IconButton(
+            key: const Key('btn-settings'),
+            tooltip: locale == 'fil' ? 'Mga Setting' : 'Settings',
+            icon: const Icon(Icons.settings_outlined, size: 20),
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+            padding: const EdgeInsets.all(4),
+            visualDensity: VisualDensity.compact,
+            onPressed: () => open(SettingsScreen(backend: backend, storeName: storeName)),
+          ),
+          IconButton(
+            key: const Key('change-password'),
+            tooltip: t.changePassword,
+            icon: const Icon(Icons.shield_outlined, size: 20),
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+            padding: const EdgeInsets.all(4),
+            visualDensity: VisualDensity.compact,
+            onPressed: () => showChangePasswordDialog(context, backend),
           ),
         ],
       ),
@@ -340,162 +347,41 @@ class HomeScreen extends StatelessWidget {
 
             const SizedBox(height: Gap.m),
 
-            // Store Settings & Management Card
+            // Store Settings Entry Card
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: Gap.xl),
               child: AppCard(
-                padding: const EdgeInsets.all(Gap.l),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                key: const Key('tile-settings'),
+                onTap: () => open(SettingsScreen(backend: backend, storeName: storeName)),
+                padding: const EdgeInsets.symmetric(horizontal: Gap.l, vertical: Gap.m),
+                child: Row(
                   children: [
-                    Row(
-                      children: [
-                        CoinBadge(icon: Icons.tune_rounded, color: scheme.primary, size: 36),
-                        const SizedBox(width: Gap.m),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                locale == 'fil' ? 'Mga Setting ng Tindahan' : 'Store Settings',
-                                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
-                              ),
-                              Text(
-                                locale == 'fil' ? 'Tema, wika, at pamamahala' : 'Theme, language, & controls',
-                                style: TextStyle(fontSize: 12, color: scheme.outline),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: Gap.m),
-                    Divider(height: 1, color: scheme.outlineVariant.withOpacity(0.5)),
-                    const SizedBox(height: Gap.m),
-
-                    // Palette / Theme Row
-                    if (themeScope != null) ...[
-                      Row(
+                    CoinBadge(icon: Icons.settings_rounded, color: scheme.primary, size: 38),
+                    const SizedBox(width: Gap.m),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  t.themeTitle,
-                                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
-                                ),
-                                Text(
-                                  themeScope.palette == AppPalette.goldenIndigo ? t.paletteGoldenIndigo : t.paletteFreshTide,
-                                  style: TextStyle(fontSize: 12, color: scheme.outline),
-                                ),
-                              ],
-                            ),
+                          Text(
+                            locale == 'fil' ? 'Mga Setting ng Tindahan' : 'Store Settings',
+                            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
                           ),
-                          FilledButton.tonal(
-                            style: FilledButton.styleFrom(
-                              shape: const StadiumBorder(),
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                              minimumSize: const Size(0, 36),
-                            ),
-                            onPressed: () => showThemeSheet(context),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.palette_outlined, size: 16),
-                                const SizedBox(width: 6),
-                                Text(locale == 'fil' ? 'Palitan' : 'Change', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
-                              ],
-                            ),
+                          const SizedBox(height: 1),
+                          Text(
+                            locale == 'fil' ? 'Tema, liwanag, wika, at account' : 'Theme, mode, language, & account',
+                            style: TextStyle(fontSize: 12, color: scheme.outline),
                           ),
                         ],
                       ),
-                      const SizedBox(height: Gap.m),
-                    ],
-
-                    // Quick Dark Mode Toggle
-                    if (themeScope != null) ...[
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              t.themeMode,
-                              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
-                            ),
-                          ),
-                          SegmentedButton<ThemeMode>(
-                            showSelectedIcon: false,
-                            style: SegmentedButton.styleFrom(visualDensity: VisualDensity.compact),
-                            segments: [
-                              ButtonSegment(value: ThemeMode.light, label: Text(t.themeLight, style: const TextStyle(fontSize: 12))),
-                              ButtonSegment(value: ThemeMode.dark, label: Text(t.themeDark, style: const TextStyle(fontSize: 12))),
-                            ],
-                            selected: {themeScope.mode == ThemeMode.dark ? ThemeMode.dark : ThemeMode.light},
-                            onSelectionChanged: (s) => themeScope.setMode(s.first),
-                          ),
-                        ],
+                    ),
+                    Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: dark ? scheme.surface : const Color(0xFFF1F5F9),
+                        shape: BoxShape.circle,
                       ),
-                      const SizedBox(height: Gap.m),
-                    ],
-
-                    // Language Quick Action
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            locale == 'fil' ? 'Wika (Language)' : 'Language',
-                            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
-                          ),
-                        ),
-                        const LanguageButton(),
-                      ],
-                    ),
-                    const SizedBox(height: Gap.m),
-
-                    // Password / Security
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            t.changePassword,
-                            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
-                          ),
-                        ),
-                        OutlinedButton.icon(
-                          key: const Key('settings-change-password'),
-                          style: OutlinedButton.styleFrom(
-                            shape: const StadiumBorder(),
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                            minimumSize: const Size(0, 36),
-                          ),
-                          onPressed: () => showChangePasswordDialog(context, backend),
-                          icon: const Icon(Icons.lock_reset_rounded, size: 16),
-                          label: Text(locale == 'fil' ? 'Palitan' : 'Change', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: Gap.m),
-
-                    // Sign Out
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            t.signOut,
-                            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: scheme.error),
-                          ),
-                        ),
-                        TextButton.icon(
-                          style: TextButton.styleFrom(
-                            foregroundColor: scheme.error,
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                            minimumSize: const Size(0, 36),
-                          ),
-                          onPressed: backend.signOut,
-                          icon: const Icon(Icons.logout_rounded, size: 16),
-                          label: Text(t.signOut, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
-                        ),
-                      ],
+                      child: Icon(Icons.arrow_forward_ios_rounded, size: 12, color: scheme.outline),
                     ),
                   ],
                 ),
