@@ -114,3 +114,6 @@ Also seen in the browser: signing in on `/t/demo-new` with a `demo-full` account
 - Money amounts are JS numbers (safe integers). Revisit if any amount can exceed 2^53 minor units.
 - Local DB: postgresql://postgres:postgres@127.0.0.1:54322/postgres, Studio http://127.0.0.1:54323.
 - Docker Desktop disk may still be on C:. VirtualBox VM was moved to D:.
+
+## Recalibration (after Phase 1)
+Solo sari-sari focus + Flutter client: see `docs/recalibration-solo-flutter.md`. Next cards: S-01, S-02 (docs/tasks). Phase 1 is closed; continue with Phase S, then Phase 2 in Flutter.
