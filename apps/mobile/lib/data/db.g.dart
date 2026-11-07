@@ -3932,8 +3932,24 @@ class $CustomersTable extends Customers
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _dueOnMeta = const VerificationMeta('dueOn');
   @override
-  List<GeneratedColumn> get $columns => [id, name, phone, updatedAt, deletedAt];
+  late final GeneratedColumn<String> dueOn = GeneratedColumn<String>(
+    'due_on',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    name,
+    phone,
+    updatedAt,
+    deletedAt,
+    dueOn,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -3977,6 +3993,12 @@ class $CustomersTable extends Customers
         deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
       );
     }
+    if (data.containsKey('due_on')) {
+      context.handle(
+        _dueOnMeta,
+        dueOn.isAcceptableOrUnknown(data['due_on']!, _dueOnMeta),
+      );
+    }
     return context;
   }
 
@@ -4006,6 +4028,10 @@ class $CustomersTable extends Customers
         DriftSqlType.string,
         data['${effectivePrefix}deleted_at'],
       ),
+      dueOn: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}due_on'],
+      ),
     );
   }
 
@@ -4021,12 +4047,16 @@ class Customer extends DataClass implements Insertable<Customer> {
   final String? phone;
   final String? updatedAt;
   final String? deletedAt;
+
+  /// The date the customer promised to pay, 'YYYY-MM-DD' (schema v9, P8-10); null = none. Text compares as a date.
+  final String? dueOn;
   const Customer({
     required this.id,
     required this.name,
     this.phone,
     this.updatedAt,
     this.deletedAt,
+    this.dueOn,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -4041,6 +4071,9 @@ class Customer extends DataClass implements Insertable<Customer> {
     }
     if (!nullToAbsent || deletedAt != null) {
       map['deleted_at'] = Variable<String>(deletedAt);
+    }
+    if (!nullToAbsent || dueOn != null) {
+      map['due_on'] = Variable<String>(dueOn);
     }
     return map;
   }
@@ -4058,6 +4091,9 @@ class Customer extends DataClass implements Insertable<Customer> {
       deletedAt: deletedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(deletedAt),
+      dueOn: dueOn == null && nullToAbsent
+          ? const Value.absent()
+          : Value(dueOn),
     );
   }
 
@@ -4072,6 +4108,7 @@ class Customer extends DataClass implements Insertable<Customer> {
       phone: serializer.fromJson<String?>(json['phone']),
       updatedAt: serializer.fromJson<String?>(json['updatedAt']),
       deletedAt: serializer.fromJson<String?>(json['deletedAt']),
+      dueOn: serializer.fromJson<String?>(json['dueOn']),
     );
   }
   @override
@@ -4083,6 +4120,7 @@ class Customer extends DataClass implements Insertable<Customer> {
       'phone': serializer.toJson<String?>(phone),
       'updatedAt': serializer.toJson<String?>(updatedAt),
       'deletedAt': serializer.toJson<String?>(deletedAt),
+      'dueOn': serializer.toJson<String?>(dueOn),
     };
   }
 
@@ -4092,12 +4130,14 @@ class Customer extends DataClass implements Insertable<Customer> {
     Value<String?> phone = const Value.absent(),
     Value<String?> updatedAt = const Value.absent(),
     Value<String?> deletedAt = const Value.absent(),
+    Value<String?> dueOn = const Value.absent(),
   }) => Customer(
     id: id ?? this.id,
     name: name ?? this.name,
     phone: phone.present ? phone.value : this.phone,
     updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
     deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    dueOn: dueOn.present ? dueOn.value : this.dueOn,
   );
   Customer copyWithCompanion(CustomersCompanion data) {
     return Customer(
@@ -4106,6 +4146,7 @@ class Customer extends DataClass implements Insertable<Customer> {
       phone: data.phone.present ? data.phone.value : this.phone,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      dueOn: data.dueOn.present ? data.dueOn.value : this.dueOn,
     );
   }
 
@@ -4116,13 +4157,14 @@ class Customer extends DataClass implements Insertable<Customer> {
           ..write('name: $name, ')
           ..write('phone: $phone, ')
           ..write('updatedAt: $updatedAt, ')
-          ..write('deletedAt: $deletedAt')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('dueOn: $dueOn')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, name, phone, updatedAt, deletedAt);
+  int get hashCode => Object.hash(id, name, phone, updatedAt, deletedAt, dueOn);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -4131,7 +4173,8 @@ class Customer extends DataClass implements Insertable<Customer> {
           other.name == this.name &&
           other.phone == this.phone &&
           other.updatedAt == this.updatedAt &&
-          other.deletedAt == this.deletedAt);
+          other.deletedAt == this.deletedAt &&
+          other.dueOn == this.dueOn);
 }
 
 class CustomersCompanion extends UpdateCompanion<Customer> {
@@ -4140,6 +4183,7 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
   final Value<String?> phone;
   final Value<String?> updatedAt;
   final Value<String?> deletedAt;
+  final Value<String?> dueOn;
   final Value<int> rowid;
   const CustomersCompanion({
     this.id = const Value.absent(),
@@ -4147,6 +4191,7 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
     this.phone = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.deletedAt = const Value.absent(),
+    this.dueOn = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   CustomersCompanion.insert({
@@ -4155,6 +4200,7 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
     this.phone = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.deletedAt = const Value.absent(),
+    this.dueOn = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        name = Value(name);
@@ -4164,6 +4210,7 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
     Expression<String>? phone,
     Expression<String>? updatedAt,
     Expression<String>? deletedAt,
+    Expression<String>? dueOn,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -4172,6 +4219,7 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
       if (phone != null) 'phone': phone,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (deletedAt != null) 'deleted_at': deletedAt,
+      if (dueOn != null) 'due_on': dueOn,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -4182,6 +4230,7 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
     Value<String?>? phone,
     Value<String?>? updatedAt,
     Value<String?>? deletedAt,
+    Value<String?>? dueOn,
     Value<int>? rowid,
   }) {
     return CustomersCompanion(
@@ -4190,6 +4239,7 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
       phone: phone ?? this.phone,
       updatedAt: updatedAt ?? this.updatedAt,
       deletedAt: deletedAt ?? this.deletedAt,
+      dueOn: dueOn ?? this.dueOn,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -4212,6 +4262,9 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
     if (deletedAt.present) {
       map['deleted_at'] = Variable<String>(deletedAt.value);
     }
+    if (dueOn.present) {
+      map['due_on'] = Variable<String>(dueOn.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -4226,6 +4279,7 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
           ..write('phone: $phone, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('deletedAt: $deletedAt, ')
+          ..write('dueOn: $dueOn, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -14309,6 +14363,7 @@ typedef $$CustomersTableCreateCompanionBuilder =
       Value<String?> phone,
       Value<String?> updatedAt,
       Value<String?> deletedAt,
+      Value<String?> dueOn,
       Value<int> rowid,
     });
 typedef $$CustomersTableUpdateCompanionBuilder =
@@ -14318,6 +14373,7 @@ typedef $$CustomersTableUpdateCompanionBuilder =
       Value<String?> phone,
       Value<String?> updatedAt,
       Value<String?> deletedAt,
+      Value<String?> dueOn,
       Value<int> rowid,
     });
 
@@ -14352,6 +14408,11 @@ class $$CustomersTableFilterComposer
 
   ColumnFilters<String> get deletedAt => $composableBuilder(
     column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get dueOn => $composableBuilder(
+    column: $table.dueOn,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -14389,6 +14450,11 @@ class $$CustomersTableOrderingComposer
     column: $table.deletedAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get dueOn => $composableBuilder(
+    column: $table.dueOn,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$CustomersTableAnnotationComposer
@@ -14414,6 +14480,9 @@ class $$CustomersTableAnnotationComposer
 
   GeneratedColumn<String> get deletedAt =>
       $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get dueOn =>
+      $composableBuilder(column: $table.dueOn, builder: (column) => column);
 }
 
 class $$CustomersTableTableManager
@@ -14449,6 +14518,7 @@ class $$CustomersTableTableManager
                 Value<String?> phone = const Value.absent(),
                 Value<String?> updatedAt = const Value.absent(),
                 Value<String?> deletedAt = const Value.absent(),
+                Value<String?> dueOn = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CustomersCompanion(
                 id: id,
@@ -14456,6 +14526,7 @@ class $$CustomersTableTableManager
                 phone: phone,
                 updatedAt: updatedAt,
                 deletedAt: deletedAt,
+                dueOn: dueOn,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -14465,6 +14536,7 @@ class $$CustomersTableTableManager
                 Value<String?> phone = const Value.absent(),
                 Value<String?> updatedAt = const Value.absent(),
                 Value<String?> deletedAt = const Value.absent(),
+                Value<String?> dueOn = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CustomersCompanion.insert(
                 id: id,
@@ -14472,6 +14544,7 @@ class $$CustomersTableTableManager
                 phone: phone,
                 updatedAt: updatedAt,
                 deletedAt: deletedAt,
+                dueOn: dueOn,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

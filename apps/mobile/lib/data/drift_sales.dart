@@ -268,33 +268,74 @@ mixin DriftSales implements SalesStore {
     });
   }
 
+  /// Live customers with their balance (server ledger + this device's entries not yet covered) and sending state.
+  static const _customerSql = '''
+    select * from (
+      select c.id, c.name, c.phone, c.due_on,
+             coalesce((select sum(amount) from server_ledger l where l.customer_id = c.id), 0)
+           + coalesce((select sum(amount) from local_ledger l where l.customer_id = c.id), 0) as balance,
+             exists (select 1 from outbox o where o.entity_id = c.id) as pending
+      from customers c
+      where c.deleted_at is null
+    ) c
+  ''';
+
+  CustomerView _customer(QueryRow r) => CustomerView(
+        id: r.read<String>('id'),
+        name: r.read<String>('name'),
+        phone: r.readNullable<String>('phone'),
+        balance: r.read<int>('balance'),
+        pending: r.read<bool>('pending'),
+        dueOn: parseDay(r.readNullable<String>('due_on')),
+      );
+
   @override
   Stream<List<CustomerView>> watchCustomers() {
     return db
         .customSelect(
-          '''
-          select c.id, c.name, c.phone,
-                 coalesce((select sum(amount) from server_ledger l where l.customer_id = c.id), 0)
-               + coalesce((select sum(amount) from local_ledger l where l.customer_id = c.id), 0) as balance,
-                 exists (select 1 from outbox o where o.entity_id = c.id) as pending
-          from customers c
-          where c.deleted_at is null
-          order by (balance > 0) desc, balance desc, c.name collate nocase
-          ''',
+          '$_customerSql order by (c.balance > 0) desc, c.balance desc, c.name collate nocase',
           readsFrom: {db.customers, db.serverLedger, db.localLedger, db.outbox},
         )
         .watch()
-        .map((rows) => [
-              for (final r in rows)
-                CustomerView(
-                  id: r.read<String>('id'),
-                  name: r.read<String>('name'),
-                  phone: r.readNullable<String>('phone'),
-                  balance: r.read<int>('balance'),
-                  pending: r.read<bool>('pending'),
-                )
-            ]);
+        .map((rows) => rows.map(_customer).toList());
   }
+
+  // ---------------------------------------------------------------------------
+  // Utang due dates (P8-10)
+  //
+  // The date lives on the customer row, like the name: written here and queued (entity = the customer), and the pull
+  // leaves the row alone while an op for it is unsent, so the server's copy replaces it once the op has gone (the
+  // server moves the row's updated_at when the date changes). Overdue is derived: balance > 0 and due_on < today.
+  // ---------------------------------------------------------------------------
+
+  @override
+  Future<void> setUtangDue({required String customerId, required DateTime? dueOn, required String opId}) {
+    final day = dueOn == null ? null : dateOnly(dueOn);
+    if (day != null && daysBetween(DateTime.now(), day).abs() > utangDueMaxDays) {
+      throw ArgumentError('A due date must be within $utangDueMaxDays days of today');
+    }
+    final key = day == null ? null : dayKey(day);
+    return db.transaction(() async {
+      final c = await (db.select(db.customers)..where((x) => x.id.equals(customerId))).getSingleOrNull();
+      if (c == null) throw StateError('Unknown customer');
+      await (db.update(db.customers)..where((x) => x.id.equals(customerId))).write(CustomersCompanion(dueOn: Value(key)));
+      await enqueue(opId, 'set_utang_due', customerId, {'customer_id': customerId, 'due_on': key});
+    });
+  }
+
+  Selectable<QueryRow> _overdueQuery(DateTime? today) => db.customSelect(
+        '$_customerSql where c.balance > 0 and c.due_on is not null and c.due_on < ?1 '
+        'order by c.due_on, c.name collate nocase, c.id',
+        variables: [Variable.withString(dayKey(today ?? DateTime.now()))],
+        readsFrom: {db.customers, db.serverLedger, db.localLedger, db.outbox},
+      );
+
+  @override
+  Stream<List<CustomerView>> watchOverdueCustomers({DateTime? today}) =>
+      _overdueQuery(today).watch().map((rows) => rows.map(_customer).toList());
+
+  @override
+  Future<int> overdueCount({DateTime? today}) async => (await _overdueQuery(today).get()).length;
 
   @override
   Stream<List<LedgerEntryView>> watchLedger(String customerId) {
@@ -1453,7 +1494,8 @@ mixin DriftSales implements SalesStore {
       case 'void_open_pack':
         await (db.update(db.conversions)..where((c) => c.id.equals(entityId)))
             .write(const ConversionsCompanion(voidedAt: Value(null), voidReason: Value(null)));
-      // set_tingi_link: nothing to undo here; discardFailed forces a full re-pull, which brings the server's link back
+      // set_tingi_link, set_utang_due: nothing to undo here; discardFailed forces a full re-pull, which brings the
+      // server's link / due date back (the customer row is no longer held once its op is gone)
     }
   }
 
@@ -1629,6 +1671,7 @@ mixin DriftSales implements SalesStore {
               phone: Value(r['phone'] as String?),
               updatedAt: Value(r['updated_at'] as String?),
               deletedAt: Value(r['deleted_at'] as String?),
+              dueOn: Value(r['due_on'] as String?),
             ));
       }
       for (final r in rowsOf('customer_ledger')) {

@@ -152,7 +152,14 @@ class TodayTotals {
 }
 
 class CustomerView {
-  const CustomerView({required this.id, required this.name, this.phone, required this.balance, required this.pending});
+  const CustomerView({
+    required this.id,
+    required this.name,
+    this.phone,
+    required this.balance,
+    required this.pending,
+    this.dueOn,
+  });
   final String id;
   final String name;
   final String? phone;
@@ -160,7 +167,36 @@ class CustomerView {
   /// What the customer owes, in centavos (negative = she has paid ahead).
   final int balance;
   final bool pending;
+
+  /// The date she promised to pay (P8-10), a local calendar date at midnight (no time part); null = none.
+  final DateTime? dueOn;
+
+  /// Owes something and the promised date is before [today] (a date due today is not overdue yet).
+  bool overdue(DateTime today) => balance > 0 && dueOn != null && dueOn!.isBefore(dateOnly(today));
+
+  /// Whole days past the promised date (0 when not [overdue]): due yesterday = 1.
+  int daysOverdue(DateTime today) => overdue(today) ? daysBetween(dueOn!, today) : 0;
 }
+
+/// The local calendar date of [t] at midnight.
+DateTime dateOnly(DateTime t) => DateTime(t.year, t.month, t.day);
+
+/// Whole calendar days from [from] to [to] (negative when [to] is earlier). Counted on UTC dates, so a daylight-saving
+/// change can never make it off by one.
+int daysBetween(DateTime from, DateTime to) =>
+    DateTime.utc(to.year, to.month, to.day).difference(DateTime.utc(from.year, from.month, from.day)).inDays;
+
+/// Parses a 'YYYY-MM-DD' date (as the server sends a `date`) into a local date at midnight; null for null or bad text.
+DateTime? parseDay(String? s) {
+  if (s == null) return null;
+  final m = RegExp(r'^(\d{4})-(\d{2})-(\d{2})$').firstMatch(s);
+  if (m == null) return null;
+  return DateTime(int.parse(m.group(1)!), int.parse(m.group(2)!), int.parse(m.group(3)!));
+}
+
+/// The furthest a due date may be from today, either way. The server allows 2 calendar years from its own (UTC) date;
+/// this stays a little inside that, so a time-zone difference never makes the server refuse what the phone accepted.
+const utangDueMaxDays = 728;
 
 class LedgerEntryView {
   const LedgerEntryView({
@@ -530,6 +566,21 @@ abstract class SalesStore {
 
   Stream<List<CustomerView>> watchCustomers();
   Stream<List<LedgerEntryView>> watchLedger(String customerId);
+
+  // ---- utang due dates (P8-10) ----
+  // Who: anyone who sells (owner, admins, cashiers), offline, no extra step, like recording a payment.
+
+  /// Sets the date [customerId] promised to pay ([dueOn]: only its calendar date counts), or clears it ([dueOn] null).
+  /// Shown at once and queued as one `set_utang_due` op (entity = the customer). Throws [ArgumentError] for a date more
+  /// than [utangDueMaxDays] from today, [StateError] for an unknown customer.
+  Future<void> setUtangDue({required String customerId, required DateTime? dueOn, required String opId});
+
+  /// Customers who owe something (balance > 0) and whose due date is before today (device local date; [today] for
+  /// tests), most overdue first (earliest due date), then by name.
+  Stream<List<CustomerView>> watchOverdueCustomers({DateTime? today});
+
+  /// How many customers [watchOverdueCustomers] would list now.
+  Future<int> overdueCount({DateTime? today});
   Stream<List<SaleSummary>> watchSales({int limit = 200});
   Future<SaleDetail?> getSale(String saleId);
 

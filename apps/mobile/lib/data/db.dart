@@ -149,6 +149,9 @@ class Customers extends Table {
   TextColumn get updatedAt => text().nullable()();
   TextColumn get deletedAt => text().nullable()();
 
+  /// The date the customer promised to pay, 'YYYY-MM-DD' (schema v9, P8-10); null = none. Text compares as a date.
+  TextColumn get dueOn => text().nullable()();
+
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -449,7 +452,7 @@ class AppDatabase extends _$AppDatabase {
   static const _name = 'xzactopos';
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   /// Adds a column unless it is there already (a database made by a newer build and stepped back in a test, or a
   /// table an earlier step created with today's definition). Skips a table that does not exist.
@@ -537,6 +540,17 @@ class AppDatabase extends _$AppDatabase {
                 .get();
             if (hasCursors.isNotEmpty) {
               await customStatement("delete from sync_cursors where table_key = 'product_variants'");
+            }
+          }
+          if (from < 9) {
+            // additive only: the promised payment date on customers (every row kept, the date starts empty)
+            await _addColumnIfMissing(m, customers, customers.dueOn);
+            // customers pulled before the column existed come again, so a date set elsewhere is not missed
+            final hasCursors = await customSelect(
+                    "select 1 from sqlite_master where type = 'table' and name = 'sync_cursors'")
+                .get();
+            if (hasCursors.isNotEmpty) {
+              await customStatement("delete from sync_cursors where table_key = 'customers'");
             }
           }
         },

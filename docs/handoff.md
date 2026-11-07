@@ -452,6 +452,14 @@ Share was checked on the emulator (Android share sheet with `LL3-261107-0001.pdf
   `applyPullConversions`, `ProductView` link fields; the phone now replays its unconfirmed stock-ins and openings with the
   server's cost rule, so sale costs match the server before the pull. 15 new tests (240 total). No screens yet: P8-09 uses
   `docs/tasks/P8-08-tingi-repack.md`.
+- P8-10 (`20261108001600_utang_due_dates.sql`): `customers.due_on` (promised payment date), op `set_utang_due` (same people as
+  recording a payment: owner, admins, cashiers; warehouse `not_allowed`; `YYYY-MM-DD` or null, key required, within 2 years,
+  else `invalid_value`; no-change and replays write nothing; audit `utang.set_due`), `sync_pull_pos` customers carry `due_on`.
+  pgTAP `021` (38); suite 2503 (21 files). Flutter: Drift v9 (`customers.due_on`, customers re-pulled), `setUtangDue` /
+  `watchOverdueCustomers` / `overdueCount`, `CustomerView.dueOn` / `overdue(today)` / `daysOverdue(today)`, sync kind
+  `set_utang_due`, pure `utangStatementText` (`lib/core/utang_statement.dart`, never the phone number). 13 new tests (256 total).
+  Version asserts in three upgrade tests now compare with `schemaVersion`; the v4 upgrade test keeps `customer_ledger` instead of
+  `customers` (v9 re-pulls customers). No screens yet: the UI card uses `docs/tasks/P8-10-utang-due-dates.md`.
 
 ## Antigravity Session: Neo-Fintech Design, Settings Screen, Theme Fix, & Reports Enrichment
 Read `docs/START-HERE-claude.md` for the complete handoff from Antigravity.

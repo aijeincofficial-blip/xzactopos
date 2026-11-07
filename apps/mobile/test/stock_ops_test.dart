@@ -249,14 +249,15 @@ void main() {
       raw.execute("INSERT INTO stock_levels VALUES ('l', 'v1', 5, '2026-11-08T00:00:00Z')");
       raw.execute("INSERT INTO local_movements (op_id, variant_id, qty) VALUES ('open-op', 'v1', 3), ('sale-op', 'v1', -1)");
       raw.execute("INSERT INTO outbox (op_id, kind, entity_id, payload, created_at) VALUES ('open-op', 'post_opening_stock', 'p1', '{}', 0)");
-      raw.execute("INSERT INTO sync_cursors VALUES ('stock_levels', '{}'), ('customers', '{}')");
+      raw.execute("INSERT INTO sync_cursors VALUES ('stock_levels', '{}'), ('customer_ledger', '{}')");
       raw.execute('PRAGMA user_version = 4');
     }));
     final old = DriftStore(db);
     expect((await db.select(db.stockLevels).get()).single.counted, isFalse);
     final moves = await db.select(db.localMovements).get();
     expect({for (final m in moves) m.opId: m.counts}, {'open-op': true, 'sale-op': false});
-    expect((await old.cursors()).keys, ['customers'], reason: 'stock levels will be pulled again');
+    // (the customers cursor would go too: the v9 step pulls customers again for their due date)
+    expect((await old.cursors()).keys, ['customer_ledger'], reason: 'stock levels will be pulled again');
     await old.close();
   });
 

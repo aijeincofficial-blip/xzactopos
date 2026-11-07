@@ -165,7 +165,7 @@ class SyncEngine {
   static const posKinds = {
     'record_sale', 'void_sale', 'upsert_customer', 'record_utang_payment', 'post_opening_stock', 'receive_stock',
     'adjust_stock', 'adjust_utang', 'record_expense', 'void_expense', 'close_day', 'record_service_txn',
-    'void_service_txn', 'set_tingi_link', 'open_pack', 'void_open_pack',
+    'void_service_txn', 'set_tingi_link', 'open_pack', 'void_open_pack', 'set_utang_due',
   };
 
   /// One batch through sync_push. Results are applied in order; a transient `error` stops the batch.

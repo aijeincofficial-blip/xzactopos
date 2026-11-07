@@ -596,7 +596,7 @@ void main() {
     expect((await v8.cursors()).keys, contains('products'));
     expect((await v8.cursors()).keys, isNot(contains('product_variants')), reason: 'variants are pulled again for the link');
     final version = await v8.db.customSelect('PRAGMA user_version').getSingle();
-    expect(version.data.values.single, 8);
+    expect(version.data.values.single, v8.db.schemaVersion);
     await v8.setTingiLink(variantId: _vKaha, pieceVariantId: _vStick, piecesPerPack: 20, opId: 'l1');
     await v8.openPack(id: 'c1', packVariantId: _vKaha, packs: 1, opId: 'o1');
     expect((await v8.stockLeft(_vKaha), await v8.stockLeft(_vStick)), (2.0, 20.0));

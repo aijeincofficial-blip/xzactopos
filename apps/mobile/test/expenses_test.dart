@@ -516,7 +516,7 @@ void main() {
     expect(await v6.expectedCash(today()), 4000 + 500 - 1000);
     expect((await v6.watchLatestDayClose(today()).first)!.difference, 3500 - 3500);
     final version = await v6.db.customSelect('PRAGMA user_version').getSingle();
-    expect(version.data.values.single, 8);
+    expect(version.data.values.single, v6.db.schemaVersion);
     await v6.close();
     dir.deleteSync(recursive: true);
   });
