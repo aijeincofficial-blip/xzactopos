@@ -14,7 +14,7 @@ import 'stock_screen.dart';
 import 'today_screen.dart';
 import 'utang_screen.dart';
 
-/// Solo home: a few big buttons, nothing else to learn.
+/// Solo home: big buttons, two to a row, nothing else to learn.
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key, required this.backend, required this.storeName});
   final Backend backend;
@@ -24,6 +24,30 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
     final scope = CatalogScope.of(context);
+
+    void open(Widget screen) =>
+        Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => scope.wrap(screen)));
+
+    final tiles = <Widget>[
+      _Tile(key: const Key('tile-sell'), icon: Icons.point_of_sale, label: t.sell, onTap: () => open(const SellScreen())),
+      _Tile(key: const Key('tile-utang'), icon: Icons.menu_book_outlined, label: t.utangTitle, onTap: () => open(const UtangScreen())),
+      _Tile(key: const Key('tile-today'), icon: Icons.today_outlined, label: t.todayTitle, onTap: () => open(const TodayScreen())),
+      StreamBuilder<List<StockRow>>(
+        stream: scope.store.watchStockList(),
+        builder: (context, snap) => _Tile(
+          key: const Key('tile-stock'),
+          icon: Icons.inventory_outlined,
+          label: t.stockTitle,
+          badge: (snap.data ?? const <StockRow>[]).where((r) => r.low).length,
+          onTap: () => open(const StockScreen()),
+        ),
+      ),
+      _Tile(key: const Key('tile-products'), icon: Icons.inventory_2_outlined, label: t.products, onTap: () => open(const ProductsScreen())),
+      // reports are for the owner and admins (the same people who change stock)
+      if (scope.canManageStock)
+        _Tile(key: const Key('tile-reports'), icon: Icons.bar_chart, label: t.reportsTitle, onTap: () => open(ReportsScreen(backend: backend))),
+    ];
+
     return Scaffold(
       appBar: AppBar(
         title: Text(storeName, overflow: TextOverflow.ellipsis),
@@ -47,65 +71,12 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
-            _Tile(
-              key: const Key('tile-sell'),
-              icon: Icons.point_of_sale,
-              label: t.sell,
-              onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
-                builder: (_) => scope.wrap(const SellScreen()),
-              )),
-            ),
-            const SizedBox(height: 12),
-            _Tile(
-              key: const Key('tile-utang'),
-              icon: Icons.menu_book_outlined,
-              label: t.utangTitle,
-              onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
-                builder: (_) => scope.wrap(const UtangScreen()),
-              )),
-            ),
-            const SizedBox(height: 12),
-            _Tile(
-              key: const Key('tile-today'),
-              icon: Icons.today_outlined,
-              label: t.todayTitle,
-              onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
-                builder: (_) => scope.wrap(const TodayScreen()),
-              )),
-            ),
-            const SizedBox(height: 12),
-            // reports are for the owner and admins (the same people who change stock)
-            if (scope.canManageStock) ...[
-              _Tile(
-                key: const Key('tile-reports'),
-                icon: Icons.bar_chart,
-                label: t.reportsTitle,
-                onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
-                  builder: (_) => scope.wrap(ReportsScreen(backend: backend)),
-                )),
-              ),
-              const SizedBox(height: 12),
-            ],
-            StreamBuilder<List<StockRow>>(
-              stream: scope.store.watchStockList(),
-              builder: (context, snap) => _Tile(
-                key: const Key('tile-stock'),
-                icon: Icons.inventory_outlined,
-                label: t.stockTitle,
-                badge: (snap.data ?? const <StockRow>[]).where((r) => r.low).length,
-                onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
-                  builder: (_) => scope.wrap(const StockScreen()),
-                )),
-              ),
-            ),
-            const SizedBox(height: 12),
-            _Tile(
-              key: const Key('tile-products'),
-              icon: Icons.inventory_2_outlined,
-              label: t.products,
-              onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
-                builder: (_) => scope.wrap(const ProductsScreen()),
-              )),
+            GridView(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2, mainAxisSpacing: 12, crossAxisSpacing: 12, mainAxisExtent: 112),
+              children: tiles,
             ),
           ],
         ),
@@ -126,36 +97,34 @@ class _Tile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final enabled = onTap != null;
     return Material(
-      color: enabled ? scheme.primaryContainer : scheme.surfaceContainerHighest,
+      color: scheme.primaryContainer,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-          child: Row(children: [
-            Icon(icon, size: 36, color: enabled ? scheme.onPrimaryContainer : scheme.outline),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(label,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: enabled ? scheme.onPrimaryContainer : scheme.outline)),
-              ]),
-            ),
-            if (badge > 0)
-              Container(
+        child: Stack(children: [
+          Center(
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Icon(icon, size: 40, color: scheme.onPrimaryContainer),
+              const SizedBox(height: 8),
+              Text(label,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(color: scheme.onPrimaryContainer)),
+            ]),
+          ),
+          if (badge > 0)
+            Positioned(
+              top: 8,
+              right: 8,
+              child: Container(
                 key: const Key('tile-badge'),
-                margin: const EdgeInsets.only(right: 8),
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(color: scheme.error, borderRadius: BorderRadius.circular(12)),
                 child: Text('$badge', style: TextStyle(color: scheme.onError, fontWeight: FontWeight.w700)),
               ),
-            if (enabled) Icon(Icons.chevron_right, color: scheme.onPrimaryContainer),
-          ]),
-        ),
+            ),
+        ]),
       ),
     );
   }
