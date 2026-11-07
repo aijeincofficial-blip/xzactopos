@@ -24,7 +24,16 @@ Updated at the end of every task. Read this first in a fresh session.
     (last_superadmin, limit_locations, base_currency_locked, location_type_locked, self_deactivate, user_has_tenant, ...).
   - `can(ctx, key, locationId?)` / `check()` mirror the §5 matrix; build ctx with `contextFromAccess(get_my_access())`.
     Without a location id it answers "in at least one of my locations". UI hint only; RPCs are the gate.
-  - Next: P1-06 Edge Functions `create_user` and `invite_user`.
+  - P1-06 Edge Functions: done. `supabase/functions/create_user`, `invite_user`, `_shared/{validate,http,clients}.ts`.
+    Migration `20261107000500_user_registration.sql`: `admin_register_user` (service role only) holds all authorization,
+    the functions only pass the verified caller id. Refused requests delete the just-created auth user.
+    Tests: pgTAP `006_user_registration.test.sql` (16), Vitest `validate.test.ts` (20, run by `pnpm test:functions`),
+    end-to-end `pnpm smoke:users` (16 checks against the local stack, cleans up after itself).
+  - **Login model:** cashiers sign in as `<username>.<slug>@pos.invalid` (client builds it from slug + username);
+    invited users sign in with their real email. Deliberately no anon lookup function (would allow account enumeration).
+  - `invite_user` also provisions a tenant + first superadmin when called with the service role key or by a platform admin.
+  - Auth `site_url` is now `http://localhost:5173` (invite links land on the client).
+  - Next: P1-07 admin UI (Sonnet is fine).
 - **RLS shape:** reads follow the §5 matrix; direct client writes only for simple master data
   (tenant name/timezone/tax_mode, settings, currency rates, location name/address/active, own profile name/locale).
   Modules, roles, assignments, new locations, bins: RPC only (P1-05). Column-level grants enforce the editable columns.

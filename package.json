@@ -16,7 +16,9 @@
     "typecheck": "pnpm -r --if-present typecheck",
     "test": "pnpm -r --if-present test",
     "test:db": "node scripts/test-db.mjs",
-    "check": "node scripts/check.mjs"
+    "check": "node scripts/check.mjs",
+    "test:functions": "vitest run --dir supabase/functions",
+    "smoke:users": "node scripts/smoke-users.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
