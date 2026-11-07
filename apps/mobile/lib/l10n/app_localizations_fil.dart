@@ -923,4 +923,23 @@ class AppLocalizationsFil extends AppLocalizations {
   String restockEstimate(String amount) {
     return 'Mga $amount';
   }
+
+  @override
+  String get exportSection => 'I-export at backup';
+
+  @override
+  String get exportHint =>
+      'Ipadala bilang spreadsheet (CSV) sa mensahe o email';
+
+  @override
+  String get exportSales => 'Mga benta';
+
+  @override
+  String get exportUtang => 'Utang';
+
+  @override
+  String get exportStock => 'Stock';
+
+  @override
+  String get exportFailed => 'Hindi naipadala ang file. Subukan ulit.';
 }

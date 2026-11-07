@@ -916,4 +916,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String restockEstimate(String amount) {
     return 'About $amount';
   }
+
+  @override
+  String get exportSection => 'Export & backup';
+
+  @override
+  String get exportHint =>
+      'Send as a spreadsheet file (CSV) by message or email';
+
+  @override
+  String get exportSales => 'Sales';
+
+  @override
+  String get exportUtang => 'Utang';
+
+  @override
+  String get exportStock => 'Stock';
+
+  @override
+  String get exportFailed => 'Could not share the file. Try again.';
 }

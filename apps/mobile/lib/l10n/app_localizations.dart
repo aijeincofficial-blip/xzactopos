@@ -1585,6 +1585,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'About {amount}'**
   String restockEstimate(String amount);
+
+  /// No description provided for @exportSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Export & backup'**
+  String get exportSection;
+
+  /// No description provided for @exportHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Send as a spreadsheet file (CSV) by message or email'**
+  String get exportHint;
+
+  /// No description provided for @exportSales.
+  ///
+  /// In en, this message translates to:
+  /// **'Sales'**
+  String get exportSales;
+
+  /// No description provided for @exportUtang.
+  ///
+  /// In en, this message translates to:
+  /// **'Utang'**
+  String get exportUtang;
+
+  /// No description provided for @exportStock.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock'**
+  String get exportStock;
+
+  /// No description provided for @exportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not share the file. Try again.'**
+  String get exportFailed;
 }
 
 class _AppLocalizationsDelegate

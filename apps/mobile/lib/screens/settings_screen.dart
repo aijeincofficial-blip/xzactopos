@@ -4,7 +4,9 @@ import '../app.dart' show LocaleScope;
 import '../backend.dart';
 import '../core/theme.dart';
 import '../core/ui.dart';
+import '../core/export.dart';
 import '../core/theme_picker.dart';
+import '../sync/store_session.dart';
 import '../l10n/app_localizations.dart';
 import '../sync/sync_badge.dart';
 import 'password_screens.dart';
@@ -244,6 +246,31 @@ class SettingsScreen extends StatelessWidget {
 
             const SizedBox(height: Gap.l),
 
+            // Export & backup (owner/managers only)
+            if (CatalogScope.of(context).canManageStock) ...[
+              _SectionHeader(title: t.exportSection.toUpperCase()),
+              AppCard(
+                padding: const EdgeInsets.all(Gap.l),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(children: [
+                      CoinBadge(icon: Icons.ios_share_rounded, color: scheme.secondary, size: 36),
+                      const SizedBox(width: Gap.m),
+                      Expanded(child: Text(t.exportHint, style: TextStyle(fontSize: 13, color: scheme.outline))),
+                    ]),
+                    const SizedBox(height: Gap.m),
+                    Wrap(spacing: Gap.s, runSpacing: Gap.s, children: [
+                      _ExportButton(key: const Key('export-sales'), label: t.exportSales, kind: _ExportKind.sales),
+                      _ExportButton(key: const Key('export-utang'), label: t.exportUtang, kind: _ExportKind.utang),
+                      _ExportButton(key: const Key('export-stock'), label: t.exportStock, kind: _ExportKind.stock),
+                    ]),
+                  ],
+                ),
+              ),
+              const SizedBox(height: Gap.l),
+            ],
+
             // Security & Credentials Card
             _SectionHeader(title: t.settingsSecurity.toUpperCase()),
             AppCard(
@@ -380,4 +407,39 @@ class _SectionHeader extends StatelessWidget {
       ),
     );
   }
+}
+
+enum _ExportKind { sales, utang, stock }
+
+class _ExportButton extends StatelessWidget {
+  const _ExportButton({super.key, required this.label, required this.kind});
+  final String label;
+  final _ExportKind kind;
+
+  Future<void> _run(BuildContext context) async {
+    final t = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final store = CatalogScope.of(context).store;
+    final ccy = store.baseCurrency;
+    final day = DateTime.now().toIso8601String().substring(0, 10);
+    try {
+      switch (kind) {
+        case _ExportKind.sales:
+          await csvSharer.share(fileName: 'sales-$day.csv', csv: salesCsv(await store.watchSales(limit: 5000).first, ccy));
+        case _ExportKind.utang:
+          await csvSharer.share(fileName: 'utang-$day.csv', csv: utangCsv(await store.watchCustomers().first, ccy));
+        case _ExportKind.stock:
+          await csvSharer.share(fileName: 'stock-$day.csv', csv: stockCsv(await store.watchStockList().first));
+      }
+    } catch (_) {
+      messenger.showSnackBar(SnackBar(content: Text(t.exportFailed)));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => OutlinedButton(
+        style: OutlinedButton.styleFrom(minimumSize: const Size(0, 40), padding: const EdgeInsets.symmetric(horizontal: 16)),
+        onPressed: () => _run(context),
+        child: Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+      );
 }

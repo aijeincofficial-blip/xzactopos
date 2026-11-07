@@ -523,5 +523,11 @@
         "type": "String"
       }
     }
-  }
+  },
+  "exportSection": "I-export at backup",
+  "exportHint": "Ipadala bilang spreadsheet (CSV) sa mensahe o email",
+  "exportSales": "Mga benta",
+  "exportUtang": "Utang",
+  "exportStock": "Stock",
+  "exportFailed": "Hindi naipadala ang file. Subukan ulit."
 }

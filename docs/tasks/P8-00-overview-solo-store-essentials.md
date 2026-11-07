@@ -29,7 +29,7 @@ A tindera can run a whole day in the app: sell fast, take cash-in/out and load, 
 | P8-09 Tingi UI | set ratio, "open a pack" action | Sonnet |
 | P8-10 Utang due dates + statement | migration (`due_on`), op, overdue list, share text | Opus (schema) then Sonnet (UI) |
 | P8-11 Expiry dates | per-receipt expiry, "expiring soon" on Home and Stock | Opus (schema) then Sonnet (UI) |
-| P8-12 Export and backup | CSV of sales, utang, stock, share sheet | Sonnet |
+| P8-12 Export and backup | CSV of sales, utang, stock, share sheet (share_plus). DONE | Sonnet |
 | P8-13 Acceptance | emulator day walk-through, report in handoff | Sonnet |
 
 ## Order

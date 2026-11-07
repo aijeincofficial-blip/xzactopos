@@ -523,5 +523,11 @@
         "type": "String"
       }
     }
-  }
+  },
+  "exportSection": "Export & backup",
+  "exportHint": "Send as a spreadsheet file (CSV) by message or email",
+  "exportSales": "Sales",
+  "exportUtang": "Utang",
+  "exportStock": "Stock",
+  "exportFailed": "Could not share the file. Try again."
 }
