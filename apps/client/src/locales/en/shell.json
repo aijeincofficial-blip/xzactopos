@@ -1,0 +1,11 @@
+{
+  "title": "Foundation check",
+  "status": {
+    "label": "Local Supabase",
+    "checking": "Checking connection...",
+    "connected": "Connected",
+    "unreachable": "Unreachable. Is supabase start running?",
+    "unconfigured": "Not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY."
+  },
+  "moneySample": "Sample amount ({{currency}})"
+}

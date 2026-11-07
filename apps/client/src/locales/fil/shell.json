@@ -1,0 +1,11 @@
+{
+  "title": "Pagsusuri ng pundasyon",
+  "status": {
+    "label": "Lokal na Supabase",
+    "checking": "Sinusuri ang koneksyon...",
+    "connected": "Nakakonekta",
+    "unreachable": "Hindi maabot. Tumatakbo ba ang supabase start?",
+    "unconfigured": "Hindi naka-configure. Itakda ang VITE_SUPABASE_URL at VITE_SUPABASE_ANON_KEY."
+  },
+  "moneySample": "Halimbawang halaga ({{currency}})"
+}

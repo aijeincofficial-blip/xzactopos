@@ -1,0 +1,5 @@
+{
+  "appName": "POS Platform",
+  "actions": { "retry": "Retry", "save": "Save", "cancel": "Cancel" },
+  "language": { "label": "Language", "en": "English", "fil": "Filipino" }
+}
