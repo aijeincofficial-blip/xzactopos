@@ -409,3 +409,12 @@ My debug build replaced the other session's build of the same app on the emulato
 
 ### Phase 7 follow-up
 Share was checked on the emulator (Android share sheet with `LL3-261107-0001.pdf`). Offline web in a normal Chrome, real barcode decoding and release signing are still open: see `docs/START-HERE-antigravity.md`.
+
+## Antigravity Session: Neo-Fintech Design, Settings Screen, Theme Fix, & Reports Enrichment
+Read `docs/START-HERE-claude.md` for the complete handoff from Antigravity.
+- **Sculptural Ceramic Redesign**: Elevated app UI across all screens into a neo-fintech / Web3 ceramic aesthetic (`AppCard`, `SummaryCard`, `CoinBadge`, `_ObsidianSellButton`).
+- **Fixed Live Theme Switching**: Converted `_ThemeSheet` to stateful, dynamic color tokens react across both `FreshTide` and `GoldenIndigo` palettes in both Light and Dark modes.
+- **Dedicated Settings Screen**: Created `SettingsScreen` (`apps/mobile/lib/screens/settings_screen.dart`) housing Store identity, Theme & Mode, Language, Security/Password, and Sign Out.
+- **Home Header & 360px Safety**: Streamlined AppBar with store capsule, store avatar with active indicator, and zero overflow on 360px devices.
+- **Enriched Reporting**: Added Average Order Value (AOV), Total Orders, multi-channel payment share bar, and live inventory health & reorder alert card.
+- **Tests**: All 25 suites and 173 automated tests passing green. Live verified on Android emulator (`emulator-5554`).
