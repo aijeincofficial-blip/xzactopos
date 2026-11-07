@@ -125,4 +125,48 @@ void main() {
     expect((await store.nextOps()).where((o) => o.kind == 'upsert_customer').length, 4);
     await leave(tester);
   });
+
+  testWidgets('the owner can write off part of a debt, or correct it upwards', (tester) async {
+    final store = await openUtang(tester);
+    await tester.tap(find.byKey(const Key('customer-row-c-rosa')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('adjust-balance')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('adjust-amount')), '50');
+    await tester.enterText(find.byKey(const Key('adjust-note')), 'pinatawad');
+    await tester.tap(find.byKey(const Key('adjust-save')));
+    await tester.pumpAndSettle();
+    expect(tester.widget<Text>(find.byKey(const Key('customer-balance'))).data, '₱100.00');
+    var op = (await store.nextOps()).last;
+    expect(op.kind, 'adjust_utang');
+    expect(op.payload['amount'], -5000);
+    expect(op.payload['note'], 'pinatawad');
+
+    await tester.tap(find.byKey(const Key('adjust-balance')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('adjust-more')));
+    await tester.pump();
+    await tester.enterText(find.byKey(const Key('adjust-amount')), '10');
+    await tester.tap(find.byKey(const Key('adjust-save')));
+    await tester.pumpAndSettle();
+    expect(tester.widget<Text>(find.byKey(const Key('customer-balance'))).data, '₱110.00');
+    op = (await store.nextOps()).last;
+    expect(op.payload['amount'], 1000);
+    expect(find.text('Adjustment'), findsWidgets, reason: 'shows in the history');
+    await leave(tester);
+  });
+
+  testWidgets('a bad adjustment amount is refused', (tester) async {
+    final store = await openUtang(tester);
+    await tester.tap(find.byKey(const Key('customer-row-c-rosa')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('adjust-balance')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('adjust-amount')), '0');
+    await tester.tap(find.byKey(const Key('adjust-save')));
+    await tester.pumpAndSettle();
+    expect(find.text('Enter a number, like 12.50'), findsOneWidget);
+    expect((await store.nextOps()).where((o) => o.kind == 'adjust_utang'), isEmpty);
+    await leave(tester);
+  });
 }

@@ -137,6 +137,12 @@ class SupabaseBackend implements Backend {
   }
 
   @override
+  Future<Map<String, dynamic>> pullSales(Map<String, dynamic>? cursor, {int limit = 100}) async {
+    final res = await _auth(() => _c.rpc('sync_pull_sales', params: {'p_cursor': cursor, 'p_limit': limit}));
+    return (res as Map).cast<String, dynamic>();
+  }
+
+  @override
   Future<List<Map<String, dynamic>>> syncPush(List<Map<String, dynamic>> ops) async {
     final res = await _auth(() => _c.rpc('sync_push', params: {'p_ops': ops}));
     return (res as List).map((e) => (e as Map).cast<String, dynamic>()).toList();

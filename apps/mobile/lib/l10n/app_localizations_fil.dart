@@ -701,4 +701,24 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get changePassword => 'Palitan ang password';
+
+  @override
+  String get utangAdjust => 'Ayusin ang utang';
+
+  @override
+  String utangAdjustTitle(String name) {
+    return 'Ayusin ang utang ni $name';
+  }
+
+  @override
+  String get utangWriteOff => 'Bawasan ang utang (burahin)';
+
+  @override
+  String get utangAddMore => 'Dagdagan ang utang (pagwawasto)';
+
+  @override
+  String get utangAdjustAmount => 'Magkano?';
+
+  @override
+  String get utangAdjusted => 'Naayos na ang utang';
 }

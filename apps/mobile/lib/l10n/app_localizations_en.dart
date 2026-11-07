@@ -693,4 +693,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get changePassword => 'Change password';
+
+  @override
+  String get utangAdjust => 'Adjust balance';
+
+  @override
+  String utangAdjustTitle(String name) {
+    return 'Adjust $name\'s balance';
+  }
+
+  @override
+  String get utangWriteOff => 'Owes less (write off)';
+
+  @override
+  String get utangAddMore => 'Owes more (correction)';
+
+  @override
+  String get utangAdjustAmount => 'How much?';
+
+  @override
+  String get utangAdjusted => 'Balance adjusted';
 }

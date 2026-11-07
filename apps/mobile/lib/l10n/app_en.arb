@@ -390,5 +390,18 @@
   "confirmPassword": "Type it again",
   "passwordsDiffer": "The two passwords are different",
   "passwordSaved": "Password changed",
-  "changePassword": "Change password"
+  "changePassword": "Change password",
+  "utangAdjust": "Adjust balance",
+  "utangAdjustTitle": "Adjust {name}'s balance",
+  "@utangAdjustTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "utangWriteOff": "Owes less (write off)",
+  "utangAddMore": "Owes more (correction)",
+  "utangAdjustAmount": "How much?",
+  "utangAdjusted": "Balance adjusted"
 }

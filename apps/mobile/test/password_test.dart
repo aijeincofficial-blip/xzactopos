@@ -90,7 +90,7 @@ void main() {
     await tester.tap(find.byKey(const Key('change-password-save')));
     await tester.pumpAndSettle();
     expect(find.text('At least 6 characters'), findsOneWidget);
-    expect((backend as FakeBackend).passwordsSet, isEmpty);
+    expect(backend.passwordsSet, isEmpty);
 
     await tester.enterText(find.byKey(const Key('change-password-field')), 'newsecret');
     await tester.tap(find.byKey(const Key('change-password-save')));

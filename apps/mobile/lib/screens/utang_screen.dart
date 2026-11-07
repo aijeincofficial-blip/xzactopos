@@ -182,6 +182,78 @@ class CustomerScreen extends StatelessWidget {
     scope.engine.poke();
   }
 
+  Future<void> _adjust(BuildContext context, CustomerView c) async {
+    final t = AppLocalizations.of(context);
+    final scope = CatalogScope.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final ccy = scope.store.baseCurrency;
+    final amount = TextEditingController();
+    final note = TextEditingController();
+    var less = true;
+    String? error;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setState) => AlertDialog(
+          title: Text(t.utangAdjustTitle(c.name)),
+          content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Wrap(spacing: 8, children: [
+              ChoiceChip(
+                key: const Key('adjust-less'),
+                label: Text(t.utangWriteOff),
+                selected: less,
+                onSelected: (_) => setState(() => less = true),
+              ),
+              ChoiceChip(
+                key: const Key('adjust-more'),
+                label: Text(t.utangAddMore),
+                selected: !less,
+                onSelected: (_) => setState(() => less = false),
+              ),
+            ]),
+            TextField(
+              key: const Key('adjust-amount'),
+              controller: amount,
+              autofocus: true,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              style: const TextStyle(fontSize: 24),
+              decoration: InputDecoration(labelText: t.utangAdjustAmount, errorText: error),
+            ),
+            TextField(key: const Key('adjust-note'), controller: note, decoration: InputDecoration(labelText: t.utangNote)),
+          ]),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(t.cancel)),
+            FilledButton(
+              key: const Key('adjust-save'),
+              onPressed: () {
+                int? v;
+                try {
+                  v = Money.parse(amount.text, ccy).amount;
+                } catch (_) {}
+                if (v == null || v <= 0) {
+                  setState(() => error = t.errBadAmount);
+                } else {
+                  Navigator.pop(ctx, true);
+                }
+              },
+              child: Text(t.save),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (ok != true) return;
+    final v = Money.parse(amount.text, ccy).amount;
+    await scope.store.adjustUtang(
+      customerId: c.id,
+      amount: less ? -v : v,
+      note: note.text.trim().isEmpty ? null : note.text.trim(),
+      opId: const Uuid().v7(),
+    );
+    scope.engine.poke();
+    messenger.showSnackBar(SnackBar(content: Text(t.utangAdjusted)));
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
@@ -222,6 +294,12 @@ class CustomerScreen extends StatelessWidget {
                             key: const Key('customer-balance'),
                             style: Theme.of(context).textTheme.displaySmall?.copyWith(fontWeight: FontWeight.w800)),
                       if (c.phone != null) Text(c.phone!),
+                      if (scope.canManageStock)
+                        TextButton(
+                          key: const Key('adjust-balance'),
+                          onPressed: () => _adjust(context, c),
+                          child: Text(t.utangAdjust),
+                        ),
                     ]),
                   ),
                   Expanded(

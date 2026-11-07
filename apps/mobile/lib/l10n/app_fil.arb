@@ -390,5 +390,18 @@
   "confirmPassword": "Ulitin",
   "passwordsDiffer": "Hindi magkapareho ang dalawang password",
   "passwordSaved": "Napalitan na ang password",
-  "changePassword": "Palitan ang password"
+  "changePassword": "Palitan ang password",
+  "utangAdjust": "Ayusin ang utang",
+  "utangAdjustTitle": "Ayusin ang utang ni {name}",
+  "@utangAdjustTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "utangWriteOff": "Bawasan ang utang (burahin)",
+  "utangAddMore": "Dagdagan ang utang (pagwawasto)",
+  "utangAdjustAmount": "Magkano?",
+  "utangAdjusted": "Naayos na ang utang"
 }

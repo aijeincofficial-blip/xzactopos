@@ -36,6 +36,9 @@ class AuthFailApi implements SyncApi {
   @override
   Future<Map<String, dynamic>> pullCatalog(Map<String, dynamic> cursors, {int limit = 500}) async => throw const AuthExpired();
   @override
+  Future<Map<String, dynamic>> pullSales(Map<String, dynamic>? cursor, {int limit = 100}) async =>
+      {'rows': <dynamic>[], 'has_more': false};
+  @override
   Future<Map<String, dynamic>> pullPos(Map<String, dynamic> cursors, {int limit = 500}) async => pullPage();
   @override
   Future<List<Map<String, dynamic>>> syncPush(List<Map<String, dynamic>> ops) async => throw const AuthExpired();

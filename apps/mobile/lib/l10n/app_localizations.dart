@@ -1207,6 +1207,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Change password'**
   String get changePassword;
+
+  /// No description provided for @utangAdjust.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust balance'**
+  String get utangAdjust;
+
+  /// No description provided for @utangAdjustTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust {name}\'s balance'**
+  String utangAdjustTitle(String name);
+
+  /// No description provided for @utangWriteOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Owes less (write off)'**
+  String get utangWriteOff;
+
+  /// No description provided for @utangAddMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Owes more (correction)'**
+  String get utangAddMore;
+
+  /// No description provided for @utangAdjustAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'How much?'**
+  String get utangAdjustAmount;
+
+  /// No description provided for @utangAdjusted.
+  ///
+  /// In en, this message translates to:
+  /// **'Balance adjusted'**
+  String get utangAdjusted;
 }
 
 class _AppLocalizationsDelegate

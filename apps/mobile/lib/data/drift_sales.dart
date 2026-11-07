@@ -249,6 +249,28 @@ mixin DriftSales implements SalesStore {
   }
 
   @override
+  Future<void> adjustUtang({required String customerId, required int amount, String? note, required String opId}) {
+    if (amount == 0) throw ArgumentError('Amount must not be zero');
+    return db.transaction(() async {
+      final at = _iso(DateTime.now());
+      await db.into(db.localLedger).insert(LocalLedgerCompanion.insert(
+            opId: opId,
+            customerId: customerId,
+            kind: 'adjust',
+            amount: amount,
+            note: Value(note),
+            occurredAt: at,
+          ));
+      await enqueue(opId, 'adjust_utang', customerId, {
+        'customer_id': customerId,
+        'amount': amount,
+        if (note != null && note.isNotEmpty) 'note': note,
+        'occurred_at': at,
+      });
+    });
+  }
+
+  @override
   Stream<List<CustomerView>> watchCustomers() {
     return db
         .customSelect(
@@ -585,6 +607,64 @@ mixin DriftSales implements SalesStore {
         .write(LocalMovementsCompanion(confirmedAfter: Value(at)));
     await (db.update(db.localLedger)..where((m) => m.opId.equals(opId)))
         .write(LocalLedgerCompanion(confirmedAfter: Value(at)));
+  }
+
+  static String _utc(String iso) => DateTime.parse(iso).toUtc().toIso8601String();
+
+  @override
+  Future<void> applyPullSales(Map<String, dynamic> response) {
+    return db.transaction(() async {
+      final rows = ((response['rows'] as List?) ?? const []).cast<Map<String, dynamic>>();
+      final unsent = (await db.select(db.outbox).get()).map((o) => o.entityId).toSet();
+      for (final r in rows) {
+        final id = r['id'] as String;
+        if (unsent.contains(id)) continue; // a local change (e.g. a cancel) is still on its way: keep ours
+        await db.into(db.sales).insertOnConflictUpdate(SalesCompanion.insert(
+              id: id,
+              localNo: r['local_no'] as String,
+              status: Value(r['status'] as String),
+              subtotal: (r['subtotal'] as num).toInt(),
+              discount: Value((r['discount'] as num).toInt()),
+              tax: Value((r['tax'] as num).toInt()),
+              total: (r['total'] as num).toInt(),
+              customerId: Value(r['customer_id'] as String?),
+              soldAt: _utc(r['sold_at'] as String),
+              voidedAt: Value(r['voided_at'] == null ? null : _utc(r['voided_at'] as String)),
+              voidReason: Value(r['void_reason'] as String?),
+            ));
+        await (db.delete(db.saleItems)..where((i) => i.saleId.equals(id))).go();
+        await (db.delete(db.salePayments)..where((p) => p.saleId.equals(id))).go();
+        for (final i in (r['items'] as List).cast<Map<String, dynamic>>()) {
+          await db.into(db.saleItems).insert(SaleItemsCompanion.insert(
+                saleId: id,
+                variantId: i['variant_id'] as String,
+                name: i['name'] as String,
+                qty: (i['qty'] as num).toDouble(),
+                unitPrice: (i['unit_price'] as num).toInt(),
+                unitCost: Value((i['unit_cost'] as num).toInt()),
+                discount: Value((i['discount'] as num).toInt()),
+                tax: Value((i['tax'] as num).toInt()),
+                lineTotal: (i['line_total'] as num).toInt(),
+                tracked: Value(i['tracked'] as bool? ?? true),
+              ));
+        }
+        for (final p in (r['payments'] as List).cast<Map<String, dynamic>>()) {
+          await db.into(db.salePayments).insert(SalePaymentsCompanion.insert(
+                saleId: id,
+                method: p['method'] as String,
+                amount: (p['amount'] as num).toInt(),
+                tendered: Value((p['tendered'] as num?)?.toInt()),
+                reference: Value(p['reference'] as String?),
+              ));
+        }
+      }
+      final cursor = response['cursor'];
+      if (cursor is Map) {
+        await db
+            .into(db.syncCursors)
+            .insertOnConflictUpdate(SyncCursorsCompanion.insert(tableKey: 'sales', cursorJson: jsonEncode(cursor)));
+      }
+    });
   }
 
   static const _posTables = ['stock_levels', 'customers', 'customer_ledger'];

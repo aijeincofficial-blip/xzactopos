@@ -11,6 +11,9 @@ abstract class SyncApi {
   /// Stock levels, customers and the utang ledger (sync_pull_pos).
   Future<Map<String, dynamic>> pullPos(Map<String, dynamic> cursors, {int limit = 500});
 
+  /// Recent sales with their lines and payments (sync_pull_sales). [cursor] is the last one received, or null.
+  Future<Map<String, dynamic>> pullSales(Map<String, dynamic>? cursor, {int limit = 100});
+
   /// Sends up to 50 sale/stock/utang ops in order (sync_push). Returns one result per op:
   /// `{op_id, status: ok|rejected|error, result?, hint?}`. A batch stops at the first `error`, so fewer results can come back.
   /// Throws on network or server trouble (transient).
@@ -142,7 +145,7 @@ class SyncEngine {
     }
   }
 
-  static const posKinds = {'record_sale', 'void_sale', 'upsert_customer', 'record_utang_payment', 'post_opening_stock', 'receive_stock', 'adjust_stock'};
+  static const posKinds = {'record_sale', 'void_sale', 'upsert_customer', 'record_utang_payment', 'post_opening_stock', 'receive_stock', 'adjust_stock', 'adjust_utang'};
 
   /// One batch through sync_push. Results are applied in order; a transient `error` stops the batch.
   /// Returns how many ops were settled (applied or refused).
@@ -243,7 +246,14 @@ class SyncEngine {
       final res = await api.pullPos(await store.cursors(), limit: pageLimit);
       await store.applyPullPos(res);
       final more = res.values.any((v) => v is Map && v['has_more'] == true);
-      if (!more) return;
+      if (!more) break;
+    }
+    // sales made on other devices (or before a reinstall): receipts and Today
+    for (var page = 0; page < _maxPagesPerRun; page++) {
+      final cursor = (await store.cursors())['sales'];
+      final res = await api.pullSales(cursor is Map ? cursor.cast<String, dynamic>() : null, limit: 100);
+      await store.applyPullSales(res);
+      if (res['has_more'] != true) return;
     }
   }
 

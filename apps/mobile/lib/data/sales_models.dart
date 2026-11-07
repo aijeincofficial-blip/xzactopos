@@ -209,6 +209,8 @@ abstract class SalesStore {
   Future<void> voidSale(String saleId, {required String opId, String? reason});
 
   Future<void> saveCustomer({required String id, required String name, String? phone, required String opId});
+  /// Owner write-off or correction of a customer's balance. [amount] is signed: positive = owes more, negative = owes less.
+  Future<void> adjustUtang({required String customerId, required int amount, String? note, required String opId});
   Future<void> recordUtangPayment({required String customerId, required int amount, String? note, required String opId});
 
   Stream<List<CustomerView>> watchCustomers();
@@ -243,6 +245,10 @@ abstract class SalesStore {
   // ---- sync side ----
   /// Marks the stock/utang effects of an op as applied by the server at [appliedAt].
   Future<void> posOpApplied(String opId, String? appliedAt);
+
+  /// Applies one sync_pull_sales response: recent sales (also from other devices) with lines and payments.
+  /// Sales with unsent local changes are left alone.
+  Future<void> applyPullSales(Map<String, dynamic> response);
 
   /// Applies one sync_pull_pos response; drops local effects the server's copy now covers.
   Future<void> applyPullPos(Map<String, dynamic> response);
