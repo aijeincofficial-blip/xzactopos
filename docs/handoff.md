@@ -4,6 +4,7 @@ Updated at the end of every task. Read this first in a fresh session.
 
 ## Status
 - Phase 0 (Foundation): done, committed (6d59c99).
+- **Phase 3 (solo Sell screen, utang, stock ledger): done** (cards P3-01..P3-08, report at the end of this file). Phase 2 (solo catalog) accepted before it. Next: Phase 4.
 - **Phase 1 (Tenancy, Auth, RBAC): done, accepted (P1-08).** Cards in docs/tasks/P1-01..P1-08. Next: Phase 2 (catalog and local store).
   - P1-01 core schema: done. Migration `20261107000100_core_tenancy.sql`, pgTAP `001_core_schema.test.sql` (38 tests).
   - P1-02 hook + helpers: done. Migration `20261107000200_auth_hook_and_helpers.sql`, pgTAP `002_auth_helpers.test.sql` (42 tests).
@@ -250,4 +251,51 @@ and fails on the old code (verified) / passes on the fix.
 - Opening stock lives on the device until Phase 4 (stock ledger). Camera barcode scan deferred.
 - `flutter test` is not part of `pnpm check`.
 
-**Next:** Phase 3 (Sell screen in Flutter: cart, cash, utang, receipt, outbox `sync_push` for sales). Opus for sync + stock math.
+**Next:** Phase 3 is done (see the Phase 3 section below). Phase 4 is next.
+
+## Phase 3 (solo): Sell screen, cash, utang, receipt, stock ledger - done (branch `claude/phase3-sell-8261d3`, cards `docs/tasks/P3-00..P3-08`)
+Decisions are in `P3-00-overview-solo-sell.md` (confirmed by the user, including the e-wallet label, cancel sale, and Flutter in `pnpm check`).
+
+- **P3-01 schema** (`20261108000500_sales_ledger.sql`): `stock_movements` (append-only; types opening | sale | sale_void), `stock_levels` (trigger-derived, may go negative),
+  `customers`, `customer_ledger` (append-only, balance = sum, charge > 0 / payment < 0), `sales`, `sale_items`, `payments`. All RLS read-only for clients.
+  Sales, stock, lines and payments follow store access (`auth_location_ids()`); customers and ledger: superadmin, admin, cashier (not warehouse). `unique (tenant_id, local_no)`,
+  `total = subtotal - discount` as a check. pgTAP `011` (26) + isolation matrix rows for 7 tables x 5 roles (mutation-tested: a `sales` policy of `using (true)` fails the matrix).
+- **P3-02 RPCs** (`20261108000600_sale_rpcs.sql`): `sync_push(ops)` (1 to 50 ops, one subtransaction per op, `claim_op`/`finish_op` idempotency) dispatching to `op_record_sale`,
+  `op_void_sale`, `op_upsert_customer`, `op_record_utang_payment`, `op_post_opening_stock`; `sync_pull_pos(cursors, limit)` (stock levels, customers, ledger; keyset, 5 s hold-back).
+  The server recomputes every total and refuses a client that disagrees (`totals_mismatch`, `payments_mismatch`). Per-op result `ok | rejected(hint) | error(code)`; a transient `error`
+  (40001, 40P01, ...) stops the batch so later ops are never applied out of order. Void needs supervisor access to the store (the solo owner is superadmin). Negative stock is accepted.
+  Op id reuse across kinds -> `op_id_reused`. pgTAP `012` (73). Hints: not_allowed, location_required, location_denied, customer_required, unknown_customer, unknown_variant, items_required,
+  qty_invalid, totals_mismatch, payments_mismatch, duplicate_local_no, id_conflict, sale_not_found, amount_invalid, invalid_value, unknown_kind, batch_invalid.
+- **P3-03 local store and sync:** Drift schema v4 (customers, server_ledger, local_ledger, stock_levels, local_movements, sales, sale_items, sale_payments); `SalesStore` interface (`lib/data/sales_models.dart`)
+  implemented by the `DriftSales` mixin on `DriftStore`. `commitSale` is one transaction (sale, lines, payments, stock effect, utang entry, outbox op, receipt number `<3-char device code>-YYMMDD-NNNN`).
+  Line math is integer (qty in thousandths) so it can never differ from the server's numeric rounding.
+  **Stock and utang on screen = server copy + local effects.** An effect stays counted until a complete pull (no `has_more`) has `server_time - 5 s >= applied_at`, and for stock also a local
+  level row at least as new as the op. Tested against a fake server that honours the hold-back. Engine: consecutive pos ops go out in batches of 50; catalog ops keep their own RPCs; the pull runs
+  catalog, then pos. `openingOpId(variant)` is a fixed op id per variant, so opening stock can never count twice; v3 `opening_stock` rows are converted to ops on upgrade (tested).
+- **P3-04..07 screens:** Sell (search, keyboard-scanner Enter, quick-tap tiles = most sold in 30 days, cart persisted in `meta`), Pay (exact cash by default, quick bills, change, GCash/Maya label,
+  utang for the unpaid rest with a customer picker / new customer, peso discount), Receipt (on screen; `ReceiptPrinter` interface with `NoPrinter`), Utang (balances, history, record a payment, overpay refused),
+  Today (takings by cash / e-wallet / utang, sales list, cancel from the receipt). Home tiles: Sell, Utang, Today, Products. All strings in fil + en.
+- **Bugs found by tests and the browser:** the push loop stopped after 50 ops (the progress guard was wrong; it now counts settled ops); a fake server that ignored the hold-back made stock count twice;
+  `setState` returning a Future again (`_pay`); `ButtonSegment` has no `key`.
+
+### Phase 3 acceptance report (P3-08)
+Run 2026-11-07/08 against the local stack, release web build served by `tool/serve_web.py` on :5301, using the existing local test tindera "Tindahan ni Aling Nena" (its Drift v3 data migrated to v4 in place).
+
+| Criterion (P3-00 "Done when") | Result |
+| --- | --- |
+| 20 sales offline reach the server exactly once, also after a forced mid-push failure | **Pass.** `sales_sync_test`: 20 offline sales; the server applies the batch but the response is lost; the phone retries with the same op ids: 20 sales, stock 100-20, no duplicates; the screen shows 80 before and after the server level arrives. Also 120 ops go out as batches 50/50/20. Server side: `supabase/scripts/accept_p3_push_20.sql` pushes 20 ops (one bad) twice in a rolled-back transaction: 19 ok + 1 rejected, second push = 19 replays, 19 sales, 19 movements, 45,600 centavos, stock taken 38 |
+| Real browser, offline (requests to :54321 blocked in the page) | **Pass.** Sale 1 (3 Kape + 1 Pancit, cash 100.00, change 45.50) and sale 2 (Sardinas all on utang, new customer Aling Rosa) completed offline with receipts T4U-261107-0001 / -0002 marked "not sent yet" and the badge "3 saved on this phone". Back online + tap on the badge: server has 2 sales, 1 customer, `processed_ops` record_sale 2 / upsert_customer 1; totals 54.50 (tendered 100.00) and 26.00 utang; movements -3 / -1 / -1; Aling Rosa balance 26.00 |
+| Cancel a sale | **Pass.** Cancelled sale 2 from its receipt: shown KINANSELA, server has it `voided`, Aling Rosa balance 0.00, Sardinas stock back to 0 |
+| Opening stock becomes a movement | **Pass in tests.** `post_opening_stock` raises the level and a replay adds nothing (pgTAP `012`); the device v3 -> v4 conversion is tested. Not re-checked in the browser (the demo products had no opening stock) |
+| `pnpm check`, `flutter analyze`, `flutter test` | **Pass.** `pnpm check` now ends with `check:mobile` (analyze + test; skipped with a notice when Flutter is not on PATH): lint, types, Vitest, pgTAP 1482 tests (12 files), Flutter analyze clean, 110 tests |
+
+### Known gaps (carry forward)
+- **Stock UX:** a product that never had opening stock shows "None left" after its first sale (its level goes negative). Phase 4 (stock in, adjust, low stock) should decide how never-counted products look.
+- **Utang "adjust"** has no op yet (the ledger kind exists for cancels only). The receipt's "not sent" icon is not live (it refreshes when the receipt is reopened).
+- **Receipt number clashes:** the 3-character device code is random; a clash with another device of the same tenant shows as a rejected op (`duplicate_local_no`). Full mode adds a server `sale_no`.
+- **Sale history is not pulled:** "Today" shows sales made on this device only; a reinstall loses the local receipts (the server keeps them; Phase 6 reports).
+- Quick-tap pinning is not built (top sellers only). Printing and sharing are Phase 7. Shifts, PIN unlock (and the offline PIN RPC), card payments, per-line discounts: Full mode.
+- Discarding a rejected sale or void removes it locally and drops its stock/utang effect; the sync cursors are reset (full re-pull), as for catalog ops.
+- Phone/APK still untested (another session owns the Android build). Offline first load of the web app is still a Phase 7 gap.
+
+**Next:** Phase 4 (stock in, adjustments, low-stock warning, never-counted products), then Phase 6 (reports). Opus for stock math.
