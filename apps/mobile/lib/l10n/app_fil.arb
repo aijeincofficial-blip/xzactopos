@@ -469,5 +469,22 @@
         "type": "int"
       }
     }
-  }
+  },
+  "sellPinned": "Naka-pin sa taas ang {name}",
+  "@sellPinned": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sellUnpinned": "Tinanggal sa pin ang {name}",
+  "@sellUnpinned": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sellPinHint": "Pindutin nang matagal ang item para i-pin bilang paborito"
 }

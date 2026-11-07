@@ -551,9 +551,30 @@ mixin DriftSales implements SalesStore {
     return r.read<double>('q');
   }
 
+  static const _pinnedKey = 'pinned_variants';
+
+  @override
+  Future<Set<String>> pinnedVariants() async {
+    final raw = await meta(_pinnedKey);
+    if (raw == null || raw.isEmpty) return <String>{};
+    return raw.split(',').where((e) => e.isNotEmpty).toSet();
+  }
+
+  @override
+  Future<void> setPinned(String variantId, bool pinned) async {
+    final now = await pinnedVariants();
+    pinned ? now.add(variantId) : now.remove(variantId);
+    await setMeta(_pinnedKey, now.isEmpty ? null : now.join(','));
+  }
+
   @override
   Future<List<ProductView>> quickItems({int limit = 12}) async {
     final since = _iso(DateTime.now().subtract(const Duration(days: 30)));
+    final pinned = (await pinnedVariants()).toList();
+    // pinned ids are bound as variables (?4...), never spliced into the SQL
+    final pinnedSql = pinned.isEmpty
+        ? 'case when 1 = 0 then 1 else 0 end'
+        : 'case when v.id in (${[for (var i = 0; i < pinned.length; i++) '?${i + 4}'].join(',')}) then 1 else 0 end';
     final rows = await db.customSelect(
       '''
       select p.id, v.id as variant_id, p.name, p.unit, v.sku, v.barcode, pr.price, p.photo_path, p.active,
@@ -569,10 +590,15 @@ mixin DriftSales implements SalesStore {
         group by i.variant_id
       ) t on t.variant_id = v.id
       where p.deleted_at is null and p.active = 1 and pr.price is not null
-      order by coalesce(t.sold, 0) desc, coalesce(p.updated_at, '9999') desc, p.search_name
+      order by $pinnedSql desc, coalesce(t.sold, 0) desc, coalesce(p.updated_at, '9999') desc, p.search_name
       limit ?3
       ''',
-      variables: [Variable.withString(baseCurrency), Variable.withString(since), Variable.withInt(limit)],
+      variables: [
+        Variable.withString(baseCurrency),
+        Variable.withString(since),
+        Variable.withInt(limit),
+        for (final id in pinned) Variable.withString(id),
+      ],
     ).get();
     return [
       for (final r in rows)

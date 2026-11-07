@@ -469,5 +469,22 @@
         "type": "int"
       }
     }
-  }
+  },
+  "sellPinned": "Pinned {name} to the top",
+  "@sellPinned": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sellUnpinned": "Unpinned {name}",
+  "@sellUnpinned": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sellPinHint": "Hold an item to pin it as a favorite"
 }

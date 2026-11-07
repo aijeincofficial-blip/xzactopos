@@ -247,6 +247,18 @@ void main() {
       expect((await store.quickItems()).map((p) => p.variantId), [_v2, _v1]);
       expect((await store.quickItems(limit: 1)).single.variantId, _v2);
     });
+
+    test('pinned favorites come first, survive a reload, and can be unpinned', () async {
+      await store.commitSale(sale('a', [line(_v2, 5, 100)], [const PaymentDraft('cash', 500)]), opId: 'oa');
+      expect((await store.quickItems()).first.variantId, _v2);
+      await store.setPinned(_v1, true);
+      expect(await store.pinnedVariants(), {_v1});
+      expect((await store.quickItems()).map((p) => p.variantId), [_v1, _v2], reason: 'pinned beats best seller');
+      expect((await store.quickItems(limit: 1)).single.variantId, _v1);
+      await store.setPinned(_v1, false);
+      expect(await store.pinnedVariants(), isEmpty);
+      expect((await store.quickItems()).first.variantId, _v2);
+    });
   });
 
   group('opening stock', () {

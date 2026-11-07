@@ -239,6 +239,10 @@ abstract class SalesStore {
   /// The products to show as quick-tap tiles: most sold in the last 30 days, topped up with the newest products.
   Future<List<ProductView>> quickItems({int limit = 12});
 
+  /// Variants the tindera pinned as favorites; they come first in [quickItems]. Kept on this device only.
+  Future<Set<String>> pinnedVariants();
+  Future<void> setPinned(String variantId, bool pinned);
+
   Future<String?> meta(String key);
   Future<void> setMeta(String key, String? value);
 

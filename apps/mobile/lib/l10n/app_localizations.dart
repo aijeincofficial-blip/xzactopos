@@ -1513,6 +1513,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{{count} item needs reordering} other{{count} items need reordering}}'**
   String reportsNeedReorder(int count);
+
+  /// No description provided for @sellPinned.
+  ///
+  /// In en, this message translates to:
+  /// **'Pinned {name} to the top'**
+  String sellPinned(String name);
+
+  /// No description provided for @sellUnpinned.
+  ///
+  /// In en, this message translates to:
+  /// **'Unpinned {name}'**
+  String sellUnpinned(String name);
+
+  /// No description provided for @sellPinHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Hold an item to pin it as a favorite'**
+  String get sellPinHint;
 }
 
 class _AppLocalizationsDelegate

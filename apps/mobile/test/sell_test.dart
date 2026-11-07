@@ -160,4 +160,17 @@ void main() {
     expect(tester.widget<TextField>(find.byKey(const Key('sell-search'))).autofocus, isTrue);
     await leave(tester);
   });
+
+  testWidgets('holding a tile pins it as a favorite; holding again unpins it', (tester) async {
+    await openSell(tester);
+    expect(find.byKey(const Key('pin-$_p1')), findsNothing);
+    await tester.longPress(find.byKey(const Key('tile-$_p1')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('pin-$_p1')), findsOneWidget);
+    expect(find.text('Pinned Kape 3-in-1 to the top'), findsOneWidget);
+    await tester.longPress(find.byKey(const Key('tile-$_p1')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('pin-$_p1')), findsNothing);
+    await leave(tester);
+  });
 }

@@ -869,4 +869,18 @@ class AppLocalizationsFil extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String sellPinned(String name) {
+    return 'Naka-pin sa taas ang $name';
+  }
+
+  @override
+  String sellUnpinned(String name) {
+    return 'Tinanggal sa pin ang $name';
+  }
+
+  @override
+  String get sellPinHint =>
+      'Pindutin nang matagal ang item para i-pin bilang paborito';
 }

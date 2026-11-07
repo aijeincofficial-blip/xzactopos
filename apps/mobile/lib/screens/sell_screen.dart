@@ -27,6 +27,7 @@ class _SellScreenState extends State<SellScreen> {
   final _searchFocus = FocusNode();
   Cart? _cart;
   Future<List<ProductView>>? _quick;
+  Set<String> _pinned = const {};
   String _query = '';
 
   @override
@@ -44,7 +45,29 @@ class _SellScreenState extends State<SellScreen> {
       final store = CatalogScope.of(context).store;
       _cart = Cart(store)..restore();
       _quick = store.quickItems();
+      store.pinnedVariants().then((p) {
+        if (mounted) setState(() => _pinned = p);
+      });
     }
+  }
+
+  /// Long-press on a tile: pin it to the top of the quick items, or unpin it.
+  Future<void> _togglePin(ProductView p) async {
+    final t = AppLocalizations.of(context);
+    final store = CatalogScope.of(context).store;
+    final messenger = ScaffoldMessenger.of(context);
+    final pin = !_pinned.contains(p.variantId);
+    await store.setPinned(p.variantId, pin);
+    final pinned = await store.pinnedVariants();
+    final next = store.quickItems();
+    if (!mounted) return;
+    setState(() {
+      _pinned = pinned;
+      _quick = next;
+    });
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(pin ? t.sellPinned(p.name) : t.sellUnpinned(p.name))));
   }
 
   String _money(int amount) =>
@@ -262,7 +285,14 @@ class _SellScreenState extends State<SellScreen> {
           itemCount: items.length,
           itemBuilder: (context, i) {
             final p = items[i];
-            return _Tile(product: p, left: p.trackStock ? stock[p.variantId] : null, money: _money, onTap: () => _add(p));
+            return _Tile(
+              product: p,
+              left: p.trackStock ? stock[p.variantId] : null,
+              money: _money,
+              pinned: _pinned.contains(p.variantId),
+              onTap: () => _add(p),
+              onLongPress: () => _togglePin(p),
+            );
           },
         );
       },
@@ -325,8 +355,17 @@ class _StockText extends StatelessWidget {
 }
 
 class _Tile extends StatelessWidget {
-  const _Tile({required this.product, required this.left, required this.money, required this.onTap});
+  const _Tile({
+    required this.product,
+    required this.left,
+    required this.money,
+    required this.onTap,
+    required this.onLongPress,
+    this.pinned = false,
+  });
   final ProductView product;
+  final bool pinned;
+  final VoidCallback onLongPress;
   final double? left;
   final String Function(int) money;
   final VoidCallback onTap;
@@ -337,6 +376,7 @@ class _Tile extends StatelessWidget {
     return AppCard(
       key: Key('tile-${product.id}'),
       onTap: onTap,
+      onLongPress: onLongPress,
       padding: const EdgeInsets.all(Gap.m + 2),
       radius: Gap.radiusL,
       child: Column(
@@ -362,12 +402,20 @@ class _Tile extends StatelessWidget {
             ],
           ),
           const Spacer(),
-          Text(
-            product.name,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-          ),
+          Row(children: [
+            if (pinned) ...[
+              Icon(Icons.push_pin_rounded, key: Key('pin-${product.id}'), size: 14, color: scheme.primary),
+              const SizedBox(width: 4),
+            ],
+            Expanded(
+              child: Text(
+                product.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+              ),
+            ),
+          ]),
           const SizedBox(height: 2),
           Text(
             product.price == null ? '—' : money(product.price!),

@@ -862,4 +862,17 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String sellPinned(String name) {
+    return 'Pinned $name to the top';
+  }
+
+  @override
+  String sellUnpinned(String name) {
+    return 'Unpinned $name';
+  }
+
+  @override
+  String get sellPinHint => 'Hold an item to pin it as a favorite';
 }
