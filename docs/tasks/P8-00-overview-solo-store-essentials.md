@@ -19,7 +19,7 @@ A tindera can run a whole day in the app: sell fast, take cash-in/out and load, 
 | Card | Work | Model |
 | --- | --- | --- |
 | P8-01 Pin favorites on Sell quick tiles | (top sellers already existed as `quickItems`) device-local pins, long-press, tests. DONE | Sonnet |
-| P8-02 Expenses: schema, RLS, op, pgTAP | migration, `op_record_expense`, void, rollup into reports | Opus |
+| P8-02 Expenses: schema, RLS, op, pgTAP | migration, `op_record_expense`, void, rollup into reports. DONE (op and pull shapes: `P8-02-expenses-schema.md`) | Opus |
 | P8-03 Expenses + day close screens | add expense, Today shows expenses, count drawer, over/short, fil + en | Sonnet |
 | P8-04 Net profit in Reports | profit = margin minus expenses, from rollups | Sonnet |
 | P8-05 Restock list | derived list from low stock + last cost, copy as text, receive from the list. DONE | Sonnet |

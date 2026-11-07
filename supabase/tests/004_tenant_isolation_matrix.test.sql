@@ -104,6 +104,13 @@ select w.who, t.tbl, case when w.who in ('superadmin', 'admin') then 2 else 0 en
 from (values ('superadmin'), ('admin'), ('cashier'), ('warehouse'), ('inactive')) w(who)
 cross join (values ('daily_sales_summary'), ('daily_item_sales')) t(tbl);
 
+-- P8-02 expenses and their rollup: superadmin and admin read their stores' rows (2 each: S01 + S02); everyone else none;
+-- nobody writes directly (the rollup rows come from the expense insert trigger)
+insert into expected (who, tbl, own_rows, own_updated)
+select w.who, t.tbl, case when w.who in ('superadmin', 'admin') then 2 else 0 end, -1
+from (values ('superadmin'), ('admin'), ('cashier'), ('warehouse'), ('inactive')) w(who)
+cross join (values ('expenses'), ('daily_expense_summary')) t(tbl);
+
 -- 2 tenants x (who, table) pairs x 5 metrics, plus 8 targeted checks
 select plan((select count(*)::int * 2 * 5 from expected) + 8);
 
@@ -198,6 +205,10 @@ begin
     insert into public.daily_item_sales (tenant_id, location_id, day, variant_id, product_name, qty, revenue) values
       (pg_temp.tid(t.label), pg_temp.lid(t.label, 'S01'), '2026-11-08', md5('var:' || t.label || ':1')::uuid, 'Cola', 1, 2500),
       (pg_temp.tid(t.label), pg_temp.lid(t.label, 'S02'), '2026-11-08', md5('var:' || t.label || ':1')::uuid, 'Cola', 1, 2500);
+    -- expenses: one at each store with colliding client op ids across tenants; the trigger writes one rollup row per store
+    insert into public.expenses (id, tenant_id, location_id, client_op_id, amount, currency, category, paid_from, spent_at) values
+      (md5('exp:' || t.label || ':1')::uuid, pg_temp.tid(t.label), pg_temp.lid(t.label, 'S01'), md5('expop:1')::uuid, 15000, t.ccy, 'utilities', 'cash', '2026-11-08T02:00:00Z'),
+      (md5('exp:' || t.label || ':2')::uuid, pg_temp.tid(t.label), pg_temp.lid(t.label, 'S02'), md5('expop:2')::uuid, 4000, t.ccy, 'transport', 'ewallet', '2026-11-08T02:00:00Z');
   end loop;
 end;
 $$;
@@ -255,7 +266,9 @@ begin
     ('customers',         'tenant_id', 'name = name'),
     ('customer_ledger',   'tenant_id', 'amount = amount'),
     ('daily_sales_summary', 'tenant_id', 'net = net'),
-    ('daily_item_sales',  'tenant_id', 'qty = qty')
+    ('daily_item_sales',  'tenant_id', 'qty = qty'),
+    ('expenses',          'tenant_id', 'note = note'),
+    ('daily_expense_summary', 'tenant_id', 'amount = amount')
   ) v(tbl, tcol, upd) loop
     begin
       execute format(

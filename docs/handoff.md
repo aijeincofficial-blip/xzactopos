@@ -410,6 +410,13 @@ My debug build replaced the other session's build of the same app on the emulato
 ### Phase 7 follow-up
 Share was checked on the emulator (Android share sheet with `LL3-261107-0001.pdf`). Offline web in a normal Chrome, real barcode decoding and release signing are still open: see `docs/START-HERE-antigravity.md`.
 
+## Phase 8 (solo store essentials): P8-02 expenses schema - done
+- Migration `20261108001100_expenses.sql`: `expenses` (append-only, void only), `daily_expense_summary` rollup (per store/day/category,
+  voids taken out), ops `record_expense` / `void_expense` in `sync_push`, `sync_pull_expenses`, and `report_summary` gained an `expenses` block.
+- Record/void: superadmin or the store's manager. Read: superadmin and admins of the store. Cashiers neither.
+- pgTAP `016_expenses.test.sql` (79, incl. a 400-op random record/void/replay mix) + 100 new matrix rows in `004`. Suite: 1838 (16 files).
+- Payload and pull shapes for the Flutter card P8-03: `docs/tasks/P8-02-expenses-schema.md`. No Flutter change yet.
+
 ## Antigravity Session: Neo-Fintech Design, Settings Screen, Theme Fix, & Reports Enrichment
 Read `docs/START-HERE-claude.md` for the complete handoff from Antigravity.
 - **Sculptural Ceramic Redesign**: Elevated app UI across all screens into a neo-fintech / Web3 ceramic aesthetic (`AppCard`, `SummaryCard`, `CoinBadge`, `_ObsidianSellButton`).
