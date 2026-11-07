@@ -72,7 +72,13 @@ insert into expected (who, tbl, own_rows, own_updated) values
   ('inactive', 'audit_log',            0, -1),
   ('inactive', 'platform_admins',     -1, -1);
 
--- 2 tenants x 50 (who, table) pairs x 5 metrics, plus 8 targeted checks
+-- P2-01 catalog: every active member reads all of it (1 category, 2 products, 2 variants, 2 prices); nobody writes directly
+insert into expected (who, tbl, own_rows, own_updated)
+select w.who, c.tbl, case when w.who = 'inactive' then 0 else c.n end, -1
+from (values ('superadmin'), ('admin'), ('cashier'), ('warehouse'), ('inactive')) w(who)
+cross join (values ('categories', 1), ('products', 2), ('product_variants', 2), ('variant_prices', 2)) c(tbl, n);
+
+-- 2 tenants x (who, table) pairs x 5 metrics, plus 8 targeted checks
 select plan((select count(*)::int * 2 * 5 from expected) + 8);
 
 -- ---------------------------------------------------------------------------
@@ -129,6 +135,19 @@ begin
       (pg_temp.tid(t.label), 'price.change', 'variant', pg_temp.lid(t.label, 'S01')),
       (pg_temp.tid(t.label), 'price.change', 'variant', pg_temp.lid(t.label, 'S02')),
       (pg_temp.tid(t.label), 'role.change', 'profile', null);
+
+    -- catalog with colliding SKUs and barcodes across tenants
+    insert into public.categories (id, tenant_id, name)
+      values (md5('cat:' || t.label)::uuid, pg_temp.tid(t.label), 'Drinks');
+    insert into public.products (id, tenant_id, category_id, name) values
+      (md5('prod:' || t.label || ':1')::uuid, pg_temp.tid(t.label), md5('cat:' || t.label)::uuid, 'Cola'),
+      (md5('prod:' || t.label || ':2')::uuid, pg_temp.tid(t.label), null, 'Rice');
+    insert into public.product_variants (id, tenant_id, product_id, sku, barcode, is_default) values
+      (md5('var:' || t.label || ':1')::uuid, pg_temp.tid(t.label), md5('prod:' || t.label || ':1')::uuid, 'COLA', '4800000000011', true),
+      (md5('var:' || t.label || ':2')::uuid, pg_temp.tid(t.label), md5('prod:' || t.label || ':2')::uuid, 'RICE', null, true);
+    insert into public.variant_prices (tenant_id, variant_id, currency, price) values
+      (pg_temp.tid(t.label), md5('var:' || t.label || ':1')::uuid, t.ccy, 2500),
+      (pg_temp.tid(t.label), md5('var:' || t.label || ':2')::uuid, t.ccy, 5200);
   end loop;
 end;
 $$;
@@ -172,7 +191,11 @@ begin
     ('locations',         'tenant_id', 'name = name'),
     ('location_access',   'tenant_id', 'position = position'),
     ('audit_log',         'tenant_id', 'action = action'),
-    ('platform_admins',   'user_id',   'created_at = created_at')
+    ('platform_admins',   'user_id',   'created_at = created_at'),
+    ('categories',        'tenant_id', 'name = name'),
+    ('products',          'tenant_id', 'name = name'),
+    ('product_variants',  'tenant_id', 'sku = sku'),
+    ('variant_prices',    'tenant_id', 'price = price')
   ) v(tbl, tcol, upd) loop
     begin
       execute format(
@@ -235,7 +258,7 @@ end;
 $$;
 
 -- ---------------------------------------------------------------------------
--- The matrix: 500 assertions
+-- The matrix: 5 assertions per (tenant, who, table)
 -- ---------------------------------------------------------------------------
 select is(m.own_rows, e.own_rows,
           format('[%s] %s reads expected own-tenant rows of %s', m.tenant, m.who, m.tbl))

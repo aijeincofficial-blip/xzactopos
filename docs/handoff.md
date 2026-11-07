@@ -137,3 +137,15 @@ Solo sari-sari focus + Flutter client: see `docs/recalibration-solo-flutter.md`.
 
 ### Phase 2 (solo) planned
 Cards `docs/tasks/P2-00..P2-07` (overview + 7). Decisions are listed in P2-00; confirm them before P2-01. Next: P2-01 catalog schema (Opus).
+
+### P2-01 catalog schema: done (branch `flutter-solo`)
+- Migration `20261108000200_catalog.sql`: `categories`, `products` (unit, tax_rate, track_stock, active, `photo_path`), `product_variants`
+  (sku, barcode, `is_default`, `option_value_ids` kept for Full mode, cost in base minor units, fractional `reorder_point`), `variant_prices`
+  (pk variant_id + currency, integer minor units). Composite `(tenant_id, id)` FKs so no row can point across tenants.
+- Keys: `unique (tenant_id, sku)` (archived SKUs stay taken); live barcode unique per tenant (archiving frees it); one live default variant per product.
+- `products_limit` trigger enforces `tenant_limits.max_products` on live products (hint `limit_products`).
+- RLS: read for active members (`tenant_id = auth_tenant_id()`); no client insert/update/delete at all, writes come in P2-02 RPCs.
+  The base-currency price row is required by the RPC, not by a constraint.
+- Delta-sync indexes `(tenant_id, updated_at, id)`.
+- Tests: pgTAP `008_catalog_schema.test.sql` (20); isolation matrix gained 4 tables x 5 roles (now 926 pgTAP tests total).
+  Mutation-tested: `products` policy set to `using (true)` fails the matrix for every role. `pnpm check` green.
