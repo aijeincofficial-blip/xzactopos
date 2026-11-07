@@ -111,6 +111,11 @@ select w.who, t.tbl, case when w.who in ('superadmin', 'admin') then 2 else 0 en
 from (values ('superadmin'), ('admin'), ('cashier'), ('warehouse'), ('inactive')) w(who)
 cross join (values ('expenses'), ('daily_expense_summary')) t(tbl);
 
+-- P8-02b supervisor_approvals: server-only, no client privilege at all
+insert into expected (who, tbl, own_rows, own_updated)
+select w.who, 'supervisor_approvals', -1, -1
+from (values ('superadmin'), ('admin'), ('cashier'), ('warehouse'), ('inactive')) w(who);
+
 -- 2 tenants x (who, table) pairs x 5 metrics, plus 8 targeted checks
 select plan((select count(*)::int * 2 * 5 from expected) + 8);
 
@@ -209,6 +214,9 @@ begin
     insert into public.expenses (id, tenant_id, location_id, client_op_id, amount, currency, category, paid_from, spent_at) values
       (md5('exp:' || t.label || ':1')::uuid, pg_temp.tid(t.label), pg_temp.lid(t.label, 'S01'), md5('expop:1')::uuid, 15000, t.ccy, 'utilities', 'cash', '2026-11-08T02:00:00Z'),
       (md5('exp:' || t.label || ':2')::uuid, pg_temp.tid(t.label), pg_temp.lid(t.label, 'S02'), md5('expop:2')::uuid, 4000, t.ccy, 'transport', 'ewallet', '2026-11-08T02:00:00Z');
+    insert into public.supervisor_approvals (tenant_id, location_id, action, ref_id, requested_by, approved_by, expires_at)
+      values (pg_temp.tid(t.label), pg_temp.lid(t.label, 'S02'), 'void_expense', md5('exp:' || t.label || ':2')::uuid,
+              pg_temp.uid(t.label, 'maria'), pg_temp.uid(t.label, 'maria'), now() + interval '1 hour');
   end loop;
 end;
 $$;
@@ -268,7 +276,8 @@ begin
     ('daily_sales_summary', 'tenant_id', 'net = net'),
     ('daily_item_sales',  'tenant_id', 'qty = qty'),
     ('expenses',          'tenant_id', 'note = note'),
-    ('daily_expense_summary', 'tenant_id', 'amount = amount')
+    ('daily_expense_summary', 'tenant_id', 'amount = amount'),
+    ('supervisor_approvals', 'tenant_id', 'used_at = used_at')
   ) v(tbl, tcol, upd) loop
     begin
       execute format(

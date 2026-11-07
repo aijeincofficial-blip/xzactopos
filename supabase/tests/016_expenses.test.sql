@@ -109,9 +109,9 @@ select is(pg_temp.spend('b1', '700', 'other') ->> 'status', 'ok', 'a refused op 
 -- ===== permissions =====
 select pg_temp.login('maria', 'A');
 select is(pg_temp.spend('e4', '1000', 'other', '{"spent_at": "2026-11-08T04:00:00Z"}') ->> 'status', 'ok', 'a store manager records at her store');
-select is(pg_temp.spend('m2', '1000', 'other', jsonb_build_object('location_id', pg_temp.id('S02'))) ->> 'hint', 'not_allowed',
-          'but not where she is only supervisor');
-select is(pg_temp.void('m3', 'e5') ->> 'hint', 'not_allowed', 'nor void an expense of that store');
+select is(pg_temp.spend('m2', '1000', 'other', jsonb_build_object('location_id', pg_temp.id('S02'))) ->> 'hint', 'approval_required',
+          'where she is only supervisor she needs a supervisor approval (P8-02b, tested in 017)');
+select is(pg_temp.void('m3', 'e5') ->> 'hint', 'approval_required', 'also to void an expense of that store');
 select is((select count(*)::int from public.expenses), 6, 'she reads the expenses of both her stores');
 select pg_temp.login('juan', 'A');
 select is(pg_temp.spend('j1', '1000', 'other') ->> 'hint', 'not_allowed', 'a cashier cannot record an expense');

@@ -416,6 +416,11 @@ Share was checked on the emulator (Android share sheet with `LL3-261107-0001.pdf
 - Record/void: superadmin or the store's manager. Read: superadmin and admins of the store. Cashiers neither.
 - pgTAP `016_expenses.test.sql` (79, incl. a 400-op random record/void/replay mix) + 100 new matrix rows in `004`. Suite: 1838 (16 files).
 - Payload and pull shapes for the Flutter card P8-03: `docs/tasks/P8-02-expenses-schema.md`. No Flutter change yet.
+- P8-02b (`20261108001200_expense_supervisor_approval.sql`): store supervisors may record/void with a single-use approval from
+  `approve_supervisor_action` (PIN checked online, PBKDF2 `pin_hash`, 5 tries / 15 min lockout, 12 h validity); owner and managers need none.
+  New `set_my_pin`, `clear_user_pin`, server-only `supervisor_approvals`, `expenses.approved_by` / `void_approved_by`, audit rows
+  `expense.record` / `expense.void` / `pin.failed` / `approval.grant`. sync_push unchanged. pgTAP `017` (63) + 50 matrix rows; suite 1951 (17 files).
+  Gap: a supervisor with no signal cannot get an approval (offline PIN RPC is Full mode); refused ops are not audited.
 
 ## Antigravity Session: Neo-Fintech Design, Settings Screen, Theme Fix, & Reports Enrichment
 Read `docs/START-HERE-claude.md` for the complete handoff from Antigravity.
