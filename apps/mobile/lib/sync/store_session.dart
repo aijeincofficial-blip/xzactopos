@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../backend.dart';
 import '../data/local_store.dart';
 import '../l10n/app_localizations.dart';
+import 'photo_loader.dart';
 import 'sync_engine.dart';
 
 /// Opens the device store. [safeMode] asks for the most compatible storage (see AppDatabase.open).
@@ -30,6 +31,7 @@ class StoreSession extends StatefulWidget {
 class _StoreSessionState extends State<StoreSession> {
   late LocalStore _store;
   late SyncEngine _engine;
+  late PhotoLoader _photos;
   late Future<void> _ready;
 
   @override
@@ -62,6 +64,7 @@ class _StoreSessionState extends State<StoreSession> {
   Future<void> _start({required bool safeMode}) async {
     _store = widget.openStore(safeMode: safeMode);
     _engine = SyncEngine(_store, widget.backend);
+    _photos = PhotoLoader(_store, widget.backend);
     _opened = true;
     final tenant = (widget.access['tenant'] as Map?) ?? const {};
     await _store.ensureTenant(tenant['id'] as String? ?? '',
@@ -112,17 +115,27 @@ class _StoreSessionState extends State<StoreSession> {
             ),
           );
         }
-        return CatalogScope(store: _store, engine: _engine, child: widget.child);
+        return CatalogScope(store: _store, engine: _engine, photos: _photos, child: widget.child);
       },
     );
   }
 }
 
 class CatalogScope extends InheritedWidget {
-  const CatalogScope({super.key, required this.store, required this.engine, required super.child});
+  const CatalogScope({
+    super.key,
+    required this.store,
+    required this.engine,
+    required this.photos,
+    required super.child,
+  });
 
   final LocalStore store;
   final SyncEngine engine;
+  final PhotoLoader photos;
+
+  /// Same scope around [child]; for screens pushed on the navigator (they sit outside this widget).
+  CatalogScope wrap(Widget child) => CatalogScope(store: store, engine: engine, photos: photos, child: child);
 
   static CatalogScope of(BuildContext context) {
     final scope = context.dependOnInheritedWidgetOfExactType<CatalogScope>();

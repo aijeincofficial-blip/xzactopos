@@ -46,7 +46,7 @@ class HomeScreen extends StatelessWidget {
               icon: Icons.inventory_2_outlined,
               label: t.products,
               onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
-                builder: (_) => CatalogScope(store: scope.store, engine: scope.engine, child: const ProductsScreen()),
+                builder: (_) => scope.wrap(const ProductsScreen()),
               )),
             ),
             const SizedBox(height: 12),

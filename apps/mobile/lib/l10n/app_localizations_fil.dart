@@ -262,4 +262,17 @@ class AppLocalizationsFil extends AppLocalizations {
   String unknownBarcodeBody(String code) {
     return 'Wala pang produkto na may barcode na $code. Idagdag ngayon?';
   }
+
+  @override
+  String get takePhoto => 'Kumuha ng litrato';
+
+  @override
+  String get choosePhoto => 'Pumili ng litrato';
+
+  @override
+  String get photoFailed =>
+      'Hindi magamit ang litratong iyan. Subukan ang iba.';
+
+  @override
+  String get errPhotoTooLarge => 'Masyadong malaki ang litrato.';
 }

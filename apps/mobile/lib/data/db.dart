@@ -107,6 +107,27 @@ class OpeningStock extends Table {
   Set<Column> get primaryKey => {variantId};
 }
 
+/// Photo bytes waiting to be uploaded, keyed by the upload_photo op (schema v3).
+class PhotoUploads extends Table {
+  TextColumn get opId => text()();
+  TextColumn get productId => text()();
+  TextColumn get path => text()();
+  BlobColumn get bytes => blob()();
+
+  @override
+  Set<Column> get primaryKey => {opId};
+}
+
+/// Last photo seen per product (its storage path and JPEG bytes), so lists work offline (schema v3).
+class PhotoCache extends Table {
+  TextColumn get productId => text()();
+  TextColumn get path => text()();
+  BlobColumn get bytes => blob()();
+
+  @override
+  Set<Column> get primaryKey => {productId};
+}
+
 /// Small key/value facts about this device's data (e.g. which tenant it belongs to).
 class Meta extends Table {
   TextColumn get key => text()();
@@ -116,7 +137,9 @@ class Meta extends Table {
   Set<Column> get primaryKey => {key};
 }
 
-@DriftDatabase(tables: [Categories, Products, Variants, Prices, SyncCursors, Outbox, OpeningStock, Meta])
+@DriftDatabase(tables: [
+  Categories, Products, Variants, Prices, SyncCursors, Outbox, OpeningStock, Meta, PhotoUploads, PhotoCache,
+])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
@@ -136,7 +159,7 @@ class AppDatabase extends _$AppDatabase {
   static const _name = 'xzactopos';
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -147,6 +170,10 @@ class AppDatabase extends _$AppDatabase {
               await (update(products)..where((x) => x.id.equals(p.id)))
                   .write(ProductsCompanion(searchName: Value(searchKey(p.name))));
             }
+          }
+          if (from < 3) {
+            await m.createTable(photoUploads);
+            await m.createTable(photoCache);
           }
         },
       );

@@ -258,4 +258,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String unknownBarcodeBody(String code) {
     return 'No product has barcode $code yet. Add it now?';
   }
+
+  @override
+  String get takePhoto => 'Take photo';
+
+  @override
+  String get choosePhoto => 'Choose photo';
+
+  @override
+  String get photoFailed => 'Could not use that photo. Try another one.';
+
+  @override
+  String get errPhotoTooLarge => 'The photo is too large.';
 }

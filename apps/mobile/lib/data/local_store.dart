@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 /// The device's copy of the catalog plus the outbox. Screens and the sync engine depend on this
 /// interface only (CLAUDE.md: local store behind a `LocalStore` interface); Drift implements it.
 abstract class LocalStore {
@@ -13,6 +15,19 @@ abstract class LocalStore {
   // ---- local writes: applied at once, queued for the server in the same transaction ----
   Future<void> saveProduct(ProductDraft draft, {required String opId});
   Future<void> archiveProduct(String productId, {required String opId});
+
+  // ---- photos ----
+  /// Attaches a JPEG to a product: shown at once from the device, uploaded later by an `upload_photo` op.
+  /// Returns the storage path `<tenant>/<product>/<op>.jpg`.
+  Future<String> setPhoto(String productId, String variantId, Uint8List jpeg, {required String opId});
+
+  /// The product's photo if this device has it for [path] (null = not downloaded yet).
+  Future<Uint8List?> cachedPhoto(String productId, String path);
+  Future<void> cachePhoto(String productId, String path, Uint8List bytes);
+
+  /// Bytes waiting for the upload_photo op [opId]; removed by [photoUploaded].
+  Future<Uint8List?> pendingPhoto(String opId);
+  Future<void> photoUploaded(String opId);
 
   // ---- sync ----
   Future<Map<String, dynamic>> cursors();
@@ -116,7 +131,7 @@ class OutboxOp {
   });
 
   final String opId;
-  final String kind; // upsert_product | archive_product
+  final String kind; // upsert_product | archive_product | upload_photo
   final String entityId;
   final Map<String, dynamic> payload;
   final int attempts;

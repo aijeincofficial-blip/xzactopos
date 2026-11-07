@@ -511,6 +511,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No product has barcode {code} yet. Add it now?'**
   String unknownBarcodeBody(String code);
+
+  /// No description provided for @takePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Take photo'**
+  String get takePhoto;
+
+  /// No description provided for @choosePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose photo'**
+  String get choosePhoto;
+
+  /// No description provided for @photoFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not use that photo. Try another one.'**
+  String get photoFailed;
+
+  /// No description provided for @errPhotoTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'The photo is too large.'**
+  String get errPhotoTooLarge;
 }
 
 class _AppLocalizationsDelegate

@@ -13,7 +13,9 @@
   "welcome": "Maligayang pagdating, {store}!",
   "@welcome": {
     "placeholders": {
-      "store": {"type": "String"}
+      "store": {
+        "type": "String"
+      }
     }
   },
   "homeReady": "Handa na ang tindahan mo. Susunod ang pagbebenta.",
@@ -29,13 +31,37 @@
   "syncSyncing": "Nagsi-sync…",
   "syncOffline": "Walang signal",
   "syncPending": "{count, plural, =1{{count} naghihintay ipadala} other{{count} naghihintay ipadala}}",
-  "@syncPending": {"placeholders": {"count": {"type": "int"}}},
+  "@syncPending": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "syncOfflinePending": "{count, plural, =1{Walang signal, {count} naka-save sa phone} other{Walang signal, {count} naka-save sa phone}}",
-  "@syncOfflinePending": {"placeholders": {"count": {"type": "int"}}},
+  "@syncOfflinePending": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "syncNeedsAttention": "{count, plural, =1{{count} kailangang ayusin} other{{count} kailangang ayusin}}",
-  "@syncNeedsAttention": {"placeholders": {"count": {"type": "int"}}},
+  "@syncNeedsAttention": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "productsOnDevice": "{count, plural, =0{Wala pang produkto sa phone na ito} =1{{count} produkto sa phone na ito} other{{count} produkto sa phone na ito}}",
-  "@productsOnDevice": {"placeholders": {"count": {"type": "int"}}},
+  "@productsOnDevice": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "errStoreOpen": "Hindi mabuksan ang data sa phone na ito.",
   "tryAgain": "Subukan ulit",
   "products": "Mga Produkto",
@@ -58,14 +84,26 @@
   "save": "I-save",
   "archive": "Tanggalin",
   "archiveTitle": "Tanggalin ang {name}?",
-  "@archiveTitle": {"placeholders": {"name": {"type": "String"}}},
+  "@archiveTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "archiveBody": "Mawawala ito sa listahan mo. Mananatili ito sa mga lumang benta.",
   "productName": "Pangalan ng produkto",
   "productNameHint": "hal. Kape 3-in-1",
   "sellingPrice": "Presyo",
   "barcodeOptional": "Barcode (kung meron)",
   "barcodeUsedBy": "Ginagamit na ang barcode na ito ng {name}",
-  "@barcodeUsedBy": {"placeholders": {"name": {"type": "String"}}},
+  "@barcodeUsedBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "openingStockOptional": "Ilan ang meron ka ngayon? (kung gusto)",
   "openingStockHelp": "Puwede mo itong ayusin mamaya.",
   "more": "Iba pa",
@@ -80,5 +118,15 @@
   "scanBarcode": "I-scan ang barcode",
   "unknownBarcodeTitle": "Bagong barcode",
   "unknownBarcodeBody": "Wala pang produkto na may barcode na {code}. Idagdag ngayon?",
-  "@unknownBarcodeBody": {"placeholders": {"code": {"type": "String"}}}
+  "@unknownBarcodeBody": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "takePhoto": "Kumuha ng litrato",
+  "choosePhoto": "Pumili ng litrato",
+  "photoFailed": "Hindi magamit ang litratong iyan. Subukan ang iba.",
+  "errPhotoTooLarge": "Masyadong malaki ang litrato."
 }

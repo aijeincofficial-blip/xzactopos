@@ -3182,6 +3182,582 @@ class MetaCompanion extends UpdateCompanion<MetaData> {
   }
 }
 
+class $PhotoUploadsTable extends PhotoUploads
+    with TableInfo<$PhotoUploadsTable, PhotoUpload> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PhotoUploadsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _opIdMeta = const VerificationMeta('opId');
+  @override
+  late final GeneratedColumn<String> opId = GeneratedColumn<String>(
+    'op_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _productIdMeta = const VerificationMeta(
+    'productId',
+  );
+  @override
+  late final GeneratedColumn<String> productId = GeneratedColumn<String>(
+    'product_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _pathMeta = const VerificationMeta('path');
+  @override
+  late final GeneratedColumn<String> path = GeneratedColumn<String>(
+    'path',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _bytesMeta = const VerificationMeta('bytes');
+  @override
+  late final GeneratedColumn<Uint8List> bytes = GeneratedColumn<Uint8List>(
+    'bytes',
+    aliasedName,
+    false,
+    type: DriftSqlType.blob,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [opId, productId, path, bytes];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'photo_uploads';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PhotoUpload> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('op_id')) {
+      context.handle(
+        _opIdMeta,
+        opId.isAcceptableOrUnknown(data['op_id']!, _opIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_opIdMeta);
+    }
+    if (data.containsKey('product_id')) {
+      context.handle(
+        _productIdMeta,
+        productId.isAcceptableOrUnknown(data['product_id']!, _productIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_productIdMeta);
+    }
+    if (data.containsKey('path')) {
+      context.handle(
+        _pathMeta,
+        path.isAcceptableOrUnknown(data['path']!, _pathMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_pathMeta);
+    }
+    if (data.containsKey('bytes')) {
+      context.handle(
+        _bytesMeta,
+        bytes.isAcceptableOrUnknown(data['bytes']!, _bytesMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_bytesMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {opId};
+  @override
+  PhotoUpload map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PhotoUpload(
+      opId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}op_id'],
+      )!,
+      productId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}product_id'],
+      )!,
+      path: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}path'],
+      )!,
+      bytes: attachedDatabase.typeMapping.read(
+        DriftSqlType.blob,
+        data['${effectivePrefix}bytes'],
+      )!,
+    );
+  }
+
+  @override
+  $PhotoUploadsTable createAlias(String alias) {
+    return $PhotoUploadsTable(attachedDatabase, alias);
+  }
+}
+
+class PhotoUpload extends DataClass implements Insertable<PhotoUpload> {
+  final String opId;
+  final String productId;
+  final String path;
+  final Uint8List bytes;
+  const PhotoUpload({
+    required this.opId,
+    required this.productId,
+    required this.path,
+    required this.bytes,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['op_id'] = Variable<String>(opId);
+    map['product_id'] = Variable<String>(productId);
+    map['path'] = Variable<String>(path);
+    map['bytes'] = Variable<Uint8List>(bytes);
+    return map;
+  }
+
+  PhotoUploadsCompanion toCompanion(bool nullToAbsent) {
+    return PhotoUploadsCompanion(
+      opId: Value(opId),
+      productId: Value(productId),
+      path: Value(path),
+      bytes: Value(bytes),
+    );
+  }
+
+  factory PhotoUpload.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PhotoUpload(
+      opId: serializer.fromJson<String>(json['opId']),
+      productId: serializer.fromJson<String>(json['productId']),
+      path: serializer.fromJson<String>(json['path']),
+      bytes: serializer.fromJson<Uint8List>(json['bytes']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'opId': serializer.toJson<String>(opId),
+      'productId': serializer.toJson<String>(productId),
+      'path': serializer.toJson<String>(path),
+      'bytes': serializer.toJson<Uint8List>(bytes),
+    };
+  }
+
+  PhotoUpload copyWith({
+    String? opId,
+    String? productId,
+    String? path,
+    Uint8List? bytes,
+  }) => PhotoUpload(
+    opId: opId ?? this.opId,
+    productId: productId ?? this.productId,
+    path: path ?? this.path,
+    bytes: bytes ?? this.bytes,
+  );
+  PhotoUpload copyWithCompanion(PhotoUploadsCompanion data) {
+    return PhotoUpload(
+      opId: data.opId.present ? data.opId.value : this.opId,
+      productId: data.productId.present ? data.productId.value : this.productId,
+      path: data.path.present ? data.path.value : this.path,
+      bytes: data.bytes.present ? data.bytes.value : this.bytes,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PhotoUpload(')
+          ..write('opId: $opId, ')
+          ..write('productId: $productId, ')
+          ..write('path: $path, ')
+          ..write('bytes: $bytes')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(opId, productId, path, $driftBlobEquality.hash(bytes));
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PhotoUpload &&
+          other.opId == this.opId &&
+          other.productId == this.productId &&
+          other.path == this.path &&
+          $driftBlobEquality.equals(other.bytes, this.bytes));
+}
+
+class PhotoUploadsCompanion extends UpdateCompanion<PhotoUpload> {
+  final Value<String> opId;
+  final Value<String> productId;
+  final Value<String> path;
+  final Value<Uint8List> bytes;
+  final Value<int> rowid;
+  const PhotoUploadsCompanion({
+    this.opId = const Value.absent(),
+    this.productId = const Value.absent(),
+    this.path = const Value.absent(),
+    this.bytes = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PhotoUploadsCompanion.insert({
+    required String opId,
+    required String productId,
+    required String path,
+    required Uint8List bytes,
+    this.rowid = const Value.absent(),
+  }) : opId = Value(opId),
+       productId = Value(productId),
+       path = Value(path),
+       bytes = Value(bytes);
+  static Insertable<PhotoUpload> custom({
+    Expression<String>? opId,
+    Expression<String>? productId,
+    Expression<String>? path,
+    Expression<Uint8List>? bytes,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (opId != null) 'op_id': opId,
+      if (productId != null) 'product_id': productId,
+      if (path != null) 'path': path,
+      if (bytes != null) 'bytes': bytes,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PhotoUploadsCompanion copyWith({
+    Value<String>? opId,
+    Value<String>? productId,
+    Value<String>? path,
+    Value<Uint8List>? bytes,
+    Value<int>? rowid,
+  }) {
+    return PhotoUploadsCompanion(
+      opId: opId ?? this.opId,
+      productId: productId ?? this.productId,
+      path: path ?? this.path,
+      bytes: bytes ?? this.bytes,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (opId.present) {
+      map['op_id'] = Variable<String>(opId.value);
+    }
+    if (productId.present) {
+      map['product_id'] = Variable<String>(productId.value);
+    }
+    if (path.present) {
+      map['path'] = Variable<String>(path.value);
+    }
+    if (bytes.present) {
+      map['bytes'] = Variable<Uint8List>(bytes.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PhotoUploadsCompanion(')
+          ..write('opId: $opId, ')
+          ..write('productId: $productId, ')
+          ..write('path: $path, ')
+          ..write('bytes: $bytes, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $PhotoCacheTable extends PhotoCache
+    with TableInfo<$PhotoCacheTable, PhotoCacheData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PhotoCacheTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _productIdMeta = const VerificationMeta(
+    'productId',
+  );
+  @override
+  late final GeneratedColumn<String> productId = GeneratedColumn<String>(
+    'product_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _pathMeta = const VerificationMeta('path');
+  @override
+  late final GeneratedColumn<String> path = GeneratedColumn<String>(
+    'path',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _bytesMeta = const VerificationMeta('bytes');
+  @override
+  late final GeneratedColumn<Uint8List> bytes = GeneratedColumn<Uint8List>(
+    'bytes',
+    aliasedName,
+    false,
+    type: DriftSqlType.blob,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [productId, path, bytes];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'photo_cache';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PhotoCacheData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('product_id')) {
+      context.handle(
+        _productIdMeta,
+        productId.isAcceptableOrUnknown(data['product_id']!, _productIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_productIdMeta);
+    }
+    if (data.containsKey('path')) {
+      context.handle(
+        _pathMeta,
+        path.isAcceptableOrUnknown(data['path']!, _pathMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_pathMeta);
+    }
+    if (data.containsKey('bytes')) {
+      context.handle(
+        _bytesMeta,
+        bytes.isAcceptableOrUnknown(data['bytes']!, _bytesMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_bytesMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {productId};
+  @override
+  PhotoCacheData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PhotoCacheData(
+      productId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}product_id'],
+      )!,
+      path: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}path'],
+      )!,
+      bytes: attachedDatabase.typeMapping.read(
+        DriftSqlType.blob,
+        data['${effectivePrefix}bytes'],
+      )!,
+    );
+  }
+
+  @override
+  $PhotoCacheTable createAlias(String alias) {
+    return $PhotoCacheTable(attachedDatabase, alias);
+  }
+}
+
+class PhotoCacheData extends DataClass implements Insertable<PhotoCacheData> {
+  final String productId;
+  final String path;
+  final Uint8List bytes;
+  const PhotoCacheData({
+    required this.productId,
+    required this.path,
+    required this.bytes,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['product_id'] = Variable<String>(productId);
+    map['path'] = Variable<String>(path);
+    map['bytes'] = Variable<Uint8List>(bytes);
+    return map;
+  }
+
+  PhotoCacheCompanion toCompanion(bool nullToAbsent) {
+    return PhotoCacheCompanion(
+      productId: Value(productId),
+      path: Value(path),
+      bytes: Value(bytes),
+    );
+  }
+
+  factory PhotoCacheData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PhotoCacheData(
+      productId: serializer.fromJson<String>(json['productId']),
+      path: serializer.fromJson<String>(json['path']),
+      bytes: serializer.fromJson<Uint8List>(json['bytes']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'productId': serializer.toJson<String>(productId),
+      'path': serializer.toJson<String>(path),
+      'bytes': serializer.toJson<Uint8List>(bytes),
+    };
+  }
+
+  PhotoCacheData copyWith({
+    String? productId,
+    String? path,
+    Uint8List? bytes,
+  }) => PhotoCacheData(
+    productId: productId ?? this.productId,
+    path: path ?? this.path,
+    bytes: bytes ?? this.bytes,
+  );
+  PhotoCacheData copyWithCompanion(PhotoCacheCompanion data) {
+    return PhotoCacheData(
+      productId: data.productId.present ? data.productId.value : this.productId,
+      path: data.path.present ? data.path.value : this.path,
+      bytes: data.bytes.present ? data.bytes.value : this.bytes,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PhotoCacheData(')
+          ..write('productId: $productId, ')
+          ..write('path: $path, ')
+          ..write('bytes: $bytes')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(productId, path, $driftBlobEquality.hash(bytes));
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PhotoCacheData &&
+          other.productId == this.productId &&
+          other.path == this.path &&
+          $driftBlobEquality.equals(other.bytes, this.bytes));
+}
+
+class PhotoCacheCompanion extends UpdateCompanion<PhotoCacheData> {
+  final Value<String> productId;
+  final Value<String> path;
+  final Value<Uint8List> bytes;
+  final Value<int> rowid;
+  const PhotoCacheCompanion({
+    this.productId = const Value.absent(),
+    this.path = const Value.absent(),
+    this.bytes = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PhotoCacheCompanion.insert({
+    required String productId,
+    required String path,
+    required Uint8List bytes,
+    this.rowid = const Value.absent(),
+  }) : productId = Value(productId),
+       path = Value(path),
+       bytes = Value(bytes);
+  static Insertable<PhotoCacheData> custom({
+    Expression<String>? productId,
+    Expression<String>? path,
+    Expression<Uint8List>? bytes,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (productId != null) 'product_id': productId,
+      if (path != null) 'path': path,
+      if (bytes != null) 'bytes': bytes,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PhotoCacheCompanion copyWith({
+    Value<String>? productId,
+    Value<String>? path,
+    Value<Uint8List>? bytes,
+    Value<int>? rowid,
+  }) {
+    return PhotoCacheCompanion(
+      productId: productId ?? this.productId,
+      path: path ?? this.path,
+      bytes: bytes ?? this.bytes,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (productId.present) {
+      map['product_id'] = Variable<String>(productId.value);
+    }
+    if (path.present) {
+      map['path'] = Variable<String>(path.value);
+    }
+    if (bytes.present) {
+      map['bytes'] = Variable<Uint8List>(bytes.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PhotoCacheCompanion(')
+          ..write('productId: $productId, ')
+          ..write('path: $path, ')
+          ..write('bytes: $bytes, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -3193,6 +3769,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $OutboxTable outbox = $OutboxTable(this);
   late final $OpeningStockTable openingStock = $OpeningStockTable(this);
   late final $MetaTable meta = $MetaTable(this);
+  late final $PhotoUploadsTable photoUploads = $PhotoUploadsTable(this);
+  late final $PhotoCacheTable photoCache = $PhotoCacheTable(this);
   late final Index variantsBarcode = Index(
     'variants_barcode',
     'CREATE INDEX variants_barcode ON variants (barcode)',
@@ -3214,6 +3792,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     outbox,
     openingStock,
     meta,
+    photoUploads,
+    photoCache,
     variantsBarcode,
     variantsProduct,
   ];
@@ -4891,6 +5471,349 @@ typedef $$MetaTableProcessedTableManager =
       MetaData,
       PrefetchHooks Function()
     >;
+typedef $$PhotoUploadsTableCreateCompanionBuilder =
+    PhotoUploadsCompanion Function({
+      required String opId,
+      required String productId,
+      required String path,
+      required Uint8List bytes,
+      Value<int> rowid,
+    });
+typedef $$PhotoUploadsTableUpdateCompanionBuilder =
+    PhotoUploadsCompanion Function({
+      Value<String> opId,
+      Value<String> productId,
+      Value<String> path,
+      Value<Uint8List> bytes,
+      Value<int> rowid,
+    });
+
+class $$PhotoUploadsTableFilterComposer
+    extends Composer<_$AppDatabase, $PhotoUploadsTable> {
+  $$PhotoUploadsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get opId => $composableBuilder(
+    column: $table.opId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get productId => $composableBuilder(
+    column: $table.productId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get path => $composableBuilder(
+    column: $table.path,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<Uint8List> get bytes => $composableBuilder(
+    column: $table.bytes,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$PhotoUploadsTableOrderingComposer
+    extends Composer<_$AppDatabase, $PhotoUploadsTable> {
+  $$PhotoUploadsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get opId => $composableBuilder(
+    column: $table.opId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get productId => $composableBuilder(
+    column: $table.productId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get path => $composableBuilder(
+    column: $table.path,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<Uint8List> get bytes => $composableBuilder(
+    column: $table.bytes,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$PhotoUploadsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PhotoUploadsTable> {
+  $$PhotoUploadsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get opId =>
+      $composableBuilder(column: $table.opId, builder: (column) => column);
+
+  GeneratedColumn<String> get productId =>
+      $composableBuilder(column: $table.productId, builder: (column) => column);
+
+  GeneratedColumn<String> get path =>
+      $composableBuilder(column: $table.path, builder: (column) => column);
+
+  GeneratedColumn<Uint8List> get bytes =>
+      $composableBuilder(column: $table.bytes, builder: (column) => column);
+}
+
+class $$PhotoUploadsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PhotoUploadsTable,
+          PhotoUpload,
+          $$PhotoUploadsTableFilterComposer,
+          $$PhotoUploadsTableOrderingComposer,
+          $$PhotoUploadsTableAnnotationComposer,
+          $$PhotoUploadsTableCreateCompanionBuilder,
+          $$PhotoUploadsTableUpdateCompanionBuilder,
+          (
+            PhotoUpload,
+            BaseReferences<_$AppDatabase, $PhotoUploadsTable, PhotoUpload>,
+          ),
+          PhotoUpload,
+          PrefetchHooks Function()
+        > {
+  $$PhotoUploadsTableTableManager(_$AppDatabase db, $PhotoUploadsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PhotoUploadsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PhotoUploadsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$PhotoUploadsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> opId = const Value.absent(),
+                Value<String> productId = const Value.absent(),
+                Value<String> path = const Value.absent(),
+                Value<Uint8List> bytes = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PhotoUploadsCompanion(
+                opId: opId,
+                productId: productId,
+                path: path,
+                bytes: bytes,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String opId,
+                required String productId,
+                required String path,
+                required Uint8List bytes,
+                Value<int> rowid = const Value.absent(),
+              }) => PhotoUploadsCompanion.insert(
+                opId: opId,
+                productId: productId,
+                path: path,
+                bytes: bytes,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$PhotoUploadsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PhotoUploadsTable,
+      PhotoUpload,
+      $$PhotoUploadsTableFilterComposer,
+      $$PhotoUploadsTableOrderingComposer,
+      $$PhotoUploadsTableAnnotationComposer,
+      $$PhotoUploadsTableCreateCompanionBuilder,
+      $$PhotoUploadsTableUpdateCompanionBuilder,
+      (
+        PhotoUpload,
+        BaseReferences<_$AppDatabase, $PhotoUploadsTable, PhotoUpload>,
+      ),
+      PhotoUpload,
+      PrefetchHooks Function()
+    >;
+typedef $$PhotoCacheTableCreateCompanionBuilder =
+    PhotoCacheCompanion Function({
+      required String productId,
+      required String path,
+      required Uint8List bytes,
+      Value<int> rowid,
+    });
+typedef $$PhotoCacheTableUpdateCompanionBuilder =
+    PhotoCacheCompanion Function({
+      Value<String> productId,
+      Value<String> path,
+      Value<Uint8List> bytes,
+      Value<int> rowid,
+    });
+
+class $$PhotoCacheTableFilterComposer
+    extends Composer<_$AppDatabase, $PhotoCacheTable> {
+  $$PhotoCacheTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get productId => $composableBuilder(
+    column: $table.productId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get path => $composableBuilder(
+    column: $table.path,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<Uint8List> get bytes => $composableBuilder(
+    column: $table.bytes,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$PhotoCacheTableOrderingComposer
+    extends Composer<_$AppDatabase, $PhotoCacheTable> {
+  $$PhotoCacheTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get productId => $composableBuilder(
+    column: $table.productId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get path => $composableBuilder(
+    column: $table.path,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<Uint8List> get bytes => $composableBuilder(
+    column: $table.bytes,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$PhotoCacheTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PhotoCacheTable> {
+  $$PhotoCacheTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get productId =>
+      $composableBuilder(column: $table.productId, builder: (column) => column);
+
+  GeneratedColumn<String> get path =>
+      $composableBuilder(column: $table.path, builder: (column) => column);
+
+  GeneratedColumn<Uint8List> get bytes =>
+      $composableBuilder(column: $table.bytes, builder: (column) => column);
+}
+
+class $$PhotoCacheTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PhotoCacheTable,
+          PhotoCacheData,
+          $$PhotoCacheTableFilterComposer,
+          $$PhotoCacheTableOrderingComposer,
+          $$PhotoCacheTableAnnotationComposer,
+          $$PhotoCacheTableCreateCompanionBuilder,
+          $$PhotoCacheTableUpdateCompanionBuilder,
+          (
+            PhotoCacheData,
+            BaseReferences<_$AppDatabase, $PhotoCacheTable, PhotoCacheData>,
+          ),
+          PhotoCacheData,
+          PrefetchHooks Function()
+        > {
+  $$PhotoCacheTableTableManager(_$AppDatabase db, $PhotoCacheTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PhotoCacheTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PhotoCacheTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$PhotoCacheTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> productId = const Value.absent(),
+                Value<String> path = const Value.absent(),
+                Value<Uint8List> bytes = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PhotoCacheCompanion(
+                productId: productId,
+                path: path,
+                bytes: bytes,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String productId,
+                required String path,
+                required Uint8List bytes,
+                Value<int> rowid = const Value.absent(),
+              }) => PhotoCacheCompanion.insert(
+                productId: productId,
+                path: path,
+                bytes: bytes,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$PhotoCacheTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PhotoCacheTable,
+      PhotoCacheData,
+      $$PhotoCacheTableFilterComposer,
+      $$PhotoCacheTableOrderingComposer,
+      $$PhotoCacheTableAnnotationComposer,
+      $$PhotoCacheTableCreateCompanionBuilder,
+      $$PhotoCacheTableUpdateCompanionBuilder,
+      (
+        PhotoCacheData,
+        BaseReferences<_$AppDatabase, $PhotoCacheTable, PhotoCacheData>,
+      ),
+      PhotoCacheData,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -4910,4 +5833,8 @@ class $AppDatabaseManager {
   $$OpeningStockTableTableManager get openingStock =>
       $$OpeningStockTableTableManager(_db, _db.openingStock);
   $$MetaTableTableManager get meta => $$MetaTableTableManager(_db, _db.meta);
+  $$PhotoUploadsTableTableManager get photoUploads =>
+      $$PhotoUploadsTableTableManager(_db, _db.photoUploads);
+  $$PhotoCacheTableTableManager get photoCache =>
+      $$PhotoCacheTableTableManager(_db, _db.photoCache);
 }

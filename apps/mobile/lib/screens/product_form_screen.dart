@@ -1,16 +1,22 @@
 import 'package:flutter/material.dart';
+
 import 'package:flutter/services.dart';
 import 'package:uuid/uuid.dart';
 
 import '../core/money.dart';
+import '../core/photo.dart';
 import '../data/local_store.dart';
 import '../l10n/app_localizations.dart';
 import '../sync/store_session.dart';
+import 'product_thumb.dart';
 
 /// One screen to add or edit a product: name, price, optional barcode and opening stock.
 /// Unit and cost hide under "More". Saves to the phone at once; sync sends it later.
 class ProductFormScreen extends StatefulWidget {
   const ProductFormScreen({super.key, this.product, this.barcode});
+
+  /// Camera/gallery access; tests replace it.
+  static PhotoSource Function() photoSource = DevicePhotoSource.new;
 
   /// Null = new product.
   final ProductView? product;
@@ -33,6 +39,8 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
   final _cost = TextEditingController();
   bool _busy = false;
   String? _barcodeError;
+  Uint8List? _newPhoto;
+  bool _photoBusy = false;
 
   // ids are made once per screen, so saving twice never creates two products
   late final String _productId = widget.product?.id ?? const Uuid().v7();
@@ -78,8 +86,57 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
       ),
       opId: const Uuid().v7(),
     );
+    if (_newPhoto != null) {
+      await scope.store.setPhoto(_productId, _variantId, _newPhoto!, opId: const Uuid().v7());
+    }
     scope.engine.poke();
     if (mounted) Navigator.of(context).pop();
+  }
+
+  Future<void> _pickPhoto({required bool camera}) async {
+    final t = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _photoBusy = true);
+    try {
+      final bytes = await ProductFormScreen.photoSource().pick(camera: camera);
+      if (bytes != null && mounted) setState(() => _newPhoto = bytes);
+    } catch (e, s) {
+      debugPrint('photo pick failed: $e\n$s');
+      messenger.showSnackBar(SnackBar(content: Text(t.photoFailed)));
+    } finally {
+      if (mounted) setState(() => _photoBusy = false);
+    }
+  }
+
+  Widget _photoSection(AppLocalizations t) {
+    const size = 96.0;
+    final Widget current = _newPhoto != null
+        ? ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Image.memory(_newPhoto!, key: const Key('new-photo'), width: size, height: size, fit: BoxFit.cover),
+          )
+        : ProductThumb(productId: _productId, path: widget.product?.photoPath, size: size);
+    return Row(children: [
+      current,
+      const SizedBox(width: 16),
+      Expanded(
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          OutlinedButton.icon(
+            key: const Key('photo-camera'),
+            onPressed: _photoBusy ? null : () => _pickPhoto(camera: true),
+            icon: const Icon(Icons.photo_camera_outlined),
+            label: Text(t.takePhoto),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            key: const Key('photo-gallery'),
+            onPressed: _photoBusy ? null : () => _pickPhoto(camera: false),
+            icon: const Icon(Icons.photo_library_outlined),
+            label: Text(t.choosePhoto),
+          ),
+        ]),
+      ),
+    ]);
   }
 
   Future<void> _archive() async {
@@ -138,6 +195,8 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            _photoSection(t),
+            const SizedBox(height: 16),
             TextFormField(
               key: const Key('field-name'),
               controller: _name,
@@ -207,16 +266,21 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                 const SizedBox(height: 12),
               ],
             ),
-            const SizedBox(height: 16),
-            SizedBox(
-              height: 56,
-              child: FilledButton(
-                key: const Key('save-product'),
-                onPressed: _busy ? null : _save,
-                child: Text(t.save, style: const TextStyle(fontSize: 18)),
-              ),
-            ),
           ],
+        ),
+      ),
+      // always visible, even on a small phone with the keyboard and error messages showing
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+          child: SizedBox(
+            height: 56,
+            child: FilledButton(
+              key: const Key('save-product'),
+              onPressed: _busy ? null : _save,
+              child: Text(t.save, style: const TextStyle(fontSize: 18)),
+            ),
+          ),
         ),
       ),
     );

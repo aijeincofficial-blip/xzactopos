@@ -6,6 +6,7 @@ import '../l10n/app_localizations.dart';
 import '../sync/store_session.dart';
 import '../sync/sync_badge.dart';
 import 'product_form_screen.dart';
+import 'product_thumb.dart';
 
 /// Product list for the tindera: search on top, big "+" to add, tap a row to edit.
 class ProductsScreen extends StatefulWidget {
@@ -76,11 +77,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
   Future<void> _open({ProductView? product, String? barcode}) async {
     final scope = CatalogScope.of(context);
     await Navigator.of(context).push(MaterialPageRoute<void>(
-      builder: (_) => CatalogScope(
-        store: scope.store,
-        engine: scope.engine,
-        child: ProductFormScreen(product: product, barcode: barcode),
-      ),
+      builder: (_) => scope.wrap(ProductFormScreen(product: product, barcode: barcode)),
     ));
   }
 
@@ -148,6 +145,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     final p = items[i];
                     return ListTile(
                       minVerticalPadding: 14,
+                      leading: ProductThumb(productId: p.id, path: p.photoPath),
                       title: Text(p.name, style: const TextStyle(fontSize: 18)),
                       subtitle: p.barcode == null ? null : Text(p.barcode!),
                       trailing: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -261,6 +259,7 @@ String opErrorText(AppLocalizations t, String? hint) => switch (hint) {
       'duplicate_barcode' => t.errDuplicateBarcode,
       'duplicate_sku' => t.errDuplicateBarcode,
       'limit_products' => t.errLimitProducts,
+      'photo_too_large' => t.errPhotoTooLarge,
       'not_allowed' || 'cost_and_sku_only' => t.errNotAllowed,
       'product_archived' => t.errProductArchived,
       _ => t.errGeneric,

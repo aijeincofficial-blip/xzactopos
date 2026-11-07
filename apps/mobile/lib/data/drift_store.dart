@@ -317,6 +317,46 @@ class DriftStore implements LocalStore {
     return rows.map(_op).toList();
   }
 
+  // ---------------------------------------------------------------------------
+  // Photos
+  // ---------------------------------------------------------------------------
+
+  @override
+  Future<String> setPhoto(String productId, String variantId, Uint8List jpeg, {required String opId}) {
+    return db.transaction(() async {
+      final tenant = (await (db.select(db.meta)..where((m) => m.key.equals('tenant_id'))).getSingle()).value;
+      final path = '$tenant/$productId/$opId.jpg';
+      await db.into(db.photoUploads).insert(
+          PhotoUploadsCompanion.insert(opId: opId, productId: productId, path: path, bytes: jpeg));
+      await db.into(db.photoCache).insertOnConflictUpdate(
+          PhotoCacheCompanion.insert(productId: productId, path: path, bytes: jpeg));
+      await (db.update(db.products)..where((p) => p.id.equals(productId)))
+          .write(ProductsCompanion(photoPath: Value(path)));
+      await _enqueue(opId, 'upload_photo', productId, {'product_id': productId, 'variant_id': variantId, 'path': path});
+      return path;
+    });
+  }
+
+  @override
+  Future<Uint8List?> cachedPhoto(String productId, String path) async {
+    final row = await (db.select(db.photoCache)
+          ..where((c) => c.productId.equals(productId) & c.path.equals(path)))
+        .getSingleOrNull();
+    return row?.bytes;
+  }
+
+  @override
+  Future<void> cachePhoto(String productId, String path, Uint8List bytes) => db
+      .into(db.photoCache)
+      .insertOnConflictUpdate(PhotoCacheCompanion.insert(productId: productId, path: path, bytes: bytes));
+
+  @override
+  Future<Uint8List?> pendingPhoto(String opId) async =>
+      (await (db.select(db.photoUploads)..where((u) => u.opId.equals(opId))).getSingleOrNull())?.bytes;
+
+  @override
+  Future<void> photoUploaded(String opId) => (db.delete(db.photoUploads)..where((u) => u.opId.equals(opId))).go();
+
   @override
   Future<void> close() => db.close();
 
@@ -326,6 +366,7 @@ class DriftStore implements LocalStore {
       final op = await (db.select(db.outbox)..where((o) => o.opId.equals(opId))).getSingleOrNull();
       if (op == null) return;
       await opDone(opId);
+      await photoUploaded(opId);
       final stillPending = await (db.select(db.outbox)..where((o) => o.entityId.equals(op.entityId))).get();
       final product = await (db.select(db.products)..where((p) => p.id.equals(op.entityId))).getSingleOrNull();
       // never reached the server: remove the local-only rows

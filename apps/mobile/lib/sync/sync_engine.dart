@@ -11,6 +11,12 @@ abstract class SyncApi {
   /// Throws [OpRejected] when the server refuses the op for good; any other error is treated as transient.
   Future<void> upsertProduct(String opId, Map<String, dynamic> payload);
   Future<void> archiveProduct(String opId, String productId);
+
+  /// Uploads (or overwrites) a product photo in Storage. Throws [OpRejected] when Storage refuses it for good.
+  Future<void> uploadPhoto(String path, Uint8List jpeg);
+
+  /// Downloads a product photo. Throws on any failure (the caller just tries again later).
+  Future<Uint8List> downloadPhoto(String path);
 }
 
 /// The server refused an op permanently (bad data, duplicate barcode, no permission). Retrying will not help.
@@ -124,6 +130,18 @@ class SyncEngine {
               await api.upsertProduct(op.opId, op.payload);
             case 'archive_product':
               await api.archiveProduct(op.opId, op.payload['product_id'] as String);
+            case 'upload_photo':
+              // file first, then point the product at it; the upsert reuses this op id, so a retry is a no-op
+              final bytes = await store.pendingPhoto(op.opId);
+              if (bytes == null) throw const OpRejected('photo_missing');
+              final path = op.payload['path'] as String;
+              await api.uploadPhoto(path, bytes);
+              await api.upsertProduct(op.opId, {
+                'id': op.payload['product_id'],
+                'photo_path': path,
+                'variant': {'id': op.payload['variant_id']},
+              });
+              await store.photoUploaded(op.opId);
             default:
               throw OpRejected('unknown_op_${op.kind}');
           }

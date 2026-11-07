@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -41,6 +42,11 @@ class FakeBackend implements Backend {
   Future<void> upsertProduct(String opId, Map<String, dynamic> payload) async => pushed.add('upsert_product');
   @override
   Future<void> archiveProduct(String opId, String productId) async => pushed.add('archive_product');
+  final uploaded = <String>[];
+  @override
+  Future<void> uploadPhoto(String path, Uint8List jpeg) async => uploaded.add(path);
+  @override
+  Future<Uint8List> downloadPhoto(String path) => Future.error(Exception('no photos in this fake'));
 
   @override
   Future<void> provisionSoloStore({

@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'sync/sync_engine.dart';
@@ -89,6 +91,29 @@ class SupabaseBackend implements Backend {
   @override
   Future<void> archiveProduct(String opId, String productId) =>
       _op(() => _c.rpc('archive_product', params: {'p_op_id': opId, 'p_product_id': productId}));
+
+  static const _photoBucket = 'product-photos';
+
+  @override
+  Future<void> uploadPhoto(String path, Uint8List jpeg) async {
+    try {
+      await _c.storage.from(_photoBucket).uploadBinary(
+            path,
+            jpeg,
+            fileOptions: const FileOptions(contentType: 'image/jpeg', upsert: true),
+          );
+    } on StorageException catch (e) {
+      // 400/403 policy refusals and 413 too large will not change on retry
+      final status = int.tryParse(e.statusCode ?? '');
+      if (status != null && (status == 400 || status == 403 || status == 413)) {
+        throw OpRejected(status == 413 ? 'photo_too_large' : 'not_allowed');
+      }
+      rethrow;
+    }
+  }
+
+  @override
+  Future<Uint8List> downloadPhoto(String path) => _c.storage.from(_photoBucket).download(path);
 
   /// Maps refusals that retrying cannot fix to [OpRejected]; everything else (network, 5xx, expired token)
   /// stays a normal exception so the engine retries it later with the same op id.

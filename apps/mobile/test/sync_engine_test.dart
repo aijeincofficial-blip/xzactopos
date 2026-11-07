@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -33,10 +35,44 @@ class FakeApi implements SyncApi {
   }
 
   @override
-  Future<void> upsertProduct(String opId, Map<String, dynamic> payload) => _push('upsert', opId);
+  Future<void> upsertProduct(String opId, Map<String, dynamic> payload) {
+    upserts[opId] = payload;
+    return _push('upsert', opId);
+  }
 
   @override
   Future<void> archiveProduct(String opId, String productId) => _push('archive', opId);
+
+  final uploads = <String, Uint8List>{};
+  final upserts = <String, Map<String, dynamic>>{};
+  Object? failNextUpload;
+  final photos = <String, Uint8List>{};
+  final downloads = <String>[];
+  int downloading = 0;
+  int maxDownloading = 0;
+  bool offline = false;
+
+  @override
+  Future<void> uploadPhoto(String path, Uint8List jpeg) async {
+    calls.add('upload:$path');
+    if (failNextUpload != null) {
+      final e = failNextUpload!;
+      failNextUpload = null;
+      throw e;
+    }
+    uploads[path] = jpeg;
+  }
+
+  @override
+  Future<Uint8List> downloadPhoto(String path) async {
+    downloads.add(path);
+    downloading++;
+    if (downloading > maxDownloading) maxDownloading = downloading;
+    await Future<void>.delayed(const Duration(milliseconds: 5));
+    downloading--;
+    if (offline || !photos.containsKey(path)) throw Exception('offline');
+    return photos[path]!;
+  }
 }
 
 const _p1 = '0190a000-0000-7000-8000-000000000001';

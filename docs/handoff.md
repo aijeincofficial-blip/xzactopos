@@ -201,3 +201,24 @@ Built together while automated; one commit because later cards changed earlier f
 - **Gaps for P2-07:** offline *first load* of the web app needs a service worker that caches the app, `sqlite3.wasm` and `drift_worker.js`
   (and canvaskit is loaded from gstatic by default: build with `--no-web-resources-cdn` for offline). Camera scan. Phone test (Android toolchain).
   Opening stock is stored on the device only until Phase 4. Product photos are P2-06.
+
+### P2-06 product photos: done (branch `flutter-solo`)
+- Migration `20261108000400_product_photos.sql`: private bucket `product-photos` (JPEG only, 200 KB cap). Object path
+  `<tenant_id>/<product_id>/<client_op_id>.jpg`: a new path per change, so no device ever shows a stale cached photo.
+  Policies on `storage.objects`: read = any active member of the tenant; insert/update = `can_upload_product_photo()` (superadmin or a store
+  manager, active tenant, inventory on; warehouse is cost/SKU only so no photos); no delete policy. Path shape and tenant folder checked by
+  `is_own_product_photo_path()`. pgTAP `010_product_photos.test.sql` (15); mutation-tested (upload rule loosened -> 4 failures). 1033 pgTAP total.
+- Client: `lib/core/photo.dart` (camera/gallery via image_picker, then `compressPhoto`: <= 640 px, JPEG, <= 100 KB, lowers quality then size).
+  Schema v3 adds `photo_uploads` (queued bytes) and `photo_cache` (last photo per product). `store.setPhoto` shows the photo at once and queues
+  an `upload_photo` op after the product's own op; the engine uploads the file (upsert), then calls `upsert_product` with `photo_path` reusing the
+  op id (retry-safe). Storage 400/403 -> needs attention (`not_allowed`), 413 -> `photo_too_large`; anything else retries.
+  `PhotoLoader` downloads a photo only when its row is shown, at most 2 at a time, shares a download between rows, keeps it on the device.
+- UI: photo section at the top of the product form (Kumuha ng litrato / Pumili ng litrato), thumbnails in the list. Save is now a bottom bar that
+  is always visible (it scrolled off small screens once error messages showed).
+- Verified in the browser (release build): picked a 1200x900 photo -> stored 76 KB JPEG in Storage, product row points at it; a second
+  "device" (other origin) pulled the catalog and downloaded only that one photo with one authenticated GET.
+- Bugs found: `whenComplete(() => map.remove(key))` returned the same future and waited on itself (deadlock) - use a block body;
+  a stale web plugin registrant after adding a plugin gave `MissingPluginException` in the release build - run `flutter clean` after adding plugins.
+- `apps/mobile/tool/serve_web.py <dir> <port>`: static server with the right `.wasm` MIME type and no caching, for testing `build/web`.
+- Gaps: old photo versions are never deleted from Storage (free tier: ~100 KB each; add cleanup later). Camera capture on Android untested
+  (toolchain). Tests: `flutter test` 60, `flutter analyze` clean, `pnpm check` green.
