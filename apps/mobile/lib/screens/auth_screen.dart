@@ -3,6 +3,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../app.dart' show LanguageButton;
 import '../backend.dart';
+import '../core/theme.dart';
+import '../core/ui.dart';
 import '../l10n/app_localizations.dart';
 
 class AuthScreen extends StatefulWidget {
@@ -34,17 +36,26 @@ class _AuthScreenState extends State<AuthScreen> {
     final send = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Gap.radiusL)),
         title: Text(t.forgotTitle),
         content: TextField(
           key: const Key('forgot-email'),
           controller: c,
           autofocus: true,
           keyboardType: TextInputType.emailAddress,
-          decoration: InputDecoration(labelText: t.email),
+          decoration: InputDecoration(
+            labelText: t.email,
+            prefixIcon: const Icon(Icons.email_outlined),
+          ),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(t.cancel)),
-          FilledButton(key: const Key('forgot-send'), onPressed: () => Navigator.pop(ctx, true), child: Text(t.forgotSend)),
+          FilledButton(
+            key: const Key('forgot-send'),
+            style: FilledButton.styleFrom(shape: const StadiumBorder()),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(t.forgotSend),
+          ),
         ],
       ),
     );
@@ -67,8 +78,7 @@ class _AuthScreenState extends State<AuthScreen> {
     });
     try {
       if (_newUser) {
-        final hasSession =
-            await widget.backend.signUp(_email.text.trim(), _password.text);
+        final hasSession = await widget.backend.signUp(_email.text.trim(), _password.text);
         if (!hasSession && mounted) setState(() => _message = t.checkEmail);
       } else {
         await widget.backend.signIn(_email.text.trim(), _password.text);
@@ -85,56 +95,97 @@ class _AuthScreenState extends State<AuthScreen> {
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final dark = scheme.brightness == Brightness.dark;
+
     return Scaffold(
-      appBar: AppBar(title: Text(t.appTitle), actions: const [LanguageButton()]),
+      appBar: AppBar(
+        title: Text(t.appTitle),
+        actions: const [LanguageButton()],
+      ),
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.symmetric(horizontal: Gap.xl, vertical: Gap.l),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 420),
-            child: Form(
-              key: _form,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  TextFormField(
-                    controller: _email,
-                    keyboardType: TextInputType.emailAddress,
-                    decoration: InputDecoration(labelText: t.email),
-                    validator: (v) =>
-                        (v == null || v.trim().isEmpty) ? t.errRequired : null,
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _password,
-                    obscureText: true,
-                    decoration: InputDecoration(labelText: t.password),
-                    validator: (v) =>
-                        (v == null || v.length < 6) ? t.errPasswordShort : null,
-                  ),
-                  const SizedBox(height: 20),
-                  FilledButton(
-                    onPressed: _busy ? null : _submit,
-                    child: Text(_newUser ? t.signUp : t.signIn),
-                  ),
-                  TextButton(
-                    onPressed:
-                        _busy ? null : () => setState(() => _newUser = !_newUser),
-                    child: Text(_newUser ? t.haveAccount : t.noAccount),
-                  ),
-                  if (!_newUser)
+            child: AppCard(
+              padding: const EdgeInsets.all(Gap.xxl),
+              child: Form(
+                key: _form,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Center(
+                      child: CoinBadge(
+                        icon: Icons.storefront_rounded,
+                        color: scheme.primary,
+                        size: 52,
+                      ),
+                    ),
+                    const SizedBox(height: Gap.l),
+                    TextFormField(
+                      controller: _email,
+                      keyboardType: TextInputType.emailAddress,
+                      textInputAction: TextInputAction.next,
+                      decoration: InputDecoration(
+                        labelText: t.email,
+                        prefixIcon: const Icon(Icons.email_outlined, size: 20),
+                      ),
+                      validator: (v) => (v == null || v.trim().isEmpty) ? t.errRequired : null,
+                    ),
+                    const SizedBox(height: Gap.m),
+                    TextFormField(
+                      controller: _password,
+                      obscureText: true,
+                      textInputAction: TextInputAction.done,
+                      decoration: InputDecoration(
+                        labelText: t.password,
+                        prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20),
+                      ),
+                      validator: (v) => (v == null || v.length < 6) ? t.errPasswordShort : null,
+                    ),
+                    const SizedBox(height: Gap.xl),
+                    SizedBox(
+                      height: 52,
+                      child: FilledButton(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: dark ? scheme.primary : const Color(0xFF0F172A),
+                          foregroundColor: dark ? scheme.onPrimary : Colors.white,
+                          shape: const StadiumBorder(),
+                          elevation: 3,
+                          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                        ),
+                        onPressed: _busy ? null : _submit,
+                        child: Text(_newUser ? t.signUp : t.signIn),
+                      ),
+                    ),
+                    const SizedBox(height: Gap.s),
                     TextButton(
-                      key: const Key('forgot-password'),
-                      onPressed: _busy ? null : _forgot,
-                      child: Text(t.forgotPassword),
+                      onPressed: _busy ? null : () => setState(() => _newUser = !_newUser),
+                      child: Text(_newUser ? t.haveAccount : t.noAccount),
                     ),
-                  if (_message != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: Text(_message!, textAlign: TextAlign.center),
-                    ),
-                ],
+                    if (!_newUser)
+                      TextButton(
+                        key: const Key('forgot-password'),
+                        onPressed: _busy ? null : _forgot,
+                        child: Text(t.forgotPassword),
+                      ),
+                    if (_message != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: Gap.s),
+                        child: Text(
+                          _message!,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: _message == t.errBadLogin || _message == t.errGeneric ? scheme.error : scheme.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ),
           ),

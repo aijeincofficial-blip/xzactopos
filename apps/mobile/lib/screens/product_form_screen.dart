@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-
 import 'package:flutter/services.dart';
 import 'package:uuid/uuid.dart';
 
 import '../core/camera_scanner.dart';
 import '../core/money.dart';
 import '../core/photo.dart';
+import '../core/theme.dart';
+import '../core/ui.dart';
 import '../data/local_store.dart';
 import '../l10n/app_localizations.dart';
 import '../sync/store_session.dart';
@@ -117,35 +118,67 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     }
   }
 
-  Widget _photoSection(AppLocalizations t) {
-    const size = 96.0;
+  Widget _photoSection(AppLocalizations t, ColorScheme scheme, bool dark) {
+    const size = 92.0;
     final Widget current = _newPhoto != null
         ? ClipRRect(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(Gap.radiusM),
             child: Image.memory(_newPhoto!, key: const Key('new-photo'), width: size, height: size, fit: BoxFit.cover),
           )
-        : ProductThumb(productId: _productId, path: widget.product?.photoPath, size: size);
-    return Row(children: [
-      current,
-      const SizedBox(width: 16),
-      Expanded(
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          OutlinedButton.icon(
-            key: const Key('photo-camera'),
-            onPressed: _photoBusy ? null : () => _pickPhoto(camera: true),
-            icon: const Icon(Icons.photo_camera_outlined),
-            label: Text(t.takePhoto),
+        : ClipRRect(
+            borderRadius: BorderRadius.circular(Gap.radiusM),
+            child: ProductThumb(productId: _productId, path: widget.product?.photoPath, size: size),
+          );
+
+    return AppCard(
+      padding: const EdgeInsets.all(Gap.m),
+      child: Row(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(Gap.radiusM),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.06),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: current,
           ),
-          const SizedBox(height: 8),
-          OutlinedButton.icon(
-            key: const Key('photo-gallery'),
-            onPressed: _photoBusy ? null : () => _pickPhoto(camera: false),
-            icon: const Icon(Icons.photo_library_outlined),
-            label: Text(t.choosePhoto),
+          const SizedBox(width: Gap.m),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                OutlinedButton.icon(
+                  key: const Key('photo-camera'),
+                  style: OutlinedButton.styleFrom(
+                    shape: const StadiumBorder(),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                  ),
+                  onPressed: _photoBusy ? null : () => _pickPhoto(camera: true),
+                  icon: const Icon(Icons.photo_camera_outlined, size: 18),
+                  label: Text(t.takePhoto, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                ),
+                const SizedBox(height: Gap.s),
+                OutlinedButton.icon(
+                  key: const Key('photo-gallery'),
+                  style: OutlinedButton.styleFrom(
+                    shape: const StadiumBorder(),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                  ),
+                  onPressed: _photoBusy ? null : () => _pickPhoto(camera: false),
+                  icon: const Icon(Icons.photo_library_outlined, size: 18),
+                  label: Text(t.choosePhoto, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                ),
+              ],
+            ),
           ),
-        ]),
+        ],
       ),
-    ]);
+    );
   }
 
   Future<void> _archive() async {
@@ -154,11 +187,16 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (c) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Gap.radiusL)),
         title: Text(t.archiveTitle(widget.product!.name)),
         content: Text(t.archiveBody),
         actions: [
           TextButton(onPressed: () => Navigator.pop(c, false), child: Text(t.cancel)),
-          FilledButton(onPressed: () => Navigator.pop(c, true), child: Text(t.archive)),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
+            onPressed: () => Navigator.pop(c, true),
+            child: Text(t.archive),
+          ),
         ],
       ),
     );
@@ -183,9 +221,13 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
-    final big = Theme.of(context).textTheme.titleLarge;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final dark = scheme.brightness == Brightness.dark;
+    final big = theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700);
     final currency = CatalogScope.of(context).store.baseCurrency;
     final symbol = currency == 'PHP' ? '₱' : currency;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(_isNew ? t.addProduct : t.editProduct),
@@ -194,7 +236,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
             IconButton(
               key: const Key('archive-product'),
               tooltip: t.archive,
-              icon: const Icon(Icons.delete_outline),
+              icon: Icon(Icons.delete_outline_rounded, color: scheme.error),
               onPressed: _busy ? null : _archive,
             ),
         ],
@@ -202,111 +244,166 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
       body: Form(
         key: _form,
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: Gap.xl, vertical: Gap.m),
           children: [
-            _photoSection(t),
-            const SizedBox(height: 16),
-            TextFormField(
-              key: const Key('field-name'),
-              controller: _name,
-              autofocus: _isNew,
-              style: big,
-              textCapitalization: TextCapitalization.words,
-              textInputAction: TextInputAction.next,
-              decoration: InputDecoration(labelText: t.productName, hintText: t.productNameHint),
-              validator: (v) => (v == null || v.trim().isEmpty) ? t.errRequired : null,
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              key: const Key('field-price'),
-              controller: _price,
-              style: big,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]'))],
-              textInputAction: TextInputAction.next,
-              decoration: InputDecoration(labelText: t.sellingPrice, prefixText: '$symbol '),
-              validator: (v) => _money(v, t, required: true),
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              key: const Key('field-barcode'),
-              controller: _barcode,
-              keyboardType: TextInputType.number,
-              textInputAction: TextInputAction.next,
-              decoration: InputDecoration(
-                labelText: t.barcodeOptional,
-                prefixIcon: cameraScanner.available
-                    ? IconButton(
-                        key: const Key('barcode-camera'),
-                        tooltip: t.scanWithCamera,
-                        icon: const Icon(Icons.qr_code_scanner),
-                        onPressed: _scanBarcode,
-                      )
-                    : const Icon(Icons.qr_code_scanner),
-                errorText: _barcodeError,
+            _photoSection(t, scheme, dark),
+            const SizedBox(height: Gap.m),
+
+            // Main Product Details Card
+            AppCard(
+              padding: const EdgeInsets.all(Gap.l),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  TextFormField(
+                    key: const Key('field-name'),
+                    controller: _name,
+                    autofocus: _isNew,
+                    style: big,
+                    textCapitalization: TextCapitalization.words,
+                    textInputAction: TextInputAction.next,
+                    decoration: InputDecoration(
+                      labelText: t.productName,
+                      hintText: t.productNameHint,
+                      prefixIcon: const Icon(Icons.shopping_bag_outlined, size: 20),
+                    ),
+                    validator: (v) => (v == null || v.trim().isEmpty) ? t.errRequired : null,
+                  ),
+                  const SizedBox(height: Gap.m),
+                  TextFormField(
+                    key: const Key('field-price'),
+                    controller: _price,
+                    style: big,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]'))],
+                    textInputAction: TextInputAction.next,
+                    decoration: InputDecoration(
+                      labelText: t.sellingPrice,
+                      prefixText: '$symbol ',
+                      prefixIcon: const Icon(Icons.sell_outlined, size: 20),
+                    ),
+                    validator: (v) => _money(v, t, required: true),
+                  ),
+                  const SizedBox(height: Gap.m),
+                  TextFormField(
+                    key: const Key('field-barcode'),
+                    controller: _barcode,
+                    keyboardType: TextInputType.number,
+                    textInputAction: TextInputAction.next,
+                    decoration: InputDecoration(
+                      labelText: t.barcodeOptional,
+                      prefixIcon: cameraScanner.available
+                          ? IconButton(
+                              key: const Key('barcode-camera'),
+                              tooltip: t.scanWithCamera,
+                              icon: const Icon(Icons.qr_code_scanner_rounded),
+                              onPressed: _scanBarcode,
+                            )
+                          : const Icon(Icons.qr_code_scanner_rounded),
+                      errorText: _barcodeError,
+                    ),
+                  ),
+                  if (_isNew) ...[
+                    const SizedBox(height: Gap.m),
+                    TextFormField(
+                      key: const Key('field-stock'),
+                      controller: _stock,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
+                      decoration: InputDecoration(
+                        labelText: t.openingStockOptional,
+                        helperText: t.openingStockHelp,
+                        prefixIcon: const Icon(Icons.inventory_2_outlined, size: 20),
+                      ),
+                      validator: (v) {
+                        final s = v?.trim() ?? '';
+                        if (s.isEmpty) return null;
+                        final q = double.tryParse(s);
+                        return (q == null || q < 0) ? t.errBadAmount : null;
+                      },
+                    ),
+                  ],
+                ],
               ),
             ),
-            if (_isNew) ...[
-              const SizedBox(height: 12),
-              TextFormField(
-                key: const Key('field-stock'),
-                controller: _stock,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
-                decoration: InputDecoration(labelText: t.openingStockOptional, helperText: t.openingStockHelp),
-                validator: (v) {
-                  final s = v?.trim() ?? '';
-                  if (s.isEmpty) return null;
-                  final q = double.tryParse(s);
-                  return (q == null || q < 0) ? t.errBadAmount : null;
-                },
+            const SizedBox(height: Gap.m),
+
+            // More Options (Unit, Cost, Reorder)
+            AppCard(
+              padding: const EdgeInsets.symmetric(horizontal: Gap.m, vertical: Gap.xs),
+              child: ExpansionTile(
+                key: const Key('more'),
+                tilePadding: const EdgeInsets.symmetric(horizontal: Gap.s),
+                shape: const Border(),
+                title: Text(t.more, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                leading: Icon(Icons.tune_rounded, color: scheme.primary),
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(Gap.s, 0, Gap.s, Gap.m),
+                    child: Column(
+                      children: [
+                        TextFormField(
+                          controller: _unit,
+                          decoration: InputDecoration(
+                            labelText: t.unit,
+                            helperText: t.unitHelp,
+                            prefixIcon: const Icon(Icons.straighten_outlined, size: 20),
+                          ),
+                        ),
+                        const SizedBox(height: Gap.m),
+                        TextFormField(
+                          controller: _cost,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          decoration: InputDecoration(
+                            labelText: t.costOptional,
+                            prefixText: '$symbol ',
+                            prefixIcon: const Icon(Icons.request_quote_outlined, size: 20),
+                          ),
+                          validator: (v) => _money(v, t, required: false),
+                        ),
+                        const SizedBox(height: Gap.m),
+                        TextFormField(
+                          key: const Key('field-reorder'),
+                          controller: _reorder,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          decoration: InputDecoration(
+                            labelText: t.reorderPoint,
+                            helperText: t.reorderPointHelp,
+                            prefixIcon: const Icon(Icons.notifications_active_outlined, size: 20),
+                          ),
+                          validator: (v) {
+                            if (v == null || v.trim().isEmpty) return null;
+                            final q = double.tryParse(v.trim().replaceAll(',', '.'));
+                            return (q == null || q < 0) ? t.errBadAmount : null;
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ],
-            const SizedBox(height: 8),
-            ExpansionTile(
-              key: const Key('more'),
-              tilePadding: EdgeInsets.zero,
-              title: Text(t.more),
-              children: [
-                TextFormField(
-                  controller: _unit,
-                  decoration: InputDecoration(labelText: t.unit, helperText: t.unitHelp),
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _cost,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: InputDecoration(labelText: t.costOptional, prefixText: '$symbol '),
-                  validator: (v) => _money(v, t, required: false),
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  key: const Key('field-reorder'),
-                  controller: _reorder,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: InputDecoration(labelText: t.reorderPoint, helperText: t.reorderPointHelp),
-                  validator: (v) {
-                    if (v == null || v.trim().isEmpty) return null;
-                    final q = double.tryParse(v.trim().replaceAll(',', '.'));
-                    return (q == null || q < 0) ? t.errBadAmount : null;
-                  },
-                ),
-                const SizedBox(height: 12),
-              ],
             ),
+            const SizedBox(height: Gap.xl),
           ],
         ),
       ),
-      // always visible, even on a small phone with the keyboard and error messages showing
       bottomNavigationBar: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+          padding: const EdgeInsets.fromLTRB(Gap.xl, Gap.s, Gap.xl, Gap.l),
           child: SizedBox(
             height: 56,
             child: FilledButton(
               key: const Key('save-product'),
+              style: FilledButton.styleFrom(
+                backgroundColor: dark ? scheme.primary : const Color(0xFF0F172A),
+                foregroundColor: dark ? scheme.onPrimary : Colors.white,
+                shape: const StadiumBorder(),
+                elevation: 4,
+                shadowColor: Colors.black.withOpacity(0.3),
+                textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, letterSpacing: 0.3),
+              ),
               onPressed: _busy ? null : _save,
-              child: Text(t.save, style: const TextStyle(fontSize: 18)),
+              child: Text(t.save),
             ),
           ),
         ),
