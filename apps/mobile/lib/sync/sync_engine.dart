@@ -77,7 +77,14 @@ class SyncEngine {
 
   /// Call after a local write: syncs soon, without waiting for the idle poll.
   void poke() {
-    if (_started) _schedule(pokeDelay);
+    if (!_started) return;
+    // A run in progress ends by scheduling the idle poll, which would replace a short timer set now and delay
+    // this change by up to [idleInterval]. Ask that run to go again instead.
+    if (_running != null) {
+      _again = true;
+      return;
+    }
+    _schedule(pokeDelay);
   }
 
   void _schedule(Duration d) {

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:drift/drift.dart' show driftRuntimeOptions;
@@ -158,6 +159,24 @@ void main() {
     expect(api.pulledWith.length, greaterThanOrEqualTo(2));
   });
 
+  test('a change saved while a sync is pulling is sent right after it, not at the next idle poll', () async {
+    // the push loop re-reads the outbox, so the only gap is a save during the pull phase
+    final gate = Completer<void>();
+    final slow = _SlowPullApi(gate);
+    final e = SyncEngine(store, slow, idleInterval: const Duration(hours: 1), pokeDelay: const Duration(milliseconds: 300));
+    e.start();
+    await Future<void>.delayed(const Duration(milliseconds: 20)); // first run is now blocked in its pull
+
+    await store.saveProduct(const ProductDraft(id: _p2, variantId: _v2, name: 'Asukal', price: 1), opId: 'o2');
+    e.poke();
+    gate.complete();
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+
+    expect(slow.calls, ['upsert:o2']);
+    expect(await store.nextOps(), isEmpty);
+    e.dispose();
+  });
+
   test('which server refusals are final', () {
     expect(isPermanent('23505', 'duplicate_barcode'), isTrue);
     expect(isPermanent('22023', 'name_required'), isTrue);
@@ -167,4 +186,17 @@ void main() {
     expect(isPermanent('PGRST301', null), isFalse);
     expect(isPermanent(null, null), isFalse);
   });
+}
+
+/// Holds the first pull until [gate] completes, like a slow network.
+class _SlowPullApi extends FakeApi {
+  _SlowPullApi(this.gate);
+  final Completer<void> gate;
+  var _pulls = 0;
+
+  @override
+  Future<Map<String, dynamic>> pullCatalog(Map<String, dynamic> cursors, {int limit = 500}) async {
+    if (_pulls++ == 0) await gate.future;
+    return super.pullCatalog(cursors, limit: limit);
+  }
 }

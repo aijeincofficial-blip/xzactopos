@@ -222,3 +222,32 @@ Built together while automated; one commit because later cards changed earlier f
 - `apps/mobile/tool/serve_web.py <dir> <port>`: static server with the right `.wasm` MIME type and no caching, for testing `build/web`.
 - Gaps: old photo versions are never deleted from Storage (free tier: ~100 KB each; add cleanup later). Camera capture on Android untested
   (toolchain). Tests: `flutter test` 60, `flutter analyze` clean, `pnpm check` green.
+
+## Phase 2 (solo) acceptance report (P2-07)
+Run on 2026-11-07, branch `flutter-solo`, release web build served by `tool/serve_web.py`, local Supabase. New test tindera
+`tindera.p207@example.com` (local dev DB only), store "Sari-Sari ni Aling Rosa".
+
+| Criterion (P2-00 "Done when") | Result |
+| --- | --- |
+| New solo user adds 5 products (name, price, optional barcode, optional photo) in under 3 minutes | **Pass.** Sign up -> name the store -> 5 products (3 with barcodes, 1 with opening stock): 64 s of automated input. Each product = name, Tab, price, (Tab, barcode), Save. A person typing will be slower but well under 3 min. Photo add verified in P2-06 |
+| Offline: search by name and lookup by barcode still work | **Pass.** Requests to Supabase blocked in the page: "pina" found "Piña Juice 250ml" (accent-insensitive); typing barcode 4807770270017 + Enter opened Lucky Me Pancit Canton |
+| A product added offline syncs when the signal returns | **Pass.** Added "Itlog (piraso)" offline: listed at once with the pending icon, badge "Walang signal, 2 naka-save sa phone". Back online + tap badge: server has all 6 products with correct centavo prices; badge "Naka-sync" |
+| Same catalog on a second device | **Pass.** Fresh origin (second "device"), signed in: all 6 products with prices; photos download lazily (P2-06) |
+| New store defaults | **Pass.** Tenant PHP, `fil` default, setup complete, one store, owner = superadmin (S-01) |
+| `pnpm check` and `flutter test` green | **Pass.** pnpm: lint, types, Vitest (core 51, client 18, functions 20), pgTAP 1033 (10 files). Flutter: analyze clean, 61 tests |
+
+**Bug found and fixed in this card:** a product saved while a sync was *pulling* waited for the 120 s idle poll (the end of the run replaced
+the 2 s "sync soon" timer). `poke()` now asks the running sync to go again. Regression test `sync_engine_test.dart` blocks the pull, saves,
+and fails on the old code (verified) / passes on the fix.
+
+### Known gaps (carry forward)
+- **Phone not tested.** Android toolchain incomplete (`flutter doctor`: cmdline-tools, licenses). Blocks APK, camera capture and camera scan.
+- **Offline first load of the web app** needs a service worker caching the app, `sqlite3.wasm`, `drift_worker.js`, and canvaskit
+  (served from gstatic by default; build with `--no-web-resources-cdn`). Today the web app needs signal to start; data then works offline.
+- **Clean `supabase db reset` not run** since S-01 (kept the local demo data); migrations were applied with `supabase migration up`. CI never run (no remote).
+- Shared-worker storage is blocked in the Claude in-app browser; the app falls back to in-page storage (works, single tab only).
+- Pending ops are lost if a different store signs in on the same device. Old photo versions are never deleted from Storage.
+- Opening stock lives on the device until Phase 4 (stock ledger). Camera barcode scan deferred.
+- `flutter test` is not part of `pnpm check`.
+
+**Next:** Phase 3 (Sell screen in Flutter: cart, cash, utang, receipt, outbox `sync_push` for sales). Opus for sync + stock math.
