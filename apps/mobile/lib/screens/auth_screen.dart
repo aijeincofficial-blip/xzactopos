@@ -28,6 +28,36 @@ class _AuthScreenState extends State<AuthScreen> {
     super.dispose();
   }
 
+  Future<void> _forgot() async {
+    final t = AppLocalizations.of(context);
+    final c = TextEditingController(text: _email.text.trim());
+    final send = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(t.forgotTitle),
+        content: TextField(
+          key: const Key('forgot-email'),
+          controller: c,
+          autofocus: true,
+          keyboardType: TextInputType.emailAddress,
+          decoration: InputDecoration(labelText: t.email),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(t.cancel)),
+          FilledButton(key: const Key('forgot-send'), onPressed: () => Navigator.pop(ctx, true), child: Text(t.forgotSend)),
+        ],
+      ),
+    );
+    final email = c.text.trim();
+    if (send != true || email.isEmpty) return;
+    try {
+      await widget.backend.sendPasswordReset(email);
+    } catch (_) {
+      // same message either way: the screen must not reveal which emails have an account
+    }
+    if (mounted) setState(() => _message = t.forgotSent);
+  }
+
   Future<void> _submit() async {
     final t = AppLocalizations.of(context);
     if (!_form.currentState!.validate()) return;
@@ -93,6 +123,12 @@ class _AuthScreenState extends State<AuthScreen> {
                         _busy ? null : () => setState(() => _newUser = !_newUser),
                     child: Text(_newUser ? t.haveAccount : t.noAccount),
                   ),
+                  if (!_newUser)
+                    TextButton(
+                      key: const Key('forgot-password'),
+                      onPressed: _busy ? null : _forgot,
+                      child: Text(t.forgotPassword),
+                    ),
                   if (_message != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 8),

@@ -1147,6 +1147,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Discard them and continue'**
   String get unsentDiscard;
+
+  /// No description provided for @forgotPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Forgot password?'**
+  String get forgotPassword;
+
+  /// No description provided for @forgotTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset your password'**
+  String get forgotTitle;
+
+  /// No description provided for @forgotSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Send link'**
+  String get forgotSend;
+
+  /// No description provided for @forgotSent.
+  ///
+  /// In en, this message translates to:
+  /// **'If that email has an account, we sent a link to reset the password.'**
+  String get forgotSent;
+
+  /// No description provided for @newPasswordTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a new password'**
+  String get newPasswordTitle;
+
+  /// No description provided for @newPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'New password'**
+  String get newPassword;
+
+  /// No description provided for @confirmPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Type it again'**
+  String get confirmPassword;
+
+  /// No description provided for @passwordsDiffer.
+  ///
+  /// In en, this message translates to:
+  /// **'The two passwords are different'**
+  String get passwordsDiffer;
+
+  /// No description provided for @passwordSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Password changed'**
+  String get passwordSaved;
+
+  /// No description provided for @changePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Change password'**
+  String get changePassword;
 }
 
 class _AppLocalizationsDelegate

@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'sync/sync_engine.dart';
@@ -13,6 +14,15 @@ abstract class Backend implements SyncApi {
   /// Returns true when a session exists right away (email confirmation off).
   Future<bool> signUp(String email, String password);
   Future<void> signOut();
+
+  /// Emails a reset link. Never says whether the address has an account.
+  Future<void> sendPasswordReset(String email);
+
+  /// Sets a new password for the signed-in user (also used right after opening a reset link).
+  Future<void> updatePassword(String newPassword);
+
+  /// Fires when the user opened a reset link and must choose a new password.
+  Stream<void> get passwordRecovery;
 
   /// The user's access payload, or null when they have no business yet.
   Future<Map<String, dynamic>?> myAccess();
@@ -52,6 +62,19 @@ class SupabaseBackend implements Backend {
 
   @override
   Future<void> signOut() => _c.auth.signOut();
+
+  @override
+  Future<void> sendPasswordReset(String email) =>
+      _c.auth.resetPasswordForEmail(email, redirectTo: kIsWeb ? Uri.base.origin : null);
+
+  @override
+  Future<void> updatePassword(String newPassword) async {
+    await _c.auth.updateUser(UserAttributes(password: newPassword));
+  }
+
+  @override
+  Stream<void> get passwordRecovery =>
+      _c.auth.onAuthStateChange.where((e) => e.event == AuthChangeEvent.passwordRecovery);
 
   @override
   Future<Map<String, dynamic>?> myAccess() async {

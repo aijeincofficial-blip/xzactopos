@@ -662,4 +662,35 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get unsentDiscard => 'Discard them and continue';
+
+  @override
+  String get forgotPassword => 'Forgot password?';
+
+  @override
+  String get forgotTitle => 'Reset your password';
+
+  @override
+  String get forgotSend => 'Send link';
+
+  @override
+  String get forgotSent =>
+      'If that email has an account, we sent a link to reset the password.';
+
+  @override
+  String get newPasswordTitle => 'Choose a new password';
+
+  @override
+  String get newPassword => 'New password';
+
+  @override
+  String get confirmPassword => 'Type it again';
+
+  @override
+  String get passwordsDiffer => 'The two passwords are different';
+
+  @override
+  String get passwordSaved => 'Password changed';
+
+  @override
+  String get changePassword => 'Change password';
 }

@@ -6,6 +6,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'backend.dart';
 import 'l10n/app_localizations.dart';
 import 'screens/auth_screen.dart';
+import 'screens/password_screens.dart';
 import 'screens/home_screen.dart';
 import 'screens/store_name_screen.dart';
 import 'sync/store_session.dart';
@@ -91,11 +92,16 @@ class Gate extends StatefulWidget {
 class _GateState extends State<Gate> {
   late bool _signedIn = widget.backend.signedIn;
   StreamSubscription<bool>? _sub;
+  StreamSubscription<void>? _recoverySub;
+  bool _recovering = false;
   Future<Map<String, dynamic>?>? _access;
 
   @override
   void initState() {
     super.initState();
+    _recoverySub = widget.backend.passwordRecovery.listen((_) {
+      if (mounted) setState(() => _recovering = true);
+    });
     _sub = widget.backend.signedInChanges.listen((v) {
       // the stream repeats the current state on start and on token refresh; only real changes matter
       if (!mounted || v == _signedIn) return;
@@ -110,6 +116,7 @@ class _GateState extends State<Gate> {
   @override
   void dispose() {
     _sub?.cancel();
+    _recoverySub?.cancel();
     super.dispose();
   }
 
@@ -122,6 +129,14 @@ class _GateState extends State<Gate> {
 
   @override
   Widget build(BuildContext context) {
+    if (_recovering) {
+      return SetPasswordScreen(
+        backend: widget.backend,
+        onDone: () => setState(() {
+          _recovering = false;
+        }),
+      );
+    }
     if (!_signedIn) return AuthScreen(backend: widget.backend);
     return FutureBuilder<Map<String, dynamic>?>(
       future: _access,

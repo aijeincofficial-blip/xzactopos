@@ -7,6 +7,7 @@ import '../data/sales_models.dart';
 import '../l10n/app_localizations.dart';
 import '../sync/store_session.dart';
 import '../sync/sync_badge.dart';
+import 'password_screens.dart';
 import 'products_screen.dart';
 import 'reports_screen.dart';
 import 'sell_screen.dart';
@@ -54,6 +55,12 @@ class HomeScreen extends StatelessWidget {
         actions: [
           const SyncBadge(),
           const LanguageButton(),
+          IconButton(
+            key: const Key('change-password'),
+            tooltip: t.changePassword,
+            icon: const Icon(Icons.lock_reset),
+            onPressed: () => showChangePasswordDialog(context, backend),
+          ),
           IconButton(tooltip: t.signOut, icon: const Icon(Icons.logout), onPressed: backend.signOut),
         ],
       ),

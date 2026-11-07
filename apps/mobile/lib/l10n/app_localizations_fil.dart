@@ -670,4 +670,35 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get unsentDiscard => 'Itapon at magpatuloy';
+
+  @override
+  String get forgotPassword => 'Nakalimutan ang password?';
+
+  @override
+  String get forgotTitle => 'I-reset ang password';
+
+  @override
+  String get forgotSend => 'Ipadala ang link';
+
+  @override
+  String get forgotSent =>
+      'Kung may account ang email na iyon, nagpadala kami ng link para i-reset ang password.';
+
+  @override
+  String get newPasswordTitle => 'Pumili ng bagong password';
+
+  @override
+  String get newPassword => 'Bagong password';
+
+  @override
+  String get confirmPassword => 'Ulitin';
+
+  @override
+  String get passwordsDiffer => 'Hindi magkapareho ang dalawang password';
+
+  @override
+  String get passwordSaved => 'Napalitan na ang password';
+
+  @override
+  String get changePassword => 'Palitan ang password';
 }

@@ -380,5 +380,15 @@
       }
     }
   },
-  "unsentDiscard": "Itapon at magpatuloy"
+  "unsentDiscard": "Itapon at magpatuloy",
+  "forgotPassword": "Nakalimutan ang password?",
+  "forgotTitle": "I-reset ang password",
+  "forgotSend": "Ipadala ang link",
+  "forgotSent": "Kung may account ang email na iyon, nagpadala kami ng link para i-reset ang password.",
+  "newPasswordTitle": "Pumili ng bagong password",
+  "newPassword": "Bagong password",
+  "confirmPassword": "Ulitin",
+  "passwordsDiffer": "Hindi magkapareho ang dalawang password",
+  "passwordSaved": "Napalitan na ang password",
+  "changePassword": "Palitan ang password"
 }

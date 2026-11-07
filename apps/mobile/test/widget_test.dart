@@ -33,6 +33,19 @@ class FakeBackend implements Backend {
 
   @override
   Future<void> signOut() async => _ctrl.add(false);
+  final resetsSentTo = <String>[];
+  final passwordsSet = <String>[];
+  Object? resetError;
+  final recovery = StreamController<void>.broadcast();
+  @override
+  Future<void> sendPasswordReset(String email) async {
+    if (resetError != null) throw resetError!;
+    resetsSentTo.add(email);
+  }
+  @override
+  Future<void> updatePassword(String newPassword) async => passwordsSet.add(newPassword);
+  @override
+  Stream<void> get passwordRecovery => recovery.stream;
   @override
   Future<Map<String, dynamic>?> myAccess() async => access;
   Map<String, dynamic>? report;

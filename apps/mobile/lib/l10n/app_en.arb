@@ -380,5 +380,15 @@
       }
     }
   },
-  "unsentDiscard": "Discard them and continue"
+  "unsentDiscard": "Discard them and continue",
+  "forgotPassword": "Forgot password?",
+  "forgotTitle": "Reset your password",
+  "forgotSend": "Send link",
+  "forgotSent": "If that email has an account, we sent a link to reset the password.",
+  "newPasswordTitle": "Choose a new password",
+  "newPassword": "New password",
+  "confirmPassword": "Type it again",
+  "passwordsDiffer": "The two passwords are different",
+  "passwordSaved": "Password changed",
+  "changePassword": "Change password"
 }
