@@ -703,6 +703,30 @@ class AppLocalizationsFil extends AppLocalizations {
   String get changePassword => 'Palitan ang password';
 
   @override
+  String get themeTitle => 'Itsura ng app';
+
+  @override
+  String get themeColors => 'Kulay';
+
+  @override
+  String get themeMode => 'Liwanag';
+
+  @override
+  String get paletteFreshTide => 'Fresh Tide (asul at mint)';
+
+  @override
+  String get paletteGoldenIndigo => 'Golden Indigo (asul at ginto)';
+
+  @override
+  String get themeSystem => 'Sundin ang phone';
+
+  @override
+  String get themeLight => 'Maliwanag';
+
+  @override
+  String get themeDark => 'Madilim';
+
+  @override
   String get utangAdjust => 'Ayusin ang utang';
 
   @override

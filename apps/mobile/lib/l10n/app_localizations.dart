@@ -1208,6 +1208,54 @@ abstract class AppLocalizations {
   /// **'Change password'**
   String get changePassword;
 
+  /// No description provided for @themeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Look of the app'**
+  String get themeTitle;
+
+  /// No description provided for @themeColors.
+  ///
+  /// In en, this message translates to:
+  /// **'Colors'**
+  String get themeColors;
+
+  /// No description provided for @themeMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Brightness'**
+  String get themeMode;
+
+  /// No description provided for @paletteFreshTide.
+  ///
+  /// In en, this message translates to:
+  /// **'Fresh Tide (blue and mint)'**
+  String get paletteFreshTide;
+
+  /// No description provided for @paletteGoldenIndigo.
+  ///
+  /// In en, this message translates to:
+  /// **'Golden Indigo (blue and gold)'**
+  String get paletteGoldenIndigo;
+
+  /// No description provided for @themeSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'Same as phone'**
+  String get themeSystem;
+
+  /// No description provided for @themeLight.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get themeLight;
+
+  /// No description provided for @themeDark.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get themeDark;
+
   /// No description provided for @utangAdjust.
   ///
   /// In en, this message translates to:

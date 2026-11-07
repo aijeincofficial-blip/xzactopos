@@ -695,6 +695,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get changePassword => 'Change password';
 
   @override
+  String get themeTitle => 'Look of the app';
+
+  @override
+  String get themeColors => 'Colors';
+
+  @override
+  String get themeMode => 'Brightness';
+
+  @override
+  String get paletteFreshTide => 'Fresh Tide (blue and mint)';
+
+  @override
+  String get paletteGoldenIndigo => 'Golden Indigo (blue and gold)';
+
+  @override
+  String get themeSystem => 'Same as phone';
+
+  @override
+  String get themeLight => 'Light';
+
+  @override
+  String get themeDark => 'Dark';
+
+  @override
   String get utangAdjust => 'Adjust balance';
 
   @override

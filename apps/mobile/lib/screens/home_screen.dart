@@ -4,6 +4,7 @@ import '../app.dart' show LanguageButton;
 import '../backend.dart';
 import '../data/local_store.dart';
 import '../data/sales_models.dart';
+import '../core/theme_picker.dart';
 import '../l10n/app_localizations.dart';
 import '../sync/store_session.dart';
 import '../sync/sync_badge.dart';
@@ -54,6 +55,7 @@ class HomeScreen extends StatelessWidget {
         title: Text(storeName, overflow: TextOverflow.ellipsis),
         actions: [
           const SyncBadge(),
+          const ThemeButton(),
           const LanguageButton(),
           IconButton(
             key: const Key('change-password'),

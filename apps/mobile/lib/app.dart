@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'backend.dart';
+import 'core/theme.dart';
 import 'l10n/app_localizations.dart';
 import 'screens/auth_screen.dart';
 import 'screens/password_screens.dart';
@@ -25,6 +26,9 @@ class App extends StatefulWidget {
 
 class _AppState extends State<App> {
   late String _locale = widget.initialLocale;
+  // Not saved between launches yet (follow-up: store the choice on the device).
+  AppPalette _palette = AppPalette.freshTide;
+  ThemeMode _mode = ThemeMode.system;
 
   @override
   Widget build(BuildContext context) {
@@ -38,11 +42,19 @@ class _AppState extends State<App> {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      theme: ThemeData(colorSchemeSeed: Colors.teal, useMaterial3: true),
-      builder: (context, child) => LocaleScope(
-        locale: _locale,
-        setLocale: (l) => setState(() => _locale = l),
-        child: child!,
+      theme: buildTheme(_palette, Brightness.light),
+      darkTheme: buildTheme(_palette, Brightness.dark),
+      themeMode: _mode,
+      builder: (context, child) => ThemeScope(
+        palette: _palette,
+        mode: _mode,
+        setPalette: (p) => setState(() => _palette = p),
+        setMode: (m) => setState(() => _mode = m),
+        child: LocaleScope(
+          locale: _locale,
+          setLocale: (l) => setState(() => _locale = l),
+          child: child!,
+        ),
       ),
       home: Gate(backend: widget.backend, locale: _locale, openStore: widget.openStore),
     );
