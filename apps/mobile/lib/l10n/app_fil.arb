@@ -241,5 +241,23 @@
   "ledgerCharge": "Umutang",
   "ledgerPayment": "Nagbayad",
   "ledgerAdjust": "Pagwawasto",
-  "ledgerVoid": "Kinansela ang benta"
+  "ledgerVoid": "Kinansela ang benta",
+  "todayTitle": "Ngayong araw",
+  "todaySales": "Benta ngayon",
+  "todayCount": "{count, plural, =0{Walang benta} =1{{count} benta} other{{count} benta}}",
+  "@todayCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "todayCash": "Pumasok na cash",
+  "todayUtang": "Naging utang",
+  "todayNone": "Wala pang benta ngayon.",
+  "saleCancelButton": "Kanselahin ang benta",
+  "saleCancelTitle": "Kanselahin ang benta na ito?",
+  "saleCancelBody": "Ibabalik sa stock ang mga item at aalisin ang utang mula sa benta na ito.",
+  "saleCancelYes": "Oo, kanselahin",
+  "saleCancelNo": "Hindi, ituloy"
 }

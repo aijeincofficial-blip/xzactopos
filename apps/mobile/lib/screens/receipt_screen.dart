@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:uuid/uuid.dart';
 
 import '../core/money.dart';
 import '../data/sales_models.dart';
@@ -31,6 +32,30 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
     final store = CatalogScope.of(context).store;
     _detail = store.getSale(widget.saleId);
     _storeName = store.meta('store_name');
+  }
+
+  Future<void> _cancelSale() async {
+    final t = AppLocalizations.of(context);
+    final scope = CatalogScope.of(context);
+    final yes = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(t.saleCancelTitle),
+        content: Text(t.saleCancelBody),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(t.saleCancelNo)),
+          FilledButton(key: const Key('cancel-sale-yes'), onPressed: () => Navigator.pop(ctx, true), child: Text(t.saleCancelYes)),
+        ],
+      ),
+    );
+    if (yes != true) return;
+    await scope.store.voidSale(widget.saleId, opId: const Uuid().v7());
+    scope.engine.poke();
+    if (!mounted) return;
+    final next = scope.store.getSale(widget.saleId);
+    setState(() {
+      _detail = next;
+    });
   }
 
   @override
@@ -124,6 +149,15 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                   ),
               ],
               const SizedBox(height: 24),
+              if (!s.voided)
+                Align(
+                  child: TextButton.icon(
+                    key: const Key('cancel-sale'),
+                    onPressed: _cancelSale,
+                    icon: const Icon(Icons.cancel_outlined),
+                    label: Text(t.saleCancelButton),
+                  ),
+                ),
               Text(t.receiptThanks, textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleMedium),
             ],
           );

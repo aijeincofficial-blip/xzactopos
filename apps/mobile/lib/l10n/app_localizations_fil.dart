@@ -461,4 +461,47 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get ledgerVoid => 'Kinansela ang benta';
+
+  @override
+  String get todayTitle => 'Ngayong araw';
+
+  @override
+  String get todaySales => 'Benta ngayon';
+
+  @override
+  String todayCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count benta',
+      one: '$count benta',
+      zero: 'Walang benta',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get todayCash => 'Pumasok na cash';
+
+  @override
+  String get todayUtang => 'Naging utang';
+
+  @override
+  String get todayNone => 'Wala pang benta ngayon.';
+
+  @override
+  String get saleCancelButton => 'Kanselahin ang benta';
+
+  @override
+  String get saleCancelTitle => 'Kanselahin ang benta na ito?';
+
+  @override
+  String get saleCancelBody =>
+      'Ibabalik sa stock ang mga item at aalisin ang utang mula sa benta na ito.';
+
+  @override
+  String get saleCancelYes => 'Oo, kanselahin';
+
+  @override
+  String get saleCancelNo => 'Hindi, ituloy';
 }

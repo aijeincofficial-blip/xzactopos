@@ -859,6 +859,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sale cancelled'**
   String get ledgerVoid;
+
+  /// No description provided for @todayTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get todayTitle;
+
+  /// No description provided for @todaySales.
+  ///
+  /// In en, this message translates to:
+  /// **'Sales today'**
+  String get todaySales;
+
+  /// No description provided for @todayCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No sales} =1{{count} sale} other{{count} sales}}'**
+  String todayCount(int count);
+
+  /// No description provided for @todayCash.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash in'**
+  String get todayCash;
+
+  /// No description provided for @todayUtang.
+  ///
+  /// In en, this message translates to:
+  /// **'On utang'**
+  String get todayUtang;
+
+  /// No description provided for @todayNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No sales yet today.'**
+  String get todayNone;
+
+  /// No description provided for @saleCancelButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel this sale'**
+  String get saleCancelButton;
+
+  /// No description provided for @saleCancelTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel this sale?'**
+  String get saleCancelTitle;
+
+  /// No description provided for @saleCancelBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The items go back to your stock and any utang from this sale is removed.'**
+  String get saleCancelBody;
+
+  /// No description provided for @saleCancelYes.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes, cancel it'**
+  String get saleCancelYes;
+
+  /// No description provided for @saleCancelNo.
+  ///
+  /// In en, this message translates to:
+  /// **'No, keep it'**
+  String get saleCancelNo;
 }
 
 class _AppLocalizationsDelegate

@@ -455,4 +455,47 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ledgerVoid => 'Sale cancelled';
+
+  @override
+  String get todayTitle => 'Today';
+
+  @override
+  String get todaySales => 'Sales today';
+
+  @override
+  String todayCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count sales',
+      one: '$count sale',
+      zero: 'No sales',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get todayCash => 'Cash in';
+
+  @override
+  String get todayUtang => 'On utang';
+
+  @override
+  String get todayNone => 'No sales yet today.';
+
+  @override
+  String get saleCancelButton => 'Cancel this sale';
+
+  @override
+  String get saleCancelTitle => 'Cancel this sale?';
+
+  @override
+  String get saleCancelBody =>
+      'The items go back to your stock and any utang from this sale is removed.';
+
+  @override
+  String get saleCancelYes => 'Yes, cancel it';
+
+  @override
+  String get saleCancelNo => 'No, keep it';
 }

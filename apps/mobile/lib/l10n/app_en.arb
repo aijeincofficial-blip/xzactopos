@@ -241,5 +241,23 @@
   "ledgerCharge": "Took on utang",
   "ledgerPayment": "Paid",
   "ledgerAdjust": "Adjustment",
-  "ledgerVoid": "Sale cancelled"
+  "ledgerVoid": "Sale cancelled",
+  "todayTitle": "Today",
+  "todaySales": "Sales today",
+  "todayCount": "{count, plural, =0{No sales} =1{{count} sale} other{{count} sales}}",
+  "@todayCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "todayCash": "Cash in",
+  "todayUtang": "On utang",
+  "todayNone": "No sales yet today.",
+  "saleCancelButton": "Cancel this sale",
+  "saleCancelTitle": "Cancel this sale?",
+  "saleCancelBody": "The items go back to your stock and any utang from this sale is removed.",
+  "saleCancelYes": "Yes, cancel it",
+  "saleCancelNo": "No, keep it"
 }
