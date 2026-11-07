@@ -253,7 +253,7 @@ and fails on the old code (verified) / passes on the fix.
 - Opening stock lives on the device until Phase 4 (stock ledger). Camera barcode scan deferred.
 - `flutter test` is not part of `pnpm check`.
 
-**Next:** Phases 3 and 4 are done (sections at the end of this file). Phase 6 (reduced reports) is done too. Next: review `docs/gaps-review.md`, then Phase 7 (APK, camera, printing).
+**Next:** Phases 3 and 4 are done (sections at the end of this file). Phase 6 (reduced reports) is done too. The cross-phase gap fix round (A3 A4 A5 A6 B4 B5 B9) is done, see the end of this file and `docs/gaps-review.md`. Next: Phase 7 (APK, camera, printing).
 
 ## Phase 3 (solo): Sell screen, cash, utang, receipt, stock ledger - done (branch `claude/phase3-sell-8261d3`, cards `docs/tasks/P3-00..P3-08`)
 Decisions are in `P3-00-overview-solo-sell.md` (confirmed by the user, including the e-wallet label, cancel sale, and Flutter in `pnpm check`).
@@ -352,3 +352,10 @@ Not re-checked in the browser: a count from the UI and the Low filter / Home bad
 
 ### Known gaps
 See `docs/gaps-review.md` for the triaged list across all phases. New in Phase 6: reports are online only (last result cached), profit is an estimate from the cost snapshot, no CSV export, no month picker.
+
+## Gap fix round after Phase 6 (details in `docs/gaps-review.md`)
+- Migrations: `20261108001000_utang_adjust_sales_pull.sql` (`op_adjust_utang`, `sync_pull_sales`; `sync_push` re-created with `adjust_utang`). Latest `sync_push` definition is in that file (earlier ones are superseded; always copy from the newest).
+- App: `UnsentChangesException` guard, `AuthExpired`, password screens, `watchSale`, `adjustUtang`, `applyPullSales`; `SyncApi` gained `pullSales` (every fake in the tests implements it).
+- **Local database was reset** (`supabase db reset`) at the user's request: all 16 migrations replay cleanly; demo tenants, `nena.s02test@example.com` and `tindera.p207@example.com` no longer exist. Create a new account in the app to test. Browser tabs that still hold the old session will sign out; if an old tenant's device data holds unsent changes, the new "Unsent changes" screen appears (Discard and continue).
+- Tests: pgTAP 1659 (15 files), Flutter analyze clean, 154 tests, `smoke:users` 16/16 on the fresh database. Not browser-checked in this round (widget and store tests only).
+

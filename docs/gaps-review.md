@@ -3,6 +3,19 @@
 Collected from the handoff after Phase 6. Each gap has an owner phase and a suggested call: **Fix now** (small, blocks a real tindera), **Phase 7** (APK, camera, printing, offline load), **Full mode** (needs the chain features), **Accept** (fine for the pilot, revisit with real users).
 Decide per item; nothing here has been changed yet.
 
+## Fix round done (after Phase 6): A3, A4, A5, A6, B4, B5, B9
+| Gap | What was done | Proof |
+| --- | --- | --- |
+| A3 session expiry | An ended session (PGRST301 / "JWT expired" / refresh failure) is no longer "offline": the badge says to sign out and in again, the queue stays untouched (`AuthExpired`, `SyncPhase.needsSignIn`) | `gaps_test`: engine keeps the queue; which server answers count |
+| A4 password reset | Forgot password on the sign-in form (same message whether or not the email has an account), set-new-password screen when a reset link is opened, change password from Home. Local redirect URLs for the Flutter web port added to `supabase/config.toml` (takes effect after `supabase stop && start`; the link flow itself was not tested end to end) | `password_test` (5) |
+| A5 unsent changes | Signing in as a different business while the phone still has unsent ops is refused with a clear screen: Sign out, or Discard and continue (`UnsentChangesException`) | `gaps_test` (store + app) |
+| A6 sales history | `sync_pull_sales` (last 30 days on the first pull, then by `updated_at`, with lines and payments; cancels arrive again). The phone stores them: receipts and Today now survive a reinstall and include other devices; a sale with an unsent local change is not overwritten; times are normalised to UTC | pgTAP `015` (23 incl. utang adjust), `sales_pull_test` (7) |
+| B4 live receipt icon | The receipt watches the sale, so "not sent" turns off by itself and a cancel shows at once | `gaps_test` |
+| B5 utang adjust | `adjust_utang` op (owner or store manager only) and an "Ayusin ang utang" dialog (owes less / owes more, with note) | pgTAP `015`, `utang_test` (2 more) |
+| B9 clean reset | `supabase db reset` replayed all 16 migrations from scratch without errors; pgTAP 1659, Flutter 154, `smoke:users` 16/16 all pass on the fresh database | run on 2026-11-08. The local demo data and test users are gone (create a new account in the app) |
+
+Still open: A1 and A2 (Phase 7), B1, B2, B3, B6, B7, B8, C1 to C4 and section D as listed below.
+
 ## A. Blocks a real tindera on a phone (suggest: fix before the pilot)
 | # | Gap | Origin | Call |
 | --- | --- | --- | --- |
