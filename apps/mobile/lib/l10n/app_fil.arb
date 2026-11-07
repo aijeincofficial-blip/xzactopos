@@ -1,0 +1,28 @@
+{
+  "@@locale": "fil",
+  "appTitle": "Aking Tindahan",
+  "email": "Email",
+  "password": "Password",
+  "signIn": "Mag-sign in",
+  "signUp": "Gumawa ng account",
+  "haveAccount": "May account na ako",
+  "noAccount": "Bago ako dito",
+  "nameYourStore": "Ano ang pangalan ng tindahan mo?",
+  "storeNameHint": "hal. Tindahan ni Aling Nena",
+  "startSelling": "Simulan ang pagbebenta",
+  "welcome": "Maligayang pagdating, {store}!",
+  "@welcome": {
+    "placeholders": {
+      "store": {"type": "String"}
+    }
+  },
+  "homeReady": "Handa na ang tindahan mo. Susunod ang pagbebenta.",
+  "signOut": "Mag-sign out",
+  "errRequired": "Pakisulat po ito",
+  "errPasswordShort": "Hindi bababa sa 6 na letra",
+  "errGeneric": "May nangyaring mali. Subukan ulit.",
+  "errAlreadyHasStore": "May tindahan na ang account na ito.",
+  "errBadLogin": "Mali ang email o password.",
+  "errNotConfigured": "Hindi nakakonekta ang app. Simulan ito gamit ang Supabase settings.",
+  "checkEmail": "Tingnan ang email mo para kumpirmahin, tapos mag-sign in."
+}

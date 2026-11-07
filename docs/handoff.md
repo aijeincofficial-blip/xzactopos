@@ -125,3 +125,12 @@ Solo sari-sari focus + Flutter client: see `docs/recalibration-solo-flutter.md`.
 - pgTAP `007_solo_store.test.sql` (13). `pnpm check` green: 706 pgTAP tests. No existing migration or test was edited.
 - **For S-02:** RLS reads need the `tenant_id` claim, which a session only has after refreshing its token. The client must call
   `refreshSession()` right after `provision_solo_store`, before reading anything.
+
+### S-02 Flutter scaffold: done (branch `flutter-solo`)
+- `apps/mobile` (Flutter 3.41, web + android). `supabase_flutter`, ARB i18n (en + fil, fil default, FIL/EN toggle). Screens: sign up/in, name your store, Home.
+- `lib/backend.dart` is the seam (`Backend` interface; `SupabaseBackend` calls `get_my_access`, `provision_solo_store`, then `refreshSession()`). Widgets are tested with a fake.
+- Config via `--dart-define=SUPABASE_URL / SUPABASE_ANON_KEY` (anon key only). Run: `apps/mobile/run-web.ps1` (Chrome, hot reload) or `flutter run -d web-server --web-port 5300 ...`.
+- Verified: `flutter analyze` clean, `flutter test` 4/4 (store naming -> Home, language switch, sign-up form, ARB key parity). In the browser against local Supabase: signed up a new user, named a store, landed on Home with the store name. `pnpm check` unaffected (Flutter is not part of it yet).
+- Bug caught by tests: `setState(() => _access = future)` returned a Future; use a block body.
+- Gotchas: `intl` is pinned to 0.20.2 by flutter_localizations; `l10n.yaml` needs `nullable-getter: false`; heredocs with quotes can break the Bash tool, use the Write tool.
+- Not done: Android toolchain (`cmdline-tools` + licenses missing in `flutter doctor`) blocks the phone APK. Flutter is not wired into `pnpm check`/CI yet. Local test user `nena.s02test@example.com` exists in the dev DB only.

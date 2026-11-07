@@ -1,0 +1,28 @@
+{
+  "@@locale": "en",
+  "appTitle": "My Store",
+  "email": "Email",
+  "password": "Password",
+  "signIn": "Sign in",
+  "signUp": "Create account",
+  "haveAccount": "I already have an account",
+  "noAccount": "I am new here",
+  "nameYourStore": "Name your store",
+  "storeNameHint": "e.g. Aling Nena's Store",
+  "startSelling": "Start selling",
+  "welcome": "Welcome, {store}!",
+  "@welcome": {
+    "placeholders": {
+      "store": {"type": "String"}
+    }
+  },
+  "homeReady": "Your store is ready. Selling is coming next.",
+  "signOut": "Sign out",
+  "errRequired": "Please fill this in",
+  "errPasswordShort": "At least 6 characters",
+  "errGeneric": "Something went wrong. Please try again.",
+  "errAlreadyHasStore": "This account already has a store.",
+  "errBadLogin": "Wrong email or password.",
+  "errNotConfigured": "App is not connected. Start it with the Supabase settings.",
+  "checkEmail": "Check your email to confirm, then sign in."
+}
