@@ -25,6 +25,12 @@ class FakeApi implements SyncApi {
     return pages.isEmpty ? pullPage() : pages.removeAt(0);
   }
 
+  @override
+  Future<Map<String, dynamic>> pullPos(Map<String, dynamic> cursors, {int limit = 500}) async => {};
+  @override
+  Future<List<Map<String, dynamic>>> syncPush(List<Map<String, dynamic>> ops) async =>
+      [for (final o in ops) {'op_id': o['op_id'], 'status': 'ok', 'result': <String, dynamic>{}}];
+
   Future<void> _push(String what, String opId) async {
     calls.add('$what:$opId');
     if (failNextPush != null) {

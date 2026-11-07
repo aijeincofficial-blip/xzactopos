@@ -67,10 +67,14 @@ void main() {
     expect((await store.findByBarcode('4800000000011'))?.id, _p1);
 
     final ops = await store.nextOps();
-    expect(ops.single.opId, 'op-1');
-    expect(ops.single.kind, 'upsert_product');
-    expect(ops.single.payload['price'], 1250);
-    expect((ops.single.payload['variant'] as Map)['id'], _v1);
+    expect(ops.first.opId, 'op-1');
+    expect(ops.first.kind, 'upsert_product');
+    expect(ops.first.payload['price'], 1250);
+    expect((ops.first.payload['variant'] as Map)['id'], _v1);
+    // opening stock is a real op after the product op, and shows as stock left at once
+    expect(ops.map((o) => o.kind), ['upsert_product', 'post_opening_stock']);
+    expect(ops.last.payload, {'variant_id': _v1, 'qty': 24.0});
+    expect(await store.stockLeft(_v1), 24);
   });
 
   test('search by name, barcode and SKU', () async {

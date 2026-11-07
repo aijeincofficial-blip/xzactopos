@@ -4,11 +4,13 @@ import 'package:drift/drift.dart';
 
 import '../core/search.dart';
 import 'db.dart';
+import 'drift_sales.dart';
 import 'local_store.dart';
 
-class DriftStore implements LocalStore {
+class DriftStore with DriftSales implements LocalStore {
   DriftStore(this.db);
 
+  @override
   final AppDatabase db;
   String _base = 'PHP';
 
@@ -18,8 +20,9 @@ class DriftStore implements LocalStore {
   String get baseCurrency => _base;
 
   @override
-  Future<bool> ensureTenant(String tenantId, {required String baseCurrency}) async {
+  Future<bool> ensureTenant(String tenantId, {required String baseCurrency, String? locationId}) async {
     _base = baseCurrency;
+    this.locationId = locationId;
     final row = await (db.select(db.meta)..where((m) => m.key.equals('tenant_id'))).getSingleOrNull();
     if (row?.value == tenantId) return false;
     await db.transaction(() async {
@@ -37,6 +40,7 @@ class DriftStore implements LocalStore {
 
   static const _productSql = '''
     select p.id, v.id as variant_id, p.name, p.unit, v.sku, v.barcode, pr.price, p.photo_path, p.active,
+           p.track_stock, p.tax_rate, v.cost,
            exists (select 1 from outbox o where o.entity_id = p.id) as pending
     from products p
     join variants v on v.product_id = p.id and v.is_default = 1 and v.deleted_at is null
@@ -56,6 +60,9 @@ class DriftStore implements LocalStore {
         photoPath: r.readNullable<String>('photo_path'),
         active: r.read<bool>('active'),
         pending: r.read<bool>('pending'),
+        trackStock: r.read<bool>('track_stock'),
+        taxRate: r.read<double>('tax_rate'),
+        cost: r.read<int>('cost'),
       );
 
   /// Every word must appear in the name (accents ignored); an exact barcode or SKU also matches.
@@ -135,11 +142,18 @@ class DriftStore implements LocalStore {
             price: Value(d.price),
             deletedAt: const Value(null),
           ));
-      if (d.openingQty != null) {
-        await db.into(db.openingStock).insertOnConflictUpdate(
-            OpeningStockCompanion(variantId: Value(d.variantId), qty: Value(d.openingQty!)));
-      }
       await _enqueue(opId, 'upsert_product', d.id, d.toPayload());
+      // "How many do you have now?" becomes an `opening` stock movement on the server; once per variant
+      if (d.openingQty != null && d.openingQty! > 0) {
+        final oid = openingOpId(d.variantId);
+        final already = await (db.select(db.localMovements)..where((m) => m.opId.equals(oid))).get();
+        final queued = await (db.select(db.outbox)..where((o) => o.opId.equals(oid))).get();
+        if (already.isEmpty && queued.isEmpty) {
+          await db.into(db.localMovements).insert(
+              LocalMovementsCompanion.insert(opId: oid, variantId: d.variantId, qty: d.openingQty!));
+          await _enqueue(oid, 'post_opening_stock', d.id, {'variant_id': d.variantId, 'qty': d.openingQty});
+        }
+      }
     });
   }
 
@@ -163,6 +177,10 @@ class DriftStore implements LocalStore {
   /// Shown until the server assigns the real one; same rule as upsert_product (P- + last 12 hex of the variant id).
   String _provisionalSku(String variantId) =>
       'P-${variantId.replaceAll('-', '').substring(20).toUpperCase()}';
+
+  @override
+  Future<void> enqueue(String opId, String kind, String entityId, Map<String, dynamic> payload) =>
+      _enqueue(opId, kind, entityId, payload);
 
   Future<void> _enqueue(String opId, String kind, String entityId, Map<String, dynamic> payload) {
     return db.into(db.outbox).insert(OutboxCompanion.insert(
@@ -367,6 +385,9 @@ class DriftStore implements LocalStore {
       if (op == null) return;
       await opDone(opId);
       await photoUploaded(opId);
+      await (db.delete(db.localMovements)..where((m) => m.opId.equals(opId))).go();
+      await (db.delete(db.localLedger)..where((m) => m.opId.equals(opId))).go();
+      if (op.kind == 'record_sale') await deleteSaleRows(op.entityId);
       final stillPending = await (db.select(db.outbox)..where((o) => o.entityId.equals(op.entityId))).get();
       final product = await (db.select(db.products)..where((p) => p.id.equals(op.entityId))).getSingleOrNull();
       // never reached the server: remove the local-only rows
@@ -374,6 +395,7 @@ class DriftStore implements LocalStore {
         final vids = await (db.select(db.variants)..where((v) => v.productId.equals(op.entityId))).map((v) => v.id).get();
         await (db.delete(db.prices)..where((p) => p.variantId.isIn(vids))).go();
         await (db.delete(db.openingStock)..where((s) => s.variantId.isIn(vids))).go();
+        await (db.delete(db.localMovements)..where((m) => m.variantId.isIn(vids))).go();
         await (db.delete(db.variants)..where((v) => v.productId.equals(op.entityId))).go();
         await (db.delete(db.products)..where((p) => p.id.equals(op.entityId))).go();
       }

@@ -1,10 +1,12 @@
 import 'dart:typed_data';
 
+import 'sales_models.dart';
+
 /// The device's copy of the catalog plus the outbox. Screens and the sync engine depend on this
 /// interface only (CLAUDE.md: local store behind a `LocalStore` interface); Drift implements it.
-abstract class LocalStore {
+abstract class LocalStore implements SalesStore {
   /// Clears everything when the device is used for a different business. Returns true if it cleared.
-  Future<bool> ensureTenant(String tenantId, {required String baseCurrency});
+  Future<bool> ensureTenant(String tenantId, {required String baseCurrency, String? locationId});
   String get baseCurrency;
 
   // ---- reads (work offline) ----
@@ -61,6 +63,9 @@ class ProductView {
     this.photoPath,
     required this.active,
     required this.pending,
+    this.trackStock = true,
+    this.taxRate = 0,
+    this.cost = 0,
   });
 
   final String id;
@@ -78,6 +83,15 @@ class ProductView {
 
   /// Has local changes the server has not confirmed yet.
   final bool pending;
+
+  /// The product keeps a stock count.
+  final bool trackStock;
+
+  /// Price already includes this tax (0.12 = 12%).
+  final double taxRate;
+
+  /// Base-currency minor units, copied onto each sale line for margins.
+  final int cost;
 }
 
 class ProductDraft {

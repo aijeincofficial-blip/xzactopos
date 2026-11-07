@@ -67,8 +67,14 @@ class _StoreSessionState extends State<StoreSession> {
     _photos = PhotoLoader(_store, widget.backend);
     _opened = true;
     final tenant = (widget.access['tenant'] as Map?) ?? const {};
+    final stores = ((widget.access['locations'] as List?) ?? const [])
+        .whereType<Map>()
+        .where((l) => l['type'] == 'store')
+        .toList();
     await _store.ensureTenant(tenant['id'] as String? ?? '',
-        baseCurrency: tenant['base_currency'] as String? ?? 'PHP');
+        baseCurrency: tenant['base_currency'] as String? ?? 'PHP',
+        // a solo business has one store; with several, the server picks per user (the sale then names no store)
+        locationId: stores.length == 1 ? stores.first['id'] as String? : null);
     _engine.start();
   }
 
