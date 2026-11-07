@@ -135,6 +135,12 @@ insert into expected (who, tbl, own_rows, own_updated)
 select w.who, 'conversions', case w.who when 'superadmin' then 2 when 'admin' then 2 when 'cashier' then 1 else 0 end, -1
 from (values ('superadmin'), ('admin'), ('cashier'), ('warehouse'), ('inactive')) w(who);
 
+-- P8-11 stock_expiry (one expiry date per store and variant): store-scoped like stock_levels (owner, admin: S01 + S02 = 2;
+-- cashier juan: S01 = 1; warehouse pedro (W01) and inactive none); nobody writes directly
+insert into expected (who, tbl, own_rows, own_updated)
+select w.who, 'stock_expiry', case w.who when 'superadmin' then 2 when 'admin' then 2 when 'cashier' then 1 else 0 end, -1
+from (values ('superadmin'), ('admin'), ('cashier'), ('warehouse'), ('inactive')) w(who);
+
 -- 2 tenants x (who, table) pairs x 5 metrics, plus 8 targeted checks
 select plan((select count(*)::int * 2 * 5 from expected) + 8);
 
@@ -253,6 +259,10 @@ begin
        md5('var:' || t.label || ':1')::uuid, md5('var:' || t.label || ':2')::uuid, 1, 20, 20, '2026-11-08T02:00:00Z'),
       (md5('conv:' || t.label || ':2')::uuid, pg_temp.tid(t.label), pg_temp.lid(t.label, 'S02'), md5('convop:2')::uuid,
        md5('var:' || t.label || ':1')::uuid, md5('var:' || t.label || ':2')::uuid, 2, 20, 40, '2026-11-08T02:00:00Z');
+    -- expiry dates: Cola at each store
+    insert into public.stock_expiry (tenant_id, location_id, variant_id, expires_on) values
+      (pg_temp.tid(t.label), pg_temp.lid(t.label, 'S01'), md5('var:' || t.label || ':1')::uuid, '2026-12-01'),
+      (pg_temp.tid(t.label), pg_temp.lid(t.label, 'S02'), md5('var:' || t.label || ':1')::uuid, '2027-01-15');
   end loop;
 end;
 $$;
@@ -318,7 +328,8 @@ begin
     ('service_txns',      'tenant_id', 'note = note'),
     ('wallet_float',      'tenant_id', 'balance = balance'),
     ('daily_service_summary', 'tenant_id', 'fee = fee'),
-    ('conversions',       'tenant_id', 'note = note')
+    ('conversions',       'tenant_id', 'note = note'),
+    ('stock_expiry',      'tenant_id', 'expires_on = expires_on')
   ) v(tbl, tcol, upd) loop
     begin
       execute format(

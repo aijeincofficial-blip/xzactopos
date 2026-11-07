@@ -8,7 +8,7 @@ import '../data/local_store.dart';
 abstract class SyncApi {
   Future<Map<String, dynamic>> pullCatalog(Map<String, dynamic> cursors, {int limit = 500});
 
-  /// Stock levels, customers and the utang ledger (sync_pull_pos).
+  /// Stock levels, customers, the utang ledger and expiry dates (sync_pull_pos).
   Future<Map<String, dynamic>> pullPos(Map<String, dynamic> cursors, {int limit = 500});
 
   /// Recent sales with their lines and payments (sync_pull_sales). [cursor] is the last one received, or null.
@@ -165,7 +165,7 @@ class SyncEngine {
   static const posKinds = {
     'record_sale', 'void_sale', 'upsert_customer', 'record_utang_payment', 'post_opening_stock', 'receive_stock',
     'adjust_stock', 'adjust_utang', 'record_expense', 'void_expense', 'close_day', 'record_service_txn',
-    'void_service_txn', 'set_tingi_link', 'open_pack', 'void_open_pack', 'set_utang_due',
+    'void_service_txn', 'set_tingi_link', 'open_pack', 'void_open_pack', 'set_utang_due', 'set_expiry',
   };
 
   /// One batch through sync_push. Results are applied in order; a transient `error` stops the batch.

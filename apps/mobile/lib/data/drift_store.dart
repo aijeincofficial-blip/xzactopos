@@ -401,7 +401,8 @@ class DriftStore with DriftSales implements LocalStore {
       await (db.delete(db.localLedger)..where((m) => m.opId.equals(opId))).go();
       await (db.delete(db.localFloatEffects)..where((m) => m.opId.equals(opId))).go();
       if (op.kind == 'record_sale') await deleteSaleRows(op.entityId);
-      await undoLocalOp(op.kind, op.entityId); // expenses, day closes, service entries
+      // expenses, day closes, service entries, openings, expiry dates
+      await undoLocalOp(op.kind, op.entityId, (jsonDecode(op.payload) as Map).cast<String, dynamic>());
       final stillPending = await (db.select(db.outbox)..where((o) => o.entityId.equals(op.entityId))).get();
       final product = await (db.select(db.products)..where((p) => p.id.equals(op.entityId))).getSingleOrNull();
       // never reached the server: remove the local-only rows

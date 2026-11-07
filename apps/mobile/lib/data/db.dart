@@ -419,6 +419,25 @@ class Conversions extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+// ---- Phase 8: expiry dates (schema v10) ----
+
+/// The earliest expiry date on the shelf per variant (P8-11; one date, no lots), for this device's store. Written here by
+/// set_expiry / receive_stock (then [updatedAt] is null: a local edit not yet confirmed) or pulled (sync_pull_pos
+/// `stock_expiry`, the server's updated_at). [expiresOn] 'YYYY-MM-DD', null = cleared. Keyed by variant only: a device
+/// works for one store (pulled rows of other stores are skipped when the device knows its store).
+class StockExpiry extends Table {
+  @override
+  String get tableName => 'stock_expiry';
+
+  TextColumn get variantId => text()();
+  TextColumn get locationId => text().nullable()();
+  TextColumn get expiresOn => text().nullable()();
+  TextColumn get updatedAt => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {variantId};
+}
+
 /// Small key/value facts about this device's data (e.g. which tenant it belongs to).
 class Meta extends Table {
   TextColumn get key => text()();
@@ -431,7 +450,7 @@ class Meta extends Table {
 @DriftDatabase(tables: [
   Categories, Products, Variants, Prices, SyncCursors, Outbox, OpeningStock, Meta, PhotoUploads, PhotoCache,
   Customers, ServerLedger, LocalLedger, StockLevels, LocalMovements, Sales, SaleItems, SalePayments,
-  Expenses, DayCloses, ServiceTxns, WalletFloats, LocalFloatEffects, Conversions,
+  Expenses, DayCloses, ServiceTxns, WalletFloats, LocalFloatEffects, Conversions, StockExpiry,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
@@ -452,7 +471,7 @@ class AppDatabase extends _$AppDatabase {
   static const _name = 'xzactopos';
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   /// Adds a column unless it is there already (a database made by a newer build and stepped back in a test, or a
   /// table an earlier step created with today's definition). Skips a table that does not exist.
@@ -552,6 +571,10 @@ class AppDatabase extends _$AppDatabase {
             if (hasCursors.isNotEmpty) {
               await customStatement("delete from sync_cursors where table_key = 'customers'");
             }
+          }
+          if (from < 10) {
+            // a new table only (IF NOT EXISTS); every existing row stays. No cursor yet, so the first pull brings every date.
+            await m.createTable(stockExpiry);
           }
         },
       );

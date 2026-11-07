@@ -12194,6 +12194,331 @@ class ConversionsCompanion extends UpdateCompanion<Conversion> {
   }
 }
 
+class $StockExpiryTable extends StockExpiry
+    with TableInfo<$StockExpiryTable, StockExpiryData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $StockExpiryTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _variantIdMeta = const VerificationMeta(
+    'variantId',
+  );
+  @override
+  late final GeneratedColumn<String> variantId = GeneratedColumn<String>(
+    'variant_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _locationIdMeta = const VerificationMeta(
+    'locationId',
+  );
+  @override
+  late final GeneratedColumn<String> locationId = GeneratedColumn<String>(
+    'location_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _expiresOnMeta = const VerificationMeta(
+    'expiresOn',
+  );
+  @override
+  late final GeneratedColumn<String> expiresOn = GeneratedColumn<String>(
+    'expires_on',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    variantId,
+    locationId,
+    expiresOn,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'stock_expiry';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<StockExpiryData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('variant_id')) {
+      context.handle(
+        _variantIdMeta,
+        variantId.isAcceptableOrUnknown(data['variant_id']!, _variantIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_variantIdMeta);
+    }
+    if (data.containsKey('location_id')) {
+      context.handle(
+        _locationIdMeta,
+        locationId.isAcceptableOrUnknown(data['location_id']!, _locationIdMeta),
+      );
+    }
+    if (data.containsKey('expires_on')) {
+      context.handle(
+        _expiresOnMeta,
+        expiresOn.isAcceptableOrUnknown(data['expires_on']!, _expiresOnMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {variantId};
+  @override
+  StockExpiryData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return StockExpiryData(
+      variantId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}variant_id'],
+      )!,
+      locationId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}location_id'],
+      ),
+      expiresOn: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}expires_on'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      ),
+    );
+  }
+
+  @override
+  $StockExpiryTable createAlias(String alias) {
+    return $StockExpiryTable(attachedDatabase, alias);
+  }
+}
+
+class StockExpiryData extends DataClass implements Insertable<StockExpiryData> {
+  final String variantId;
+  final String? locationId;
+  final String? expiresOn;
+  final String? updatedAt;
+  const StockExpiryData({
+    required this.variantId,
+    this.locationId,
+    this.expiresOn,
+    this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['variant_id'] = Variable<String>(variantId);
+    if (!nullToAbsent || locationId != null) {
+      map['location_id'] = Variable<String>(locationId);
+    }
+    if (!nullToAbsent || expiresOn != null) {
+      map['expires_on'] = Variable<String>(expiresOn);
+    }
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<String>(updatedAt);
+    }
+    return map;
+  }
+
+  StockExpiryCompanion toCompanion(bool nullToAbsent) {
+    return StockExpiryCompanion(
+      variantId: Value(variantId),
+      locationId: locationId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(locationId),
+      expiresOn: expiresOn == null && nullToAbsent
+          ? const Value.absent()
+          : Value(expiresOn),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
+    );
+  }
+
+  factory StockExpiryData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return StockExpiryData(
+      variantId: serializer.fromJson<String>(json['variantId']),
+      locationId: serializer.fromJson<String?>(json['locationId']),
+      expiresOn: serializer.fromJson<String?>(json['expiresOn']),
+      updatedAt: serializer.fromJson<String?>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'variantId': serializer.toJson<String>(variantId),
+      'locationId': serializer.toJson<String?>(locationId),
+      'expiresOn': serializer.toJson<String?>(expiresOn),
+      'updatedAt': serializer.toJson<String?>(updatedAt),
+    };
+  }
+
+  StockExpiryData copyWith({
+    String? variantId,
+    Value<String?> locationId = const Value.absent(),
+    Value<String?> expiresOn = const Value.absent(),
+    Value<String?> updatedAt = const Value.absent(),
+  }) => StockExpiryData(
+    variantId: variantId ?? this.variantId,
+    locationId: locationId.present ? locationId.value : this.locationId,
+    expiresOn: expiresOn.present ? expiresOn.value : this.expiresOn,
+    updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+  );
+  StockExpiryData copyWithCompanion(StockExpiryCompanion data) {
+    return StockExpiryData(
+      variantId: data.variantId.present ? data.variantId.value : this.variantId,
+      locationId: data.locationId.present
+          ? data.locationId.value
+          : this.locationId,
+      expiresOn: data.expiresOn.present ? data.expiresOn.value : this.expiresOn,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('StockExpiryData(')
+          ..write('variantId: $variantId, ')
+          ..write('locationId: $locationId, ')
+          ..write('expiresOn: $expiresOn, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(variantId, locationId, expiresOn, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is StockExpiryData &&
+          other.variantId == this.variantId &&
+          other.locationId == this.locationId &&
+          other.expiresOn == this.expiresOn &&
+          other.updatedAt == this.updatedAt);
+}
+
+class StockExpiryCompanion extends UpdateCompanion<StockExpiryData> {
+  final Value<String> variantId;
+  final Value<String?> locationId;
+  final Value<String?> expiresOn;
+  final Value<String?> updatedAt;
+  final Value<int> rowid;
+  const StockExpiryCompanion({
+    this.variantId = const Value.absent(),
+    this.locationId = const Value.absent(),
+    this.expiresOn = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  StockExpiryCompanion.insert({
+    required String variantId,
+    this.locationId = const Value.absent(),
+    this.expiresOn = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : variantId = Value(variantId);
+  static Insertable<StockExpiryData> custom({
+    Expression<String>? variantId,
+    Expression<String>? locationId,
+    Expression<String>? expiresOn,
+    Expression<String>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (variantId != null) 'variant_id': variantId,
+      if (locationId != null) 'location_id': locationId,
+      if (expiresOn != null) 'expires_on': expiresOn,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  StockExpiryCompanion copyWith({
+    Value<String>? variantId,
+    Value<String?>? locationId,
+    Value<String?>? expiresOn,
+    Value<String?>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return StockExpiryCompanion(
+      variantId: variantId ?? this.variantId,
+      locationId: locationId ?? this.locationId,
+      expiresOn: expiresOn ?? this.expiresOn,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (variantId.present) {
+      map['variant_id'] = Variable<String>(variantId.value);
+    }
+    if (locationId.present) {
+      map['location_id'] = Variable<String>(locationId.value);
+    }
+    if (expiresOn.present) {
+      map['expires_on'] = Variable<String>(expiresOn.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('StockExpiryCompanion(')
+          ..write('variantId: $variantId, ')
+          ..write('locationId: $locationId, ')
+          ..write('expiresOn: $expiresOn, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -12222,6 +12547,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $LocalFloatEffectsTable localFloatEffects =
       $LocalFloatEffectsTable(this);
   late final $ConversionsTable conversions = $ConversionsTable(this);
+  late final $StockExpiryTable stockExpiry = $StockExpiryTable(this);
   late final Index variantsBarcode = Index(
     'variants_barcode',
     'CREATE INDEX variants_barcode ON variants (barcode)',
@@ -12287,6 +12613,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     walletFloats,
     localFloatEffects,
     conversions,
+    stockExpiry,
     variantsBarcode,
     variantsProduct,
     salesSoldAt,
@@ -18424,6 +18751,189 @@ typedef $$ConversionsTableProcessedTableManager =
       Conversion,
       PrefetchHooks Function()
     >;
+typedef $$StockExpiryTableCreateCompanionBuilder =
+    StockExpiryCompanion Function({
+      required String variantId,
+      Value<String?> locationId,
+      Value<String?> expiresOn,
+      Value<String?> updatedAt,
+      Value<int> rowid,
+    });
+typedef $$StockExpiryTableUpdateCompanionBuilder =
+    StockExpiryCompanion Function({
+      Value<String> variantId,
+      Value<String?> locationId,
+      Value<String?> expiresOn,
+      Value<String?> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$StockExpiryTableFilterComposer
+    extends Composer<_$AppDatabase, $StockExpiryTable> {
+  $$StockExpiryTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get variantId => $composableBuilder(
+    column: $table.variantId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get locationId => $composableBuilder(
+    column: $table.locationId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get expiresOn => $composableBuilder(
+    column: $table.expiresOn,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$StockExpiryTableOrderingComposer
+    extends Composer<_$AppDatabase, $StockExpiryTable> {
+  $$StockExpiryTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get variantId => $composableBuilder(
+    column: $table.variantId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get locationId => $composableBuilder(
+    column: $table.locationId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get expiresOn => $composableBuilder(
+    column: $table.expiresOn,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$StockExpiryTableAnnotationComposer
+    extends Composer<_$AppDatabase, $StockExpiryTable> {
+  $$StockExpiryTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get variantId =>
+      $composableBuilder(column: $table.variantId, builder: (column) => column);
+
+  GeneratedColumn<String> get locationId => $composableBuilder(
+    column: $table.locationId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get expiresOn =>
+      $composableBuilder(column: $table.expiresOn, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$StockExpiryTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $StockExpiryTable,
+          StockExpiryData,
+          $$StockExpiryTableFilterComposer,
+          $$StockExpiryTableOrderingComposer,
+          $$StockExpiryTableAnnotationComposer,
+          $$StockExpiryTableCreateCompanionBuilder,
+          $$StockExpiryTableUpdateCompanionBuilder,
+          (
+            StockExpiryData,
+            BaseReferences<_$AppDatabase, $StockExpiryTable, StockExpiryData>,
+          ),
+          StockExpiryData,
+          PrefetchHooks Function()
+        > {
+  $$StockExpiryTableTableManager(_$AppDatabase db, $StockExpiryTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$StockExpiryTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$StockExpiryTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$StockExpiryTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> variantId = const Value.absent(),
+                Value<String?> locationId = const Value.absent(),
+                Value<String?> expiresOn = const Value.absent(),
+                Value<String?> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => StockExpiryCompanion(
+                variantId: variantId,
+                locationId: locationId,
+                expiresOn: expiresOn,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String variantId,
+                Value<String?> locationId = const Value.absent(),
+                Value<String?> expiresOn = const Value.absent(),
+                Value<String?> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => StockExpiryCompanion.insert(
+                variantId: variantId,
+                locationId: locationId,
+                expiresOn: expiresOn,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$StockExpiryTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $StockExpiryTable,
+      StockExpiryData,
+      $$StockExpiryTableFilterComposer,
+      $$StockExpiryTableOrderingComposer,
+      $$StockExpiryTableAnnotationComposer,
+      $$StockExpiryTableCreateCompanionBuilder,
+      $$StockExpiryTableUpdateCompanionBuilder,
+      (
+        StockExpiryData,
+        BaseReferences<_$AppDatabase, $StockExpiryTable, StockExpiryData>,
+      ),
+      StockExpiryData,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -18475,4 +18985,6 @@ class $AppDatabaseManager {
       $$LocalFloatEffectsTableTableManager(_db, _db.localFloatEffects);
   $$ConversionsTableTableManager get conversions =>
       $$ConversionsTableTableManager(_db, _db.conversions);
+  $$StockExpiryTableTableManager get stockExpiry =>
+      $$StockExpiryTableTableManager(_db, _db.stockExpiry);
 }

@@ -511,9 +511,23 @@ mixin DriftSales implements SalesStore {
       .map((rows) => {for (final r in rows) r.read<String>('variant_id'): r.read<double>('q')});
 
   @override
-  Future<void> receiveStock({required String variantId, required double qty, int? cost, required String opId}) {
+  Future<void> receiveStock({
+    required String variantId,
+    required double qty,
+    int? cost,
+    DateTime? expiresOn,
+    required String opId,
+  }) {
     if (qty <= 0) throw ArgumentError('Quantity must be above zero');
+    final exp = expiresOn == null ? null : _expiryKey(expiresOn);
     return db.transaction(() async {
+      if (exp != null) {
+        // the server's rule on what this device sees: the earlier date while stock is on hand, else the new one
+        final before = await stockLeft(variantId);
+        final old = (await _expiryRow(variantId))?.expiresOn;
+        final keep = before > 0 && old != null && old.compareTo(exp) < 0;
+        await _writeExpiry(variantId, keep ? old : exp);
+      }
       await db.into(db.localMovements).insert(LocalMovementsCompanion.insert(
           opId: opId, variantId: variantId, qty: qty, counts: const Value(true), unitCost: Value(cost)));
       await enqueue(opId, 'receive_stock', variantId, {
@@ -521,9 +535,69 @@ mixin DriftSales implements SalesStore {
         'qty': qty,
         'unit_cost': ?cost,
         'location_id': ?locationId,
+        'expires_on': ?exp,
       });
     });
   }
+
+  // ---------------------------------------------------------------------------
+  // Expiry dates (P8-11)
+  //
+  // One date per variant (the earliest on the shelf), in `stock_expiry`. A local write leaves updated_at null; the pull
+  // leaves the row alone while a set_expiry (or a receive_stock with a date) for that variant is unsent, then the server's
+  // copy replaces it (the server moves the row's updated_at whenever such an op touches it).
+  // ---------------------------------------------------------------------------
+
+  /// 'YYYY-MM-DD' of [d] after checking the range the server accepts.
+  static String _expiryKey(DateTime d) {
+    final day = dateOnly(d);
+    if (day.isBefore(expiryMinDate) || daysBetween(DateTime.now(), day) > expiryMaxDaysAhead) {
+      throw ArgumentError('An expiry date must be from 2000 to $expiryMaxDaysAhead days from today');
+    }
+    return dayKey(day);
+  }
+
+  Future<StockExpiryData?> _expiryRow(String variantId) =>
+      (db.select(db.stockExpiry)..where((e) => e.variantId.equals(variantId))).getSingleOrNull();
+
+  Future<void> _writeExpiry(String variantId, String? key) => db.into(db.stockExpiry).insertOnConflictUpdate(
+      StockExpiryCompanion.insert(
+          variantId: variantId, locationId: Value(locationId), expiresOn: Value(key), updatedAt: const Value(null)));
+
+  @override
+  Future<void> setExpiry({required String variantId, required DateTime? expiresOn, required String opId}) {
+    final key = expiresOn == null ? null : _expiryKey(expiresOn);
+    return db.transaction(() async {
+      if (await (db.select(db.variants)..where((v) => v.id.equals(variantId))).getSingleOrNull() == null) {
+        throw StateError('Unknown product');
+      }
+      await _writeExpiry(variantId, key);
+      await enqueue(opId, 'set_expiry', variantId, {'variant_id': variantId, 'expires_on': key, 'location_id': ?locationId});
+    });
+  }
+
+  @override
+  Stream<List<StockRow>> watchExpiring({int withinDays = 7, DateTime? today}) => watchStockList().map((rows) {
+        final day = dateOnly(today ?? DateTime.now());
+        final list = [
+          for (final r in rows)
+            if ((r.qty ?? 0) > 0 && r.daysLeft(day) != null && r.daysLeft(day)! <= withinDays) r
+        ];
+        list.sort((a, b) {
+          final c = a.expiresOn!.compareTo(b.expiresOn!);
+          return c != 0 ? c : a.product.name.toLowerCase().compareTo(b.product.name.toLowerCase());
+        });
+        return list;
+      });
+
+  @override
+  Future<int> expiringCount({int withinDays = 7, DateTime? today}) async =>
+      (await watchExpiring(withinDays: withinDays, today: today).first).length;
+
+  /// Ops whose payload carries an expiry for their variant (entity): while one is unsent, the pulled row is not applied.
+  static bool _carriesExpiry(OutboxData o) =>
+      o.kind == 'set_expiry' ||
+      (o.kind == 'receive_stock' && (jsonDecode(o.payload) as Map).containsKey('expires_on'));
 
   @override
   Future<void> adjustStock({
@@ -562,6 +636,7 @@ mixin DriftSales implements SalesStore {
           '''
           select p.id, v.id as variant_id, p.name, p.unit, v.sku, v.barcode, pr.price, p.photo_path, p.active,
                  p.track_stock, p.tax_rate, v.cost, v.reorder_point, $tingiLinkSql,
+                 (select e.expires_on from stock_expiry e where e.variant_id = v.id) as expires_on,
                  exists (select 1 from outbox o where o.entity_id = p.id or o.entity_id = v.id) as pending,
                  coalesce((select sum(l.qty) from stock_levels l where l.variant_id = v.id), 0)
                + coalesce((select sum(m.qty) from local_movements m where m.variant_id = v.id), 0) as qty,
@@ -573,7 +648,7 @@ mixin DriftSales implements SalesStore {
           where p.deleted_at is null and p.track_stock = 1$where
           ''',
           variables: vars,
-          readsFrom: {db.products, db.variants, db.prices, db.stockLevels, db.localMovements, db.outbox},
+          readsFrom: {db.products, db.variants, db.prices, db.stockLevels, db.localMovements, db.outbox, db.stockExpiry},
         )
         .watch()
         .map((rows) {
@@ -603,6 +678,7 @@ mixin DriftSales implements SalesStore {
             qty: r.read<bool>('counted') ? r.read<double>('qty') : null,
             reorderPoint: r.read<double>('reorder_point'),
             pending: r.read<bool>('pending'),
+            expiresOn: parseDay(r.readNullable<String>('expires_on')),
           )
       ];
       // low first, then counted by name, then not counted
@@ -1475,7 +1551,15 @@ mixin DriftSales implements SalesStore {
 
   /// Takes back what a discarded (refused) op did on this device. A refused op left nothing on the server.
   /// (Its stock, utang and float effects are removed by op id in `discardFailed`.)
-  Future<void> undoLocalOp(String kind, String entityId) async {
+  Future<void> undoLocalOp(String kind, String entityId, [Map<String, dynamic> payload = const {}]) async {
+    if (kind == 'set_expiry' || (kind == 'receive_stock' && payload.containsKey('expires_on'))) {
+      // the locally written date goes (unless another unsent op still carries one for the variant); the server's date, if
+      // it has one, comes back with the full re-pull that discardFailed forces
+      final others = (await (db.select(db.outbox)..where((o) => o.entityId.equals(entityId))).get()).where(_carriesExpiry);
+      if (others.isEmpty) {
+        await (db.delete(db.stockExpiry)..where((e) => e.variantId.equals(entityId) & e.updatedAt.isNull())).go();
+      }
+    }
     switch (kind) {
       case 'record_expense':
         await (db.delete(db.expenses)..where((e) => e.id.equals(entityId) & e.updatedAt.isNull())).go();
@@ -1643,7 +1727,7 @@ mixin DriftSales implements SalesStore {
     });
   }
 
-  static const _posTables = ['stock_levels', 'customers', 'customer_ledger'];
+  static const _posTables = ['stock_levels', 'customers', 'customer_ledger', 'stock_expiry'];
 
   @override
   Future<void> applyPullPos(Map<String, dynamic> response) {
@@ -1672,6 +1756,19 @@ mixin DriftSales implements SalesStore {
               updatedAt: Value(r['updated_at'] as String?),
               deletedAt: Value(r['deleted_at'] as String?),
               dueOn: Value(r['due_on'] as String?),
+            ));
+      }
+      // expiry dates: this device's store only; keep the local date while an op carrying one for that variant is unsent
+      final expiryHeld = {for (final o in await db.select(db.outbox).get()) if (_carriesExpiry(o)) o.entityId};
+      for (final r in rowsOf('stock_expiry')) {
+        final vid = r['variant_id'] as String;
+        if (locationId != null && r['location_id'] != locationId) continue;
+        if (expiryHeld.contains(vid)) continue;
+        await db.into(db.stockExpiry).insertOnConflictUpdate(StockExpiryCompanion.insert(
+              variantId: vid,
+              locationId: Value(r['location_id'] as String?),
+              expiresOn: Value(r['expires_on'] as String?),
+              updatedAt: Value(r['updated_at'] as String?),
             ));
       }
       for (final r in rowsOf('customer_ledger')) {

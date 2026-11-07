@@ -460,6 +460,15 @@ Share was checked on the emulator (Android share sheet with `LL3-261107-0001.pdf
   `set_utang_due`, pure `utangStatementText` (`lib/core/utang_statement.dart`, never the phone number). 13 new tests (256 total).
   Version asserts in three upgrade tests now compare with `schemaVersion`; the v4 upgrade test keeps `customer_ledger` instead of
   `customers` (v9 re-pulls customers). No screens yet: the UI card uses `docs/tasks/P8-10-utang-due-dates.md`.
+- P8-11 (`20261108001700_expiry_dates.sql`): expiry dates, kept simple. One date per store + variant = the earliest on the
+  shelf, **no lots** (after the early batch is gone the tindera sets the next date). Table `stock_expiry` (RLS like
+  `stock_levels`, no client writes; `stock_levels` untouched), op `set_expiry` (stock-in rights; 2000 .. +10 years, past
+  allowed, else `invalid_value`; audit `stock.set_expiry`), `receive_stock` optional `expires_on` (earlier of stored and new
+  while qty > 0 before the receipt, else replaced; nothing else changes), `sync_pull_pos` new `stock_expiry` section.
+  pgTAP `022` (65) + 50 matrix rows; suite 2618 (22 files). Flutter: Drift v10 (`stock_expiry`), `setExpiry`,
+  `receiveStock(expiresOn:)`, `watchExpiring` / `expiringCount`, `StockRow.expiresOn` / `expired` / `expiringSoon` /
+  `daysLeft`, sync kind `set_expiry`, discard removes the local date. 11 new tests (267 total). No screens yet: the UI card
+  uses `docs/tasks/P8-11-expiry-dates.md`.
 
 ## Antigravity Session: Neo-Fintech Design, Settings Screen, Theme Fix, & Reports Enrichment
 Read `docs/START-HERE-claude.md` for the complete handoff from Antigravity.

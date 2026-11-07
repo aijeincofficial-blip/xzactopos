@@ -218,7 +218,13 @@ class LedgerEntryView {
 
 /// One product on the Stock screen. [qty] is null when nobody has counted it yet.
 class StockRow {
-  const StockRow({required this.product, required this.qty, required this.reorderPoint, required this.pending});
+  const StockRow({
+    required this.product,
+    required this.qty,
+    required this.reorderPoint,
+    required this.pending,
+    this.expiresOn,
+  });
   final ProductView product;
   final double? qty;
   final double reorderPoint;
@@ -226,11 +232,32 @@ class StockRow {
   /// Has a stock change the server has not confirmed yet.
   final bool pending;
 
+  /// The earliest expiry date on the shelf (P8-11), a local date at midnight; null = none set. One date per product: the
+  /// app keeps no per-batch quantities.
+  final DateTime? expiresOn;
+
   bool get counted => qty != null;
 
   /// At or below the reorder point (only when a reorder point is set and the product is counted).
   bool get low => qty != null && reorderPoint > 0 && qty! <= reorderPoint;
+
+  /// The date is before [today] (expiring today is not expired yet).
+  bool expired(DateTime today) => expiresOn != null && expiresOn!.isBefore(dateOnly(today));
+
+  /// Not expired, and expires within [days] days of [today] (today itself included).
+  bool expiringSoon(DateTime today, {int days = 7}) {
+    final left = daysLeft(today);
+    return left != null && left >= 0 && left <= days;
+  }
+
+  /// Calendar days from [today] to the expiry date: 0 = expires today, negative = already expired; null = no date.
+  int? daysLeft(DateTime today) => expiresOn == null ? null : daysBetween(today, expiresOn!);
 }
+
+/// Expiry dates the server accepts: from [expiryMinDate] to [expiryMaxDaysAhead] days from today (it allows 10 calendar
+/// years from its own date; the phone stays a little inside that). A date in the past is fine (already expired).
+final expiryMinDate = DateTime(2000, 1, 1);
+const expiryMaxDaysAhead = 3650;
 
 // ---- Phase 8: expenses and the day close (P8-02c) ----
 
@@ -588,14 +615,39 @@ abstract class SalesStore {
   Stream<SaleDetail?> watchSale(String saleId);
   Stream<TodayTotals> watchToday();
 
-  /// Stock coming in. [cost] is the cost per unit in centavos (optional).
-  Future<void> receiveStock({required String variantId, required double qty, int? cost, required String opId});
+  /// Stock coming in. [cost] is the cost per unit in centavos (optional). [expiresOn] (optional, P8-11) is the expiry of
+  /// this batch: the stored date becomes the earlier of the two while stock is on hand (as this device sees it), else this
+  /// one; the server applies the same rule and its date replaces the phone's on the next pull. Throws [ArgumentError] for
+  /// a bad quantity or an expiry outside [expiryMinDate] .. today + [expiryMaxDaysAhead].
+  Future<void> receiveStock({
+    required String variantId,
+    required double qty,
+    int? cost,
+    DateTime? expiresOn,
+    required String opId,
+  });
 
   /// "I counted [counted]": writes the difference between this and the stock shown now. [reason]: counted | damage | other.
   Future<void> adjustStock({required String variantId, required double counted, String reason = 'counted', required String opId});
 
-  /// Stock screen rows (tracked products only), search by name, low ones first.
+  /// Stock screen rows (tracked products only), search by name, low ones first. Rows carry [StockRow.expiresOn].
   Stream<List<StockRow>> watchStockList({String query = ''});
+
+  // ---- expiry dates (P8-11) ----
+  // One date per product at this store = the earliest expiry on the shelf; no per-batch quantities. Who: the same people as
+  // stock in (owner, store managers); the server refuses others with `not_allowed`.
+
+  /// Sets the earliest expiry on the shelf for [variantId] (only its calendar date counts), or clears it ([expiresOn]
+  /// null). Shown at once and queued as one `set_expiry` op (entity = the variant). Throws [ArgumentError] for a date
+  /// outside [expiryMinDate] .. today + [expiryMaxDaysAhead], [StateError] for an unknown product.
+  Future<void> setExpiry({required String variantId, required DateTime? expiresOn, required String opId});
+
+  /// Stock rows with counted stock on hand (qty > 0) whose expiry is within [withinDays] days of today or already past,
+  /// soonest first (then by name). [today] is for tests (default: the device's local date).
+  Stream<List<StockRow>> watchExpiring({int withinDays = 7, DateTime? today});
+
+  /// How many rows [watchExpiring] would list now.
+  Future<int> expiringCount({int withinDays = 7, DateTime? today});
 
   /// Stock left per counted variant (server level plus what this device did that the server has not caught up on).
   /// Variants nobody has counted are left out.

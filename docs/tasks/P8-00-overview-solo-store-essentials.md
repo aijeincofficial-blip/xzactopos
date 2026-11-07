@@ -29,7 +29,7 @@ A tindera can run a whole day in the app: sell fast, take cash-in/out and load, 
 | P8-08 Tingi / repack | link on the pack variant (piece = own product), `set_tingi_link` / `open_pack` / `void_open_pack` ops, `conversions`, exact cost rule, pgTAP property test, Drift v8 + store API + sync. DONE (model, cost rule, API and what P8-09 calls: `P8-08-tingi-repack.md`) | Opus |
 | P8-09 Tingi UI | "Sold by piece too" on the product form, "open a pack" + history/undo on Stock. DONE | Sonnet |
 | P8-10 Utang due dates + statement | migration (`due_on`), `set_utang_due` op, overdue list, statement text, Drift v9 + store API + sync. DONE (server + data layer; API, payload and what the UI card calls: `P8-10-utang-due-dates.md`). UI card still open | Opus (schema) then Sonnet (UI) |
-| P8-11 Expiry dates | per-receipt expiry, "expiring soon" on Home and Stock | Opus (schema) then Sonnet (UI) |
+| P8-11 Expiry dates | one date per product per store (earliest on the shelf, no lots), `stock_expiry` + `set_expiry` op, optional `expires_on` on `receive_stock` (earlier-date rule), Drift v10 + store API + sync. DONE (server + data layer; model, limitation, API and what the UI card calls: `P8-11-expiry-dates.md`). UI card ("expiring soon" on Home and Stock) still open | Opus (schema) then Sonnet (UI) |
 | P8-12 Export and backup | CSV of sales, utang, stock, share sheet (share_plus). DONE | Sonnet |
 | P8-13 Acceptance | emulator day walk-through, report in handoff | Sonnet |
 
