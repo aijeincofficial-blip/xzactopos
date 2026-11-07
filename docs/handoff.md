@@ -421,6 +421,13 @@ Share was checked on the emulator (Android share sheet with `LL3-261107-0001.pdf
   New `set_my_pin`, `clear_user_pin`, server-only `supervisor_approvals`, `expenses.approved_by` / `void_approved_by`, audit rows
   `expense.record` / `expense.void` / `pin.failed` / `approval.grant`. sync_push unchanged. pgTAP `017` (63) + 50 matrix rows; suite 1951 (17 files).
   Gap: a supervisor with no signal cannot get an approval (offline PIN RPC is Full mode); refused ops are not audited.
+- P8-02c (`20261108001300_day_close.sql`): `day_closes` (append-only cash counts, re-counts allowed), op `close_day` (owner/manager,
+  supervisor with a `close_day` approval; stores the phone's expected/counted cash and the server's own `server_expected_cash`),
+  `sync_pull_day_closes`, audit `day.close`. pgTAP `018` (53) + 50 matrix rows; suite 2054 (18 files).
+  Flutter: Drift v6 (`expenses`, `day_closes`), `SalesStore` expense/close API incl. `expectedCash`, sync engine pushes the 3 kinds
+  and pulls both tables, `Backend.setMyPin` / `approveSupervisorAction`. 17 new tests (201 total). No screens yet: P8-03 uses
+  `docs/tasks/P8-02c-expenses-client-and-day-close.md`. Also fixed `password_test` (broken since P8-12: Settings got taller).
+  Gap: utang payments have no store on the server, so `server_expected_cash` counts them tenant-wide.
 
 ## Antigravity Session: Neo-Fintech Design, Settings Screen, Theme Fix, & Reports Enrichment
 Read `docs/START-HERE-claude.md` for the complete handoff from Antigravity.

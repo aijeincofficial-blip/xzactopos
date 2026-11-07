@@ -249,6 +249,60 @@ class SalePayments extends Table {
   TextColumn get reference => text().nullable()();
 }
 
+// ---- Phase 8: expenses and the day close (schema v6) ----
+
+/// Money the store spent: made here (sent by a record_expense op) or pulled from the server (sync_pull_expenses).
+/// A void sets [voidedAt] (a void_expense op); nothing is ever deleted. [updatedAt] is the server's, null until the
+/// server's copy has been pulled. "Pending" is not stored: it is "this id still has an op in the outbox".
+@TableIndex(name: 'expenses_spent_at', columns: {#spentAt})
+class Expenses extends Table {
+  TextColumn get id => text()();
+  TextColumn get locationId => text().nullable()();
+  IntColumn get amount => integer()();
+  TextColumn get currency => text()();
+  TextColumn get category => text()();
+  TextColumn get paidFrom => text().withDefault(const Constant('cash'))();
+  TextColumn get note => text().nullable()();
+
+  /// UTC ISO-8601, normalised (the same format as `sales.sold_at`), so text comparison orders correctly.
+  TextColumn get spentAt => text()();
+  TextColumn get createdBy => text().nullable()();
+  TextColumn get approvedBy => text().nullable()();
+  TextColumn get voidedAt => text().nullable()();
+  TextColumn get voidReason => text().nullable()();
+  TextColumn get voidApprovedBy => text().nullable()();
+  TextColumn get updatedAt => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Cash counts at the end of a day (close_day ops, sync_pull_day_closes). Several per day are allowed (a re-count);
+/// the newest [closedAt] is the one shown. Append-only like the server table.
+@TableIndex(name: 'day_closes_day', columns: {#day})
+class DayCloses extends Table {
+  TextColumn get id => text()();
+  TextColumn get locationId => text().nullable()();
+
+  /// The business day, YYYY-MM-DD (device local date = tenant timezone for the solo store).
+  TextColumn get day => text()();
+  TextColumn get currency => text()();
+  IntColumn get expectedCash => integer()();
+  IntColumn get countedCash => integer()();
+  IntColumn get difference => integer()();
+
+  /// What the server computed from its own data when it applied the close; null until pulled.
+  IntColumn get serverExpectedCash => integer().nullable()();
+  TextColumn get note => text().nullable()();
+  TextColumn get closedBy => text().nullable()();
+  TextColumn get approvedBy => text().nullable()();
+  TextColumn get closedAt => text()();
+  TextColumn get updatedAt => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
 /// Small key/value facts about this device's data (e.g. which tenant it belongs to).
 class Meta extends Table {
   TextColumn get key => text()();
@@ -261,6 +315,7 @@ class Meta extends Table {
 @DriftDatabase(tables: [
   Categories, Products, Variants, Prices, SyncCursors, Outbox, OpeningStock, Meta, PhotoUploads, PhotoCache,
   Customers, ServerLedger, LocalLedger, StockLevels, LocalMovements, Sales, SaleItems, SalePayments,
+  Expenses, DayCloses,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
@@ -281,7 +336,7 @@ class AppDatabase extends _$AppDatabase {
   static const _name = 'xzactopos';
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -331,6 +386,11 @@ class AppDatabase extends _$AppDatabase {
                 "update local_movements set counts = 1 where op_id in (select op_id from outbox where kind = 'post_opening_stock')");
             // levels pulled before the flag existed must come again
             await customStatement("delete from sync_cursors where table_key = 'stock_levels'");
+          }
+          if (from < 6) {
+            // new tables only; every existing row stays as it is
+            await m.createTable(expenses);
+            await m.createTable(dayCloses);
           }
         },
       );

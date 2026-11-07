@@ -37,7 +37,73 @@ abstract class Backend implements SyncApi {
     required String storeName,
     required String locale,
   });
+
+  // ---- supervisor PIN (P8-02b / P8-02c) ----
+  //
+  // ONLINE ONLY: the PIN is checked by the server and is never stored on the device, queued, logged or sent to
+  // analytics. Keep it in the PIN field only for the length of the call and clear the field afterwards.
+
+  /// Sets the signed-in user's own PIN (4 to 8 digits). Changing an existing PIN needs [currentPin].
+  /// Result hints: `pin_wrong`, `pin_locked`, `pin_invalid`, `pin_required`. Throws on network trouble.
+  Future<PinResult> setMyPin(String newPin, {String? currentPin});
+
+  /// Asks the server for a single-use supervisor approval of [action] (`record_expense` | `void_expense` |
+  /// `close_day`) on [refId] (the expense / day close id, made BEFORE asking). [approverId] null = the signed-in
+  /// supervisor confirms with her own PIN; else a manager's or the owner's user id, who types their PIN.
+  /// Needs signal now; the returned approval id then rides in the queued op, which may wait up to 12 h offline.
+  /// Result hints: `pin_wrong`, `pin_locked`, `pin_not_set`, and the refusals `not_allowed`, `approver_invalid`,
+  /// `invalid_value`, `location_required`, `location_denied`. Throws on network trouble ("needs signal").
+  Future<ApprovalResult> approveSupervisorAction({
+    required String action,
+    required String refId,
+    required String pin,
+    String? locationId,
+    String? approverId,
+  });
 }
+
+class PinResult {
+  const PinResult.ok()
+      : ok = true,
+        hint = null;
+  const PinResult.refused(String this.hint) : ok = false;
+  final bool ok;
+  final String? hint;
+}
+
+class ApprovalResult {
+  const ApprovalResult.ok({required String this.approvalId, required String this.approvedBy, required DateTime this.expiresAt})
+      : ok = true,
+        hint = null;
+  const ApprovalResult.refused(String this.hint)
+      : ok = false,
+        approvalId = null,
+        approvedBy = null,
+        expiresAt = null;
+
+  final bool ok;
+  final String? approvalId;
+  final String? approvedBy;
+  final DateTime? expiresAt;
+
+  /// Why there is no approval (see [Backend.approveSupervisorAction]); null when [ok].
+  final String? hint;
+
+  /// Reads the approve_supervisor_action answer: `{ok: true, approval_id, approved_by, expires_at}` or `{ok: false, hint}`.
+  factory ApprovalResult.fromJson(Map<String, dynamic> j) => j['ok'] == true
+      ? ApprovalResult.ok(
+          approvalId: j['approval_id'] as String,
+          approvedBy: j['approved_by'] as String,
+          expiresAt: DateTime.parse(j['expires_at'] as String),
+        )
+      : ApprovalResult.refused((j['hint'] as String?) ?? 'rejected');
+}
+
+/// Refusals of set_my_pin / approve_supervisor_action that are answers for the user, not network trouble.
+const pinRefusalHints = {
+  'pin_invalid', 'pin_required', 'not_allowed', 'approver_invalid', 'invalid_value', 'location_required',
+  'location_denied', 'module_disabled',
+};
 
 class SupabaseBackend implements Backend {
   SupabaseClient get _c => Supabase.instance.client;
@@ -140,6 +206,53 @@ class SupabaseBackend implements Backend {
   Future<Map<String, dynamic>> pullSales(Map<String, dynamic>? cursor, {int limit = 100}) async {
     final res = await _auth(() => _c.rpc('sync_pull_sales', params: {'p_cursor': cursor, 'p_limit': limit}));
     return (res as Map).cast<String, dynamic>();
+  }
+
+  @override
+  Future<Map<String, dynamic>> pullExpenses(Map<String, dynamic>? cursor, {int limit = 100}) async {
+    final res = await _auth(() => _c.rpc('sync_pull_expenses', params: {'p_cursor': cursor, 'p_limit': limit}));
+    return (res as Map).cast<String, dynamic>();
+  }
+
+  @override
+  Future<Map<String, dynamic>> pullDayCloses(Map<String, dynamic>? cursor, {int limit = 100}) async {
+    final res = await _auth(() => _c.rpc('sync_pull_day_closes', params: {'p_cursor': cursor, 'p_limit': limit}));
+    return (res as Map).cast<String, dynamic>();
+  }
+
+  @override
+  Future<PinResult> setMyPin(String newPin, {String? currentPin}) async {
+    try {
+      final res = await _auth(() => _c.rpc('set_my_pin', params: {'p_new_pin': newPin, 'p_current_pin': currentPin}));
+      final j = (res as Map).cast<String, dynamic>();
+      return j['ok'] == true ? const PinResult.ok() : PinResult.refused((j['hint'] as String?) ?? 'rejected');
+    } on PostgrestException catch (e) {
+      if (pinRefusalHints.contains(e.hint)) return PinResult.refused(e.hint!);
+      rethrow;
+    }
+  }
+
+  @override
+  Future<ApprovalResult> approveSupervisorAction({
+    required String action,
+    required String refId,
+    required String pin,
+    String? locationId,
+    String? approverId,
+  }) async {
+    try {
+      final res = await _auth(() => _c.rpc('approve_supervisor_action', params: {
+            'p_action': action,
+            'p_ref_id': refId,
+            'p_pin': pin,
+            'p_location_id': locationId,
+            'p_approver_id': approverId,
+          }));
+      return ApprovalResult.fromJson((res as Map).cast<String, dynamic>());
+    } on PostgrestException catch (e) {
+      if (pinRefusalHints.contains(e.hint)) return ApprovalResult.refused(e.hint!);
+      rethrow;
+    }
   }
 
   @override

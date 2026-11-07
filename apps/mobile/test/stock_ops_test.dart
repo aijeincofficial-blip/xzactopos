@@ -73,6 +73,12 @@ class StockServer implements SyncApi {
   Future<Map<String, dynamic>> pullSales(Map<String, dynamic>? cursor, {int limit = 100}) async =>
       {'rows': <dynamic>[], 'has_more': false};
   @override
+  Future<Map<String, dynamic>> pullExpenses(Map<String, dynamic>? cursor, {int limit = 100}) async =>
+      {'rows': <dynamic>[], 'has_more': false};
+  @override
+  Future<Map<String, dynamic>> pullDayCloses(Map<String, dynamic>? cursor, {int limit = 100}) async =>
+      {'rows': <dynamic>[], 'has_more': false};
+  @override
   Future<Map<String, dynamic>> pullPos(Map<String, dynamic> cursors, {int limit = 500}) async {
     clock = clock.add(const Duration(seconds: 1));
     final held = changedAt != null && changedAt!.isAfter(clock.subtract(const Duration(seconds: 5)));

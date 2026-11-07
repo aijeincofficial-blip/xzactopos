@@ -86,7 +86,9 @@ void main() {
     await openHome(tester);
     await tester.tap(find.byKey(const Key('btn-settings')));
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.byKey(const Key('settings-change-password')));
+    // Settings is a lazy ListView; since the export section (P8-12) the account row starts below the built area
+    await tester.scrollUntilVisible(find.byKey(const Key('settings-change-password')), 200,
+        scrollable: find.byType(Scrollable).first);
     await tester.tap(find.byKey(const Key('settings-change-password')));
     await tester.pumpAndSettle();
     await tester.enterText(find.byKey(const Key('change-password-field')), '123');

@@ -14,6 +14,13 @@ abstract class SyncApi {
   /// Recent sales with their lines and payments (sync_pull_sales). [cursor] is the last one received, or null.
   Future<Map<String, dynamic>> pullSales(Map<String, dynamic>? cursor, {int limit = 100});
 
+  /// Expenses (sync_pull_expenses): first pull = last 30 days, then delta by cursor; rows newer than 5 s wait.
+  /// Cashiers get no rows.
+  Future<Map<String, dynamic>> pullExpenses(Map<String, dynamic>? cursor, {int limit = 100});
+
+  /// Day closes (sync_pull_day_closes), same rules as [pullExpenses].
+  Future<Map<String, dynamic>> pullDayCloses(Map<String, dynamic>? cursor, {int limit = 100});
+
   /// Sends up to 50 sale/stock/utang ops in order (sync_push). Returns one result per op:
   /// `{op_id, status: ok|rejected|error, result?, hint?}`. A batch stops at the first `error`, so fewer results can come back.
   /// Throws on network or server trouble (transient).
@@ -145,7 +152,13 @@ class SyncEngine {
     }
   }
 
-  static const posKinds = {'record_sale', 'void_sale', 'upsert_customer', 'record_utang_payment', 'post_opening_stock', 'receive_stock', 'adjust_stock', 'adjust_utang'};
+  /// Ops that go through sync_push. A `rejected` result parks the op as failed with the server's hint (shown to the
+  /// user, never retried on its own), including the supervisor approval hints (`approval_required`,
+  /// `approval_invalid`, `approval_expired`, `approval_used`); network trouble and transient server errors retry later.
+  static const posKinds = {
+    'record_sale', 'void_sale', 'upsert_customer', 'record_utang_payment', 'post_opening_stock', 'receive_stock',
+    'adjust_stock', 'adjust_utang', 'record_expense', 'void_expense', 'close_day',
+  };
 
   /// One batch through sync_push. Results are applied in order; a transient `error` stops the batch.
   /// Returns how many ops were settled (applied or refused).
@@ -253,7 +266,20 @@ class SyncEngine {
       final cursor = (await store.cursors())['sales'];
       final res = await api.pullSales(cursor is Map ? cursor.cast<String, dynamic>() : null, limit: 100);
       await store.applyPullSales(res);
-      if (res['has_more'] != true) return;
+      if (res['has_more'] != true) break;
+    }
+    // expenses and day closes (Today, the cash count); the server holds back rows newer than 5 s
+    for (var page = 0; page < _maxPagesPerRun; page++) {
+      final cursor = (await store.cursors())['expenses'];
+      final res = await api.pullExpenses(cursor is Map ? cursor.cast<String, dynamic>() : null, limit: 100);
+      await store.applyPullExpenses(res);
+      if (res['has_more'] != true) break;
+    }
+    for (var page = 0; page < _maxPagesPerRun; page++) {
+      final cursor = (await store.cursors())['day_closes'];
+      final res = await api.pullDayCloses(cursor is Map ? cursor.cast<String, dynamic>() : null, limit: 100);
+      await store.applyPullDayCloses(res);
+      if (res['has_more'] != true) break;
     }
   }
 

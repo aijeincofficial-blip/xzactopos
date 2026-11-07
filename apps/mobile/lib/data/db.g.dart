@@ -7675,6 +7675,1599 @@ class SalePaymentsCompanion extends UpdateCompanion<SalePayment> {
   }
 }
 
+class $ExpensesTable extends Expenses with TableInfo<$ExpensesTable, Expense> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ExpensesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _locationIdMeta = const VerificationMeta(
+    'locationId',
+  );
+  @override
+  late final GeneratedColumn<String> locationId = GeneratedColumn<String>(
+    'location_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _amountMeta = const VerificationMeta('amount');
+  @override
+  late final GeneratedColumn<int> amount = GeneratedColumn<int>(
+    'amount',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _currencyMeta = const VerificationMeta(
+    'currency',
+  );
+  @override
+  late final GeneratedColumn<String> currency = GeneratedColumn<String>(
+    'currency',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _categoryMeta = const VerificationMeta(
+    'category',
+  );
+  @override
+  late final GeneratedColumn<String> category = GeneratedColumn<String>(
+    'category',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _paidFromMeta = const VerificationMeta(
+    'paidFrom',
+  );
+  @override
+  late final GeneratedColumn<String> paidFrom = GeneratedColumn<String>(
+    'paid_from',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('cash'),
+  );
+  static const VerificationMeta _noteMeta = const VerificationMeta('note');
+  @override
+  late final GeneratedColumn<String> note = GeneratedColumn<String>(
+    'note',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _spentAtMeta = const VerificationMeta(
+    'spentAt',
+  );
+  @override
+  late final GeneratedColumn<String> spentAt = GeneratedColumn<String>(
+    'spent_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdByMeta = const VerificationMeta(
+    'createdBy',
+  );
+  @override
+  late final GeneratedColumn<String> createdBy = GeneratedColumn<String>(
+    'created_by',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _approvedByMeta = const VerificationMeta(
+    'approvedBy',
+  );
+  @override
+  late final GeneratedColumn<String> approvedBy = GeneratedColumn<String>(
+    'approved_by',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _voidedAtMeta = const VerificationMeta(
+    'voidedAt',
+  );
+  @override
+  late final GeneratedColumn<String> voidedAt = GeneratedColumn<String>(
+    'voided_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _voidReasonMeta = const VerificationMeta(
+    'voidReason',
+  );
+  @override
+  late final GeneratedColumn<String> voidReason = GeneratedColumn<String>(
+    'void_reason',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _voidApprovedByMeta = const VerificationMeta(
+    'voidApprovedBy',
+  );
+  @override
+  late final GeneratedColumn<String> voidApprovedBy = GeneratedColumn<String>(
+    'void_approved_by',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    locationId,
+    amount,
+    currency,
+    category,
+    paidFrom,
+    note,
+    spentAt,
+    createdBy,
+    approvedBy,
+    voidedAt,
+    voidReason,
+    voidApprovedBy,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'expenses';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Expense> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('location_id')) {
+      context.handle(
+        _locationIdMeta,
+        locationId.isAcceptableOrUnknown(data['location_id']!, _locationIdMeta),
+      );
+    }
+    if (data.containsKey('amount')) {
+      context.handle(
+        _amountMeta,
+        amount.isAcceptableOrUnknown(data['amount']!, _amountMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_amountMeta);
+    }
+    if (data.containsKey('currency')) {
+      context.handle(
+        _currencyMeta,
+        currency.isAcceptableOrUnknown(data['currency']!, _currencyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_currencyMeta);
+    }
+    if (data.containsKey('category')) {
+      context.handle(
+        _categoryMeta,
+        category.isAcceptableOrUnknown(data['category']!, _categoryMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_categoryMeta);
+    }
+    if (data.containsKey('paid_from')) {
+      context.handle(
+        _paidFromMeta,
+        paidFrom.isAcceptableOrUnknown(data['paid_from']!, _paidFromMeta),
+      );
+    }
+    if (data.containsKey('note')) {
+      context.handle(
+        _noteMeta,
+        note.isAcceptableOrUnknown(data['note']!, _noteMeta),
+      );
+    }
+    if (data.containsKey('spent_at')) {
+      context.handle(
+        _spentAtMeta,
+        spentAt.isAcceptableOrUnknown(data['spent_at']!, _spentAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_spentAtMeta);
+    }
+    if (data.containsKey('created_by')) {
+      context.handle(
+        _createdByMeta,
+        createdBy.isAcceptableOrUnknown(data['created_by']!, _createdByMeta),
+      );
+    }
+    if (data.containsKey('approved_by')) {
+      context.handle(
+        _approvedByMeta,
+        approvedBy.isAcceptableOrUnknown(data['approved_by']!, _approvedByMeta),
+      );
+    }
+    if (data.containsKey('voided_at')) {
+      context.handle(
+        _voidedAtMeta,
+        voidedAt.isAcceptableOrUnknown(data['voided_at']!, _voidedAtMeta),
+      );
+    }
+    if (data.containsKey('void_reason')) {
+      context.handle(
+        _voidReasonMeta,
+        voidReason.isAcceptableOrUnknown(data['void_reason']!, _voidReasonMeta),
+      );
+    }
+    if (data.containsKey('void_approved_by')) {
+      context.handle(
+        _voidApprovedByMeta,
+        voidApprovedBy.isAcceptableOrUnknown(
+          data['void_approved_by']!,
+          _voidApprovedByMeta,
+        ),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Expense map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Expense(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      locationId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}location_id'],
+      ),
+      amount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}amount'],
+      )!,
+      currency: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}currency'],
+      )!,
+      category: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}category'],
+      )!,
+      paidFrom: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}paid_from'],
+      )!,
+      note: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}note'],
+      ),
+      spentAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}spent_at'],
+      )!,
+      createdBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}created_by'],
+      ),
+      approvedBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}approved_by'],
+      ),
+      voidedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}voided_at'],
+      ),
+      voidReason: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}void_reason'],
+      ),
+      voidApprovedBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}void_approved_by'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      ),
+    );
+  }
+
+  @override
+  $ExpensesTable createAlias(String alias) {
+    return $ExpensesTable(attachedDatabase, alias);
+  }
+}
+
+class Expense extends DataClass implements Insertable<Expense> {
+  final String id;
+  final String? locationId;
+  final int amount;
+  final String currency;
+  final String category;
+  final String paidFrom;
+  final String? note;
+
+  /// UTC ISO-8601, normalised (the same format as `sales.sold_at`), so text comparison orders correctly.
+  final String spentAt;
+  final String? createdBy;
+  final String? approvedBy;
+  final String? voidedAt;
+  final String? voidReason;
+  final String? voidApprovedBy;
+  final String? updatedAt;
+  const Expense({
+    required this.id,
+    this.locationId,
+    required this.amount,
+    required this.currency,
+    required this.category,
+    required this.paidFrom,
+    this.note,
+    required this.spentAt,
+    this.createdBy,
+    this.approvedBy,
+    this.voidedAt,
+    this.voidReason,
+    this.voidApprovedBy,
+    this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    if (!nullToAbsent || locationId != null) {
+      map['location_id'] = Variable<String>(locationId);
+    }
+    map['amount'] = Variable<int>(amount);
+    map['currency'] = Variable<String>(currency);
+    map['category'] = Variable<String>(category);
+    map['paid_from'] = Variable<String>(paidFrom);
+    if (!nullToAbsent || note != null) {
+      map['note'] = Variable<String>(note);
+    }
+    map['spent_at'] = Variable<String>(spentAt);
+    if (!nullToAbsent || createdBy != null) {
+      map['created_by'] = Variable<String>(createdBy);
+    }
+    if (!nullToAbsent || approvedBy != null) {
+      map['approved_by'] = Variable<String>(approvedBy);
+    }
+    if (!nullToAbsent || voidedAt != null) {
+      map['voided_at'] = Variable<String>(voidedAt);
+    }
+    if (!nullToAbsent || voidReason != null) {
+      map['void_reason'] = Variable<String>(voidReason);
+    }
+    if (!nullToAbsent || voidApprovedBy != null) {
+      map['void_approved_by'] = Variable<String>(voidApprovedBy);
+    }
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<String>(updatedAt);
+    }
+    return map;
+  }
+
+  ExpensesCompanion toCompanion(bool nullToAbsent) {
+    return ExpensesCompanion(
+      id: Value(id),
+      locationId: locationId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(locationId),
+      amount: Value(amount),
+      currency: Value(currency),
+      category: Value(category),
+      paidFrom: Value(paidFrom),
+      note: note == null && nullToAbsent ? const Value.absent() : Value(note),
+      spentAt: Value(spentAt),
+      createdBy: createdBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdBy),
+      approvedBy: approvedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(approvedBy),
+      voidedAt: voidedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(voidedAt),
+      voidReason: voidReason == null && nullToAbsent
+          ? const Value.absent()
+          : Value(voidReason),
+      voidApprovedBy: voidApprovedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(voidApprovedBy),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
+    );
+  }
+
+  factory Expense.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Expense(
+      id: serializer.fromJson<String>(json['id']),
+      locationId: serializer.fromJson<String?>(json['locationId']),
+      amount: serializer.fromJson<int>(json['amount']),
+      currency: serializer.fromJson<String>(json['currency']),
+      category: serializer.fromJson<String>(json['category']),
+      paidFrom: serializer.fromJson<String>(json['paidFrom']),
+      note: serializer.fromJson<String?>(json['note']),
+      spentAt: serializer.fromJson<String>(json['spentAt']),
+      createdBy: serializer.fromJson<String?>(json['createdBy']),
+      approvedBy: serializer.fromJson<String?>(json['approvedBy']),
+      voidedAt: serializer.fromJson<String?>(json['voidedAt']),
+      voidReason: serializer.fromJson<String?>(json['voidReason']),
+      voidApprovedBy: serializer.fromJson<String?>(json['voidApprovedBy']),
+      updatedAt: serializer.fromJson<String?>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'locationId': serializer.toJson<String?>(locationId),
+      'amount': serializer.toJson<int>(amount),
+      'currency': serializer.toJson<String>(currency),
+      'category': serializer.toJson<String>(category),
+      'paidFrom': serializer.toJson<String>(paidFrom),
+      'note': serializer.toJson<String?>(note),
+      'spentAt': serializer.toJson<String>(spentAt),
+      'createdBy': serializer.toJson<String?>(createdBy),
+      'approvedBy': serializer.toJson<String?>(approvedBy),
+      'voidedAt': serializer.toJson<String?>(voidedAt),
+      'voidReason': serializer.toJson<String?>(voidReason),
+      'voidApprovedBy': serializer.toJson<String?>(voidApprovedBy),
+      'updatedAt': serializer.toJson<String?>(updatedAt),
+    };
+  }
+
+  Expense copyWith({
+    String? id,
+    Value<String?> locationId = const Value.absent(),
+    int? amount,
+    String? currency,
+    String? category,
+    String? paidFrom,
+    Value<String?> note = const Value.absent(),
+    String? spentAt,
+    Value<String?> createdBy = const Value.absent(),
+    Value<String?> approvedBy = const Value.absent(),
+    Value<String?> voidedAt = const Value.absent(),
+    Value<String?> voidReason = const Value.absent(),
+    Value<String?> voidApprovedBy = const Value.absent(),
+    Value<String?> updatedAt = const Value.absent(),
+  }) => Expense(
+    id: id ?? this.id,
+    locationId: locationId.present ? locationId.value : this.locationId,
+    amount: amount ?? this.amount,
+    currency: currency ?? this.currency,
+    category: category ?? this.category,
+    paidFrom: paidFrom ?? this.paidFrom,
+    note: note.present ? note.value : this.note,
+    spentAt: spentAt ?? this.spentAt,
+    createdBy: createdBy.present ? createdBy.value : this.createdBy,
+    approvedBy: approvedBy.present ? approvedBy.value : this.approvedBy,
+    voidedAt: voidedAt.present ? voidedAt.value : this.voidedAt,
+    voidReason: voidReason.present ? voidReason.value : this.voidReason,
+    voidApprovedBy: voidApprovedBy.present
+        ? voidApprovedBy.value
+        : this.voidApprovedBy,
+    updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+  );
+  Expense copyWithCompanion(ExpensesCompanion data) {
+    return Expense(
+      id: data.id.present ? data.id.value : this.id,
+      locationId: data.locationId.present
+          ? data.locationId.value
+          : this.locationId,
+      amount: data.amount.present ? data.amount.value : this.amount,
+      currency: data.currency.present ? data.currency.value : this.currency,
+      category: data.category.present ? data.category.value : this.category,
+      paidFrom: data.paidFrom.present ? data.paidFrom.value : this.paidFrom,
+      note: data.note.present ? data.note.value : this.note,
+      spentAt: data.spentAt.present ? data.spentAt.value : this.spentAt,
+      createdBy: data.createdBy.present ? data.createdBy.value : this.createdBy,
+      approvedBy: data.approvedBy.present
+          ? data.approvedBy.value
+          : this.approvedBy,
+      voidedAt: data.voidedAt.present ? data.voidedAt.value : this.voidedAt,
+      voidReason: data.voidReason.present
+          ? data.voidReason.value
+          : this.voidReason,
+      voidApprovedBy: data.voidApprovedBy.present
+          ? data.voidApprovedBy.value
+          : this.voidApprovedBy,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Expense(')
+          ..write('id: $id, ')
+          ..write('locationId: $locationId, ')
+          ..write('amount: $amount, ')
+          ..write('currency: $currency, ')
+          ..write('category: $category, ')
+          ..write('paidFrom: $paidFrom, ')
+          ..write('note: $note, ')
+          ..write('spentAt: $spentAt, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('approvedBy: $approvedBy, ')
+          ..write('voidedAt: $voidedAt, ')
+          ..write('voidReason: $voidReason, ')
+          ..write('voidApprovedBy: $voidApprovedBy, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    locationId,
+    amount,
+    currency,
+    category,
+    paidFrom,
+    note,
+    spentAt,
+    createdBy,
+    approvedBy,
+    voidedAt,
+    voidReason,
+    voidApprovedBy,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Expense &&
+          other.id == this.id &&
+          other.locationId == this.locationId &&
+          other.amount == this.amount &&
+          other.currency == this.currency &&
+          other.category == this.category &&
+          other.paidFrom == this.paidFrom &&
+          other.note == this.note &&
+          other.spentAt == this.spentAt &&
+          other.createdBy == this.createdBy &&
+          other.approvedBy == this.approvedBy &&
+          other.voidedAt == this.voidedAt &&
+          other.voidReason == this.voidReason &&
+          other.voidApprovedBy == this.voidApprovedBy &&
+          other.updatedAt == this.updatedAt);
+}
+
+class ExpensesCompanion extends UpdateCompanion<Expense> {
+  final Value<String> id;
+  final Value<String?> locationId;
+  final Value<int> amount;
+  final Value<String> currency;
+  final Value<String> category;
+  final Value<String> paidFrom;
+  final Value<String?> note;
+  final Value<String> spentAt;
+  final Value<String?> createdBy;
+  final Value<String?> approvedBy;
+  final Value<String?> voidedAt;
+  final Value<String?> voidReason;
+  final Value<String?> voidApprovedBy;
+  final Value<String?> updatedAt;
+  final Value<int> rowid;
+  const ExpensesCompanion({
+    this.id = const Value.absent(),
+    this.locationId = const Value.absent(),
+    this.amount = const Value.absent(),
+    this.currency = const Value.absent(),
+    this.category = const Value.absent(),
+    this.paidFrom = const Value.absent(),
+    this.note = const Value.absent(),
+    this.spentAt = const Value.absent(),
+    this.createdBy = const Value.absent(),
+    this.approvedBy = const Value.absent(),
+    this.voidedAt = const Value.absent(),
+    this.voidReason = const Value.absent(),
+    this.voidApprovedBy = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ExpensesCompanion.insert({
+    required String id,
+    this.locationId = const Value.absent(),
+    required int amount,
+    required String currency,
+    required String category,
+    this.paidFrom = const Value.absent(),
+    this.note = const Value.absent(),
+    required String spentAt,
+    this.createdBy = const Value.absent(),
+    this.approvedBy = const Value.absent(),
+    this.voidedAt = const Value.absent(),
+    this.voidReason = const Value.absent(),
+    this.voidApprovedBy = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       amount = Value(amount),
+       currency = Value(currency),
+       category = Value(category),
+       spentAt = Value(spentAt);
+  static Insertable<Expense> custom({
+    Expression<String>? id,
+    Expression<String>? locationId,
+    Expression<int>? amount,
+    Expression<String>? currency,
+    Expression<String>? category,
+    Expression<String>? paidFrom,
+    Expression<String>? note,
+    Expression<String>? spentAt,
+    Expression<String>? createdBy,
+    Expression<String>? approvedBy,
+    Expression<String>? voidedAt,
+    Expression<String>? voidReason,
+    Expression<String>? voidApprovedBy,
+    Expression<String>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (locationId != null) 'location_id': locationId,
+      if (amount != null) 'amount': amount,
+      if (currency != null) 'currency': currency,
+      if (category != null) 'category': category,
+      if (paidFrom != null) 'paid_from': paidFrom,
+      if (note != null) 'note': note,
+      if (spentAt != null) 'spent_at': spentAt,
+      if (createdBy != null) 'created_by': createdBy,
+      if (approvedBy != null) 'approved_by': approvedBy,
+      if (voidedAt != null) 'voided_at': voidedAt,
+      if (voidReason != null) 'void_reason': voidReason,
+      if (voidApprovedBy != null) 'void_approved_by': voidApprovedBy,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ExpensesCompanion copyWith({
+    Value<String>? id,
+    Value<String?>? locationId,
+    Value<int>? amount,
+    Value<String>? currency,
+    Value<String>? category,
+    Value<String>? paidFrom,
+    Value<String?>? note,
+    Value<String>? spentAt,
+    Value<String?>? createdBy,
+    Value<String?>? approvedBy,
+    Value<String?>? voidedAt,
+    Value<String?>? voidReason,
+    Value<String?>? voidApprovedBy,
+    Value<String?>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return ExpensesCompanion(
+      id: id ?? this.id,
+      locationId: locationId ?? this.locationId,
+      amount: amount ?? this.amount,
+      currency: currency ?? this.currency,
+      category: category ?? this.category,
+      paidFrom: paidFrom ?? this.paidFrom,
+      note: note ?? this.note,
+      spentAt: spentAt ?? this.spentAt,
+      createdBy: createdBy ?? this.createdBy,
+      approvedBy: approvedBy ?? this.approvedBy,
+      voidedAt: voidedAt ?? this.voidedAt,
+      voidReason: voidReason ?? this.voidReason,
+      voidApprovedBy: voidApprovedBy ?? this.voidApprovedBy,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (locationId.present) {
+      map['location_id'] = Variable<String>(locationId.value);
+    }
+    if (amount.present) {
+      map['amount'] = Variable<int>(amount.value);
+    }
+    if (currency.present) {
+      map['currency'] = Variable<String>(currency.value);
+    }
+    if (category.present) {
+      map['category'] = Variable<String>(category.value);
+    }
+    if (paidFrom.present) {
+      map['paid_from'] = Variable<String>(paidFrom.value);
+    }
+    if (note.present) {
+      map['note'] = Variable<String>(note.value);
+    }
+    if (spentAt.present) {
+      map['spent_at'] = Variable<String>(spentAt.value);
+    }
+    if (createdBy.present) {
+      map['created_by'] = Variable<String>(createdBy.value);
+    }
+    if (approvedBy.present) {
+      map['approved_by'] = Variable<String>(approvedBy.value);
+    }
+    if (voidedAt.present) {
+      map['voided_at'] = Variable<String>(voidedAt.value);
+    }
+    if (voidReason.present) {
+      map['void_reason'] = Variable<String>(voidReason.value);
+    }
+    if (voidApprovedBy.present) {
+      map['void_approved_by'] = Variable<String>(voidApprovedBy.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ExpensesCompanion(')
+          ..write('id: $id, ')
+          ..write('locationId: $locationId, ')
+          ..write('amount: $amount, ')
+          ..write('currency: $currency, ')
+          ..write('category: $category, ')
+          ..write('paidFrom: $paidFrom, ')
+          ..write('note: $note, ')
+          ..write('spentAt: $spentAt, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('approvedBy: $approvedBy, ')
+          ..write('voidedAt: $voidedAt, ')
+          ..write('voidReason: $voidReason, ')
+          ..write('voidApprovedBy: $voidApprovedBy, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $DayClosesTable extends DayCloses
+    with TableInfo<$DayClosesTable, DayClose> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DayClosesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _locationIdMeta = const VerificationMeta(
+    'locationId',
+  );
+  @override
+  late final GeneratedColumn<String> locationId = GeneratedColumn<String>(
+    'location_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _dayMeta = const VerificationMeta('day');
+  @override
+  late final GeneratedColumn<String> day = GeneratedColumn<String>(
+    'day',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _currencyMeta = const VerificationMeta(
+    'currency',
+  );
+  @override
+  late final GeneratedColumn<String> currency = GeneratedColumn<String>(
+    'currency',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _expectedCashMeta = const VerificationMeta(
+    'expectedCash',
+  );
+  @override
+  late final GeneratedColumn<int> expectedCash = GeneratedColumn<int>(
+    'expected_cash',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _countedCashMeta = const VerificationMeta(
+    'countedCash',
+  );
+  @override
+  late final GeneratedColumn<int> countedCash = GeneratedColumn<int>(
+    'counted_cash',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _differenceMeta = const VerificationMeta(
+    'difference',
+  );
+  @override
+  late final GeneratedColumn<int> difference = GeneratedColumn<int>(
+    'difference',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _serverExpectedCashMeta =
+      const VerificationMeta('serverExpectedCash');
+  @override
+  late final GeneratedColumn<int> serverExpectedCash = GeneratedColumn<int>(
+    'server_expected_cash',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _noteMeta = const VerificationMeta('note');
+  @override
+  late final GeneratedColumn<String> note = GeneratedColumn<String>(
+    'note',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _closedByMeta = const VerificationMeta(
+    'closedBy',
+  );
+  @override
+  late final GeneratedColumn<String> closedBy = GeneratedColumn<String>(
+    'closed_by',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _approvedByMeta = const VerificationMeta(
+    'approvedBy',
+  );
+  @override
+  late final GeneratedColumn<String> approvedBy = GeneratedColumn<String>(
+    'approved_by',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _closedAtMeta = const VerificationMeta(
+    'closedAt',
+  );
+  @override
+  late final GeneratedColumn<String> closedAt = GeneratedColumn<String>(
+    'closed_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    locationId,
+    day,
+    currency,
+    expectedCash,
+    countedCash,
+    difference,
+    serverExpectedCash,
+    note,
+    closedBy,
+    approvedBy,
+    closedAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'day_closes';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<DayClose> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('location_id')) {
+      context.handle(
+        _locationIdMeta,
+        locationId.isAcceptableOrUnknown(data['location_id']!, _locationIdMeta),
+      );
+    }
+    if (data.containsKey('day')) {
+      context.handle(
+        _dayMeta,
+        day.isAcceptableOrUnknown(data['day']!, _dayMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dayMeta);
+    }
+    if (data.containsKey('currency')) {
+      context.handle(
+        _currencyMeta,
+        currency.isAcceptableOrUnknown(data['currency']!, _currencyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_currencyMeta);
+    }
+    if (data.containsKey('expected_cash')) {
+      context.handle(
+        _expectedCashMeta,
+        expectedCash.isAcceptableOrUnknown(
+          data['expected_cash']!,
+          _expectedCashMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_expectedCashMeta);
+    }
+    if (data.containsKey('counted_cash')) {
+      context.handle(
+        _countedCashMeta,
+        countedCash.isAcceptableOrUnknown(
+          data['counted_cash']!,
+          _countedCashMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_countedCashMeta);
+    }
+    if (data.containsKey('difference')) {
+      context.handle(
+        _differenceMeta,
+        difference.isAcceptableOrUnknown(data['difference']!, _differenceMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_differenceMeta);
+    }
+    if (data.containsKey('server_expected_cash')) {
+      context.handle(
+        _serverExpectedCashMeta,
+        serverExpectedCash.isAcceptableOrUnknown(
+          data['server_expected_cash']!,
+          _serverExpectedCashMeta,
+        ),
+      );
+    }
+    if (data.containsKey('note')) {
+      context.handle(
+        _noteMeta,
+        note.isAcceptableOrUnknown(data['note']!, _noteMeta),
+      );
+    }
+    if (data.containsKey('closed_by')) {
+      context.handle(
+        _closedByMeta,
+        closedBy.isAcceptableOrUnknown(data['closed_by']!, _closedByMeta),
+      );
+    }
+    if (data.containsKey('approved_by')) {
+      context.handle(
+        _approvedByMeta,
+        approvedBy.isAcceptableOrUnknown(data['approved_by']!, _approvedByMeta),
+      );
+    }
+    if (data.containsKey('closed_at')) {
+      context.handle(
+        _closedAtMeta,
+        closedAt.isAcceptableOrUnknown(data['closed_at']!, _closedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_closedAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  DayClose map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DayClose(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      locationId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}location_id'],
+      ),
+      day: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}day'],
+      )!,
+      currency: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}currency'],
+      )!,
+      expectedCash: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}expected_cash'],
+      )!,
+      countedCash: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}counted_cash'],
+      )!,
+      difference: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}difference'],
+      )!,
+      serverExpectedCash: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}server_expected_cash'],
+      ),
+      note: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}note'],
+      ),
+      closedBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}closed_by'],
+      ),
+      approvedBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}approved_by'],
+      ),
+      closedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}closed_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      ),
+    );
+  }
+
+  @override
+  $DayClosesTable createAlias(String alias) {
+    return $DayClosesTable(attachedDatabase, alias);
+  }
+}
+
+class DayClose extends DataClass implements Insertable<DayClose> {
+  final String id;
+  final String? locationId;
+
+  /// The business day, YYYY-MM-DD (device local date = tenant timezone for the solo store).
+  final String day;
+  final String currency;
+  final int expectedCash;
+  final int countedCash;
+  final int difference;
+
+  /// What the server computed from its own data when it applied the close; null until pulled.
+  final int? serverExpectedCash;
+  final String? note;
+  final String? closedBy;
+  final String? approvedBy;
+  final String closedAt;
+  final String? updatedAt;
+  const DayClose({
+    required this.id,
+    this.locationId,
+    required this.day,
+    required this.currency,
+    required this.expectedCash,
+    required this.countedCash,
+    required this.difference,
+    this.serverExpectedCash,
+    this.note,
+    this.closedBy,
+    this.approvedBy,
+    required this.closedAt,
+    this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    if (!nullToAbsent || locationId != null) {
+      map['location_id'] = Variable<String>(locationId);
+    }
+    map['day'] = Variable<String>(day);
+    map['currency'] = Variable<String>(currency);
+    map['expected_cash'] = Variable<int>(expectedCash);
+    map['counted_cash'] = Variable<int>(countedCash);
+    map['difference'] = Variable<int>(difference);
+    if (!nullToAbsent || serverExpectedCash != null) {
+      map['server_expected_cash'] = Variable<int>(serverExpectedCash);
+    }
+    if (!nullToAbsent || note != null) {
+      map['note'] = Variable<String>(note);
+    }
+    if (!nullToAbsent || closedBy != null) {
+      map['closed_by'] = Variable<String>(closedBy);
+    }
+    if (!nullToAbsent || approvedBy != null) {
+      map['approved_by'] = Variable<String>(approvedBy);
+    }
+    map['closed_at'] = Variable<String>(closedAt);
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<String>(updatedAt);
+    }
+    return map;
+  }
+
+  DayClosesCompanion toCompanion(bool nullToAbsent) {
+    return DayClosesCompanion(
+      id: Value(id),
+      locationId: locationId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(locationId),
+      day: Value(day),
+      currency: Value(currency),
+      expectedCash: Value(expectedCash),
+      countedCash: Value(countedCash),
+      difference: Value(difference),
+      serverExpectedCash: serverExpectedCash == null && nullToAbsent
+          ? const Value.absent()
+          : Value(serverExpectedCash),
+      note: note == null && nullToAbsent ? const Value.absent() : Value(note),
+      closedBy: closedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(closedBy),
+      approvedBy: approvedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(approvedBy),
+      closedAt: Value(closedAt),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
+    );
+  }
+
+  factory DayClose.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DayClose(
+      id: serializer.fromJson<String>(json['id']),
+      locationId: serializer.fromJson<String?>(json['locationId']),
+      day: serializer.fromJson<String>(json['day']),
+      currency: serializer.fromJson<String>(json['currency']),
+      expectedCash: serializer.fromJson<int>(json['expectedCash']),
+      countedCash: serializer.fromJson<int>(json['countedCash']),
+      difference: serializer.fromJson<int>(json['difference']),
+      serverExpectedCash: serializer.fromJson<int?>(json['serverExpectedCash']),
+      note: serializer.fromJson<String?>(json['note']),
+      closedBy: serializer.fromJson<String?>(json['closedBy']),
+      approvedBy: serializer.fromJson<String?>(json['approvedBy']),
+      closedAt: serializer.fromJson<String>(json['closedAt']),
+      updatedAt: serializer.fromJson<String?>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'locationId': serializer.toJson<String?>(locationId),
+      'day': serializer.toJson<String>(day),
+      'currency': serializer.toJson<String>(currency),
+      'expectedCash': serializer.toJson<int>(expectedCash),
+      'countedCash': serializer.toJson<int>(countedCash),
+      'difference': serializer.toJson<int>(difference),
+      'serverExpectedCash': serializer.toJson<int?>(serverExpectedCash),
+      'note': serializer.toJson<String?>(note),
+      'closedBy': serializer.toJson<String?>(closedBy),
+      'approvedBy': serializer.toJson<String?>(approvedBy),
+      'closedAt': serializer.toJson<String>(closedAt),
+      'updatedAt': serializer.toJson<String?>(updatedAt),
+    };
+  }
+
+  DayClose copyWith({
+    String? id,
+    Value<String?> locationId = const Value.absent(),
+    String? day,
+    String? currency,
+    int? expectedCash,
+    int? countedCash,
+    int? difference,
+    Value<int?> serverExpectedCash = const Value.absent(),
+    Value<String?> note = const Value.absent(),
+    Value<String?> closedBy = const Value.absent(),
+    Value<String?> approvedBy = const Value.absent(),
+    String? closedAt,
+    Value<String?> updatedAt = const Value.absent(),
+  }) => DayClose(
+    id: id ?? this.id,
+    locationId: locationId.present ? locationId.value : this.locationId,
+    day: day ?? this.day,
+    currency: currency ?? this.currency,
+    expectedCash: expectedCash ?? this.expectedCash,
+    countedCash: countedCash ?? this.countedCash,
+    difference: difference ?? this.difference,
+    serverExpectedCash: serverExpectedCash.present
+        ? serverExpectedCash.value
+        : this.serverExpectedCash,
+    note: note.present ? note.value : this.note,
+    closedBy: closedBy.present ? closedBy.value : this.closedBy,
+    approvedBy: approvedBy.present ? approvedBy.value : this.approvedBy,
+    closedAt: closedAt ?? this.closedAt,
+    updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+  );
+  DayClose copyWithCompanion(DayClosesCompanion data) {
+    return DayClose(
+      id: data.id.present ? data.id.value : this.id,
+      locationId: data.locationId.present
+          ? data.locationId.value
+          : this.locationId,
+      day: data.day.present ? data.day.value : this.day,
+      currency: data.currency.present ? data.currency.value : this.currency,
+      expectedCash: data.expectedCash.present
+          ? data.expectedCash.value
+          : this.expectedCash,
+      countedCash: data.countedCash.present
+          ? data.countedCash.value
+          : this.countedCash,
+      difference: data.difference.present
+          ? data.difference.value
+          : this.difference,
+      serverExpectedCash: data.serverExpectedCash.present
+          ? data.serverExpectedCash.value
+          : this.serverExpectedCash,
+      note: data.note.present ? data.note.value : this.note,
+      closedBy: data.closedBy.present ? data.closedBy.value : this.closedBy,
+      approvedBy: data.approvedBy.present
+          ? data.approvedBy.value
+          : this.approvedBy,
+      closedAt: data.closedAt.present ? data.closedAt.value : this.closedAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DayClose(')
+          ..write('id: $id, ')
+          ..write('locationId: $locationId, ')
+          ..write('day: $day, ')
+          ..write('currency: $currency, ')
+          ..write('expectedCash: $expectedCash, ')
+          ..write('countedCash: $countedCash, ')
+          ..write('difference: $difference, ')
+          ..write('serverExpectedCash: $serverExpectedCash, ')
+          ..write('note: $note, ')
+          ..write('closedBy: $closedBy, ')
+          ..write('approvedBy: $approvedBy, ')
+          ..write('closedAt: $closedAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    locationId,
+    day,
+    currency,
+    expectedCash,
+    countedCash,
+    difference,
+    serverExpectedCash,
+    note,
+    closedBy,
+    approvedBy,
+    closedAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DayClose &&
+          other.id == this.id &&
+          other.locationId == this.locationId &&
+          other.day == this.day &&
+          other.currency == this.currency &&
+          other.expectedCash == this.expectedCash &&
+          other.countedCash == this.countedCash &&
+          other.difference == this.difference &&
+          other.serverExpectedCash == this.serverExpectedCash &&
+          other.note == this.note &&
+          other.closedBy == this.closedBy &&
+          other.approvedBy == this.approvedBy &&
+          other.closedAt == this.closedAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class DayClosesCompanion extends UpdateCompanion<DayClose> {
+  final Value<String> id;
+  final Value<String?> locationId;
+  final Value<String> day;
+  final Value<String> currency;
+  final Value<int> expectedCash;
+  final Value<int> countedCash;
+  final Value<int> difference;
+  final Value<int?> serverExpectedCash;
+  final Value<String?> note;
+  final Value<String?> closedBy;
+  final Value<String?> approvedBy;
+  final Value<String> closedAt;
+  final Value<String?> updatedAt;
+  final Value<int> rowid;
+  const DayClosesCompanion({
+    this.id = const Value.absent(),
+    this.locationId = const Value.absent(),
+    this.day = const Value.absent(),
+    this.currency = const Value.absent(),
+    this.expectedCash = const Value.absent(),
+    this.countedCash = const Value.absent(),
+    this.difference = const Value.absent(),
+    this.serverExpectedCash = const Value.absent(),
+    this.note = const Value.absent(),
+    this.closedBy = const Value.absent(),
+    this.approvedBy = const Value.absent(),
+    this.closedAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  DayClosesCompanion.insert({
+    required String id,
+    this.locationId = const Value.absent(),
+    required String day,
+    required String currency,
+    required int expectedCash,
+    required int countedCash,
+    required int difference,
+    this.serverExpectedCash = const Value.absent(),
+    this.note = const Value.absent(),
+    this.closedBy = const Value.absent(),
+    this.approvedBy = const Value.absent(),
+    required String closedAt,
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       day = Value(day),
+       currency = Value(currency),
+       expectedCash = Value(expectedCash),
+       countedCash = Value(countedCash),
+       difference = Value(difference),
+       closedAt = Value(closedAt);
+  static Insertable<DayClose> custom({
+    Expression<String>? id,
+    Expression<String>? locationId,
+    Expression<String>? day,
+    Expression<String>? currency,
+    Expression<int>? expectedCash,
+    Expression<int>? countedCash,
+    Expression<int>? difference,
+    Expression<int>? serverExpectedCash,
+    Expression<String>? note,
+    Expression<String>? closedBy,
+    Expression<String>? approvedBy,
+    Expression<String>? closedAt,
+    Expression<String>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (locationId != null) 'location_id': locationId,
+      if (day != null) 'day': day,
+      if (currency != null) 'currency': currency,
+      if (expectedCash != null) 'expected_cash': expectedCash,
+      if (countedCash != null) 'counted_cash': countedCash,
+      if (difference != null) 'difference': difference,
+      if (serverExpectedCash != null)
+        'server_expected_cash': serverExpectedCash,
+      if (note != null) 'note': note,
+      if (closedBy != null) 'closed_by': closedBy,
+      if (approvedBy != null) 'approved_by': approvedBy,
+      if (closedAt != null) 'closed_at': closedAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  DayClosesCompanion copyWith({
+    Value<String>? id,
+    Value<String?>? locationId,
+    Value<String>? day,
+    Value<String>? currency,
+    Value<int>? expectedCash,
+    Value<int>? countedCash,
+    Value<int>? difference,
+    Value<int?>? serverExpectedCash,
+    Value<String?>? note,
+    Value<String?>? closedBy,
+    Value<String?>? approvedBy,
+    Value<String>? closedAt,
+    Value<String?>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return DayClosesCompanion(
+      id: id ?? this.id,
+      locationId: locationId ?? this.locationId,
+      day: day ?? this.day,
+      currency: currency ?? this.currency,
+      expectedCash: expectedCash ?? this.expectedCash,
+      countedCash: countedCash ?? this.countedCash,
+      difference: difference ?? this.difference,
+      serverExpectedCash: serverExpectedCash ?? this.serverExpectedCash,
+      note: note ?? this.note,
+      closedBy: closedBy ?? this.closedBy,
+      approvedBy: approvedBy ?? this.approvedBy,
+      closedAt: closedAt ?? this.closedAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (locationId.present) {
+      map['location_id'] = Variable<String>(locationId.value);
+    }
+    if (day.present) {
+      map['day'] = Variable<String>(day.value);
+    }
+    if (currency.present) {
+      map['currency'] = Variable<String>(currency.value);
+    }
+    if (expectedCash.present) {
+      map['expected_cash'] = Variable<int>(expectedCash.value);
+    }
+    if (countedCash.present) {
+      map['counted_cash'] = Variable<int>(countedCash.value);
+    }
+    if (difference.present) {
+      map['difference'] = Variable<int>(difference.value);
+    }
+    if (serverExpectedCash.present) {
+      map['server_expected_cash'] = Variable<int>(serverExpectedCash.value);
+    }
+    if (note.present) {
+      map['note'] = Variable<String>(note.value);
+    }
+    if (closedBy.present) {
+      map['closed_by'] = Variable<String>(closedBy.value);
+    }
+    if (approvedBy.present) {
+      map['approved_by'] = Variable<String>(approvedBy.value);
+    }
+    if (closedAt.present) {
+      map['closed_at'] = Variable<String>(closedAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DayClosesCompanion(')
+          ..write('id: $id, ')
+          ..write('locationId: $locationId, ')
+          ..write('day: $day, ')
+          ..write('currency: $currency, ')
+          ..write('expectedCash: $expectedCash, ')
+          ..write('countedCash: $countedCash, ')
+          ..write('difference: $difference, ')
+          ..write('serverExpectedCash: $serverExpectedCash, ')
+          ..write('note: $note, ')
+          ..write('closedBy: $closedBy, ')
+          ..write('approvedBy: $approvedBy, ')
+          ..write('closedAt: $closedAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -7696,6 +9289,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $SalesTable sales = $SalesTable(this);
   late final $SaleItemsTable saleItems = $SaleItemsTable(this);
   late final $SalePaymentsTable salePayments = $SalePaymentsTable(this);
+  late final $ExpensesTable expenses = $ExpensesTable(this);
+  late final $DayClosesTable dayCloses = $DayClosesTable(this);
   late final Index variantsBarcode = Index(
     'variants_barcode',
     'CREATE INDEX variants_barcode ON variants (barcode)',
@@ -7715,6 +9310,14 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final Index salePaymentsSale = Index(
     'sale_payments_sale',
     'CREATE INDEX sale_payments_sale ON sale_payments (sale_id)',
+  );
+  late final Index expensesSpentAt = Index(
+    'expenses_spent_at',
+    'CREATE INDEX expenses_spent_at ON expenses (spent_at)',
+  );
+  late final Index dayClosesDay = Index(
+    'day_closes_day',
+    'CREATE INDEX day_closes_day ON day_closes (day)',
   );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
@@ -7739,11 +9342,15 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     sales,
     saleItems,
     salePayments,
+    expenses,
+    dayCloses,
     variantsBarcode,
     variantsProduct,
     salesSoldAt,
     saleItemsSale,
     salePaymentsSale,
+    expensesSpentAt,
+    dayClosesDay,
   ];
 }
 
@@ -11757,6 +13364,737 @@ typedef $$SalePaymentsTableProcessedTableManager =
       SalePayment,
       PrefetchHooks Function()
     >;
+typedef $$ExpensesTableCreateCompanionBuilder =
+    ExpensesCompanion Function({
+      required String id,
+      Value<String?> locationId,
+      required int amount,
+      required String currency,
+      required String category,
+      Value<String> paidFrom,
+      Value<String?> note,
+      required String spentAt,
+      Value<String?> createdBy,
+      Value<String?> approvedBy,
+      Value<String?> voidedAt,
+      Value<String?> voidReason,
+      Value<String?> voidApprovedBy,
+      Value<String?> updatedAt,
+      Value<int> rowid,
+    });
+typedef $$ExpensesTableUpdateCompanionBuilder =
+    ExpensesCompanion Function({
+      Value<String> id,
+      Value<String?> locationId,
+      Value<int> amount,
+      Value<String> currency,
+      Value<String> category,
+      Value<String> paidFrom,
+      Value<String?> note,
+      Value<String> spentAt,
+      Value<String?> createdBy,
+      Value<String?> approvedBy,
+      Value<String?> voidedAt,
+      Value<String?> voidReason,
+      Value<String?> voidApprovedBy,
+      Value<String?> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$ExpensesTableFilterComposer
+    extends Composer<_$AppDatabase, $ExpensesTable> {
+  $$ExpensesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get locationId => $composableBuilder(
+    column: $table.locationId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get amount => $composableBuilder(
+    column: $table.amount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get currency => $composableBuilder(
+    column: $table.currency,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get category => $composableBuilder(
+    column: $table.category,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get paidFrom => $composableBuilder(
+    column: $table.paidFrom,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get spentAt => $composableBuilder(
+    column: $table.spentAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get createdBy => $composableBuilder(
+    column: $table.createdBy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get approvedBy => $composableBuilder(
+    column: $table.approvedBy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get voidedAt => $composableBuilder(
+    column: $table.voidedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get voidReason => $composableBuilder(
+    column: $table.voidReason,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get voidApprovedBy => $composableBuilder(
+    column: $table.voidApprovedBy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ExpensesTableOrderingComposer
+    extends Composer<_$AppDatabase, $ExpensesTable> {
+  $$ExpensesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get locationId => $composableBuilder(
+    column: $table.locationId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get amount => $composableBuilder(
+    column: $table.amount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get currency => $composableBuilder(
+    column: $table.currency,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get category => $composableBuilder(
+    column: $table.category,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get paidFrom => $composableBuilder(
+    column: $table.paidFrom,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get spentAt => $composableBuilder(
+    column: $table.spentAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get createdBy => $composableBuilder(
+    column: $table.createdBy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get approvedBy => $composableBuilder(
+    column: $table.approvedBy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get voidedAt => $composableBuilder(
+    column: $table.voidedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get voidReason => $composableBuilder(
+    column: $table.voidReason,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get voidApprovedBy => $composableBuilder(
+    column: $table.voidApprovedBy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ExpensesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ExpensesTable> {
+  $$ExpensesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get locationId => $composableBuilder(
+    column: $table.locationId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get amount =>
+      $composableBuilder(column: $table.amount, builder: (column) => column);
+
+  GeneratedColumn<String> get currency =>
+      $composableBuilder(column: $table.currency, builder: (column) => column);
+
+  GeneratedColumn<String> get category =>
+      $composableBuilder(column: $table.category, builder: (column) => column);
+
+  GeneratedColumn<String> get paidFrom =>
+      $composableBuilder(column: $table.paidFrom, builder: (column) => column);
+
+  GeneratedColumn<String> get note =>
+      $composableBuilder(column: $table.note, builder: (column) => column);
+
+  GeneratedColumn<String> get spentAt =>
+      $composableBuilder(column: $table.spentAt, builder: (column) => column);
+
+  GeneratedColumn<String> get createdBy =>
+      $composableBuilder(column: $table.createdBy, builder: (column) => column);
+
+  GeneratedColumn<String> get approvedBy => $composableBuilder(
+    column: $table.approvedBy,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get voidedAt =>
+      $composableBuilder(column: $table.voidedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get voidReason => $composableBuilder(
+    column: $table.voidReason,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get voidApprovedBy => $composableBuilder(
+    column: $table.voidApprovedBy,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$ExpensesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ExpensesTable,
+          Expense,
+          $$ExpensesTableFilterComposer,
+          $$ExpensesTableOrderingComposer,
+          $$ExpensesTableAnnotationComposer,
+          $$ExpensesTableCreateCompanionBuilder,
+          $$ExpensesTableUpdateCompanionBuilder,
+          (Expense, BaseReferences<_$AppDatabase, $ExpensesTable, Expense>),
+          Expense,
+          PrefetchHooks Function()
+        > {
+  $$ExpensesTableTableManager(_$AppDatabase db, $ExpensesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ExpensesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ExpensesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ExpensesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String?> locationId = const Value.absent(),
+                Value<int> amount = const Value.absent(),
+                Value<String> currency = const Value.absent(),
+                Value<String> category = const Value.absent(),
+                Value<String> paidFrom = const Value.absent(),
+                Value<String?> note = const Value.absent(),
+                Value<String> spentAt = const Value.absent(),
+                Value<String?> createdBy = const Value.absent(),
+                Value<String?> approvedBy = const Value.absent(),
+                Value<String?> voidedAt = const Value.absent(),
+                Value<String?> voidReason = const Value.absent(),
+                Value<String?> voidApprovedBy = const Value.absent(),
+                Value<String?> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ExpensesCompanion(
+                id: id,
+                locationId: locationId,
+                amount: amount,
+                currency: currency,
+                category: category,
+                paidFrom: paidFrom,
+                note: note,
+                spentAt: spentAt,
+                createdBy: createdBy,
+                approvedBy: approvedBy,
+                voidedAt: voidedAt,
+                voidReason: voidReason,
+                voidApprovedBy: voidApprovedBy,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                Value<String?> locationId = const Value.absent(),
+                required int amount,
+                required String currency,
+                required String category,
+                Value<String> paidFrom = const Value.absent(),
+                Value<String?> note = const Value.absent(),
+                required String spentAt,
+                Value<String?> createdBy = const Value.absent(),
+                Value<String?> approvedBy = const Value.absent(),
+                Value<String?> voidedAt = const Value.absent(),
+                Value<String?> voidReason = const Value.absent(),
+                Value<String?> voidApprovedBy = const Value.absent(),
+                Value<String?> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ExpensesCompanion.insert(
+                id: id,
+                locationId: locationId,
+                amount: amount,
+                currency: currency,
+                category: category,
+                paidFrom: paidFrom,
+                note: note,
+                spentAt: spentAt,
+                createdBy: createdBy,
+                approvedBy: approvedBy,
+                voidedAt: voidedAt,
+                voidReason: voidReason,
+                voidApprovedBy: voidApprovedBy,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ExpensesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ExpensesTable,
+      Expense,
+      $$ExpensesTableFilterComposer,
+      $$ExpensesTableOrderingComposer,
+      $$ExpensesTableAnnotationComposer,
+      $$ExpensesTableCreateCompanionBuilder,
+      $$ExpensesTableUpdateCompanionBuilder,
+      (Expense, BaseReferences<_$AppDatabase, $ExpensesTable, Expense>),
+      Expense,
+      PrefetchHooks Function()
+    >;
+typedef $$DayClosesTableCreateCompanionBuilder =
+    DayClosesCompanion Function({
+      required String id,
+      Value<String?> locationId,
+      required String day,
+      required String currency,
+      required int expectedCash,
+      required int countedCash,
+      required int difference,
+      Value<int?> serverExpectedCash,
+      Value<String?> note,
+      Value<String?> closedBy,
+      Value<String?> approvedBy,
+      required String closedAt,
+      Value<String?> updatedAt,
+      Value<int> rowid,
+    });
+typedef $$DayClosesTableUpdateCompanionBuilder =
+    DayClosesCompanion Function({
+      Value<String> id,
+      Value<String?> locationId,
+      Value<String> day,
+      Value<String> currency,
+      Value<int> expectedCash,
+      Value<int> countedCash,
+      Value<int> difference,
+      Value<int?> serverExpectedCash,
+      Value<String?> note,
+      Value<String?> closedBy,
+      Value<String?> approvedBy,
+      Value<String> closedAt,
+      Value<String?> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$DayClosesTableFilterComposer
+    extends Composer<_$AppDatabase, $DayClosesTable> {
+  $$DayClosesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get locationId => $composableBuilder(
+    column: $table.locationId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get day => $composableBuilder(
+    column: $table.day,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get currency => $composableBuilder(
+    column: $table.currency,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get expectedCash => $composableBuilder(
+    column: $table.expectedCash,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get countedCash => $composableBuilder(
+    column: $table.countedCash,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get difference => $composableBuilder(
+    column: $table.difference,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get serverExpectedCash => $composableBuilder(
+    column: $table.serverExpectedCash,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get closedBy => $composableBuilder(
+    column: $table.closedBy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get approvedBy => $composableBuilder(
+    column: $table.approvedBy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get closedAt => $composableBuilder(
+    column: $table.closedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$DayClosesTableOrderingComposer
+    extends Composer<_$AppDatabase, $DayClosesTable> {
+  $$DayClosesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get locationId => $composableBuilder(
+    column: $table.locationId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get day => $composableBuilder(
+    column: $table.day,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get currency => $composableBuilder(
+    column: $table.currency,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get expectedCash => $composableBuilder(
+    column: $table.expectedCash,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get countedCash => $composableBuilder(
+    column: $table.countedCash,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get difference => $composableBuilder(
+    column: $table.difference,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get serverExpectedCash => $composableBuilder(
+    column: $table.serverExpectedCash,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get closedBy => $composableBuilder(
+    column: $table.closedBy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get approvedBy => $composableBuilder(
+    column: $table.approvedBy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get closedAt => $composableBuilder(
+    column: $table.closedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$DayClosesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $DayClosesTable> {
+  $$DayClosesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get locationId => $composableBuilder(
+    column: $table.locationId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get day =>
+      $composableBuilder(column: $table.day, builder: (column) => column);
+
+  GeneratedColumn<String> get currency =>
+      $composableBuilder(column: $table.currency, builder: (column) => column);
+
+  GeneratedColumn<int> get expectedCash => $composableBuilder(
+    column: $table.expectedCash,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get countedCash => $composableBuilder(
+    column: $table.countedCash,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get difference => $composableBuilder(
+    column: $table.difference,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get serverExpectedCash => $composableBuilder(
+    column: $table.serverExpectedCash,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get note =>
+      $composableBuilder(column: $table.note, builder: (column) => column);
+
+  GeneratedColumn<String> get closedBy =>
+      $composableBuilder(column: $table.closedBy, builder: (column) => column);
+
+  GeneratedColumn<String> get approvedBy => $composableBuilder(
+    column: $table.approvedBy,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get closedAt =>
+      $composableBuilder(column: $table.closedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$DayClosesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $DayClosesTable,
+          DayClose,
+          $$DayClosesTableFilterComposer,
+          $$DayClosesTableOrderingComposer,
+          $$DayClosesTableAnnotationComposer,
+          $$DayClosesTableCreateCompanionBuilder,
+          $$DayClosesTableUpdateCompanionBuilder,
+          (DayClose, BaseReferences<_$AppDatabase, $DayClosesTable, DayClose>),
+          DayClose,
+          PrefetchHooks Function()
+        > {
+  $$DayClosesTableTableManager(_$AppDatabase db, $DayClosesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$DayClosesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$DayClosesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$DayClosesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String?> locationId = const Value.absent(),
+                Value<String> day = const Value.absent(),
+                Value<String> currency = const Value.absent(),
+                Value<int> expectedCash = const Value.absent(),
+                Value<int> countedCash = const Value.absent(),
+                Value<int> difference = const Value.absent(),
+                Value<int?> serverExpectedCash = const Value.absent(),
+                Value<String?> note = const Value.absent(),
+                Value<String?> closedBy = const Value.absent(),
+                Value<String?> approvedBy = const Value.absent(),
+                Value<String> closedAt = const Value.absent(),
+                Value<String?> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DayClosesCompanion(
+                id: id,
+                locationId: locationId,
+                day: day,
+                currency: currency,
+                expectedCash: expectedCash,
+                countedCash: countedCash,
+                difference: difference,
+                serverExpectedCash: serverExpectedCash,
+                note: note,
+                closedBy: closedBy,
+                approvedBy: approvedBy,
+                closedAt: closedAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                Value<String?> locationId = const Value.absent(),
+                required String day,
+                required String currency,
+                required int expectedCash,
+                required int countedCash,
+                required int difference,
+                Value<int?> serverExpectedCash = const Value.absent(),
+                Value<String?> note = const Value.absent(),
+                Value<String?> closedBy = const Value.absent(),
+                Value<String?> approvedBy = const Value.absent(),
+                required String closedAt,
+                Value<String?> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DayClosesCompanion.insert(
+                id: id,
+                locationId: locationId,
+                day: day,
+                currency: currency,
+                expectedCash: expectedCash,
+                countedCash: countedCash,
+                difference: difference,
+                serverExpectedCash: serverExpectedCash,
+                note: note,
+                closedBy: closedBy,
+                approvedBy: approvedBy,
+                closedAt: closedAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$DayClosesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $DayClosesTable,
+      DayClose,
+      $$DayClosesTableFilterComposer,
+      $$DayClosesTableOrderingComposer,
+      $$DayClosesTableAnnotationComposer,
+      $$DayClosesTableCreateCompanionBuilder,
+      $$DayClosesTableUpdateCompanionBuilder,
+      (DayClose, BaseReferences<_$AppDatabase, $DayClosesTable, DayClose>),
+      DayClose,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -11796,4 +14134,8 @@ class $AppDatabaseManager {
       $$SaleItemsTableTableManager(_db, _db.saleItems);
   $$SalePaymentsTableTableManager get salePayments =>
       $$SalePaymentsTableTableManager(_db, _db.salePayments);
+  $$ExpensesTableTableManager get expenses =>
+      $$ExpensesTableTableManager(_db, _db.expenses);
+  $$DayClosesTableTableManager get dayCloses =>
+      $$DayClosesTableTableManager(_db, _db.dayCloses);
 }

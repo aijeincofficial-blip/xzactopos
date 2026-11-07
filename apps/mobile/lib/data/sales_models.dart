@@ -196,6 +196,106 @@ class StockRow {
   bool get low => qty != null && reorderPoint > 0 && qty! <= reorderPoint;
 }
 
+// ---- Phase 8: expenses and the day close (P8-02c) ----
+
+/// Expense categories the server accepts (op_record_expense). UI labels come from ARB keys, never these strings.
+const expenseCategories = ['stock_purchase', 'utilities', 'transport', 'wages', 'rent', 'other'];
+
+/// Where the money came from: the drawer (counts against expected cash) or the e-wallet.
+const expensePaidFrom = ['cash', 'ewallet'];
+
+/// Rejection hints that mean "a supervisor approval is missing or no longer good". The op is parked as failed
+/// (never retried on its own); the UI asks for a new approval and calls [SalesStore.requeueWithApproval],
+/// or discards the op.
+const approvalHints = {'approval_required', 'approval_invalid', 'approval_expired', 'approval_used'};
+bool needsApproval(String? hint) => hint != null && approvalHints.contains(hint);
+
+/// YYYY-MM-DD of the local calendar day of [t] (the business day; device time zone = tenant time zone for solo).
+String dayKey(DateTime t) =>
+    '${t.year.toString().padLeft(4, '0')}-${t.month.toString().padLeft(2, '0')}-${t.day.toString().padLeft(2, '0')}';
+
+class ExpenseView {
+  const ExpenseView({
+    required this.id,
+    required this.amount,
+    required this.category,
+    required this.paidFrom,
+    this.note,
+    required this.spentAt,
+    this.voidedAt,
+    this.voidReason,
+    this.approvedBy,
+    required this.pending,
+    this.rejectedHint,
+  });
+
+  final String id;
+
+  /// Centavos, always > 0.
+  final int amount;
+  final String category;
+  final String paidFrom; // cash | ewallet
+  final String? note;
+  final DateTime spentAt;
+  final DateTime? voidedAt;
+  final String? voidReason;
+  final String? approvedBy;
+
+  /// An op for this expense (record or void) has not reached the server yet.
+  final bool pending;
+
+  /// The server refused an op for this expense (e.g. `approval_expired`); it waits for the user. Null when fine.
+  final String? rejectedHint;
+
+  bool get voided => voidedAt != null;
+}
+
+/// Today's expenses that count (voided ones left out). Centavos.
+class ExpenseTotals {
+  const ExpenseTotals({this.count = 0, this.total = 0, this.cash = 0, this.ewallet = 0});
+  final int count;
+  final int total;
+  final int cash;
+  final int ewallet;
+}
+
+class DayCloseView {
+  const DayCloseView({
+    required this.id,
+    required this.day,
+    required this.expectedCash,
+    required this.countedCash,
+    required this.difference,
+    this.serverExpectedCash,
+    this.note,
+    required this.closedAt,
+    this.approvedBy,
+    required this.pending,
+    this.rejectedHint,
+  });
+
+  final String id;
+
+  /// YYYY-MM-DD.
+  final String day;
+
+  /// What the phone expected in the drawer when the count was saved (see [SalesStore.expectedCash]).
+  final int expectedCash;
+  final int countedCash;
+
+  /// counted - expected: below zero = short (kulang), above zero = over (sobra).
+  final int difference;
+
+  /// The server's own figure for that day (null until pulled). Differs from [expectedCash] when the phone did not have
+  /// every sale or payment yet; informational, never an error.
+  final int? serverExpectedCash;
+  final String? note;
+  final DateTime closedAt;
+  final String? approvedBy;
+  final bool pending;
+  final String? rejectedHint;
+}
+
 /// Everything the Sell, Utang and Today screens need from the device.
 abstract class SalesStore {
   /// The store (location) this device sells for; sent with every sale.
@@ -246,6 +346,61 @@ abstract class SalesStore {
   Future<String?> meta(String key);
   Future<void> setMeta(String key, String? value);
 
+  // ---- expenses and the day close (P8-02c) ----
+  //
+  // Who may write: the owner and store managers, offline, with no extra step. A store SUPERVISOR needs a single-use
+  // approval per op: make the expense / day close id first, call Backend.approveSupervisorAction (needs signal at
+  // that moment), then pass the returned approval_id here. The queued op can then wait in the outbox up to 12 hours
+  // with no signal (the approval expires after that and the op is parked with `approval_expired`).
+  // A PIN is NEVER passed to, stored by, or queued from these methods: only the approval id travels.
+
+  /// Records money spent. [amount] in centavos (> 0); [category] one of [expenseCategories]; [paidFrom] one of
+  /// [expensePaidFrom]. Shown at once; queued as one `record_expense` op.
+  Future<void> recordExpense({
+    required String id,
+    required int amount,
+    required String category,
+    String paidFrom = 'cash',
+    String? note,
+    DateTime? spentAt,
+    String? approvalId,
+    required String opId,
+  });
+
+  /// Voids an expense (a reversing state, never a delete). Queued as one `void_expense` op.
+  Future<void> voidExpense({required String expenseId, String? reason, String? approvalId, required String opId});
+
+  /// Expenses spent in [from, to) (local times), newest first, voided ones included (marked).
+  Stream<List<ExpenseView>> watchExpenses({required DateTime from, required DateTime to});
+
+  /// Today's (device local day) expense totals, voided ones left out.
+  Stream<ExpenseTotals> watchTodayExpenses();
+
+  /// Cash that should be in the drawer for the local day of [day]: cash taken by completed sales + utang payments
+  /// - cash expenses that are not voided. Includes what this device has not sent yet. Centavos; may be below zero.
+  /// (Opening float is not part of it.)
+  Future<int> expectedCash(DateTime day);
+  Stream<int> watchExpectedCash(DateTime day);
+
+  /// Saves a cash count for the local day of [day]: stores the [expectedCash] of that moment, [countedCash] and the
+  /// difference, and queues one `close_day` op. Several closes per day are allowed (a re-count).
+  Future<void> closeDay({
+    required String id,
+    required DateTime day,
+    required int countedCash,
+    String? note,
+    String? approvalId,
+    required String opId,
+  });
+
+  /// The newest close for the local day of [day] (null when the day was not closed).
+  Stream<DayCloseView?> watchLatestDayClose(DateTime day);
+
+  /// Puts a parked (failed) record_expense / void_expense / close_day op back in the queue with a new supervisor
+  /// approval id, after the server refused it with one of [approvalHints]. Same op id: a refused op left nothing on
+  /// the server, so it is applied once.
+  Future<void> requeueWithApproval({required String opId, required String approvalId});
+
   // ---- sync side ----
   /// Marks the stock/utang effects of an op as applied by the server at [appliedAt].
   Future<void> posOpApplied(String opId, String? appliedAt);
@@ -256,4 +411,11 @@ abstract class SalesStore {
 
   /// Applies one sync_pull_pos response; drops local effects the server's copy now covers.
   Future<void> applyPullPos(Map<String, dynamic> response);
+
+  /// Applies one sync_pull_expenses response: the server's copy replaces the local row (so a local record or void is
+  /// no longer counted separately). Rows with an unsent op are left alone until that op has gone.
+  Future<void> applyPullExpenses(Map<String, dynamic> response);
+
+  /// Applies one sync_pull_day_closes response, same rules as [applyPullExpenses].
+  Future<void> applyPullDayCloses(Map<String, dynamic> response);
 }

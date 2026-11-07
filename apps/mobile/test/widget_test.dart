@@ -64,10 +64,53 @@ class FakeBackend implements Backend {
   Future<Map<String, dynamic>> pullSales(Map<String, dynamic>? cursor, {int limit = 100}) async =>
       {'rows': <dynamic>[], 'has_more': false};
   @override
+  Future<Map<String, dynamic>> pullExpenses(Map<String, dynamic>? cursor, {int limit = 100}) async =>
+      {'rows': <dynamic>[], 'has_more': false};
+  @override
+  Future<Map<String, dynamic>> pullDayCloses(Map<String, dynamic>? cursor, {int limit = 100}) async =>
+      {'rows': <dynamic>[], 'has_more': false};
+  @override
   Future<Map<String, dynamic>> pullPos(Map<String, dynamic> cursors, {int limit = 500}) async => {};
   @override
   Future<List<Map<String, dynamic>>> syncPush(List<Map<String, dynamic>> ops) async =>
       [for (final o in ops) {'op_id': o['op_id'], 'status': 'ok', 'result': <String, dynamic>{}}];
+
+  // Supervisor PIN, like set_my_pin / approve_supervisor_action. The fake keeps the PIN in memory only (as the server
+  // keeps its hash); calls are recorded WITHOUT the PIN so tests can check nothing else ever saw it.
+  String? pinSet;
+  bool offline = false;
+  final approvalCalls = <(String action, String refId)>[];
+  var _approvals = 0;
+  @override
+  Future<PinResult> setMyPin(String newPin, {String? currentPin}) async {
+    if (offline) throw Exception('no signal');
+    if (!RegExp(r'^[0-9]{4,8}$').hasMatch(newPin)) return const PinResult.refused('pin_invalid');
+    if (pinSet != null && currentPin == null) return const PinResult.refused('pin_required');
+    if (pinSet != null && currentPin != pinSet) return const PinResult.refused('pin_wrong');
+    pinSet = newPin;
+    return const PinResult.ok();
+  }
+
+  @override
+  Future<ApprovalResult> approveSupervisorAction({
+    required String action,
+    required String refId,
+    required String pin,
+    String? locationId,
+    String? approverId,
+  }) async {
+    if (offline) throw Exception('no signal');
+    approvalCalls.add((action, refId));
+    if (pinSet == null) return const ApprovalResult.refused('pin_not_set');
+    if (pin != pinSet) return const ApprovalResult.refused('pin_wrong');
+    _approvals++;
+    return ApprovalResult.ok(
+      approvalId: '0190a000-0000-7000-8000-${_approvals.toString().padLeft(12, 'f')}',
+      approvedBy: approverId ?? 'me',
+      expiresAt: DateTime.now().toUtc().add(const Duration(hours: 12)),
+    );
+  }
+
   final pushed = <String>[];
   @override
   Future<void> upsertProduct(String opId, Map<String, dynamic> payload) async => pushed.add('upsert_product');

@@ -623,6 +623,348 @@ mixin DriftSales implements SalesStore {
   }
 
   // ---------------------------------------------------------------------------
+  // Expenses and the day close (P8-02c)
+  //
+  // An expense or a day close is one row, like a sale: made here and queued, or pulled. The server's copy replaces the
+  // local row when it arrives, so nothing is counted twice. "Pending" = the id still has an op in the outbox;
+  // "rejected" = that op was refused (status failed) and waits for the user.
+  // Supervisors: the approval id comes from Backend.approveSupervisorAction (needs signal); the PIN never comes here.
+  // ---------------------------------------------------------------------------
+
+  static const approvalKinds = {'record_expense', 'void_expense', 'close_day'};
+
+  /// [from, to) of the local calendar day of [day], as normalised UTC ISO strings.
+  static (String, String) _dayBounds(DateTime day) =>
+      (_iso(DateTime(day.year, day.month, day.day)), _iso(DateTime(day.year, day.month, day.day + 1)));
+
+  /// Trimmed, null when empty, at most 200 characters (the server keeps the same).
+  static String? _text200(String? s) {
+    final t = s?.trim();
+    if (t == null || t.isEmpty) return null;
+    return t.length > 200 ? t.substring(0, 200) : t;
+  }
+
+  static const _pendingSql = '''
+    exists (select 1 from outbox o where o.entity_id = x.id) as pending,
+    (select o.last_error from outbox o where o.entity_id = x.id and o.status = 'failed' order by o.seq desc limit 1)
+      as rejected
+  ''';
+
+  @override
+  Future<void> recordExpense({
+    required String id,
+    required int amount,
+    required String category,
+    String paidFrom = 'cash',
+    String? note,
+    DateTime? spentAt,
+    String? approvalId,
+    required String opId,
+  }) {
+    if (amount <= 0) throw ArgumentError('Amount must be above zero');
+    if (!expenseCategories.contains(category)) throw ArgumentError('Unknown expense category: $category');
+    if (!expensePaidFrom.contains(paidFrom)) throw ArgumentError('Paid from must be cash or ewallet');
+    final n = _text200(note);
+    return db.transaction(() async {
+      if (await (db.select(db.expenses)..where((e) => e.id.equals(id))).getSingleOrNull() != null) {
+        throw StateError('Expense id already used');
+      }
+      final at = _iso(spentAt ?? DateTime.now());
+      await db.into(db.expenses).insert(ExpensesCompanion.insert(
+            id: id,
+            locationId: Value(locationId),
+            amount: amount,
+            currency: baseCurrency,
+            category: category,
+            paidFrom: Value(paidFrom),
+            note: Value(n),
+            spentAt: at,
+          ));
+      await enqueue(opId, 'record_expense', id, {
+        'id': id,
+        'amount': amount,
+        'category': category,
+        'paid_from': paidFrom,
+        'note': ?n,
+        'spent_at': at,
+        'location_id': ?locationId,
+        'approval_id': ?approvalId,
+      });
+    });
+  }
+
+  @override
+  Future<void> voidExpense({required String expenseId, String? reason, String? approvalId, required String opId}) {
+    return db.transaction(() async {
+      final e = await (db.select(db.expenses)..where((x) => x.id.equals(expenseId))).getSingleOrNull();
+      if (e == null) throw StateError('Unknown expense');
+      if (e.voidedAt != null) throw StateError('Expense is already voided');
+      final r = _text200(reason);
+      await (db.update(db.expenses)..where((x) => x.id.equals(expenseId)))
+          .write(ExpensesCompanion(voidedAt: Value(_iso(DateTime.now())), voidReason: Value(r)));
+      await enqueue(opId, 'void_expense', expenseId, {'expense_id': expenseId, 'reason': ?r, 'approval_id': ?approvalId});
+    });
+  }
+
+  ExpenseView _expense(QueryRow r) => ExpenseView(
+        id: r.read<String>('id'),
+        amount: r.read<int>('amount'),
+        category: r.read<String>('category'),
+        paidFrom: r.read<String>('paid_from'),
+        note: r.readNullable<String>('note'),
+        spentAt: DateTime.parse(r.read<String>('spent_at')).toLocal(),
+        voidedAt: r.readNullable<String>('voided_at') == null ? null : DateTime.parse(r.read<String>('voided_at')).toLocal(),
+        voidReason: r.readNullable<String>('void_reason'),
+        approvedBy: r.readNullable<String>('approved_by'),
+        pending: r.read<bool>('pending'),
+        rejectedHint: r.readNullable<String>('rejected'),
+      );
+
+  @override
+  Stream<List<ExpenseView>> watchExpenses({required DateTime from, required DateTime to}) => db
+      .customSelect(
+        '''
+        select x.id, x.amount, x.category, x.paid_from, x.note, x.spent_at, x.voided_at, x.void_reason, x.approved_by,
+               $_pendingSql
+        from expenses x
+        where x.spent_at >= ?1 and x.spent_at < ?2
+        order by x.spent_at desc, x.id desc
+        ''',
+        variables: [Variable.withString(_iso(from)), Variable.withString(_iso(to))],
+        readsFrom: {db.expenses, db.outbox},
+      )
+      .watch()
+      .map((rows) => rows.map(_expense).toList());
+
+  @override
+  Stream<ExpenseTotals> watchTodayExpenses() {
+    final (from, to) = _dayBounds(DateTime.now());
+    return db
+        .customSelect(
+          '''
+          select count(*) as n, coalesce(sum(amount), 0) as total,
+                 coalesce(sum(case when paid_from = 'cash' then amount end), 0) as cash,
+                 coalesce(sum(case when paid_from = 'ewallet' then amount end), 0) as ewallet
+          from expenses
+          where voided_at is null and spent_at >= ?1 and spent_at < ?2
+          ''',
+          variables: [Variable.withString(from), Variable.withString(to)],
+          readsFrom: {db.expenses},
+        )
+        .watchSingle()
+        .map((r) => ExpenseTotals(
+              count: r.read<int>('n'),
+              total: r.read<int>('total'),
+              cash: r.read<int>('cash'),
+              ewallet: r.read<int>('ewallet'),
+            ));
+  }
+
+  // Server ledger times are kept as the server sent them (any offset), so they are compared through julianday();
+  // everything else is stored as normalised UTC ISO text and compared as text (index friendly).
+  // Utang payments are cash (the server has no payment method or store on them).
+  static const _expectedCashSql = '''
+    select
+      coalesce((select sum(p.amount) from sale_payments p join sales s on s.id = p.sale_id
+                where s.status = 'completed' and p.method = 'cash' and s.sold_at >= ?1 and s.sold_at < ?2), 0)
+    - coalesce((select sum(l.amount) from server_ledger l
+                where l.kind = 'payment' and julianday(l.occurred_at) >= julianday(?1)
+                  and julianday(l.occurred_at) < julianday(?2)), 0)
+    - coalesce((select sum(l.amount) from local_ledger l
+                where l.kind = 'payment' and l.occurred_at >= ?1 and l.occurred_at < ?2), 0)
+    - coalesce((select sum(e.amount) from expenses e
+                where e.voided_at is null and e.paid_from = 'cash' and e.spent_at >= ?1 and e.spent_at < ?2), 0)
+      as expected
+  ''';
+
+  Selectable<QueryRow> _expectedCashQuery(DateTime day) {
+    final (from, to) = _dayBounds(day);
+    return db.customSelect(_expectedCashSql,
+        variables: [Variable.withString(from), Variable.withString(to)],
+        readsFrom: {db.sales, db.salePayments, db.serverLedger, db.localLedger, db.expenses});
+  }
+
+  @override
+  Future<int> expectedCash(DateTime day) async => (await _expectedCashQuery(day).getSingle()).read<int>('expected');
+
+  @override
+  Stream<int> watchExpectedCash(DateTime day) => _expectedCashQuery(day).watchSingle().map((r) => r.read<int>('expected'));
+
+  @override
+  Future<void> closeDay({
+    required String id,
+    required DateTime day,
+    required int countedCash,
+    String? note,
+    String? approvalId,
+    required String opId,
+  }) {
+    if (countedCash < 0) throw ArgumentError('Counted cash cannot be negative');
+    final n = _text200(note);
+    return db.transaction(() async {
+      if (await (db.select(db.dayCloses)..where((d) => d.id.equals(id))).getSingleOrNull() != null) {
+        throw StateError('Day close id already used');
+      }
+      final expected = await expectedCash(day);
+      final key = dayKey(day);
+      final at = _iso(DateTime.now());
+      await db.into(db.dayCloses).insert(DayClosesCompanion.insert(
+            id: id,
+            locationId: Value(locationId),
+            day: key,
+            currency: baseCurrency,
+            expectedCash: expected,
+            countedCash: countedCash,
+            difference: countedCash - expected,
+            note: Value(n),
+            closedAt: at,
+          ));
+      await enqueue(opId, 'close_day', id, {
+        'id': id,
+        'day': key,
+        'expected_cash': expected,
+        'counted_cash': countedCash,
+        'closed_at': at,
+        'note': ?n,
+        'location_id': ?locationId,
+        'approval_id': ?approvalId,
+      });
+    });
+  }
+
+  @override
+  Stream<DayCloseView?> watchLatestDayClose(DateTime day) => db
+      .customSelect(
+        '''
+        select x.id, x.day, x.expected_cash, x.counted_cash, x.difference, x.server_expected_cash, x.note, x.closed_at,
+               x.approved_by, $_pendingSql
+        from day_closes x
+        where x.day = ?1
+        order by x.closed_at desc, x.id desc
+        limit 1
+        ''',
+        variables: [Variable.withString(dayKey(day))],
+        readsFrom: {db.dayCloses, db.outbox},
+      )
+      .watch()
+      .map((rows) => rows.isEmpty
+          ? null
+          : DayCloseView(
+              id: rows.first.read<String>('id'),
+              day: rows.first.read<String>('day'),
+              expectedCash: rows.first.read<int>('expected_cash'),
+              countedCash: rows.first.read<int>('counted_cash'),
+              difference: rows.first.read<int>('difference'),
+              serverExpectedCash: rows.first.readNullable<int>('server_expected_cash'),
+              note: rows.first.readNullable<String>('note'),
+              closedAt: DateTime.parse(rows.first.read<String>('closed_at')).toLocal(),
+              approvedBy: rows.first.readNullable<String>('approved_by'),
+              pending: rows.first.read<bool>('pending'),
+              rejectedHint: rows.first.readNullable<String>('rejected'),
+            ));
+
+  @override
+  Future<void> requeueWithApproval({required String opId, required String approvalId}) {
+    return db.transaction(() async {
+      final op = await (db.select(db.outbox)..where((o) => o.opId.equals(opId))).getSingleOrNull();
+      if (op == null) throw StateError('Unknown op');
+      if (!approvalKinds.contains(op.kind)) throw ArgumentError('${op.kind} does not take an approval');
+      if (op.status != 'failed') throw StateError('Only a refused op can be sent again');
+      final payload = (jsonDecode(op.payload) as Map).cast<String, dynamic>()..['approval_id'] = approvalId;
+      await (db.update(db.outbox)..where((o) => o.opId.equals(opId))).write(OutboxCompanion(
+            payload: Value(jsonEncode(payload)),
+            status: const Value('pending'),
+            attempts: const Value(0),
+            lastError: const Value(null),
+          ));
+    });
+  }
+
+  /// Takes back what a discarded (refused) op did on this device. A refused op left nothing on the server.
+  Future<void> undoLocalOp(String kind, String entityId) async {
+    switch (kind) {
+      case 'record_expense':
+        await (db.delete(db.expenses)..where((e) => e.id.equals(entityId) & e.updatedAt.isNull())).go();
+      case 'void_expense':
+        await (db.update(db.expenses)..where((e) => e.id.equals(entityId)))
+            .write(const ExpensesCompanion(voidedAt: Value(null), voidReason: Value(null)));
+      case 'close_day':
+        await (db.delete(db.dayCloses)..where((d) => d.id.equals(entityId) & d.updatedAt.isNull())).go();
+    }
+  }
+
+  @override
+  Future<void> applyPullExpenses(Map<String, dynamic> response) {
+    return db.transaction(() async {
+      final rows = ((response['rows'] as List?) ?? const []).cast<Map<String, dynamic>>();
+      final unsent = (await db.select(db.outbox).get()).map((o) => o.entityId).toSet();
+      for (final r in rows) {
+        final id = r['id'] as String;
+        var voidedAt = r['voided_at'] == null ? null : _utc(r['voided_at'] as String);
+        var voidReason = r['void_reason'] as String?;
+        if (voidedAt == null && unsent.contains(id)) {
+          // a void made here is still on its way: keep it until the server's voided copy comes
+          final local = await (db.select(db.expenses)..where((e) => e.id.equals(id))).getSingleOrNull();
+          if (local?.voidedAt != null) {
+            voidedAt = local!.voidedAt;
+            voidReason = local.voidReason;
+          }
+        }
+        await db.into(db.expenses).insertOnConflictUpdate(ExpensesCompanion.insert(
+              id: id,
+              locationId: Value(r['location_id'] as String?),
+              amount: (r['amount'] as num).toInt(),
+              currency: (r['currency'] as String).trim(),
+              category: r['category'] as String,
+              paidFrom: Value(r['paid_from'] as String? ?? 'cash'),
+              note: Value(r['note'] as String?),
+              spentAt: _utc(r['spent_at'] as String),
+              createdBy: Value(r['created_by'] as String?),
+              approvedBy: Value(r['approved_by'] as String?),
+              voidedAt: Value(voidedAt),
+              voidReason: Value(voidReason),
+              voidApprovedBy: Value(r['void_approved_by'] as String?),
+              updatedAt: Value(r['updated_at'] as String?),
+            ));
+      }
+      await _saveCursor('expenses', response['cursor']);
+    });
+  }
+
+  @override
+  Future<void> applyPullDayCloses(Map<String, dynamic> response) {
+    return db.transaction(() async {
+      // closes never change on the server: its copy is the local one plus the server's own figures
+      for (final r in ((response['rows'] as List?) ?? const []).cast<Map<String, dynamic>>()) {
+        await db.into(db.dayCloses).insertOnConflictUpdate(DayClosesCompanion.insert(
+              id: r['id'] as String,
+              locationId: Value(r['location_id'] as String?),
+              day: r['day'] as String,
+              currency: (r['currency'] as String).trim(),
+              expectedCash: (r['expected_cash'] as num).toInt(),
+              countedCash: (r['counted_cash'] as num).toInt(),
+              difference: (r['difference'] as num).toInt(),
+              serverExpectedCash: Value((r['server_expected_cash'] as num?)?.toInt()),
+              note: Value(r['note'] as String?),
+              closedBy: Value(r['closed_by'] as String?),
+              approvedBy: Value(r['approved_by'] as String?),
+              closedAt: _utc(r['closed_at'] as String),
+              updatedAt: Value(r['updated_at'] as String?),
+            ));
+      }
+      await _saveCursor('day_closes', response['cursor']);
+    });
+  }
+
+  Future<void> _saveCursor(String key, Object? cursor) async {
+    if (cursor is Map) {
+      await db
+          .into(db.syncCursors)
+          .insertOnConflictUpdate(SyncCursorsCompanion.insert(tableKey: key, cursorJson: jsonEncode(cursor)));
+    }
+  }
+
+  // ---------------------------------------------------------------------------
   // Sync
   // ---------------------------------------------------------------------------
 
