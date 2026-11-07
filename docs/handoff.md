@@ -440,6 +440,18 @@ Share was checked on the emulator (Android share sheet with `LL3-261107-0001.pdf
   sync engine pushes both kinds and pulls `pullService`. 14 new tests (222 total). No screens yet: P8-07 uses
   `docs/tasks/P8-06-load-ewallet-ledger.md`.
   Gap: e-wallet sale payments and e-wallet expenses name no wallet, so they do not move `wallet_float` (correct with float_adjust).
+- P8-08 (`20261108001500_tingi_repack.sql`): tingi / repack. The piece is its own product; the pack variant carries
+  `breaks_into_variant_id` + `breaks_into_qty` (same tenant by composite FK, no self link, no chains: a variant is a pack or a
+  piece, trigger-guarded). Ops `set_tingi_link` (catalog rights), `open_pack` / `void_open_pack` (stock-in rights, no approvals)
+  write `conversion_out` / `conversion_in` / `conversion_void` movements; append-only `conversions` + `sync_pull_conversions`;
+  `sync_pull_catalog` carries the link. Cost rule: `T = packs x pack avg` (exact), piece avg `half_up((Q x C + T) / (Q + N))`
+  via one exact `stock_blend_cost` (receipts use it too); value off by at most half a centavo per piece. Over-opening and a
+  void below zero are allowed (like sales). pgTAP `020` (102, incl. a 400-step property test) + 50 matrix rows; suite 2465
+  (20 files). Flutter: Drift v8 (link columns, `local_movements.unit_cost` / `total_cost`, `conversions`), `SalesStore`
+  `setTingiLink` / `clearTingiLink` / `tingiPiece` / `openPack` / `voidOpenPack` / `watchConversions` / `averageCost` /
+  `applyPullConversions`, `ProductView` link fields; the phone now replays its unconfirmed stock-ins and openings with the
+  server's cost rule, so sale costs match the server before the pull. 15 new tests (240 total). No screens yet: P8-09 uses
+  `docs/tasks/P8-08-tingi-repack.md`.
 
 ## Antigravity Session: Neo-Fintech Design, Settings Screen, Theme Fix, & Reports Enrichment
 Read `docs/START-HERE-claude.md` for the complete handoff from Antigravity.

@@ -63,6 +63,10 @@ class Variants extends Table {
   TextColumn get updatedAt => text().nullable()();
   TextColumn get deletedAt => text().nullable()();
 
+  /// Tingi (schema v8): one of this pack variant breaks into [breaksIntoQty] of that piece variant. Both or neither.
+  TextColumn get breaksIntoVariantId => text().nullable()();
+  IntColumn get breaksIntoQty => integer().nullable()();
+
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -203,6 +207,12 @@ class LocalMovements extends Table {
   /// Opening stock, stock in or a count: makes the product "counted". A sale does not.
   BoolColumn get counts => boolean().withDefault(const Constant(false))();
   TextColumn get confirmedAfter => text().nullable()();
+
+  /// Stock in with a cost (schema v8): centavos per unit; moves the average cost like the server's receipt.
+  IntColumn get unitCost => integer().nullable()();
+
+  /// Pieces from an opened pack (schema v8): the value they carry in centavos; moves the piece's average cost.
+  IntColumn get totalCost => integer().nullable()();
 }
 
 /// Sales made on this device (receipts). Not pulled from the server.
@@ -372,6 +382,40 @@ class LocalFloatEffects extends Table {
   TextColumn get confirmedAfter => text().nullable()();
 }
 
+// ---- Phase 8: tingi / repack (schema v8) ----
+
+/// Opened packs (open_pack op, sync_pull_conversions): one pack variant out, its pieces in. Made here or pulled; a void
+/// sets [voidedAt] (void_open_pack op), nothing is deleted. [updatedAt] is the server's, null until pulled. The stock
+/// effects themselves live in `local_movements` (by op id) until the server's levels cover them.
+@TableIndex(name: 'conversions_converted_at', columns: {#convertedAt})
+class Conversions extends Table {
+  TextColumn get id => text()();
+  TextColumn get locationId => text().nullable()();
+  TextColumn get packVariantId => text()();
+  TextColumn get pieceVariantId => text()();
+  IntColumn get packs => integer()();
+
+  /// Pieces per pack at the time of opening.
+  IntColumn get ratio => integer()();
+  IntColumn get pieces => integer()();
+
+  /// Centavos: pack cost used, packs x pack cost, half_up(total / pieces). Null when no cost was known.
+  IntColumn get packCost => integer().nullable()();
+  IntColumn get totalCost => integer().nullable()();
+  IntColumn get pieceCost => integer().nullable()();
+  TextColumn get note => text().nullable()();
+
+  /// UTC ISO-8601, normalised (same format as `sales.sold_at`).
+  TextColumn get convertedAt => text()();
+  TextColumn get createdBy => text().nullable()();
+  TextColumn get voidedAt => text().nullable()();
+  TextColumn get voidReason => text().nullable()();
+  TextColumn get updatedAt => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
 /// Small key/value facts about this device's data (e.g. which tenant it belongs to).
 class Meta extends Table {
   TextColumn get key => text()();
@@ -384,7 +428,7 @@ class Meta extends Table {
 @DriftDatabase(tables: [
   Categories, Products, Variants, Prices, SyncCursors, Outbox, OpeningStock, Meta, PhotoUploads, PhotoCache,
   Customers, ServerLedger, LocalLedger, StockLevels, LocalMovements, Sales, SaleItems, SalePayments,
-  Expenses, DayCloses, ServiceTxns, WalletFloats, LocalFloatEffects,
+  Expenses, DayCloses, ServiceTxns, WalletFloats, LocalFloatEffects, Conversions,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
@@ -405,7 +449,15 @@ class AppDatabase extends _$AppDatabase {
   static const _name = 'xzactopos';
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
+
+  /// Adds a column unless it is there already (a database made by a newer build and stepped back in a test, or a
+  /// table an earlier step created with today's definition). Skips a table that does not exist.
+  Future<void> _addColumnIfMissing(Migrator m, TableInfo table, GeneratedColumn column) async {
+    final cols = await customSelect('PRAGMA table_info(${table.actualTableName})').get();
+    if (cols.isEmpty || cols.any((c) => c.read<String>('name') == column.name)) return;
+    await m.addColumn(table, column);
+  }
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -470,6 +522,22 @@ class AppDatabase extends _$AppDatabase {
             // the v6 step created its tables without their indexes
             await customStatement('CREATE INDEX IF NOT EXISTS expenses_spent_at ON expenses (spent_at)');
             await customStatement('CREATE INDEX IF NOT EXISTS day_closes_day ON day_closes (day)');
+          }
+          if (from < 8) {
+            // additive only: the tingi link on variants, costs on local movements, a conversions table
+            await _addColumnIfMissing(m, variants, variants.breaksIntoVariantId);
+            await _addColumnIfMissing(m, variants, variants.breaksIntoQty);
+            await _addColumnIfMissing(m, localMovements, localMovements.unitCost);
+            await _addColumnIfMissing(m, localMovements, localMovements.totalCost);
+            await m.createTable(conversions);
+            await customStatement('CREATE INDEX IF NOT EXISTS conversions_converted_at ON conversions (converted_at)');
+            // variants pulled before the link existed must come again so the link columns are filled
+            final hasCursors = await customSelect(
+                    "select 1 from sqlite_master where type = 'table' and name = 'sync_cursors'")
+                .get();
+            if (hasCursors.isNotEmpty) {
+              await customStatement("delete from sync_cursors where table_key = 'product_variants'");
+            }
           }
         },
       );

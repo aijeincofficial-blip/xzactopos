@@ -176,6 +176,9 @@ class ServiceServer implements SyncApi {
   }
 
   @override
+  Future<Map<String, dynamic>> pullConversions(Map<String, dynamic>? cursor, {int limit = 100}) async =>
+      {'rows': <dynamic>[], 'has_more': false};
+  @override
   Future<Map<String, dynamic>> pullExpenses(Map<String, dynamic>? cursor, {int limit = 100}) async =>
       {'rows': <dynamic>[], 'has_more': false};
   @override
@@ -589,7 +592,7 @@ void main() {
     expect(await v7.expectedCash(today()), 4000 - 1000 + 2020);
     expect(await floats(v7), {'gcash': -2000});
     final version = await v7.db.customSelect('PRAGMA user_version').getSingle();
-    expect(version.data.values.single, 7);
+    expect(version.data.values.single, 8);
     final idx = await v7.db.customSelect("select name from sqlite_master where type = 'index' and name = 'service_txns_txn_at'").get();
     expect(idx, hasLength(1));
     await v7.close();

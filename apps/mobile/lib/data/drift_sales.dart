@@ -74,12 +74,10 @@ mixin DriftSales implements SalesStore {
       final localNo = await _nextReceiptNo(d.soldAt.toLocal());
       final soldAt = _iso(d.soldAt);
       final tax = d.lines.fold<int>(0, (a, l) => a + l.lineTax);
-      // cost snapshot: the average cost the server reported for this product, else the cost on the line
-      final avgCost = <String, int>{
-        for (final r in await db.select(db.stockLevels).get())
-          if (r.avgCost != null) r.variantId: r.avgCost!
-      };
-      int costOf(SaleLine l) => avgCost[l.variantId] ?? l.unitCost;
+      // cost snapshot: the average cost of this product (the server's, moved by this device's stock-ins and opened packs
+      // it has not caught up on, same rule as the server), else the cost on the line
+      final eff = await _effectiveStock();
+      int costOf(SaleLine l) => eff[l.variantId]?.avg ?? l.unitCost;
 
       await db.into(db.sales).insert(SalesCompanion.insert(
             id: d.id,
@@ -422,6 +420,40 @@ mixin DriftSales implements SalesStore {
   // Stock
   // ---------------------------------------------------------------------------
 
+  /// Tingi link columns of a `variants v` row for a ProductView: the piece variant, pieces per pack, the piece's name.
+  static const tingiLinkSql = '''
+    v.breaks_into_variant_id, v.breaks_into_qty,
+    (select pp.name from variants pv join products pp on pp.id = pv.product_id
+     where pv.id = v.breaks_into_variant_id and pv.deleted_at is null and pp.deleted_at is null) as piece_name
+  ''';
+
+  /// Quantity and average cost per variant as this device sees them: the server's levels plus this device's movements
+  /// the server has not caught up on, replayed in order with the server's average-cost rule (stock in with a cost:
+  /// [receiptAvgCost]; pieces from an opened pack: [conversionAvgCost]; everything else moves the quantity only).
+  Future<Map<String, ({double qty, int? avg})>> _effectiveStock() async {
+    final qty = <String, double>{};
+    final avg = <String, int?>{};
+    for (final l in await db.select(db.stockLevels).get()) {
+      qty[l.variantId] = (qty[l.variantId] ?? 0) + l.qty;
+      if (l.avgCost != null) avg[l.variantId] = l.avgCost;
+    }
+    final moves = await (db.select(db.localMovements)..orderBy([(m) => OrderingTerm.asc(m.id)])).get();
+    for (final m in moves) {
+      final q0 = qty[m.variantId] ?? 0;
+      if (m.qty > 0 && m.unitCost != null) {
+        avg[m.variantId] = receiptAvgCost(oldQty: q0, oldCost: avg[m.variantId], qty: m.qty, unitCost: m.unitCost);
+      } else if (m.qty > 0 && m.totalCost != null) {
+        avg[m.variantId] =
+            conversionAvgCost(oldQty: q0, oldCost: avg[m.variantId], pieces: m.qty.round(), totalCost: m.totalCost);
+      }
+      qty[m.variantId] = q0 + m.qty;
+    }
+    return {for (final k in {...qty.keys, ...avg.keys}) k: (qty: qty[k] ?? 0, avg: avg[k])};
+  }
+
+  @override
+  Future<int?> averageCost(String variantId) async => (await _effectiveStock())[variantId]?.avg;
+
   @override
   Stream<Map<String, double>> watchStock() => db
       .customSelect(
@@ -441,8 +473,8 @@ mixin DriftSales implements SalesStore {
   Future<void> receiveStock({required String variantId, required double qty, int? cost, required String opId}) {
     if (qty <= 0) throw ArgumentError('Quantity must be above zero');
     return db.transaction(() async {
-      await db.into(db.localMovements).insert(
-          LocalMovementsCompanion.insert(opId: opId, variantId: variantId, qty: qty, counts: const Value(true)));
+      await db.into(db.localMovements).insert(LocalMovementsCompanion.insert(
+          opId: opId, variantId: variantId, qty: qty, counts: const Value(true), unitCost: Value(cost)));
       await enqueue(opId, 'receive_stock', variantId, {
         'variant_id': variantId,
         'qty': qty,
@@ -488,7 +520,7 @@ mixin DriftSales implements SalesStore {
         .customSelect(
           '''
           select p.id, v.id as variant_id, p.name, p.unit, v.sku, v.barcode, pr.price, p.photo_path, p.active,
-                 p.track_stock, p.tax_rate, v.cost, v.reorder_point,
+                 p.track_stock, p.tax_rate, v.cost, v.reorder_point, $tingiLinkSql,
                  exists (select 1 from outbox o where o.entity_id = p.id or o.entity_id = v.id) as pending,
                  coalesce((select sum(l.qty) from stock_levels l where l.variant_id = v.id), 0)
                + coalesce((select sum(m.qty) from local_movements m where m.variant_id = v.id), 0) as qty,
@@ -523,6 +555,9 @@ mixin DriftSales implements SalesStore {
               taxRate: r.read<double>('tax_rate'),
               cost: r.read<int>('cost'),
               reorderPoint: r.read<double>('reorder_point'),
+              breaksIntoVariantId: r.readNullable<String>('breaks_into_variant_id'),
+              piecesPerPack: r.readNullable<int>('breaks_into_qty'),
+              pieceName: r.readNullable<String>('piece_name'),
             ),
             qty: r.read<bool>('counted') ? r.read<double>('qty') : null,
             reorderPoint: r.read<double>('reorder_point'),
@@ -578,7 +613,7 @@ mixin DriftSales implements SalesStore {
     final rows = await db.customSelect(
       '''
       select p.id, v.id as variant_id, p.name, p.unit, v.sku, v.barcode, pr.price, p.photo_path, p.active,
-             p.track_stock, p.tax_rate, v.cost, v.reorder_point,
+             p.track_stock, p.tax_rate, v.cost, v.reorder_point, $tingiLinkSql,
              exists (select 1 from outbox o where o.entity_id = p.id) as pending
       from products p
       join variants v on v.product_id = p.id and v.is_default = 1 and v.deleted_at is null
@@ -618,6 +653,9 @@ mixin DriftSales implements SalesStore {
           taxRate: r.read<double>('tax_rate'),
           cost: r.read<int>('cost'),
           reorderPoint: r.read<double>('reorder_point'),
+          breaksIntoVariantId: r.readNullable<String>('breaks_into_variant_id'),
+          piecesPerPack: r.readNullable<int>('breaks_into_qty'),
+          pieceName: r.readNullable<String>('piece_name'),
         )
     ];
   }
@@ -966,6 +1004,266 @@ mixin DriftSales implements SalesStore {
 
   static DateTime? _localOrNull(String? iso) => iso == null ? null : DateTime.parse(iso).toLocal();
 
+  // ---------------------------------------------------------------------------
+  // Tingi / repack (P8-08)
+  //
+  // The link lives on the pack's variant row (pulled with the catalog). An opening is one `conversions` row plus two
+  // `local_movements` (pack out, pieces in with the value they carry) under the op id, so the stock numbers follow the
+  // P4-02 rule: counted until the server's levels have caught up, then dropped, never twice.
+  // ---------------------------------------------------------------------------
+
+  /// A live variant and its live product, or null.
+  Future<(Variant, Product)?> _liveVariant(String variantId) async {
+    final v = await (db.select(db.variants)..where((x) => x.id.equals(variantId) & x.deletedAt.isNull())).getSingleOrNull();
+    if (v == null) return null;
+    final p = await (db.select(db.products)..where((x) => x.id.equals(v.productId) & x.deletedAt.isNull())).getSingleOrNull();
+    return p == null ? null : (v, p);
+  }
+
+  @override
+  Future<void> setTingiLink({required String variantId, String? pieceVariantId, int? piecesPerPack, required String opId}) {
+    if (pieceVariantId != null) {
+      if (piecesPerPack == null || piecesPerPack < 1 || piecesPerPack > tingiMaxRatio) {
+        throw ArgumentError('Pieces per pack must be a whole number from 1 to $tingiMaxRatio');
+      }
+      if (pieceVariantId == variantId) throw ArgumentError('A pack cannot break into itself');
+    }
+    return db.transaction(() async {
+      final pack = await _liveVariant(variantId);
+      if (pack == null) throw StateError('Unknown product');
+      final ratio = pieceVariantId == null ? null : piecesPerPack;
+      if (pieceVariantId != null) {
+        final piece = await _liveVariant(pieceVariantId);
+        if (piece == null) throw StateError('Unknown or archived piece product');
+        if (!pack.$2.trackStock || !piece.$2.trackStock) throw StateError('Both products must keep a stock count');
+        // no chains, like the server: the piece must not be a pack, the pack must not be anyone's piece
+        if (piece.$1.breaksIntoVariantId != null) throw StateError('The piece is itself a pack');
+        final asPiece = await (db.select(db.variants)
+              ..where((x) => x.breaksIntoVariantId.equals(variantId) & x.id.equals(variantId).not() & x.deletedAt.isNull()))
+            .get();
+        if (asPiece.isNotEmpty) throw StateError('This product is already the piece of another pack');
+      }
+      await (db.update(db.variants)..where((x) => x.id.equals(variantId)))
+          .write(VariantsCompanion(breaksIntoVariantId: Value(pieceVariantId), breaksIntoQty: Value(ratio)));
+      await enqueue(opId, 'set_tingi_link', pack.$2.id,
+          {'variant_id': variantId, 'piece_variant_id': pieceVariantId, 'pieces_per_pack': ratio});
+    });
+  }
+
+  @override
+  Future<void> clearTingiLink({required String variantId, required String opId}) =>
+      setTingiLink(variantId: variantId, opId: opId);
+
+  @override
+  Future<ProductView?> tingiPiece(String packVariantId) async {
+    final rows = await db.customSelect(
+      '''
+      select p.id, v.id as variant_id, p.name, p.unit, v.sku, v.barcode, pr.price, p.photo_path, p.active,
+             p.track_stock, p.tax_rate, v.cost, v.reorder_point, $tingiLinkSql,
+             exists (select 1 from outbox o where o.entity_id = p.id) as pending
+      from variants pack
+      join variants v on v.id = pack.breaks_into_variant_id and v.deleted_at is null
+      join products p on p.id = v.product_id and p.deleted_at is null
+      left join prices pr on pr.variant_id = v.id and pr.currency = ?2 and pr.deleted_at is null
+      where pack.id = ?1
+      ''',
+      variables: [Variable.withString(packVariantId), Variable.withString(baseCurrency)],
+    ).get();
+    if (rows.isEmpty) return null;
+    final r = rows.first;
+    return ProductView(
+      id: r.read<String>('id'),
+      variantId: r.read<String>('variant_id'),
+      name: r.read<String>('name'),
+      unit: r.read<String>('unit'),
+      sku: r.read<String>('sku'),
+      barcode: r.readNullable<String>('barcode'),
+      price: r.readNullable<int>('price'),
+      currency: baseCurrency,
+      photoPath: r.readNullable<String>('photo_path'),
+      active: r.read<bool>('active'),
+      pending: r.read<bool>('pending'),
+      trackStock: r.read<bool>('track_stock'),
+      taxRate: r.read<double>('tax_rate'),
+      cost: r.read<int>('cost'),
+      reorderPoint: r.read<double>('reorder_point'),
+      breaksIntoVariantId: r.readNullable<String>('breaks_into_variant_id'),
+      piecesPerPack: r.readNullable<int>('breaks_into_qty'),
+      pieceName: r.readNullable<String>('piece_name'),
+    );
+  }
+
+  @override
+  Future<OpenedPack> openPack({
+    required String id,
+    required String packVariantId,
+    required int packs,
+    String? note,
+    DateTime? at,
+    required String opId,
+  }) {
+    if (packs < 1 || packs > tingiMaxPacks) throw ArgumentError('Packs must be a whole number from 1 to $tingiMaxPacks');
+    final n = _text200(note);
+    return db.transaction(() async {
+      if (await (db.select(db.conversions)..where((c) => c.id.equals(id))).getSingleOrNull() != null) {
+        throw StateError('Pack opening id already used');
+      }
+      final pack = await _liveVariant(packVariantId);
+      if (pack == null) throw StateError('Unknown product');
+      final pieceId = pack.$1.breaksIntoVariantId;
+      final ratio = pack.$1.breaksIntoQty;
+      if (pieceId == null || ratio == null) throw StateError('This product is not sold by the piece');
+      final piece = await _liveVariant(pieceId);
+      if (piece == null) throw StateError('The piece product is archived');
+      if (!pack.$2.trackStock || !piece.$2.trackStock) throw StateError('Both products must keep a stock count');
+      final pieces = packs * ratio;
+      if (pieces > 1000000) throw ArgumentError('Too many pieces at once');
+
+      // the cost rule (P8-08): the pack's average cost, else its variant cost when > 0; packs x that, exact
+      final packAvg = (await _effectiveStock())[packVariantId]?.avg;
+      final packCost = packAvg ?? (pack.$1.cost > 0 ? pack.$1.cost : null);
+      final total = packCost == null ? null : packs * packCost;
+      final pieceCost = conversionAvgCost(oldQty: 0, pieces: pieces, totalCost: total);
+      final when = _iso(at ?? DateTime.now());
+
+      await db.into(db.conversions).insert(ConversionsCompanion.insert(
+            id: id,
+            locationId: Value(locationId),
+            packVariantId: packVariantId,
+            pieceVariantId: pieceId,
+            packs: packs,
+            ratio: ratio,
+            pieces: pieces,
+            packCost: Value(packCost),
+            totalCost: Value(total),
+            pieceCost: Value(pieceCost),
+            note: Value(n),
+            convertedAt: when,
+          ));
+      await db.into(db.localMovements).insert(
+          LocalMovementsCompanion.insert(opId: opId, variantId: packVariantId, qty: -packs.toDouble()));
+      await db.into(db.localMovements).insert(LocalMovementsCompanion.insert(
+          opId: opId, variantId: pieceId, qty: pieces.toDouble(), counts: const Value(true), totalCost: Value(total)));
+      await enqueue(opId, 'open_pack', id, {
+        'id': id,
+        'pack_variant_id': packVariantId,
+        'packs': packs,
+        // what this phone showed: the server refuses the op (link_changed) if the link is different by then
+        'piece_variant_id': pieceId,
+        'pieces_per_pack': ratio,
+        'note': ?n,
+        'at': when,
+        'location_id': ?locationId,
+      });
+      return OpenedPack(
+        conversionId: id,
+        pieceVariantId: pieceId,
+        packs: packs,
+        pieces: pieces,
+        packCost: packCost,
+        totalCost: total,
+        pieceCost: pieceCost,
+      );
+    });
+  }
+
+  @override
+  Future<void> voidOpenPack({required String conversionId, String? reason, required String opId}) {
+    return db.transaction(() async {
+      final c = await (db.select(db.conversions)..where((x) => x.id.equals(conversionId))).getSingleOrNull();
+      if (c == null) throw StateError('Unknown pack opening');
+      if (c.voidedAt != null) throw StateError('Pack opening is already voided');
+      final r = _text200(reason);
+      await (db.update(db.conversions)..where((x) => x.id.equals(conversionId)))
+          .write(ConversionsCompanion(voidedAt: Value(_iso(DateTime.now())), voidReason: Value(r)));
+      await db.into(db.localMovements).insert(
+          LocalMovementsCompanion.insert(opId: opId, variantId: c.packVariantId, qty: c.packs.toDouble()));
+      await db.into(db.localMovements).insert(
+          LocalMovementsCompanion.insert(opId: opId, variantId: c.pieceVariantId, qty: -c.pieces.toDouble()));
+      await enqueue(opId, 'void_open_pack', conversionId, {'conversion_id': conversionId, 'reason': ?r});
+    });
+  }
+
+  @override
+  Stream<List<ConversionView>> watchConversions({required DateTime from, required DateTime to}) => db
+      .customSelect(
+        '''
+        select x.id, x.pack_variant_id, x.piece_variant_id, x.packs, x.ratio, x.pieces, x.pack_cost, x.total_cost,
+               x.piece_cost, x.note, x.converted_at, x.voided_at, x.void_reason,
+               (select p.name from variants v join products p on p.id = v.product_id where v.id = x.pack_variant_id) as pack_name,
+               (select p.name from variants v join products p on p.id = v.product_id where v.id = x.piece_variant_id) as piece_name,
+               $_pendingSql
+        from conversions x
+        where x.converted_at >= ?1 and x.converted_at < ?2
+        order by x.converted_at desc, x.id desc
+        ''',
+        variables: [Variable.withString(_iso(from)), Variable.withString(_iso(to))],
+        readsFrom: {db.conversions, db.outbox, db.variants, db.products},
+      )
+      .watch()
+      .map((rows) => [
+            for (final r in rows)
+              ConversionView(
+                id: r.read<String>('id'),
+                packVariantId: r.read<String>('pack_variant_id'),
+                pieceVariantId: r.read<String>('piece_variant_id'),
+                packName: r.readNullable<String>('pack_name'),
+                pieceName: r.readNullable<String>('piece_name'),
+                packs: r.read<int>('packs'),
+                ratio: r.read<int>('ratio'),
+                pieces: r.read<int>('pieces'),
+                packCost: r.readNullable<int>('pack_cost'),
+                totalCost: r.readNullable<int>('total_cost'),
+                pieceCost: r.readNullable<int>('piece_cost'),
+                note: r.readNullable<String>('note'),
+                convertedAt: DateTime.parse(r.read<String>('converted_at')).toLocal(),
+                voidedAt: _localOrNull(r.readNullable<String>('voided_at')),
+                voidReason: r.readNullable<String>('void_reason'),
+                pending: r.read<bool>('pending'),
+                rejectedHint: r.readNullable<String>('rejected'),
+              )
+          ]);
+
+  @override
+  Future<void> applyPullConversions(Map<String, dynamic> response) {
+    return db.transaction(() async {
+      final rows = ((response['rows'] as List?) ?? const []).cast<Map<String, dynamic>>();
+      final unsent = (await db.select(db.outbox).get()).map((o) => o.entityId).toSet();
+      for (final r in rows) {
+        final id = r['id'] as String;
+        var voidedAt = r['voided_at'] == null ? null : _utc(r['voided_at'] as String);
+        var voidReason = r['void_reason'] as String?;
+        if (voidedAt == null && unsent.contains(id)) {
+          // a void made here is still on its way: keep it until the server's voided copy comes
+          final local = await (db.select(db.conversions)..where((c) => c.id.equals(id))).getSingleOrNull();
+          if (local?.voidedAt != null) {
+            voidedAt = local!.voidedAt;
+            voidReason = local.voidReason;
+          }
+        }
+        await db.into(db.conversions).insertOnConflictUpdate(ConversionsCompanion.insert(
+              id: id,
+              locationId: Value(r['location_id'] as String?),
+              packVariantId: r['pack_variant_id'] as String,
+              pieceVariantId: r['piece_variant_id'] as String,
+              packs: (r['packs'] as num).toInt(),
+              ratio: (r['ratio'] as num).toInt(),
+              pieces: (r['pieces'] as num).toInt(),
+              packCost: Value((r['pack_cost'] as num?)?.toInt()),
+              totalCost: Value((r['total_cost'] as num?)?.toInt()),
+              pieceCost: Value((r['piece_cost'] as num?)?.toInt()),
+              note: Value(r['note'] as String?),
+              convertedAt: _utc(r['converted_at'] as String),
+              createdBy: Value(r['created_by'] as String?),
+              voidedAt: Value(voidedAt),
+              voidReason: Value(voidReason),
+              updatedAt: Value(r['updated_at'] as String?),
+            ));
+      }
+      await _saveCursor('conversions', response['cursor']);
+    });
+  }
+
   @override
   Stream<List<ServiceTxnView>> watchServiceTxns({required DateTime from, required DateTime to}) => db
       .customSelect(
@@ -1150,6 +1448,12 @@ mixin DriftSales implements SalesStore {
       case 'void_service_txn':
         await (db.update(db.serviceTxns)..where((t) => t.id.equals(entityId)))
             .write(const ServiceTxnsCompanion(voidedAt: Value(null), voidReason: Value(null)));
+      case 'open_pack':
+        await (db.delete(db.conversions)..where((c) => c.id.equals(entityId) & c.updatedAt.isNull())).go();
+      case 'void_open_pack':
+        await (db.update(db.conversions)..where((c) => c.id.equals(entityId)))
+            .write(const ConversionsCompanion(voidedAt: Value(null), voidReason: Value(null)));
+      // set_tingi_link: nothing to undo here; discardFailed forces a full re-pull, which brings the server's link back
     }
   }
 

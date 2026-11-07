@@ -78,6 +78,9 @@ class ProductView {
     this.taxRate = 0,
     this.cost = 0,
     this.reorderPoint = 0,
+    this.breaksIntoVariantId,
+    this.piecesPerPack,
+    this.pieceName,
   });
 
   final String id;
@@ -107,6 +110,15 @@ class ProductView {
 
   /// Warn when stock is at or below this (0 = no warning).
   final double reorderPoint;
+
+  /// Tingi: this product is a pack that breaks into [piecesPerPack] of the piece variant [breaksIntoVariantId]
+  /// (the piece product is named [pieceName]). All null when it is not sold by the piece.
+  final String? breaksIntoVariantId;
+  final int? piecesPerPack;
+  final String? pieceName;
+
+  /// A pack that can be opened into pieces ([SalesStore.openPack]).
+  bool get sellsByPiece => breaksIntoVariantId != null && piecesPerPack != null;
 }
 
 class ProductDraft {

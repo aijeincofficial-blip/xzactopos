@@ -1140,6 +1140,28 @@ class $VariantsTable extends Variants with TableInfo<$VariantsTable, Variant> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _breaksIntoVariantIdMeta =
+      const VerificationMeta('breaksIntoVariantId');
+  @override
+  late final GeneratedColumn<String> breaksIntoVariantId =
+      GeneratedColumn<String>(
+        'breaks_into_variant_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _breaksIntoQtyMeta = const VerificationMeta(
+    'breaksIntoQty',
+  );
+  @override
+  late final GeneratedColumn<int> breaksIntoQty = GeneratedColumn<int>(
+    'breaks_into_qty',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1152,6 +1174,8 @@ class $VariantsTable extends Variants with TableInfo<$VariantsTable, Variant> {
     active,
     updatedAt,
     deletedAt,
+    breaksIntoVariantId,
+    breaksIntoQty,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1231,6 +1255,24 @@ class $VariantsTable extends Variants with TableInfo<$VariantsTable, Variant> {
         deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
       );
     }
+    if (data.containsKey('breaks_into_variant_id')) {
+      context.handle(
+        _breaksIntoVariantIdMeta,
+        breaksIntoVariantId.isAcceptableOrUnknown(
+          data['breaks_into_variant_id']!,
+          _breaksIntoVariantIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('breaks_into_qty')) {
+      context.handle(
+        _breaksIntoQtyMeta,
+        breaksIntoQty.isAcceptableOrUnknown(
+          data['breaks_into_qty']!,
+          _breaksIntoQtyMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -1280,6 +1322,14 @@ class $VariantsTable extends Variants with TableInfo<$VariantsTable, Variant> {
         DriftSqlType.string,
         data['${effectivePrefix}deleted_at'],
       ),
+      breaksIntoVariantId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}breaks_into_variant_id'],
+      ),
+      breaksIntoQty: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}breaks_into_qty'],
+      ),
     );
   }
 
@@ -1300,6 +1350,10 @@ class Variant extends DataClass implements Insertable<Variant> {
   final bool active;
   final String? updatedAt;
   final String? deletedAt;
+
+  /// Tingi (schema v8): one of this pack variant breaks into [breaksIntoQty] of that piece variant. Both or neither.
+  final String? breaksIntoVariantId;
+  final int? breaksIntoQty;
   const Variant({
     required this.id,
     required this.productId,
@@ -1311,6 +1365,8 @@ class Variant extends DataClass implements Insertable<Variant> {
     required this.active,
     this.updatedAt,
     this.deletedAt,
+    this.breaksIntoVariantId,
+    this.breaksIntoQty,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1330,6 +1386,12 @@ class Variant extends DataClass implements Insertable<Variant> {
     }
     if (!nullToAbsent || deletedAt != null) {
       map['deleted_at'] = Variable<String>(deletedAt);
+    }
+    if (!nullToAbsent || breaksIntoVariantId != null) {
+      map['breaks_into_variant_id'] = Variable<String>(breaksIntoVariantId);
+    }
+    if (!nullToAbsent || breaksIntoQty != null) {
+      map['breaks_into_qty'] = Variable<int>(breaksIntoQty);
     }
     return map;
   }
@@ -1352,6 +1414,12 @@ class Variant extends DataClass implements Insertable<Variant> {
       deletedAt: deletedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(deletedAt),
+      breaksIntoVariantId: breaksIntoVariantId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(breaksIntoVariantId),
+      breaksIntoQty: breaksIntoQty == null && nullToAbsent
+          ? const Value.absent()
+          : Value(breaksIntoQty),
     );
   }
 
@@ -1371,6 +1439,10 @@ class Variant extends DataClass implements Insertable<Variant> {
       active: serializer.fromJson<bool>(json['active']),
       updatedAt: serializer.fromJson<String?>(json['updatedAt']),
       deletedAt: serializer.fromJson<String?>(json['deletedAt']),
+      breaksIntoVariantId: serializer.fromJson<String?>(
+        json['breaksIntoVariantId'],
+      ),
+      breaksIntoQty: serializer.fromJson<int?>(json['breaksIntoQty']),
     );
   }
   @override
@@ -1387,6 +1459,8 @@ class Variant extends DataClass implements Insertable<Variant> {
       'active': serializer.toJson<bool>(active),
       'updatedAt': serializer.toJson<String?>(updatedAt),
       'deletedAt': serializer.toJson<String?>(deletedAt),
+      'breaksIntoVariantId': serializer.toJson<String?>(breaksIntoVariantId),
+      'breaksIntoQty': serializer.toJson<int?>(breaksIntoQty),
     };
   }
 
@@ -1401,6 +1475,8 @@ class Variant extends DataClass implements Insertable<Variant> {
     bool? active,
     Value<String?> updatedAt = const Value.absent(),
     Value<String?> deletedAt = const Value.absent(),
+    Value<String?> breaksIntoVariantId = const Value.absent(),
+    Value<int?> breaksIntoQty = const Value.absent(),
   }) => Variant(
     id: id ?? this.id,
     productId: productId ?? this.productId,
@@ -1412,6 +1488,12 @@ class Variant extends DataClass implements Insertable<Variant> {
     active: active ?? this.active,
     updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
     deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    breaksIntoVariantId: breaksIntoVariantId.present
+        ? breaksIntoVariantId.value
+        : this.breaksIntoVariantId,
+    breaksIntoQty: breaksIntoQty.present
+        ? breaksIntoQty.value
+        : this.breaksIntoQty,
   );
   Variant copyWithCompanion(VariantsCompanion data) {
     return Variant(
@@ -1427,6 +1509,12 @@ class Variant extends DataClass implements Insertable<Variant> {
       active: data.active.present ? data.active.value : this.active,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      breaksIntoVariantId: data.breaksIntoVariantId.present
+          ? data.breaksIntoVariantId.value
+          : this.breaksIntoVariantId,
+      breaksIntoQty: data.breaksIntoQty.present
+          ? data.breaksIntoQty.value
+          : this.breaksIntoQty,
     );
   }
 
@@ -1442,7 +1530,9 @@ class Variant extends DataClass implements Insertable<Variant> {
           ..write('reorderPoint: $reorderPoint, ')
           ..write('active: $active, ')
           ..write('updatedAt: $updatedAt, ')
-          ..write('deletedAt: $deletedAt')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('breaksIntoVariantId: $breaksIntoVariantId, ')
+          ..write('breaksIntoQty: $breaksIntoQty')
           ..write(')'))
         .toString();
   }
@@ -1459,6 +1549,8 @@ class Variant extends DataClass implements Insertable<Variant> {
     active,
     updatedAt,
     deletedAt,
+    breaksIntoVariantId,
+    breaksIntoQty,
   );
   @override
   bool operator ==(Object other) =>
@@ -1473,7 +1565,9 @@ class Variant extends DataClass implements Insertable<Variant> {
           other.reorderPoint == this.reorderPoint &&
           other.active == this.active &&
           other.updatedAt == this.updatedAt &&
-          other.deletedAt == this.deletedAt);
+          other.deletedAt == this.deletedAt &&
+          other.breaksIntoVariantId == this.breaksIntoVariantId &&
+          other.breaksIntoQty == this.breaksIntoQty);
 }
 
 class VariantsCompanion extends UpdateCompanion<Variant> {
@@ -1487,6 +1581,8 @@ class VariantsCompanion extends UpdateCompanion<Variant> {
   final Value<bool> active;
   final Value<String?> updatedAt;
   final Value<String?> deletedAt;
+  final Value<String?> breaksIntoVariantId;
+  final Value<int?> breaksIntoQty;
   final Value<int> rowid;
   const VariantsCompanion({
     this.id = const Value.absent(),
@@ -1499,6 +1595,8 @@ class VariantsCompanion extends UpdateCompanion<Variant> {
     this.active = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.deletedAt = const Value.absent(),
+    this.breaksIntoVariantId = const Value.absent(),
+    this.breaksIntoQty = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   VariantsCompanion.insert({
@@ -1512,6 +1610,8 @@ class VariantsCompanion extends UpdateCompanion<Variant> {
     this.active = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.deletedAt = const Value.absent(),
+    this.breaksIntoVariantId = const Value.absent(),
+    this.breaksIntoQty = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        productId = Value(productId),
@@ -1527,6 +1627,8 @@ class VariantsCompanion extends UpdateCompanion<Variant> {
     Expression<bool>? active,
     Expression<String>? updatedAt,
     Expression<String>? deletedAt,
+    Expression<String>? breaksIntoVariantId,
+    Expression<int>? breaksIntoQty,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1540,6 +1642,9 @@ class VariantsCompanion extends UpdateCompanion<Variant> {
       if (active != null) 'active': active,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (deletedAt != null) 'deleted_at': deletedAt,
+      if (breaksIntoVariantId != null)
+        'breaks_into_variant_id': breaksIntoVariantId,
+      if (breaksIntoQty != null) 'breaks_into_qty': breaksIntoQty,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1555,6 +1660,8 @@ class VariantsCompanion extends UpdateCompanion<Variant> {
     Value<bool>? active,
     Value<String?>? updatedAt,
     Value<String?>? deletedAt,
+    Value<String?>? breaksIntoVariantId,
+    Value<int?>? breaksIntoQty,
     Value<int>? rowid,
   }) {
     return VariantsCompanion(
@@ -1568,6 +1675,8 @@ class VariantsCompanion extends UpdateCompanion<Variant> {
       active: active ?? this.active,
       updatedAt: updatedAt ?? this.updatedAt,
       deletedAt: deletedAt ?? this.deletedAt,
+      breaksIntoVariantId: breaksIntoVariantId ?? this.breaksIntoVariantId,
+      breaksIntoQty: breaksIntoQty ?? this.breaksIntoQty,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1605,6 +1714,14 @@ class VariantsCompanion extends UpdateCompanion<Variant> {
     if (deletedAt.present) {
       map['deleted_at'] = Variable<String>(deletedAt.value);
     }
+    if (breaksIntoVariantId.present) {
+      map['breaks_into_variant_id'] = Variable<String>(
+        breaksIntoVariantId.value,
+      );
+    }
+    if (breaksIntoQty.present) {
+      map['breaks_into_qty'] = Variable<int>(breaksIntoQty.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1624,6 +1741,8 @@ class VariantsCompanion extends UpdateCompanion<Variant> {
           ..write('active: $active, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('deletedAt: $deletedAt, ')
+          ..write('breaksIntoVariantId: $breaksIntoVariantId, ')
+          ..write('breaksIntoQty: $breaksIntoQty, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -5665,6 +5784,28 @@ class $LocalMovementsTable extends LocalMovements
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _unitCostMeta = const VerificationMeta(
+    'unitCost',
+  );
+  @override
+  late final GeneratedColumn<int> unitCost = GeneratedColumn<int>(
+    'unit_cost',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _totalCostMeta = const VerificationMeta(
+    'totalCost',
+  );
+  @override
+  late final GeneratedColumn<int> totalCost = GeneratedColumn<int>(
+    'total_cost',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -5673,6 +5814,8 @@ class $LocalMovementsTable extends LocalMovements
     qty,
     counts,
     confirmedAfter,
+    unitCost,
+    totalCost,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -5728,6 +5871,18 @@ class $LocalMovementsTable extends LocalMovements
         ),
       );
     }
+    if (data.containsKey('unit_cost')) {
+      context.handle(
+        _unitCostMeta,
+        unitCost.isAcceptableOrUnknown(data['unit_cost']!, _unitCostMeta),
+      );
+    }
+    if (data.containsKey('total_cost')) {
+      context.handle(
+        _totalCostMeta,
+        totalCost.isAcceptableOrUnknown(data['total_cost']!, _totalCostMeta),
+      );
+    }
     return context;
   }
 
@@ -5761,6 +5916,14 @@ class $LocalMovementsTable extends LocalMovements
         DriftSqlType.string,
         data['${effectivePrefix}confirmed_after'],
       ),
+      unitCost: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}unit_cost'],
+      ),
+      totalCost: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}total_cost'],
+      ),
     );
   }
 
@@ -5779,6 +5942,12 @@ class LocalMovement extends DataClass implements Insertable<LocalMovement> {
   /// Opening stock, stock in or a count: makes the product "counted". A sale does not.
   final bool counts;
   final String? confirmedAfter;
+
+  /// Stock in with a cost (schema v8): centavos per unit; moves the average cost like the server's receipt.
+  final int? unitCost;
+
+  /// Pieces from an opened pack (schema v8): the value they carry in centavos; moves the piece's average cost.
+  final int? totalCost;
   const LocalMovement({
     required this.id,
     required this.opId,
@@ -5786,6 +5955,8 @@ class LocalMovement extends DataClass implements Insertable<LocalMovement> {
     required this.qty,
     required this.counts,
     this.confirmedAfter,
+    this.unitCost,
+    this.totalCost,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -5797,6 +5968,12 @@ class LocalMovement extends DataClass implements Insertable<LocalMovement> {
     map['counts'] = Variable<bool>(counts);
     if (!nullToAbsent || confirmedAfter != null) {
       map['confirmed_after'] = Variable<String>(confirmedAfter);
+    }
+    if (!nullToAbsent || unitCost != null) {
+      map['unit_cost'] = Variable<int>(unitCost);
+    }
+    if (!nullToAbsent || totalCost != null) {
+      map['total_cost'] = Variable<int>(totalCost);
     }
     return map;
   }
@@ -5811,6 +5988,12 @@ class LocalMovement extends DataClass implements Insertable<LocalMovement> {
       confirmedAfter: confirmedAfter == null && nullToAbsent
           ? const Value.absent()
           : Value(confirmedAfter),
+      unitCost: unitCost == null && nullToAbsent
+          ? const Value.absent()
+          : Value(unitCost),
+      totalCost: totalCost == null && nullToAbsent
+          ? const Value.absent()
+          : Value(totalCost),
     );
   }
 
@@ -5826,6 +6009,8 @@ class LocalMovement extends DataClass implements Insertable<LocalMovement> {
       qty: serializer.fromJson<double>(json['qty']),
       counts: serializer.fromJson<bool>(json['counts']),
       confirmedAfter: serializer.fromJson<String?>(json['confirmedAfter']),
+      unitCost: serializer.fromJson<int?>(json['unitCost']),
+      totalCost: serializer.fromJson<int?>(json['totalCost']),
     );
   }
   @override
@@ -5838,6 +6023,8 @@ class LocalMovement extends DataClass implements Insertable<LocalMovement> {
       'qty': serializer.toJson<double>(qty),
       'counts': serializer.toJson<bool>(counts),
       'confirmedAfter': serializer.toJson<String?>(confirmedAfter),
+      'unitCost': serializer.toJson<int?>(unitCost),
+      'totalCost': serializer.toJson<int?>(totalCost),
     };
   }
 
@@ -5848,6 +6035,8 @@ class LocalMovement extends DataClass implements Insertable<LocalMovement> {
     double? qty,
     bool? counts,
     Value<String?> confirmedAfter = const Value.absent(),
+    Value<int?> unitCost = const Value.absent(),
+    Value<int?> totalCost = const Value.absent(),
   }) => LocalMovement(
     id: id ?? this.id,
     opId: opId ?? this.opId,
@@ -5857,6 +6046,8 @@ class LocalMovement extends DataClass implements Insertable<LocalMovement> {
     confirmedAfter: confirmedAfter.present
         ? confirmedAfter.value
         : this.confirmedAfter,
+    unitCost: unitCost.present ? unitCost.value : this.unitCost,
+    totalCost: totalCost.present ? totalCost.value : this.totalCost,
   );
   LocalMovement copyWithCompanion(LocalMovementsCompanion data) {
     return LocalMovement(
@@ -5868,6 +6059,8 @@ class LocalMovement extends DataClass implements Insertable<LocalMovement> {
       confirmedAfter: data.confirmedAfter.present
           ? data.confirmedAfter.value
           : this.confirmedAfter,
+      unitCost: data.unitCost.present ? data.unitCost.value : this.unitCost,
+      totalCost: data.totalCost.present ? data.totalCost.value : this.totalCost,
     );
   }
 
@@ -5879,14 +6072,24 @@ class LocalMovement extends DataClass implements Insertable<LocalMovement> {
           ..write('variantId: $variantId, ')
           ..write('qty: $qty, ')
           ..write('counts: $counts, ')
-          ..write('confirmedAfter: $confirmedAfter')
+          ..write('confirmedAfter: $confirmedAfter, ')
+          ..write('unitCost: $unitCost, ')
+          ..write('totalCost: $totalCost')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, opId, variantId, qty, counts, confirmedAfter);
+  int get hashCode => Object.hash(
+    id,
+    opId,
+    variantId,
+    qty,
+    counts,
+    confirmedAfter,
+    unitCost,
+    totalCost,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -5896,7 +6099,9 @@ class LocalMovement extends DataClass implements Insertable<LocalMovement> {
           other.variantId == this.variantId &&
           other.qty == this.qty &&
           other.counts == this.counts &&
-          other.confirmedAfter == this.confirmedAfter);
+          other.confirmedAfter == this.confirmedAfter &&
+          other.unitCost == this.unitCost &&
+          other.totalCost == this.totalCost);
 }
 
 class LocalMovementsCompanion extends UpdateCompanion<LocalMovement> {
@@ -5906,6 +6111,8 @@ class LocalMovementsCompanion extends UpdateCompanion<LocalMovement> {
   final Value<double> qty;
   final Value<bool> counts;
   final Value<String?> confirmedAfter;
+  final Value<int?> unitCost;
+  final Value<int?> totalCost;
   const LocalMovementsCompanion({
     this.id = const Value.absent(),
     this.opId = const Value.absent(),
@@ -5913,6 +6120,8 @@ class LocalMovementsCompanion extends UpdateCompanion<LocalMovement> {
     this.qty = const Value.absent(),
     this.counts = const Value.absent(),
     this.confirmedAfter = const Value.absent(),
+    this.unitCost = const Value.absent(),
+    this.totalCost = const Value.absent(),
   });
   LocalMovementsCompanion.insert({
     this.id = const Value.absent(),
@@ -5921,6 +6130,8 @@ class LocalMovementsCompanion extends UpdateCompanion<LocalMovement> {
     required double qty,
     this.counts = const Value.absent(),
     this.confirmedAfter = const Value.absent(),
+    this.unitCost = const Value.absent(),
+    this.totalCost = const Value.absent(),
   }) : opId = Value(opId),
        variantId = Value(variantId),
        qty = Value(qty);
@@ -5931,6 +6142,8 @@ class LocalMovementsCompanion extends UpdateCompanion<LocalMovement> {
     Expression<double>? qty,
     Expression<bool>? counts,
     Expression<String>? confirmedAfter,
+    Expression<int>? unitCost,
+    Expression<int>? totalCost,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -5939,6 +6152,8 @@ class LocalMovementsCompanion extends UpdateCompanion<LocalMovement> {
       if (qty != null) 'qty': qty,
       if (counts != null) 'counts': counts,
       if (confirmedAfter != null) 'confirmed_after': confirmedAfter,
+      if (unitCost != null) 'unit_cost': unitCost,
+      if (totalCost != null) 'total_cost': totalCost,
     });
   }
 
@@ -5949,6 +6164,8 @@ class LocalMovementsCompanion extends UpdateCompanion<LocalMovement> {
     Value<double>? qty,
     Value<bool>? counts,
     Value<String?>? confirmedAfter,
+    Value<int?>? unitCost,
+    Value<int?>? totalCost,
   }) {
     return LocalMovementsCompanion(
       id: id ?? this.id,
@@ -5957,6 +6174,8 @@ class LocalMovementsCompanion extends UpdateCompanion<LocalMovement> {
       qty: qty ?? this.qty,
       counts: counts ?? this.counts,
       confirmedAfter: confirmedAfter ?? this.confirmedAfter,
+      unitCost: unitCost ?? this.unitCost,
+      totalCost: totalCost ?? this.totalCost,
     );
   }
 
@@ -5981,6 +6200,12 @@ class LocalMovementsCompanion extends UpdateCompanion<LocalMovement> {
     if (confirmedAfter.present) {
       map['confirmed_after'] = Variable<String>(confirmedAfter.value);
     }
+    if (unitCost.present) {
+      map['unit_cost'] = Variable<int>(unitCost.value);
+    }
+    if (totalCost.present) {
+      map['total_cost'] = Variable<int>(totalCost.value);
+    }
     return map;
   }
 
@@ -5992,7 +6217,9 @@ class LocalMovementsCompanion extends UpdateCompanion<LocalMovement> {
           ..write('variantId: $variantId, ')
           ..write('qty: $qty, ')
           ..write('counts: $counts, ')
-          ..write('confirmedAfter: $confirmedAfter')
+          ..write('confirmedAfter: $confirmedAfter, ')
+          ..write('unitCost: $unitCost, ')
+          ..write('totalCost: $totalCost')
           ..write(')'))
         .toString();
   }
@@ -10993,6 +11220,926 @@ class LocalFloatEffectsCompanion extends UpdateCompanion<LocalFloatEffect> {
   }
 }
 
+class $ConversionsTable extends Conversions
+    with TableInfo<$ConversionsTable, Conversion> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ConversionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _locationIdMeta = const VerificationMeta(
+    'locationId',
+  );
+  @override
+  late final GeneratedColumn<String> locationId = GeneratedColumn<String>(
+    'location_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _packVariantIdMeta = const VerificationMeta(
+    'packVariantId',
+  );
+  @override
+  late final GeneratedColumn<String> packVariantId = GeneratedColumn<String>(
+    'pack_variant_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _pieceVariantIdMeta = const VerificationMeta(
+    'pieceVariantId',
+  );
+  @override
+  late final GeneratedColumn<String> pieceVariantId = GeneratedColumn<String>(
+    'piece_variant_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _packsMeta = const VerificationMeta('packs');
+  @override
+  late final GeneratedColumn<int> packs = GeneratedColumn<int>(
+    'packs',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _ratioMeta = const VerificationMeta('ratio');
+  @override
+  late final GeneratedColumn<int> ratio = GeneratedColumn<int>(
+    'ratio',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _piecesMeta = const VerificationMeta('pieces');
+  @override
+  late final GeneratedColumn<int> pieces = GeneratedColumn<int>(
+    'pieces',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _packCostMeta = const VerificationMeta(
+    'packCost',
+  );
+  @override
+  late final GeneratedColumn<int> packCost = GeneratedColumn<int>(
+    'pack_cost',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _totalCostMeta = const VerificationMeta(
+    'totalCost',
+  );
+  @override
+  late final GeneratedColumn<int> totalCost = GeneratedColumn<int>(
+    'total_cost',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _pieceCostMeta = const VerificationMeta(
+    'pieceCost',
+  );
+  @override
+  late final GeneratedColumn<int> pieceCost = GeneratedColumn<int>(
+    'piece_cost',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _noteMeta = const VerificationMeta('note');
+  @override
+  late final GeneratedColumn<String> note = GeneratedColumn<String>(
+    'note',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _convertedAtMeta = const VerificationMeta(
+    'convertedAt',
+  );
+  @override
+  late final GeneratedColumn<String> convertedAt = GeneratedColumn<String>(
+    'converted_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdByMeta = const VerificationMeta(
+    'createdBy',
+  );
+  @override
+  late final GeneratedColumn<String> createdBy = GeneratedColumn<String>(
+    'created_by',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _voidedAtMeta = const VerificationMeta(
+    'voidedAt',
+  );
+  @override
+  late final GeneratedColumn<String> voidedAt = GeneratedColumn<String>(
+    'voided_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _voidReasonMeta = const VerificationMeta(
+    'voidReason',
+  );
+  @override
+  late final GeneratedColumn<String> voidReason = GeneratedColumn<String>(
+    'void_reason',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    locationId,
+    packVariantId,
+    pieceVariantId,
+    packs,
+    ratio,
+    pieces,
+    packCost,
+    totalCost,
+    pieceCost,
+    note,
+    convertedAt,
+    createdBy,
+    voidedAt,
+    voidReason,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'conversions';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Conversion> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('location_id')) {
+      context.handle(
+        _locationIdMeta,
+        locationId.isAcceptableOrUnknown(data['location_id']!, _locationIdMeta),
+      );
+    }
+    if (data.containsKey('pack_variant_id')) {
+      context.handle(
+        _packVariantIdMeta,
+        packVariantId.isAcceptableOrUnknown(
+          data['pack_variant_id']!,
+          _packVariantIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_packVariantIdMeta);
+    }
+    if (data.containsKey('piece_variant_id')) {
+      context.handle(
+        _pieceVariantIdMeta,
+        pieceVariantId.isAcceptableOrUnknown(
+          data['piece_variant_id']!,
+          _pieceVariantIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_pieceVariantIdMeta);
+    }
+    if (data.containsKey('packs')) {
+      context.handle(
+        _packsMeta,
+        packs.isAcceptableOrUnknown(data['packs']!, _packsMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_packsMeta);
+    }
+    if (data.containsKey('ratio')) {
+      context.handle(
+        _ratioMeta,
+        ratio.isAcceptableOrUnknown(data['ratio']!, _ratioMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_ratioMeta);
+    }
+    if (data.containsKey('pieces')) {
+      context.handle(
+        _piecesMeta,
+        pieces.isAcceptableOrUnknown(data['pieces']!, _piecesMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_piecesMeta);
+    }
+    if (data.containsKey('pack_cost')) {
+      context.handle(
+        _packCostMeta,
+        packCost.isAcceptableOrUnknown(data['pack_cost']!, _packCostMeta),
+      );
+    }
+    if (data.containsKey('total_cost')) {
+      context.handle(
+        _totalCostMeta,
+        totalCost.isAcceptableOrUnknown(data['total_cost']!, _totalCostMeta),
+      );
+    }
+    if (data.containsKey('piece_cost')) {
+      context.handle(
+        _pieceCostMeta,
+        pieceCost.isAcceptableOrUnknown(data['piece_cost']!, _pieceCostMeta),
+      );
+    }
+    if (data.containsKey('note')) {
+      context.handle(
+        _noteMeta,
+        note.isAcceptableOrUnknown(data['note']!, _noteMeta),
+      );
+    }
+    if (data.containsKey('converted_at')) {
+      context.handle(
+        _convertedAtMeta,
+        convertedAt.isAcceptableOrUnknown(
+          data['converted_at']!,
+          _convertedAtMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_convertedAtMeta);
+    }
+    if (data.containsKey('created_by')) {
+      context.handle(
+        _createdByMeta,
+        createdBy.isAcceptableOrUnknown(data['created_by']!, _createdByMeta),
+      );
+    }
+    if (data.containsKey('voided_at')) {
+      context.handle(
+        _voidedAtMeta,
+        voidedAt.isAcceptableOrUnknown(data['voided_at']!, _voidedAtMeta),
+      );
+    }
+    if (data.containsKey('void_reason')) {
+      context.handle(
+        _voidReasonMeta,
+        voidReason.isAcceptableOrUnknown(data['void_reason']!, _voidReasonMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Conversion map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Conversion(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      locationId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}location_id'],
+      ),
+      packVariantId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}pack_variant_id'],
+      )!,
+      pieceVariantId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}piece_variant_id'],
+      )!,
+      packs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}packs'],
+      )!,
+      ratio: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}ratio'],
+      )!,
+      pieces: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}pieces'],
+      )!,
+      packCost: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}pack_cost'],
+      ),
+      totalCost: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}total_cost'],
+      ),
+      pieceCost: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}piece_cost'],
+      ),
+      note: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}note'],
+      ),
+      convertedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}converted_at'],
+      )!,
+      createdBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}created_by'],
+      ),
+      voidedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}voided_at'],
+      ),
+      voidReason: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}void_reason'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      ),
+    );
+  }
+
+  @override
+  $ConversionsTable createAlias(String alias) {
+    return $ConversionsTable(attachedDatabase, alias);
+  }
+}
+
+class Conversion extends DataClass implements Insertable<Conversion> {
+  final String id;
+  final String? locationId;
+  final String packVariantId;
+  final String pieceVariantId;
+  final int packs;
+
+  /// Pieces per pack at the time of opening.
+  final int ratio;
+  final int pieces;
+
+  /// Centavos: pack cost used, packs x pack cost, half_up(total / pieces). Null when no cost was known.
+  final int? packCost;
+  final int? totalCost;
+  final int? pieceCost;
+  final String? note;
+
+  /// UTC ISO-8601, normalised (same format as `sales.sold_at`).
+  final String convertedAt;
+  final String? createdBy;
+  final String? voidedAt;
+  final String? voidReason;
+  final String? updatedAt;
+  const Conversion({
+    required this.id,
+    this.locationId,
+    required this.packVariantId,
+    required this.pieceVariantId,
+    required this.packs,
+    required this.ratio,
+    required this.pieces,
+    this.packCost,
+    this.totalCost,
+    this.pieceCost,
+    this.note,
+    required this.convertedAt,
+    this.createdBy,
+    this.voidedAt,
+    this.voidReason,
+    this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    if (!nullToAbsent || locationId != null) {
+      map['location_id'] = Variable<String>(locationId);
+    }
+    map['pack_variant_id'] = Variable<String>(packVariantId);
+    map['piece_variant_id'] = Variable<String>(pieceVariantId);
+    map['packs'] = Variable<int>(packs);
+    map['ratio'] = Variable<int>(ratio);
+    map['pieces'] = Variable<int>(pieces);
+    if (!nullToAbsent || packCost != null) {
+      map['pack_cost'] = Variable<int>(packCost);
+    }
+    if (!nullToAbsent || totalCost != null) {
+      map['total_cost'] = Variable<int>(totalCost);
+    }
+    if (!nullToAbsent || pieceCost != null) {
+      map['piece_cost'] = Variable<int>(pieceCost);
+    }
+    if (!nullToAbsent || note != null) {
+      map['note'] = Variable<String>(note);
+    }
+    map['converted_at'] = Variable<String>(convertedAt);
+    if (!nullToAbsent || createdBy != null) {
+      map['created_by'] = Variable<String>(createdBy);
+    }
+    if (!nullToAbsent || voidedAt != null) {
+      map['voided_at'] = Variable<String>(voidedAt);
+    }
+    if (!nullToAbsent || voidReason != null) {
+      map['void_reason'] = Variable<String>(voidReason);
+    }
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<String>(updatedAt);
+    }
+    return map;
+  }
+
+  ConversionsCompanion toCompanion(bool nullToAbsent) {
+    return ConversionsCompanion(
+      id: Value(id),
+      locationId: locationId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(locationId),
+      packVariantId: Value(packVariantId),
+      pieceVariantId: Value(pieceVariantId),
+      packs: Value(packs),
+      ratio: Value(ratio),
+      pieces: Value(pieces),
+      packCost: packCost == null && nullToAbsent
+          ? const Value.absent()
+          : Value(packCost),
+      totalCost: totalCost == null && nullToAbsent
+          ? const Value.absent()
+          : Value(totalCost),
+      pieceCost: pieceCost == null && nullToAbsent
+          ? const Value.absent()
+          : Value(pieceCost),
+      note: note == null && nullToAbsent ? const Value.absent() : Value(note),
+      convertedAt: Value(convertedAt),
+      createdBy: createdBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdBy),
+      voidedAt: voidedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(voidedAt),
+      voidReason: voidReason == null && nullToAbsent
+          ? const Value.absent()
+          : Value(voidReason),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
+    );
+  }
+
+  factory Conversion.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Conversion(
+      id: serializer.fromJson<String>(json['id']),
+      locationId: serializer.fromJson<String?>(json['locationId']),
+      packVariantId: serializer.fromJson<String>(json['packVariantId']),
+      pieceVariantId: serializer.fromJson<String>(json['pieceVariantId']),
+      packs: serializer.fromJson<int>(json['packs']),
+      ratio: serializer.fromJson<int>(json['ratio']),
+      pieces: serializer.fromJson<int>(json['pieces']),
+      packCost: serializer.fromJson<int?>(json['packCost']),
+      totalCost: serializer.fromJson<int?>(json['totalCost']),
+      pieceCost: serializer.fromJson<int?>(json['pieceCost']),
+      note: serializer.fromJson<String?>(json['note']),
+      convertedAt: serializer.fromJson<String>(json['convertedAt']),
+      createdBy: serializer.fromJson<String?>(json['createdBy']),
+      voidedAt: serializer.fromJson<String?>(json['voidedAt']),
+      voidReason: serializer.fromJson<String?>(json['voidReason']),
+      updatedAt: serializer.fromJson<String?>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'locationId': serializer.toJson<String?>(locationId),
+      'packVariantId': serializer.toJson<String>(packVariantId),
+      'pieceVariantId': serializer.toJson<String>(pieceVariantId),
+      'packs': serializer.toJson<int>(packs),
+      'ratio': serializer.toJson<int>(ratio),
+      'pieces': serializer.toJson<int>(pieces),
+      'packCost': serializer.toJson<int?>(packCost),
+      'totalCost': serializer.toJson<int?>(totalCost),
+      'pieceCost': serializer.toJson<int?>(pieceCost),
+      'note': serializer.toJson<String?>(note),
+      'convertedAt': serializer.toJson<String>(convertedAt),
+      'createdBy': serializer.toJson<String?>(createdBy),
+      'voidedAt': serializer.toJson<String?>(voidedAt),
+      'voidReason': serializer.toJson<String?>(voidReason),
+      'updatedAt': serializer.toJson<String?>(updatedAt),
+    };
+  }
+
+  Conversion copyWith({
+    String? id,
+    Value<String?> locationId = const Value.absent(),
+    String? packVariantId,
+    String? pieceVariantId,
+    int? packs,
+    int? ratio,
+    int? pieces,
+    Value<int?> packCost = const Value.absent(),
+    Value<int?> totalCost = const Value.absent(),
+    Value<int?> pieceCost = const Value.absent(),
+    Value<String?> note = const Value.absent(),
+    String? convertedAt,
+    Value<String?> createdBy = const Value.absent(),
+    Value<String?> voidedAt = const Value.absent(),
+    Value<String?> voidReason = const Value.absent(),
+    Value<String?> updatedAt = const Value.absent(),
+  }) => Conversion(
+    id: id ?? this.id,
+    locationId: locationId.present ? locationId.value : this.locationId,
+    packVariantId: packVariantId ?? this.packVariantId,
+    pieceVariantId: pieceVariantId ?? this.pieceVariantId,
+    packs: packs ?? this.packs,
+    ratio: ratio ?? this.ratio,
+    pieces: pieces ?? this.pieces,
+    packCost: packCost.present ? packCost.value : this.packCost,
+    totalCost: totalCost.present ? totalCost.value : this.totalCost,
+    pieceCost: pieceCost.present ? pieceCost.value : this.pieceCost,
+    note: note.present ? note.value : this.note,
+    convertedAt: convertedAt ?? this.convertedAt,
+    createdBy: createdBy.present ? createdBy.value : this.createdBy,
+    voidedAt: voidedAt.present ? voidedAt.value : this.voidedAt,
+    voidReason: voidReason.present ? voidReason.value : this.voidReason,
+    updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+  );
+  Conversion copyWithCompanion(ConversionsCompanion data) {
+    return Conversion(
+      id: data.id.present ? data.id.value : this.id,
+      locationId: data.locationId.present
+          ? data.locationId.value
+          : this.locationId,
+      packVariantId: data.packVariantId.present
+          ? data.packVariantId.value
+          : this.packVariantId,
+      pieceVariantId: data.pieceVariantId.present
+          ? data.pieceVariantId.value
+          : this.pieceVariantId,
+      packs: data.packs.present ? data.packs.value : this.packs,
+      ratio: data.ratio.present ? data.ratio.value : this.ratio,
+      pieces: data.pieces.present ? data.pieces.value : this.pieces,
+      packCost: data.packCost.present ? data.packCost.value : this.packCost,
+      totalCost: data.totalCost.present ? data.totalCost.value : this.totalCost,
+      pieceCost: data.pieceCost.present ? data.pieceCost.value : this.pieceCost,
+      note: data.note.present ? data.note.value : this.note,
+      convertedAt: data.convertedAt.present
+          ? data.convertedAt.value
+          : this.convertedAt,
+      createdBy: data.createdBy.present ? data.createdBy.value : this.createdBy,
+      voidedAt: data.voidedAt.present ? data.voidedAt.value : this.voidedAt,
+      voidReason: data.voidReason.present
+          ? data.voidReason.value
+          : this.voidReason,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Conversion(')
+          ..write('id: $id, ')
+          ..write('locationId: $locationId, ')
+          ..write('packVariantId: $packVariantId, ')
+          ..write('pieceVariantId: $pieceVariantId, ')
+          ..write('packs: $packs, ')
+          ..write('ratio: $ratio, ')
+          ..write('pieces: $pieces, ')
+          ..write('packCost: $packCost, ')
+          ..write('totalCost: $totalCost, ')
+          ..write('pieceCost: $pieceCost, ')
+          ..write('note: $note, ')
+          ..write('convertedAt: $convertedAt, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('voidedAt: $voidedAt, ')
+          ..write('voidReason: $voidReason, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    locationId,
+    packVariantId,
+    pieceVariantId,
+    packs,
+    ratio,
+    pieces,
+    packCost,
+    totalCost,
+    pieceCost,
+    note,
+    convertedAt,
+    createdBy,
+    voidedAt,
+    voidReason,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Conversion &&
+          other.id == this.id &&
+          other.locationId == this.locationId &&
+          other.packVariantId == this.packVariantId &&
+          other.pieceVariantId == this.pieceVariantId &&
+          other.packs == this.packs &&
+          other.ratio == this.ratio &&
+          other.pieces == this.pieces &&
+          other.packCost == this.packCost &&
+          other.totalCost == this.totalCost &&
+          other.pieceCost == this.pieceCost &&
+          other.note == this.note &&
+          other.convertedAt == this.convertedAt &&
+          other.createdBy == this.createdBy &&
+          other.voidedAt == this.voidedAt &&
+          other.voidReason == this.voidReason &&
+          other.updatedAt == this.updatedAt);
+}
+
+class ConversionsCompanion extends UpdateCompanion<Conversion> {
+  final Value<String> id;
+  final Value<String?> locationId;
+  final Value<String> packVariantId;
+  final Value<String> pieceVariantId;
+  final Value<int> packs;
+  final Value<int> ratio;
+  final Value<int> pieces;
+  final Value<int?> packCost;
+  final Value<int?> totalCost;
+  final Value<int?> pieceCost;
+  final Value<String?> note;
+  final Value<String> convertedAt;
+  final Value<String?> createdBy;
+  final Value<String?> voidedAt;
+  final Value<String?> voidReason;
+  final Value<String?> updatedAt;
+  final Value<int> rowid;
+  const ConversionsCompanion({
+    this.id = const Value.absent(),
+    this.locationId = const Value.absent(),
+    this.packVariantId = const Value.absent(),
+    this.pieceVariantId = const Value.absent(),
+    this.packs = const Value.absent(),
+    this.ratio = const Value.absent(),
+    this.pieces = const Value.absent(),
+    this.packCost = const Value.absent(),
+    this.totalCost = const Value.absent(),
+    this.pieceCost = const Value.absent(),
+    this.note = const Value.absent(),
+    this.convertedAt = const Value.absent(),
+    this.createdBy = const Value.absent(),
+    this.voidedAt = const Value.absent(),
+    this.voidReason = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ConversionsCompanion.insert({
+    required String id,
+    this.locationId = const Value.absent(),
+    required String packVariantId,
+    required String pieceVariantId,
+    required int packs,
+    required int ratio,
+    required int pieces,
+    this.packCost = const Value.absent(),
+    this.totalCost = const Value.absent(),
+    this.pieceCost = const Value.absent(),
+    this.note = const Value.absent(),
+    required String convertedAt,
+    this.createdBy = const Value.absent(),
+    this.voidedAt = const Value.absent(),
+    this.voidReason = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       packVariantId = Value(packVariantId),
+       pieceVariantId = Value(pieceVariantId),
+       packs = Value(packs),
+       ratio = Value(ratio),
+       pieces = Value(pieces),
+       convertedAt = Value(convertedAt);
+  static Insertable<Conversion> custom({
+    Expression<String>? id,
+    Expression<String>? locationId,
+    Expression<String>? packVariantId,
+    Expression<String>? pieceVariantId,
+    Expression<int>? packs,
+    Expression<int>? ratio,
+    Expression<int>? pieces,
+    Expression<int>? packCost,
+    Expression<int>? totalCost,
+    Expression<int>? pieceCost,
+    Expression<String>? note,
+    Expression<String>? convertedAt,
+    Expression<String>? createdBy,
+    Expression<String>? voidedAt,
+    Expression<String>? voidReason,
+    Expression<String>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (locationId != null) 'location_id': locationId,
+      if (packVariantId != null) 'pack_variant_id': packVariantId,
+      if (pieceVariantId != null) 'piece_variant_id': pieceVariantId,
+      if (packs != null) 'packs': packs,
+      if (ratio != null) 'ratio': ratio,
+      if (pieces != null) 'pieces': pieces,
+      if (packCost != null) 'pack_cost': packCost,
+      if (totalCost != null) 'total_cost': totalCost,
+      if (pieceCost != null) 'piece_cost': pieceCost,
+      if (note != null) 'note': note,
+      if (convertedAt != null) 'converted_at': convertedAt,
+      if (createdBy != null) 'created_by': createdBy,
+      if (voidedAt != null) 'voided_at': voidedAt,
+      if (voidReason != null) 'void_reason': voidReason,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ConversionsCompanion copyWith({
+    Value<String>? id,
+    Value<String?>? locationId,
+    Value<String>? packVariantId,
+    Value<String>? pieceVariantId,
+    Value<int>? packs,
+    Value<int>? ratio,
+    Value<int>? pieces,
+    Value<int?>? packCost,
+    Value<int?>? totalCost,
+    Value<int?>? pieceCost,
+    Value<String?>? note,
+    Value<String>? convertedAt,
+    Value<String?>? createdBy,
+    Value<String?>? voidedAt,
+    Value<String?>? voidReason,
+    Value<String?>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return ConversionsCompanion(
+      id: id ?? this.id,
+      locationId: locationId ?? this.locationId,
+      packVariantId: packVariantId ?? this.packVariantId,
+      pieceVariantId: pieceVariantId ?? this.pieceVariantId,
+      packs: packs ?? this.packs,
+      ratio: ratio ?? this.ratio,
+      pieces: pieces ?? this.pieces,
+      packCost: packCost ?? this.packCost,
+      totalCost: totalCost ?? this.totalCost,
+      pieceCost: pieceCost ?? this.pieceCost,
+      note: note ?? this.note,
+      convertedAt: convertedAt ?? this.convertedAt,
+      createdBy: createdBy ?? this.createdBy,
+      voidedAt: voidedAt ?? this.voidedAt,
+      voidReason: voidReason ?? this.voidReason,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (locationId.present) {
+      map['location_id'] = Variable<String>(locationId.value);
+    }
+    if (packVariantId.present) {
+      map['pack_variant_id'] = Variable<String>(packVariantId.value);
+    }
+    if (pieceVariantId.present) {
+      map['piece_variant_id'] = Variable<String>(pieceVariantId.value);
+    }
+    if (packs.present) {
+      map['packs'] = Variable<int>(packs.value);
+    }
+    if (ratio.present) {
+      map['ratio'] = Variable<int>(ratio.value);
+    }
+    if (pieces.present) {
+      map['pieces'] = Variable<int>(pieces.value);
+    }
+    if (packCost.present) {
+      map['pack_cost'] = Variable<int>(packCost.value);
+    }
+    if (totalCost.present) {
+      map['total_cost'] = Variable<int>(totalCost.value);
+    }
+    if (pieceCost.present) {
+      map['piece_cost'] = Variable<int>(pieceCost.value);
+    }
+    if (note.present) {
+      map['note'] = Variable<String>(note.value);
+    }
+    if (convertedAt.present) {
+      map['converted_at'] = Variable<String>(convertedAt.value);
+    }
+    if (createdBy.present) {
+      map['created_by'] = Variable<String>(createdBy.value);
+    }
+    if (voidedAt.present) {
+      map['voided_at'] = Variable<String>(voidedAt.value);
+    }
+    if (voidReason.present) {
+      map['void_reason'] = Variable<String>(voidReason.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ConversionsCompanion(')
+          ..write('id: $id, ')
+          ..write('locationId: $locationId, ')
+          ..write('packVariantId: $packVariantId, ')
+          ..write('pieceVariantId: $pieceVariantId, ')
+          ..write('packs: $packs, ')
+          ..write('ratio: $ratio, ')
+          ..write('pieces: $pieces, ')
+          ..write('packCost: $packCost, ')
+          ..write('totalCost: $totalCost, ')
+          ..write('pieceCost: $pieceCost, ')
+          ..write('note: $note, ')
+          ..write('convertedAt: $convertedAt, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('voidedAt: $voidedAt, ')
+          ..write('voidReason: $voidReason, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -11020,6 +12167,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $WalletFloatsTable walletFloats = $WalletFloatsTable(this);
   late final $LocalFloatEffectsTable localFloatEffects =
       $LocalFloatEffectsTable(this);
+  late final $ConversionsTable conversions = $ConversionsTable(this);
   late final Index variantsBarcode = Index(
     'variants_barcode',
     'CREATE INDEX variants_barcode ON variants (barcode)',
@@ -11052,6 +12200,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'service_txns_txn_at',
     'CREATE INDEX service_txns_txn_at ON service_txns (txn_at)',
   );
+  late final Index conversionsConvertedAt = Index(
+    'conversions_converted_at',
+    'CREATE INDEX conversions_converted_at ON conversions (converted_at)',
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -11080,6 +12232,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     serviceTxns,
     walletFloats,
     localFloatEffects,
+    conversions,
     variantsBarcode,
     variantsProduct,
     salesSoldAt,
@@ -11088,6 +12241,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     expensesSpentAt,
     dayClosesDay,
     serviceTxnsTxnAt,
+    conversionsConvertedAt,
   ];
 }
 
@@ -11611,6 +12765,8 @@ typedef $$VariantsTableCreateCompanionBuilder =
       Value<bool> active,
       Value<String?> updatedAt,
       Value<String?> deletedAt,
+      Value<String?> breaksIntoVariantId,
+      Value<int?> breaksIntoQty,
       Value<int> rowid,
     });
 typedef $$VariantsTableUpdateCompanionBuilder =
@@ -11625,6 +12781,8 @@ typedef $$VariantsTableUpdateCompanionBuilder =
       Value<bool> active,
       Value<String?> updatedAt,
       Value<String?> deletedAt,
+      Value<String?> breaksIntoVariantId,
+      Value<int?> breaksIntoQty,
       Value<int> rowid,
     });
 
@@ -11684,6 +12842,16 @@ class $$VariantsTableFilterComposer
 
   ColumnFilters<String> get deletedAt => $composableBuilder(
     column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get breaksIntoVariantId => $composableBuilder(
+    column: $table.breaksIntoVariantId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get breaksIntoQty => $composableBuilder(
+    column: $table.breaksIntoQty,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -11746,6 +12914,16 @@ class $$VariantsTableOrderingComposer
     column: $table.deletedAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get breaksIntoVariantId => $composableBuilder(
+    column: $table.breaksIntoVariantId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get breaksIntoQty => $composableBuilder(
+    column: $table.breaksIntoQty,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$VariantsTableAnnotationComposer
@@ -11788,6 +12966,16 @@ class $$VariantsTableAnnotationComposer
 
   GeneratedColumn<String> get deletedAt =>
       $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get breaksIntoVariantId => $composableBuilder(
+    column: $table.breaksIntoVariantId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get breaksIntoQty => $composableBuilder(
+    column: $table.breaksIntoQty,
+    builder: (column) => column,
+  );
 }
 
 class $$VariantsTableTableManager
@@ -11828,6 +13016,8 @@ class $$VariantsTableTableManager
                 Value<bool> active = const Value.absent(),
                 Value<String?> updatedAt = const Value.absent(),
                 Value<String?> deletedAt = const Value.absent(),
+                Value<String?> breaksIntoVariantId = const Value.absent(),
+                Value<int?> breaksIntoQty = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => VariantsCompanion(
                 id: id,
@@ -11840,6 +13030,8 @@ class $$VariantsTableTableManager
                 active: active,
                 updatedAt: updatedAt,
                 deletedAt: deletedAt,
+                breaksIntoVariantId: breaksIntoVariantId,
+                breaksIntoQty: breaksIntoQty,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -11854,6 +13046,8 @@ class $$VariantsTableTableManager
                 Value<bool> active = const Value.absent(),
                 Value<String?> updatedAt = const Value.absent(),
                 Value<String?> deletedAt = const Value.absent(),
+                Value<String?> breaksIntoVariantId = const Value.absent(),
+                Value<int?> breaksIntoQty = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => VariantsCompanion.insert(
                 id: id,
@@ -11866,6 +13060,8 @@ class $$VariantsTableTableManager
                 active: active,
                 updatedAt: updatedAt,
                 deletedAt: deletedAt,
+                breaksIntoVariantId: breaksIntoVariantId,
+                breaksIntoQty: breaksIntoQty,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -14066,6 +15262,8 @@ typedef $$LocalMovementsTableCreateCompanionBuilder =
       required double qty,
       Value<bool> counts,
       Value<String?> confirmedAfter,
+      Value<int?> unitCost,
+      Value<int?> totalCost,
     });
 typedef $$LocalMovementsTableUpdateCompanionBuilder =
     LocalMovementsCompanion Function({
@@ -14075,6 +15273,8 @@ typedef $$LocalMovementsTableUpdateCompanionBuilder =
       Value<double> qty,
       Value<bool> counts,
       Value<String?> confirmedAfter,
+      Value<int?> unitCost,
+      Value<int?> totalCost,
     });
 
 class $$LocalMovementsTableFilterComposer
@@ -14113,6 +15313,16 @@ class $$LocalMovementsTableFilterComposer
 
   ColumnFilters<String> get confirmedAfter => $composableBuilder(
     column: $table.confirmedAfter,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get unitCost => $composableBuilder(
+    column: $table.unitCost,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get totalCost => $composableBuilder(
+    column: $table.totalCost,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -14155,6 +15365,16 @@ class $$LocalMovementsTableOrderingComposer
     column: $table.confirmedAfter,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get unitCost => $composableBuilder(
+    column: $table.unitCost,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get totalCost => $composableBuilder(
+    column: $table.totalCost,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$LocalMovementsTableAnnotationComposer
@@ -14185,6 +15405,12 @@ class $$LocalMovementsTableAnnotationComposer
     column: $table.confirmedAfter,
     builder: (column) => column,
   );
+
+  GeneratedColumn<int> get unitCost =>
+      $composableBuilder(column: $table.unitCost, builder: (column) => column);
+
+  GeneratedColumn<int> get totalCost =>
+      $composableBuilder(column: $table.totalCost, builder: (column) => column);
 }
 
 class $$LocalMovementsTableTableManager
@@ -14226,6 +15452,8 @@ class $$LocalMovementsTableTableManager
                 Value<double> qty = const Value.absent(),
                 Value<bool> counts = const Value.absent(),
                 Value<String?> confirmedAfter = const Value.absent(),
+                Value<int?> unitCost = const Value.absent(),
+                Value<int?> totalCost = const Value.absent(),
               }) => LocalMovementsCompanion(
                 id: id,
                 opId: opId,
@@ -14233,6 +15461,8 @@ class $$LocalMovementsTableTableManager
                 qty: qty,
                 counts: counts,
                 confirmedAfter: confirmedAfter,
+                unitCost: unitCost,
+                totalCost: totalCost,
               ),
           createCompanionCallback:
               ({
@@ -14242,6 +15472,8 @@ class $$LocalMovementsTableTableManager
                 required double qty,
                 Value<bool> counts = const Value.absent(),
                 Value<String?> confirmedAfter = const Value.absent(),
+                Value<int?> unitCost = const Value.absent(),
+                Value<int?> totalCost = const Value.absent(),
               }) => LocalMovementsCompanion.insert(
                 id: id,
                 opId: opId,
@@ -14249,6 +15481,8 @@ class $$LocalMovementsTableTableManager
                 qty: qty,
                 counts: counts,
                 confirmedAfter: confirmedAfter,
+                unitCost: unitCost,
+                totalCost: totalCost,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
@@ -16698,6 +17932,425 @@ typedef $$LocalFloatEffectsTableProcessedTableManager =
       LocalFloatEffect,
       PrefetchHooks Function()
     >;
+typedef $$ConversionsTableCreateCompanionBuilder =
+    ConversionsCompanion Function({
+      required String id,
+      Value<String?> locationId,
+      required String packVariantId,
+      required String pieceVariantId,
+      required int packs,
+      required int ratio,
+      required int pieces,
+      Value<int?> packCost,
+      Value<int?> totalCost,
+      Value<int?> pieceCost,
+      Value<String?> note,
+      required String convertedAt,
+      Value<String?> createdBy,
+      Value<String?> voidedAt,
+      Value<String?> voidReason,
+      Value<String?> updatedAt,
+      Value<int> rowid,
+    });
+typedef $$ConversionsTableUpdateCompanionBuilder =
+    ConversionsCompanion Function({
+      Value<String> id,
+      Value<String?> locationId,
+      Value<String> packVariantId,
+      Value<String> pieceVariantId,
+      Value<int> packs,
+      Value<int> ratio,
+      Value<int> pieces,
+      Value<int?> packCost,
+      Value<int?> totalCost,
+      Value<int?> pieceCost,
+      Value<String?> note,
+      Value<String> convertedAt,
+      Value<String?> createdBy,
+      Value<String?> voidedAt,
+      Value<String?> voidReason,
+      Value<String?> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$ConversionsTableFilterComposer
+    extends Composer<_$AppDatabase, $ConversionsTable> {
+  $$ConversionsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get locationId => $composableBuilder(
+    column: $table.locationId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get packVariantId => $composableBuilder(
+    column: $table.packVariantId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get pieceVariantId => $composableBuilder(
+    column: $table.pieceVariantId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get packs => $composableBuilder(
+    column: $table.packs,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get ratio => $composableBuilder(
+    column: $table.ratio,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get pieces => $composableBuilder(
+    column: $table.pieces,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get packCost => $composableBuilder(
+    column: $table.packCost,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get totalCost => $composableBuilder(
+    column: $table.totalCost,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get pieceCost => $composableBuilder(
+    column: $table.pieceCost,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get convertedAt => $composableBuilder(
+    column: $table.convertedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get createdBy => $composableBuilder(
+    column: $table.createdBy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get voidedAt => $composableBuilder(
+    column: $table.voidedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get voidReason => $composableBuilder(
+    column: $table.voidReason,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ConversionsTableOrderingComposer
+    extends Composer<_$AppDatabase, $ConversionsTable> {
+  $$ConversionsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get locationId => $composableBuilder(
+    column: $table.locationId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get packVariantId => $composableBuilder(
+    column: $table.packVariantId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get pieceVariantId => $composableBuilder(
+    column: $table.pieceVariantId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get packs => $composableBuilder(
+    column: $table.packs,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get ratio => $composableBuilder(
+    column: $table.ratio,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get pieces => $composableBuilder(
+    column: $table.pieces,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get packCost => $composableBuilder(
+    column: $table.packCost,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get totalCost => $composableBuilder(
+    column: $table.totalCost,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get pieceCost => $composableBuilder(
+    column: $table.pieceCost,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get convertedAt => $composableBuilder(
+    column: $table.convertedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get createdBy => $composableBuilder(
+    column: $table.createdBy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get voidedAt => $composableBuilder(
+    column: $table.voidedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get voidReason => $composableBuilder(
+    column: $table.voidReason,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ConversionsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ConversionsTable> {
+  $$ConversionsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get locationId => $composableBuilder(
+    column: $table.locationId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get packVariantId => $composableBuilder(
+    column: $table.packVariantId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get pieceVariantId => $composableBuilder(
+    column: $table.pieceVariantId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get packs =>
+      $composableBuilder(column: $table.packs, builder: (column) => column);
+
+  GeneratedColumn<int> get ratio =>
+      $composableBuilder(column: $table.ratio, builder: (column) => column);
+
+  GeneratedColumn<int> get pieces =>
+      $composableBuilder(column: $table.pieces, builder: (column) => column);
+
+  GeneratedColumn<int> get packCost =>
+      $composableBuilder(column: $table.packCost, builder: (column) => column);
+
+  GeneratedColumn<int> get totalCost =>
+      $composableBuilder(column: $table.totalCost, builder: (column) => column);
+
+  GeneratedColumn<int> get pieceCost =>
+      $composableBuilder(column: $table.pieceCost, builder: (column) => column);
+
+  GeneratedColumn<String> get note =>
+      $composableBuilder(column: $table.note, builder: (column) => column);
+
+  GeneratedColumn<String> get convertedAt => $composableBuilder(
+    column: $table.convertedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get createdBy =>
+      $composableBuilder(column: $table.createdBy, builder: (column) => column);
+
+  GeneratedColumn<String> get voidedAt =>
+      $composableBuilder(column: $table.voidedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get voidReason => $composableBuilder(
+    column: $table.voidReason,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$ConversionsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ConversionsTable,
+          Conversion,
+          $$ConversionsTableFilterComposer,
+          $$ConversionsTableOrderingComposer,
+          $$ConversionsTableAnnotationComposer,
+          $$ConversionsTableCreateCompanionBuilder,
+          $$ConversionsTableUpdateCompanionBuilder,
+          (
+            Conversion,
+            BaseReferences<_$AppDatabase, $ConversionsTable, Conversion>,
+          ),
+          Conversion,
+          PrefetchHooks Function()
+        > {
+  $$ConversionsTableTableManager(_$AppDatabase db, $ConversionsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ConversionsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ConversionsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ConversionsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String?> locationId = const Value.absent(),
+                Value<String> packVariantId = const Value.absent(),
+                Value<String> pieceVariantId = const Value.absent(),
+                Value<int> packs = const Value.absent(),
+                Value<int> ratio = const Value.absent(),
+                Value<int> pieces = const Value.absent(),
+                Value<int?> packCost = const Value.absent(),
+                Value<int?> totalCost = const Value.absent(),
+                Value<int?> pieceCost = const Value.absent(),
+                Value<String?> note = const Value.absent(),
+                Value<String> convertedAt = const Value.absent(),
+                Value<String?> createdBy = const Value.absent(),
+                Value<String?> voidedAt = const Value.absent(),
+                Value<String?> voidReason = const Value.absent(),
+                Value<String?> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ConversionsCompanion(
+                id: id,
+                locationId: locationId,
+                packVariantId: packVariantId,
+                pieceVariantId: pieceVariantId,
+                packs: packs,
+                ratio: ratio,
+                pieces: pieces,
+                packCost: packCost,
+                totalCost: totalCost,
+                pieceCost: pieceCost,
+                note: note,
+                convertedAt: convertedAt,
+                createdBy: createdBy,
+                voidedAt: voidedAt,
+                voidReason: voidReason,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                Value<String?> locationId = const Value.absent(),
+                required String packVariantId,
+                required String pieceVariantId,
+                required int packs,
+                required int ratio,
+                required int pieces,
+                Value<int?> packCost = const Value.absent(),
+                Value<int?> totalCost = const Value.absent(),
+                Value<int?> pieceCost = const Value.absent(),
+                Value<String?> note = const Value.absent(),
+                required String convertedAt,
+                Value<String?> createdBy = const Value.absent(),
+                Value<String?> voidedAt = const Value.absent(),
+                Value<String?> voidReason = const Value.absent(),
+                Value<String?> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ConversionsCompanion.insert(
+                id: id,
+                locationId: locationId,
+                packVariantId: packVariantId,
+                pieceVariantId: pieceVariantId,
+                packs: packs,
+                ratio: ratio,
+                pieces: pieces,
+                packCost: packCost,
+                totalCost: totalCost,
+                pieceCost: pieceCost,
+                note: note,
+                convertedAt: convertedAt,
+                createdBy: createdBy,
+                voidedAt: voidedAt,
+                voidReason: voidReason,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ConversionsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ConversionsTable,
+      Conversion,
+      $$ConversionsTableFilterComposer,
+      $$ConversionsTableOrderingComposer,
+      $$ConversionsTableAnnotationComposer,
+      $$ConversionsTableCreateCompanionBuilder,
+      $$ConversionsTableUpdateCompanionBuilder,
+      (
+        Conversion,
+        BaseReferences<_$AppDatabase, $ConversionsTable, Conversion>,
+      ),
+      Conversion,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -16747,4 +18400,6 @@ class $AppDatabaseManager {
       $$WalletFloatsTableTableManager(_db, _db.walletFloats);
   $$LocalFloatEffectsTableTableManager get localFloatEffects =>
       $$LocalFloatEffectsTableTableManager(_db, _db.localFloatEffects);
+  $$ConversionsTableTableManager get conversions =>
+      $$ConversionsTableTableManager(_db, _db.conversions);
 }

@@ -408,6 +408,109 @@ class WalletFloatView {
   bool get negative => balance < 0;
 }
 
+// ---- Phase 8: tingi / repack (P8-08) ----
+
+/// Most packs opened at once, and most pieces per pack (the server refuses more).
+const tingiMaxPacks = 10000;
+const tingiMaxRatio = 10000;
+
+/// half_up(n / d) for n >= 0, d > 0, exactly: floor((2n + d) / (2d)). BigInt so web builds (53-bit ints) stay exact.
+int halfUpDiv(BigInt n, BigInt d) => ((BigInt.two * n + d) ~/ (BigInt.two * d)).toInt();
+
+/// The server's `stock_blend_cost` with quantities in thousandths (stock quantities have 3 decimals there too):
+/// the average cost after adding [addQtyMilli] units worth [addValueMilli] / 1000 centavos to [oldQtyMilli] units at
+/// [oldCost]. Old level <= 0 or no old cost: the added units' own cost. Nothing added or no value: [oldCost].
+int? _blendMilli(int oldQtyMilli, int? oldCost, int addQtyMilli, BigInt? addValueMilli) {
+  if (addValueMilli == null || addQtyMilli <= 0) return oldCost;
+  if (oldQtyMilli <= 0 || oldCost == null) return halfUpDiv(addValueMilli, BigInt.from(addQtyMilli));
+  return halfUpDiv(BigInt.from(oldQtyMilli) * BigInt.from(oldCost) + addValueMilli, BigInt.from(oldQtyMilli + addQtyMilli));
+}
+
+/// New average cost after a stock in of [qty] at [unitCost] per unit (null: the average stays). Same rule as the server.
+int? receiptAvgCost({required double oldQty, int? oldCost, required double qty, int? unitCost}) => _blendMilli(
+    SaleLine.milli(oldQty), oldCost, SaleLine.milli(qty),
+    unitCost == null ? null : BigInt.from(SaleLine.milli(qty)) * BigInt.from(unitCost));
+
+/// New average cost of the piece after [pieces] come out of opened packs carrying [totalCost] centavos (null: the
+/// average stays). The cost rule of P8-08, identical to the server's: half_up((Q x C + T) / (Q + N)) when the piece
+/// level Q > 0 and its average C is known, else half_up(T / N).
+int? conversionAvgCost({required double oldQty, int? oldCost, required int pieces, int? totalCost}) => _blendMilli(
+    SaleLine.milli(oldQty), oldCost, pieces * 1000, totalCost == null ? null : BigInt.from(totalCost) * BigInt.from(1000));
+
+/// What an opened pack did (also what the server will compute when the op reaches it).
+class OpenedPack {
+  const OpenedPack({
+    required this.conversionId,
+    required this.pieceVariantId,
+    required this.packs,
+    required this.pieces,
+    this.packCost,
+    this.totalCost,
+    this.pieceCost,
+  });
+
+  final String conversionId;
+  final String pieceVariantId;
+  final int packs;
+  final int pieces;
+
+  /// Centavos: the pack's average cost (else its variant cost), packs x that, half_up(total / pieces). Null = unknown.
+  final int? packCost;
+  final int? totalCost;
+  final int? pieceCost;
+}
+
+/// One opened pack, for a list (Stock history, Today).
+class ConversionView {
+  const ConversionView({
+    required this.id,
+    required this.packVariantId,
+    required this.pieceVariantId,
+    this.packName,
+    this.pieceName,
+    required this.packs,
+    required this.ratio,
+    required this.pieces,
+    this.packCost,
+    this.totalCost,
+    this.pieceCost,
+    this.note,
+    required this.convertedAt,
+    this.voidedAt,
+    this.voidReason,
+    required this.pending,
+    this.rejectedHint,
+  });
+
+  final String id;
+  final String packVariantId;
+  final String pieceVariantId;
+
+  /// Product names (null when the product is not on this device).
+  final String? packName;
+  final String? pieceName;
+  final int packs;
+
+  /// Pieces per pack at the time of opening.
+  final int ratio;
+  final int pieces;
+  final int? packCost;
+  final int? totalCost;
+  final int? pieceCost;
+  final String? note;
+  final DateTime convertedAt;
+  final DateTime? voidedAt;
+  final String? voidReason;
+
+  /// An op for this opening (open or void) has not reached the server yet.
+  final bool pending;
+
+  /// The server refused an op for this opening (e.g. `link_changed`, `not_allowed`); it waits for the user.
+  final String? rejectedHint;
+
+  bool get voided => voidedAt != null;
+}
+
 /// Everything the Sell, Utang and Today screens need from the device.
 abstract class SalesStore {
   /// The store (location) this device sells for; sent with every sale.
@@ -556,6 +659,48 @@ abstract class SalesStore {
   /// the server, so it is applied once.
   Future<void> requeueWithApproval({required String opId, required String approvalId});
 
+  // ---- tingi / repack (P8-08) ----
+  //
+  // The piece is its own product (with its own default variant); the pack variant carries the link. A variant is a pack
+  // or a piece, never both. Who: owner and store managers (the server refuses others with `not_allowed`). Negative
+  // stock is allowed (warn, never block), like a sale.
+
+  /// Says "one [variantId] (the pack) breaks into [piecesPerPack] of [pieceVariantId]"; a null [pieceVariantId] clears
+  /// the link. Applied here at once and queued as one `set_tingi_link` op (entity = the pack's product). Throws
+  /// [ArgumentError] for a bad ratio or a self link, [StateError] for an unknown / archived product, a product that keeps
+  /// no stock count, or a chain (the piece is a pack, or the pack is already someone's piece).
+  Future<void> setTingiLink({required String variantId, String? pieceVariantId, int? piecesPerPack, required String opId});
+
+  /// Same as [setTingiLink] with no piece.
+  Future<void> clearTingiLink({required String variantId, required String opId});
+
+  /// The piece product a pack variant breaks into (null when it has no link or the piece is not on this device).
+  Future<ProductView?> tingiPiece(String packVariantId);
+
+  /// Opens [packs] whole packs of [packVariantId]: packs out, packs x ratio pieces in, the pack cost carried into the
+  /// pieces ([conversionAvgCost]). Both stock numbers change here at once (until the server's levels cover them) and
+  /// one `open_pack` op is queued (entity = [id]). Opening more than is counted is allowed. Throws [ArgumentError] for a
+  /// bad [packs], [StateError] when the product has no link, is archived or keeps no stock count.
+  Future<OpenedPack> openPack({
+    required String id,
+    required String packVariantId,
+    required int packs,
+    String? note,
+    DateTime? at,
+    required String opId,
+  });
+
+  /// Takes an opening back (once): the packs return, the pieces go out (the piece count may go below zero), averages
+  /// stay. Queued as one `void_open_pack` op.
+  Future<void> voidOpenPack({required String conversionId, String? reason, required String opId});
+
+  /// Openings in [from, to) (local times), newest first, voided ones included (marked).
+  Stream<List<ConversionView>> watchConversions({required DateTime from, required DateTime to});
+
+  /// The average cost this device uses for [variantId] (sale cost of goods, the pack cost when opening): the server's
+  /// average, moved by this device's stock-ins and openings it has not caught up on (same integer rule). Null = none.
+  Future<int?> averageCost(String variantId);
+
   // ---- sync side ----
   /// Marks the stock/utang effects of an op as applied by the server at [appliedAt].
   Future<void> posOpApplied(String opId, String? appliedAt);
@@ -578,4 +723,8 @@ abstract class SalesStore {
   /// and local float effects the server applied at or before the response's `server_time` are dropped (that balance
   /// includes them).
   Future<void> applyPullService(Map<String, dynamic> response);
+
+  /// Applies one sync_pull_conversions response, same rules as [applyPullExpenses] (a void still on its way is kept).
+  /// The stock numbers are not touched: they come with sync_pull_pos.
+  Future<void> applyPullConversions(Map<String, dynamic> response);
 }

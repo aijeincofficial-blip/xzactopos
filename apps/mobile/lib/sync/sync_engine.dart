@@ -25,6 +25,9 @@ abstract class SyncApi {
   /// every wallet of the caller's stores, read at `server_time`. Warehouse staff get nothing.
   Future<Map<String, dynamic>> pullService(Map<String, dynamic>? cursor, {int limit = 100});
 
+  /// Opened packs (sync_pull_conversions), same rules as [pullExpenses]. The stock levels come with [pullPos].
+  Future<Map<String, dynamic>> pullConversions(Map<String, dynamic>? cursor, {int limit = 100});
+
   /// Sends up to 50 sale/stock/utang ops in order (sync_push). Returns one result per op:
   /// `{op_id, status: ok|rejected|error, result?, hint?}`. A batch stops at the first `error`, so fewer results can come back.
   /// Throws on network or server trouble (transient).
@@ -162,7 +165,7 @@ class SyncEngine {
   static const posKinds = {
     'record_sale', 'void_sale', 'upsert_customer', 'record_utang_payment', 'post_opening_stock', 'receive_stock',
     'adjust_stock', 'adjust_utang', 'record_expense', 'void_expense', 'close_day', 'record_service_txn',
-    'void_service_txn',
+    'void_service_txn', 'set_tingi_link', 'open_pack', 'void_open_pack',
   };
 
   /// One batch through sync_push. Results are applied in order; a transient `error` stops the batch.
@@ -291,6 +294,13 @@ class SyncEngine {
       final cursor = (await store.cursors())['service_txns'];
       final res = await api.pullService(cursor is Map ? cursor.cast<String, dynamic>() : null, limit: 100);
       await store.applyPullService(res);
+      if (res['has_more'] != true) break;
+    }
+    // opened packs (tingi), for the history; their stock effects already came with the pos pull
+    for (var page = 0; page < _maxPagesPerRun; page++) {
+      final cursor = (await store.cursors())['conversions'];
+      final res = await api.pullConversions(cursor is Map ? cursor.cast<String, dynamic>() : null, limit: 100);
+      await store.applyPullConversions(res);
       if (res['has_more'] != true) break;
     }
   }

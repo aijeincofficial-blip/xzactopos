@@ -228,6 +228,12 @@ class SupabaseBackend implements Backend {
   }
 
   @override
+  Future<Map<String, dynamic>> pullConversions(Map<String, dynamic>? cursor, {int limit = 100}) async {
+    final res = await _auth(() => _c.rpc('sync_pull_conversions', params: {'p_cursor': cursor, 'p_limit': limit}));
+    return (res as Map).cast<String, dynamic>();
+  }
+
+  @override
   Future<PinResult> setMyPin(String newPin, {String? currentPin}) async {
     try {
       final res = await _auth(() => _c.rpc('set_my_pin', params: {'p_new_pin': newPin, 'p_current_pin': currentPin}));
