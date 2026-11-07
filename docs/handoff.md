@@ -5,6 +5,7 @@ Updated at the end of every task. Read this first in a fresh session.
 ## Status
 - Phase 0 (Foundation): done, committed (6d59c99).
 - **Phase 3 (solo Sell screen, utang, stock ledger): done** (cards P3-01..P3-08, report at the end of this file). Phase 2 (solo catalog) accepted before it. Next: Phase 4.
+- **Phase 6 (solo reports from rollups): done** (section at the end; gaps triaged in `docs/gaps-review.md`).
 - **Phase 4 (solo stock in, count, low-stock, average cost): done** (cards P4-01..P4-05, report at the end of this file).
 - **Phase 1 (Tenancy, Auth, RBAC): done, accepted (P1-08).** Cards in docs/tasks/P1-01..P1-08. Next: Phase 2 (catalog and local store).
   - P1-01 core schema: done. Migration `20261107000100_core_tenancy.sql`, pgTAP `001_core_schema.test.sql` (38 tests).
@@ -252,7 +253,7 @@ and fails on the old code (verified) / passes on the fix.
 - Opening stock lives on the device until Phase 4 (stock ledger). Camera barcode scan deferred.
 - `flutter test` is not part of `pnpm check`.
 
-**Next:** Phases 3 and 4 are done (sections at the end of this file). Phase 6 (reduced reports) and Phase 7 (APK, camera, printing) are next.
+**Next:** Phases 3 and 4 are done (sections at the end of this file). Phase 6 (reduced reports) is done too. Next: review `docs/gaps-review.md`, then Phase 7 (APK, camera, printing).
 
 ## Phase 3 (solo): Sell screen, cash, utang, receipt, stock ledger - done (branch `claude/phase3-sell-8261d3`, cards `docs/tasks/P3-00..P3-08`)
 Decisions are in `P3-00-overview-solo-sell.md` (confirmed by the user, including the e-wallet label, cancel sale, and Flutter in `pnpm check`).
@@ -328,3 +329,26 @@ Not re-checked in the browser: a count from the UI and the Low filter / Home bad
 - Stock is per store; with several stores the sale/stock ops still rely on the server picking the only store (see the Phase 3 gaps).
 
 **Next:** Phase 6 (reduced reports: daily/weekly sales, top items, utang balance) and Phase 7 (APK, camera scan, printing). Then the Full-mode phases.
+
+## Phase 6 (solo): reports from rollups - done (cards `docs/tasks/P6-00..`)
+- **P6-01** (`20261108000900_sales_rollups.sql`): `daily_sales_summary` (per store and day: gross, discount, net, tax, cogs, transactions, cash / e-wallet / utang) and `daily_item_sales` (per store, day, variant).
+  Days are in the tenant timezone. Kept by deferred constraint triggers on `sales` (insert; status change to voided), so lines and payments exist when they run and a rolled-back op leaves nothing; sales made before the
+  migration were back-filled. `report_summary(from, to)` returns days, totals, top items and utang owed, reading only the rollups and the utang ledger (runs as the caller, so RLS applies).
+  Read access: superadmin and admins for their stores; cashiers and warehouse read nothing. pgTAP `014` (25): rollups equal the raw sales, a cancel removes a sale, 01:00 Manila time falls on the next day, access by role;
+  isolation matrix rows for both tables. In pgTAP use `set constraints all immediate` to fire the deferred triggers inside the test transaction.
+- **P6-02:** "Ulat" tile (owner and admins only) -> 7 or 30 days: sales total, estimated profit (shown only when costs exist), cash / GCash / utang split, a bar per day (empty days included), best sellers, utang owed and top debtors.
+  The last result per period is kept in `meta` and shown offline with "last report from ...". A line says how many unsent sales and changes are not included.
+- **Home is now a two-column grid** (six tiles no longer scroll off a phone screen).
+- Mistake caught: I committed once with 9 failing tests (the new tile pushed Products below the fold in the 800x600 test surface); fixed in the next commit by the grid. Run `flutter test` before the commit, not after.
+
+### Phase 6 acceptance report
+| Criterion | Result |
+| --- | --- |
+| Rollups equal the raw sales; cancelling takes a sale out | **Pass.** pgTAP `014` (sum of rollup net = sum of completed sales before and after a cancel) |
+| Report reads rollups only | **Pass.** `report_summary` selects only from `daily_sales_summary`, `daily_item_sales`, `customers`, `customer_ledger` |
+| Screen against the real server | **Pass (browser).** Release web build, local Supabase: Ulat showed sales 54.50, 1 sale, cash 54.50, per-day bar on Nov 7, best seller Kape 3-in-1 (3 sold, 36.00); it matches the database (the cancelled utang sale is excluded) |
+| Works offline from its last result | **Pass in widget tests** (not re-checked in the browser) |
+| `pnpm check` | **Pass.** pgTAP 1636 tests (14 files), Flutter analyze clean, 134 tests |
+
+### Known gaps
+See `docs/gaps-review.md` for the triaged list across all phases. New in Phase 6: reports are online only (last result cached), profit is an estimate from the cost snapshot, no CSV export, no month picker.
