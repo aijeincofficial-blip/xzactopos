@@ -89,7 +89,6 @@ Also seen in the browser: signing in on `/t/demo-new` with a `demo-full` account
 - **Tenant settings editing after setup** (name, timezone, tax mode, languages) has no screen; only modules and locations can change. Base currency is locked by design.
 - **Password reset and user password change** have no UI.
 - **User list is capped at 500 rows, no search or pagination** (fine for the pilot size).
-- **Users who work in a location do not see `locale` choice of others;** only their own language is saved.
 - Offline PIN material (`profiles.pin_hash`) still needs its RPC in Phase 3.
 - Local demo data only exists in the dev DB (`demo-full`, `demo-new`, password `Demo-pass-123`); `supabase db reset` removes it.
 
