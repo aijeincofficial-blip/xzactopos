@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
+import '../backend.dart';
 import '../core/money.dart';
 import '../core/theme.dart';
 import '../core/ui.dart';
@@ -9,14 +12,19 @@ import '../sync/store_session.dart';
 import '../sync/sync_badge.dart';
 import '../core/camera_scanner.dart';
 import 'cart.dart';
+import '../data/sales_models.dart';
 import 'pay_screen.dart';
+import 'today_screen.dart';
 import 'product_form_screen.dart';
 import 'product_thumb.dart';
 import 'products_screen.dart' show looksLikeBarcode;
 
 /// The Sell screen: search or scan to add, quick-tap tiles for the usual items, the cart, and the Pay button.
 class SellScreen extends StatefulWidget {
-  const SellScreen({super.key});
+  const SellScreen({super.key, this.backend});
+
+  /// Needed for the Today strip (it opens the Today screen); without it the strip is left out.
+  final Backend? backend;
 
   @override
   State<SellScreen> createState() => _SellScreenState();
@@ -29,9 +37,11 @@ class _SellScreenState extends State<SellScreen> {
   Future<List<ProductView>>? _quick;
   Set<String> _pinned = const {};
   String _query = '';
+  StreamSubscription<List<ProductView>>? _catalogSub;
 
   @override
   void dispose() {
+    _catalogSub?.cancel();
     _search.dispose();
     _searchFocus.dispose();
     _cart?.dispose();
@@ -47,6 +57,20 @@ class _SellScreenState extends State<SellScreen> {
       _quick = store.quickItems();
       store.pinnedVariants().then((p) {
         if (mounted) setState(() => _pinned = p);
+      });
+      // Sell stays alive in its tab: products that arrive later (the first sync, an edit) must show up here
+      var first = true;
+      _catalogSub = store.watchProducts().listen((_) {
+        if (first) {
+          first = false;
+          return;
+        }
+        if (mounted) {
+          final next = store.quickItems();
+          setState(() {
+            _quick = next;
+          });
+        }
       });
     }
   }
@@ -200,6 +224,7 @@ class _SellScreenState extends State<SellScreen> {
       body: SafeArea(
         child: Column(
           children: [
+            if (widget.backend != null) _todayStrip(context, widget.backend!),
             Padding(
               padding: const EdgeInsets.fromLTRB(Gap.xl, Gap.s, Gap.xl, Gap.s),
               child: TextField(
@@ -248,6 +273,38 @@ class _SellScreenState extends State<SellScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  /// Today's total in one line on top of Sell; tap for the full day.
+  Widget _todayStrip(BuildContext context, Backend backend) {
+    final t = AppLocalizations.of(context);
+    final scope = CatalogScope.of(context);
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(Gap.xl, Gap.xs, Gap.xl, 0),
+      child: StreamBuilder<TodayTotals>(
+        stream: scope.store.watchToday(),
+        builder: (context, snap) {
+          final d = snap.data ?? const TodayTotals();
+          return AppCard(
+            key: const Key('tile-today'),
+            padding: const EdgeInsets.symmetric(horizontal: Gap.l, vertical: Gap.s + 2),
+            radius: Gap.radiusL,
+            onTap: () => Navigator.of(context)
+                .push(MaterialPageRoute<void>(builder: (_) => scope.wrap(TodayScreen(backend: backend)))),
+            child: Row(children: [
+              Icon(Icons.today_rounded, size: 20, color: scheme.primary),
+              const SizedBox(width: Gap.s),
+              Expanded(child: Text(t.todaySales, style: TextStyle(fontSize: 13, color: scheme.outline, fontWeight: FontWeight.w600))),
+              Text(_money(d.total), key: const Key('today-strip-total'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
+              const SizedBox(width: Gap.s),
+              Text(t.todayCount(d.count), key: const Key('today-strip-count'), style: TextStyle(fontSize: 12, color: scheme.outline)),
+              Icon(Icons.chevron_right_rounded, size: 18, color: scheme.outline),
+            ]),
+          );
+        },
       ),
     );
   }

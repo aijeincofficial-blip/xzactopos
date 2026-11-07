@@ -64,7 +64,7 @@ void main() {
     ));
     await tester.pumpAndSettle();
     expect(modes, [false, true]);
-    expect(find.byKey(const Key('tile-products')), findsOneWidget);
+    expect(find.byKey(const Key('tile-sell')), findsOneWidget, reason: 'the app is open on its Sell tab');
     await leave(tester);
   });
 
@@ -86,12 +86,14 @@ void main() {
     expect(find.text('Could not open the data on this phone.'), findsOneWidget);
     await tester.tap(find.byKey(const Key('store-retry')));
     await tester.pumpAndSettle();
-    expect(find.byKey(const Key('tile-products')), findsOneWidget);
+    expect(find.byKey(const Key('tile-sell')), findsOneWidget, reason: 'the app is open on its Sell tab');
     await leave(tester);
   });
 
   testWidgets('add a product from Home in a few taps; it is listed and queued', (tester) async {
     final store = await openHome(tester);
+    await tester.tap(find.byKey(const Key('tab-more'))); // the product count is on the More tab
+    await tester.pumpAndSettle();
     expect(find.text('No products on this phone yet'), findsOneWidget);
     await tester.tap(find.byKey(const Key('tile-products')));
     await tester.pumpAndSettle();
@@ -111,6 +113,8 @@ void main() {
 
   testWidgets('name and a valid price are required', (tester) async {
     final store = await openHome(tester);
+    await tester.tap(find.byKey(const Key('tab-more')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('tile-products')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('add-product')));
@@ -131,6 +135,8 @@ void main() {
 
   testWidgets('edit price, refuse a barcode already used, then remove', (tester) async {
     final store = await openHome(tester);
+    await tester.tap(find.byKey(const Key('tab-more')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('tile-products')));
     await tester.pumpAndSettle();
     await addProduct(tester, name: 'Kape', price: '12', barcode: '111');

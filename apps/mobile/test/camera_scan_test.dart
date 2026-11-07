@@ -82,6 +82,8 @@ void main() {
     cameraScanner = FakeCamera(one: '4800016644801');
     final store = await openHome(tester);
     await seed(store);
+    await tester.tap(find.byKey(const Key('tab-more')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('tile-products')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('scan-button')));
@@ -94,6 +96,8 @@ void main() {
   testWidgets('Products: an unknown scanned barcode offers to add it', (tester) async {
     cameraScanner = FakeCamera(one: '4801111111111');
     await openHome(tester);
+    await tester.tap(find.byKey(const Key('tab-more')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('tile-products')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('scan-button')));
@@ -105,6 +109,8 @@ void main() {
   testWidgets('Products: backing out of the camera does nothing', (tester) async {
     cameraScanner = FakeCamera();
     await openHome(tester);
+    await tester.tap(find.byKey(const Key('tab-more')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('tile-products')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('scan-button')));
@@ -117,6 +123,8 @@ void main() {
   testWidgets('Product form: the camera fills the barcode field', (tester) async {
     cameraScanner = FakeCamera(one: '4807770270017');
     await openHome(tester);
+    await tester.tap(find.byKey(const Key('tab-more')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('tile-products')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('add-product')));

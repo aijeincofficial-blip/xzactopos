@@ -167,7 +167,10 @@ void main() {
     expect(backend.calls.single['name'], 'Aling Nena');
     expect(backend.calls.single['locale'], 'fil');
     expect(backend.calls.single['tenant']!.length, 36); // client-made UUID
-    expect(find.text('Maligayang pagdating, Aling Nena!'), findsOneWidget);
+    expect(find.byKey(const Key('sell-search')), findsOneWidget, reason: 'lands on the Sell tab');
+    await tester.tap(find.byKey(const Key('tab-more')));
+    await tester.pumpAndSettle();
+    expect(find.text('Aling Nena'), findsOneWidget);
     expect(find.text('Wala pang produkto sa phone na ito'), findsOneWidget);
 
     // leave the session so the store closes and sync timers stop

@@ -121,6 +121,8 @@ void main() {
     ProductFormScreen.photoSource = FakePhotoSource.new;
     addTearDown(() => ProductFormScreen.photoSource = DevicePhotoSource.new);
     final s = await openHome(tester);
+    await tester.tap(find.byKey(const Key('tab-more')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('tile-products')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('add-product')));

@@ -63,7 +63,11 @@ void main() {
     csvSharer = fake;
     addTearDown(() => csvSharer = const SystemCsvSharer());
     await openHome(tester);
-    await tester.tap(find.byKey(const Key('btn-settings')));
+    await tester.tap(find.byKey(const Key('tab-more')));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const Key('tile-settings')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('tile-settings')));
     await tester.pumpAndSettle();
     for (final k in ['export-sales', 'export-utang', 'export-stock']) {
       await tester.ensureVisible(find.byKey(Key(k)));

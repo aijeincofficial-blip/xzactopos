@@ -51,6 +51,8 @@ void main() {
       expect(find.byTooltip('Walang signal, 3 naka-save sa phone'), findsOneWidget,
           reason: 'the full sentence is still available as a tooltip');
 
+      await tester.tap(find.byKey(const Key('tab-more')));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('tile-products')));
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull, reason: 'Products app bar must not overflow');

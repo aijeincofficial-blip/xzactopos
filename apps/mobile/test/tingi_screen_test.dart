@@ -9,6 +9,8 @@ import 'products_test.dart' show leave, openHome;
 /// Adds "Yosi" (price 100) sold by piece: 20 pieces per pack, piece price 8, through the product form.
 Future<(DriftStore, ProductView, ProductView)> addTingiProduct(WidgetTester tester) async {
   final store = await openHome(tester);
+  await tester.tap(find.byKey(const Key('tab-more')));
+  await tester.pumpAndSettle();
   await tester.tap(find.byKey(const Key('tile-products')));
   await tester.pumpAndSettle();
   await tester.tap(find.byKey(const Key('add-product')));

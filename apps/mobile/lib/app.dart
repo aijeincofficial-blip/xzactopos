@@ -8,7 +8,7 @@ import 'core/theme.dart';
 import 'l10n/app_localizations.dart';
 import 'screens/auth_screen.dart';
 import 'screens/password_screens.dart';
-import 'screens/home_screen.dart';
+import 'screens/home_shell.dart';
 import 'screens/store_name_screen.dart';
 import 'sync/store_session.dart';
 
@@ -181,7 +181,7 @@ class _GateState extends State<Gate> {
           backend: widget.backend,
           access: access,
           openStore: widget.openStore,
-          child: HomeScreen(backend: widget.backend, storeName: name),
+          child: HomeShell(backend: widget.backend, storeName: name),
         );
       },
     );

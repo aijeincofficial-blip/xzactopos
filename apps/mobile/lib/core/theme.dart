@@ -230,6 +230,20 @@ ThemeData buildTheme(AppPalette palette, Brightness brightness) {
       backgroundColor: p.surface,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
     ),
+    navigationBarTheme: NavigationBarThemeData(
+      backgroundColor: p.surface,
+      surfaceTintColor: Colors.transparent,
+      indicatorColor: p.primaryContainer,
+      elevation: 0,
+      height: 68,
+      labelTextStyle: WidgetStateProperty.resolveWith(
+        (s) => TextStyle(
+          fontSize: 12,
+          fontWeight: s.contains(WidgetState.selected) ? FontWeight.w800 : FontWeight.w600,
+          color: s.contains(WidgetState.selected) ? p.text : p.textMuted,
+        ),
+      ),
+    ),
     dialogTheme: DialogThemeData(backgroundColor: p.surface, surfaceTintColor: Colors.transparent, shape: cardShape),
     bottomSheetTheme: BottomSheetThemeData(
       backgroundColor: p.surface,

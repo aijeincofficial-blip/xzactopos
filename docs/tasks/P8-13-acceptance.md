@@ -47,4 +47,6 @@ Selling and pinning on Sell, load entries and float moves, tingi (product form a
 
 ## UI revamp, step 1 (calm look) done after the acceptance run
 Flat tinted icon circles instead of glowing coins, one solid primary button instead of the dark `>>>` pill (the `obsidian` token now equals the palette primary), one light shadow per card, amount owed shown first on the Utang tile. Screenshot `10_home_revamp.png`. `flutter analyze` clean, 271 tests pass.
-**Step 2, not started:** bottom tabs (Sell, Stock, Utang, Reports, More) with Today as a strip on Sell, and the Keypad tab. It changes how every screen is reached, so it needs the Home-tile based test helpers (`openHome`, `tile-*` keys, `pageBack`) rewritten first; plan that as its own card.
+**Step 2 done: bottom tabs.** `HomeShell` (`lib/screens/home_shell.dart`) replaces the old Home: tabs Sell (opens first), Stock, Utang, Reports (owner/admins) and More (products, restock, Today, expenses, load and e-wallet, close the day, settings). Today is a strip on top of Sell. Badges on Stock (low + expiring) and Utang (overdue). The phone back button goes to Sell first. Screenshots `12_tabs_sell.png`, `13_tabs_more.png`. 275 Flutter tests pass.
+Two real fixes came out of it: Sell now stays alive in its tab, so its quick tiles refresh when products arrive (before, the first sync would have left them empty until a sale), and the Stock badge is also shown while that tab is selected.
+Not done: the Keypad tab on Sell (planned after load/e-wallet), and a device check of the Stock, Utang and Reports tabs.

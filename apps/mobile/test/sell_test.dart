@@ -109,7 +109,7 @@ void main() {
     await openSell(tester);
     await tester.tap(find.byKey(const Key('tile-$_p1')));
     await tester.pump();
-    await tester.pageBack();
+    await tester.tap(find.byKey(const Key('tile-stock'))); // leave Sell for another tab, then come back
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('tile-sell')));
     await tester.pumpAndSettle();

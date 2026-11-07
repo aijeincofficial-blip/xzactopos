@@ -62,7 +62,8 @@ void main() {
     final store = await homeWithDebtor(tester);
     await store.setUtangDue(customerId: 'c1', dueOn: dayOffset(-3), opId: 'od1');
     await tester.pumpAndSettle();
-    expect(find.text('1 overdue'), findsOneWidget, reason: 'Home tile');
+    expect(find.descendant(of: find.byKey(const Key('tile-utang')), matching: find.byType(Badge)), findsOneWidget,
+        reason: 'overdue count on the Utang tab');
 
     await tester.tap(find.byKey(const Key('tile-utang')));
     await tester.pumpAndSettle();
@@ -129,9 +130,7 @@ void main() {
     await store.setExpiry(variantId: _v1, expiresOn: dayOffset(-2), opId: 'ex2');
     await tester.pumpAndSettle();
     expect(find.text('Expired 2 days ago'), findsOneWidget);
-    await tester.pageBack();
-    await tester.pumpAndSettle();
-    expect(find.text('1 expiring'), findsOneWidget, reason: 'Home tile');
+    expect(find.byKey(const Key('tile-badge')), findsOneWidget, reason: 'count on the Stock tab');
     await leave(tester);
   });
 }

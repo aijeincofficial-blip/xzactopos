@@ -84,7 +84,11 @@ void main() {
 
   testWidgets('a signed-in user changes their password from Home', (tester) async {
     await openHome(tester);
-    await tester.tap(find.byKey(const Key('btn-settings')));
+    await tester.tap(find.byKey(const Key('tab-more')));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const Key('tile-settings')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('tile-settings')));
     await tester.pumpAndSettle();
     // Settings is a lazy ListView; since the export section (P8-12) the account row starts below the built area
     await tester.scrollUntilVisible(find.byKey(const Key('settings-change-password')), 200,

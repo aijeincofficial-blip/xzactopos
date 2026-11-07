@@ -115,6 +115,8 @@ void main() {
 
     testWidgets('a known barcode opens the product', (tester) async {
       await openHome(tester);
+      await tester.tap(find.byKey(const Key('tab-more')));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('tile-products')));
       await tester.pumpAndSettle();
       await addProduct(tester, name: 'Kape 3-in-1', price: '12', barcode: '4800016644801');
@@ -127,6 +129,8 @@ void main() {
 
     testWidgets('an unknown barcode offers to add it, prefilled', (tester) async {
       final store = await openHome(tester);
+      await tester.tap(find.byKey(const Key('tab-more')));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('tile-products')));
       await tester.pumpAndSettle();
 
@@ -147,6 +151,8 @@ void main() {
 
     testWidgets('a name typed and submitted just filters, no dialog', (tester) async {
       await openHome(tester);
+      await tester.tap(find.byKey(const Key('tab-more')));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('tile-products')));
       await tester.pumpAndSettle();
       await scan(tester, 'kape');
