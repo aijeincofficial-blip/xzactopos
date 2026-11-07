@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
 import '../core/money.dart';
@@ -83,8 +83,6 @@ class _PickerState extends State<_Picker> {
               decoration: InputDecoration(
                 prefixIcon: const Icon(Icons.search),
                 hintText: t.customerSearch,
-                border: const OutlineInputBorder(),
-                isDense: true,
               ),
             ),
           ),

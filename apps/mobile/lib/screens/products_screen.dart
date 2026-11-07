@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../core/camera_scanner.dart';
 import '../core/money.dart';
+import '../core/theme.dart';
+import '../core/ui.dart';
 import '../data/local_store.dart';
 import '../l10n/app_localizations.dart';
 import '../sync/store_session.dart';
@@ -121,8 +123,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
               decoration: InputDecoration(
                 prefixIcon: const Icon(Icons.search),
                 hintText: t.searchProducts,
-                border: const OutlineInputBorder(),
-                isDense: true,
                 suffixIcon: _query.isEmpty
                     ? IconButton(
                         key: const Key('scan-button'),
@@ -151,13 +151,16 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   );
                 }
                 return ListView.separated(
-                  padding: const EdgeInsets.only(bottom: 96),
+                  padding: const EdgeInsets.fromLTRB(Gap.l, Gap.s, Gap.l, 96),
                   itemCount: items.length,
-                  separatorBuilder: (_, _) => const Divider(height: 1),
+                  separatorBuilder: (_, _) => const SizedBox(height: Gap.m),
                   itemBuilder: (context, i) {
                     final p = items[i];
-                    return ListTile(
-                      minVerticalPadding: 14,
+                    return AppCard(
+                      padding: const EdgeInsets.symmetric(horizontal: Gap.m, vertical: Gap.s),
+                      onTap: () => _open(product: p),
+                      child: ListTile(
+                      contentPadding: EdgeInsets.zero,
                       leading: ProductThumb(productId: p.id, path: p.photoPath),
                       title: Text(p.name, style: const TextStyle(fontSize: 18)),
                       subtitle: p.barcode == null ? null : Text(p.barcode!),
@@ -172,8 +175,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                         ),
                       ]),
-                      onTap: () => _open(product: p),
-                    );
+                    ));
                   },
                 );
               },

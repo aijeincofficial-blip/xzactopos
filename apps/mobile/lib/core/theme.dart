@@ -7,7 +7,7 @@ enum AppPalette { freshTide, goldenIndigo }
 /// Spacing and radius scale; screens should use these instead of typed numbers.
 class Gap {
   static const double xs = 4, s = 8, m = 12, l = 16, xl = 24;
-  static const double radiusS = 12, radiusM = 16, radiusL = 22;
+  static const double radiusS = 12, radiusM = 16, radiusL = 22, radiusXL = 28;
 }
 
 class _P {
@@ -109,7 +109,8 @@ ThemeData buildTheme(AppPalette palette, Brightness brightness) {
     surface: p.surface,
     onSurface: p.text,
   );
-  final shape = RoundedRectangleBorder(borderRadius: BorderRadius.circular(Gap.radiusM));
+  const shape = StadiumBorder(); // pill buttons
+  final cardShape = RoundedRectangleBorder(borderRadius: BorderRadius.circular(Gap.radiusXL));
   return ThemeData(
     useMaterial3: true,
     colorScheme: scheme,
@@ -120,15 +121,15 @@ ThemeData buildTheme(AppPalette palette, Brightness brightness) {
       foregroundColor: p.text,
       scrolledUnderElevation: 0,
     ),
-    cardTheme: CardThemeData(color: p.surface, elevation: 0, surfaceTintColor: Colors.transparent, shape: shape),
+    cardTheme: CardThemeData(color: p.surface, elevation: 0, surfaceTintColor: Colors.transparent, shape: cardShape),
     filledButtonTheme: FilledButtonThemeData(
-      style: FilledButton.styleFrom(minimumSize: const Size(64, 52), shape: shape),
+      style: FilledButton.styleFrom(minimumSize: const Size(64, 56), shape: shape),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
-      style: ElevatedButton.styleFrom(minimumSize: const Size(64, 52), shape: shape),
+      style: ElevatedButton.styleFrom(minimumSize: const Size(64, 56), shape: shape),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
-      style: OutlinedButton.styleFrom(minimumSize: const Size(64, 52), shape: shape),
+      style: OutlinedButton.styleFrom(minimumSize: const Size(64, 56), shape: shape),
     ),
     floatingActionButtonTheme: FloatingActionButtonThemeData(
       backgroundColor: p.secondary,
@@ -136,25 +137,32 @@ ThemeData buildTheme(AppPalette palette, Brightness brightness) {
       shape: shape,
     ),
     inputDecorationTheme: InputDecorationTheme(
+      contentPadding: const EdgeInsets.symmetric(horizontal: Gap.l, vertical: Gap.l),
       filled: true,
       fillColor: p.surface,
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(Gap.radiusM), borderSide: BorderSide.none),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(Gap.radiusL), borderSide: BorderSide.none),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(Gap.radiusM),
-        borderSide: BorderSide(color: scheme.outlineVariant),
+        borderRadius: BorderRadius.circular(Gap.radiusL),
+        borderSide: BorderSide(color: scheme.outlineVariant.withValues(alpha: 0.5)),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(Gap.radiusM),
+        borderRadius: BorderRadius.circular(Gap.radiusL),
         borderSide: BorderSide(color: p.primary, width: 2),
       ),
     ),
     chipTheme: ChipThemeData(
       selectedColor: p.secondaryContainer,
       labelStyle: TextStyle(color: p.text),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Gap.radiusS)),
+      shape: const StadiumBorder(),
+      side: BorderSide.none,
+      backgroundColor: p.surface,
     ),
-    dialogTheme: DialogThemeData(backgroundColor: p.surface, surfaceTintColor: Colors.transparent),
-    bottomSheetTheme: BottomSheetThemeData(backgroundColor: p.surface, surfaceTintColor: Colors.transparent),
+    dialogTheme: DialogThemeData(backgroundColor: p.surface, surfaceTintColor: Colors.transparent, shape: cardShape),
+    bottomSheetTheme: BottomSheetThemeData(
+      backgroundColor: p.surface,
+      surfaceTintColor: Colors.transparent,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(Gap.radiusXL))),
+    ),
   );
 }
 

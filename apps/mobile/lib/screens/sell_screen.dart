@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../core/money.dart';
+import '../core/theme.dart';
+import '../core/ui.dart';
 import '../data/local_store.dart';
 import '../l10n/app_localizations.dart';
 import '../sync/store_session.dart';
@@ -176,7 +178,7 @@ class _SellScreenState extends State<SellScreen> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+              padding: const EdgeInsets.fromLTRB(Gap.l, Gap.s, Gap.l, Gap.s),
               child: TextField(
                 key: const Key('sell-search'),
                 controller: _search,
@@ -190,8 +192,6 @@ class _SellScreenState extends State<SellScreen> {
                 decoration: InputDecoration(
                   prefixIcon: const Icon(Icons.search),
                   hintText: t.sellSearchHint,
-                  border: const OutlineInputBorder(),
-                  isDense: true,
                   suffixIcon: _query.isEmpty
                       ? (cameraScanner.available
                           ? IconButton(
@@ -256,9 +256,9 @@ class _SellScreenState extends State<SellScreen> {
           );
         }
         return GridView.builder(
-          padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+          padding: const EdgeInsets.fromLTRB(Gap.l, Gap.xs, Gap.l, Gap.l),
           gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-              maxCrossAxisExtent: 150, mainAxisExtent: 124, crossAxisSpacing: 8, mainAxisSpacing: 8),
+              maxCrossAxisExtent: 180, mainAxisExtent: 120, crossAxisSpacing: Gap.m, mainAxisSpacing: Gap.m),
           itemCount: items.length,
           itemBuilder: (context, i) {
             final p = items[i];
@@ -334,34 +334,23 @@ class _Tile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return Material(
+    return AppCard(
       key: Key('tile-${product.id}'),
-      color: scheme.primaryContainer,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Text(product.name,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: scheme.onPrimaryContainer)),
-              ),
-              Text(product.price == null ? '—' : money(product.price!),
-                  style: TextStyle(fontSize: 18, color: scheme.onPrimaryContainer)),
-              if (left != null)
-                DefaultTextStyle.merge(
-                  style: TextStyle(color: left! <= 0 ? scheme.error : scheme.onPrimaryContainer),
-                  child: _StockText(left: left!, reorderPoint: product.reorderPoint),
-                ),
-            ],
+      onTap: onTap,
+      padding: const EdgeInsets.all(Gap.m + 2),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Text(product.name,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
           ),
-        ),
+          Text(product.price == null ? '—' : money(product.price!),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: scheme.primary)),
+          if (left != null) _StockText(left: left!, reorderPoint: product.reorderPoint),
+        ],
       ),
     );
   }
@@ -379,14 +368,17 @@ class _CartPanel extends StatelessWidget {
     final t = AppLocalizations.of(context);
     final scheme = Theme.of(context).colorScheme;
     return Material(
-      elevation: 8,
+      elevation: 10,
+      shadowColor: scheme.primary.withValues(alpha: 0.35),
       color: scheme.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(Gap.radiusXL))),
+      clipBehavior: Clip.antiAlias,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (cart.isEmpty)
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+              padding: const EdgeInsets.fromLTRB(Gap.l, Gap.l, Gap.l, Gap.s),
               child: Text(t.sellCartEmpty, style: TextStyle(color: scheme.outline)),
             )
           else
@@ -394,12 +386,13 @@ class _CartPanel extends StatelessWidget {
               constraints: const BoxConstraints(maxHeight: 220),
               child: ListView.builder(
                 shrinkWrap: true,
+                padding: const EdgeInsets.only(top: Gap.s),
                 itemCount: cart.lines.length,
                 itemBuilder: (context, i) {
                   final l = cart.lines[i];
                   return Padding(
                     key: Key('cart-line-$i'),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                    padding: const EdgeInsets.fromLTRB(Gap.l, 2, Gap.s, 2),
                     child: Row(children: [
                       Expanded(
                         child: Text(l.product.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 16)),
@@ -425,14 +418,14 @@ class _CartPanel extends StatelessWidget {
                         icon: const Icon(Icons.add_circle_outline),
                         onPressed: () => cart.setQty(i, l.qty + 1),
                       ),
-                      SizedBox(width: 78, child: Text(money(l.lineTotal), textAlign: TextAlign.end, style: const TextStyle(fontSize: 16))),
+                      SizedBox(width: 88, child: Padding(padding: const EdgeInsets.only(right: Gap.s), child: Text(money(l.lineTotal), textAlign: TextAlign.end, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)))),
                     ]),
                   );
                 },
               ),
             ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
+            padding: const EdgeInsets.fromLTRB(Gap.l, Gap.s, Gap.l, Gap.l),
             child: Row(children: [
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

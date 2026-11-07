@@ -3,6 +3,8 @@ import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
 import '../core/money.dart';
+import '../core/theme.dart';
+import '../core/ui.dart';
 import '../core/search.dart';
 import '../data/sales_models.dart';
 import '../l10n/app_localizations.dart';
@@ -46,10 +48,7 @@ class _UtangScreenState extends State<UtangScreen> {
           final owed = all.where((c) => c.balance > 0).fold<int>(0, (a, c) => a + c.balance);
           final list = _q.isEmpty ? all : all.where((c) => searchKey(c.name).contains(_q)).toList();
           return Column(children: [
-            Container(
-              width: double.infinity,
-              color: Theme.of(context).colorScheme.secondaryContainer,
-              padding: const EdgeInsets.all(16),
+            SummaryCard(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(t.utangTotalOwed),
                 Text(money(owed),
@@ -58,35 +57,36 @@ class _UtangScreenState extends State<UtangScreen> {
             ),
             if (all.isNotEmpty)
               Padding(
-                padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                 child: TextField(
                   key: const Key('utang-search'),
                   onChanged: (v) => setState(() => _q = searchKey(v)),
                   decoration: InputDecoration(
                     prefixIcon: const Icon(Icons.search),
                     hintText: t.customerSearch,
-                    border: const OutlineInputBorder(),
-                    isDense: true,
                   ),
                 ),
               ),
             Expanded(
               child: list.isEmpty
-                  ? Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(32),
-                        child: Text(all.isEmpty ? t.utangEmpty : t.noMatches, textAlign: TextAlign.center),
-                      ),
+                  ? EmptyState(
+                      icon: all.isEmpty ? Icons.menu_book_rounded : Icons.search_off_rounded,
+                      text: all.isEmpty ? t.utangEmpty : t.noMatches,
                     )
                   : ListView.separated(
-                      padding: const EdgeInsets.only(bottom: 96),
+                      padding: const EdgeInsets.fromLTRB(Gap.l, Gap.s, Gap.l, 96),
                       itemCount: list.length,
-                      separatorBuilder: (_, _) => const Divider(height: 1),
+                      separatorBuilder: (_, _) => const SizedBox(height: Gap.m),
                       itemBuilder: (context, i) {
                         final c = list[i];
-                        return ListTile(
+                        return AppCard(
                           key: Key('customer-row-${c.id}'),
-                          minVerticalPadding: 14,
+                          padding: const EdgeInsets.symmetric(horizontal: Gap.m, vertical: Gap.s),
+                          onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+                            builder: (_) => scope.wrap(CustomerScreen(customerId: c.id)),
+                          )),
+                          child: ListTile(
+                          contentPadding: EdgeInsets.zero,
                           title: Text(c.name, style: const TextStyle(fontSize: 18)),
                           subtitle: c.phone == null ? null : Text(c.phone!),
                           trailing: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -103,10 +103,7 @@ class _UtangScreenState extends State<UtangScreen> {
                                   color: c.balance > 0 ? Theme.of(context).colorScheme.error : null),
                             ),
                           ]),
-                          onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
-                            builder: (_) => scope.wrap(CustomerScreen(customerId: c.id)),
-                          )),
-                        );
+                        ));
                       },
                     ),
             ),
@@ -321,7 +318,7 @@ class CustomerScreen extends StatelessWidget {
                               DateFormat.yMMMd(locale).add_jm().format(e.at),
                               if (e.localNo != null) e.localNo!,
                               if (e.note != null && e.note != 'void') e.note!,
-                            ].join(' · ');
+                            ].join(' Â· ');
                             return ListTile(
                               key: Key('ledger-$i'),
                               title: Text(label),
@@ -333,7 +330,7 @@ class CustomerScreen extends StatelessWidget {
                                     child: Icon(Icons.cloud_upload_outlined, size: 18, semanticLabel: t.notSentYet),
                                   ),
                                 Text(
-                                  e.amount > 0 ? '+${money(e.amount)}' : '−${money(-e.amount)}',
+                                  e.amount > 0 ? '+${money(e.amount)}' : 'âˆ’${money(-e.amount)}',
                                   style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: e.amount > 0 ? Theme.of(context).colorScheme.error : Colors.green.shade700),
                                 ),
                               ]),

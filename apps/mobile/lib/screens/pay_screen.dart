@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
@@ -152,7 +152,6 @@ class _PayScreenState extends State<PayScreen> {
               labelText: _method == 'cash' ? t.payReceivedCash : t.payReceivedEwallet,
               hintText: Money(_total, _ccy).toDecimalString(),
               prefixText: '${NumberFormat.simpleCurrency(locale: Localizations.localeOf(context).languageCode, name: _ccy).currencySymbol} ',
-              border: const OutlineInputBorder(),
               errorText: _receivedRaw == -1 ? t.errBadAmount : null,
             ),
             onChanged: (_) => setState(() {}),
@@ -219,7 +218,6 @@ class _PayScreenState extends State<PayScreen> {
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 decoration: InputDecoration(
                   labelText: t.payDiscountHint,
-                  border: const OutlineInputBorder(),
                   errorText: _parse(_discount.text) == -1 ? t.errBadAmount : null,
                 ),
                 onChanged: (_) => setState(() {}),

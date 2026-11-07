@@ -3,6 +3,8 @@ import 'package:uuid/uuid.dart';
 
 import '../core/money.dart';
 import '../data/sales_models.dart';
+import '../core/theme.dart';
+import '../core/ui.dart';
 import '../l10n/app_localizations.dart';
 import '../sync/store_session.dart';
 import '../sync/sync_badge.dart';
@@ -46,20 +48,18 @@ class _StockScreenState extends State<StockScreen> {
           final rows = _lowOnly ? all.where((r) => r.low).toList() : all;
           return Column(children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
               child: TextField(
                 key: const Key('stock-search'),
                 onChanged: (v) => setState(() => _query = v),
                 decoration: InputDecoration(
                   prefixIcon: const Icon(Icons.search),
                   hintText: t.searchProducts,
-                  border: const OutlineInputBorder(),
-                  isDense: true,
                 ),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(children: [
                 ChoiceChip(
                   key: const Key('filter-all'),
@@ -87,14 +87,18 @@ class _StockScreenState extends State<StockScreen> {
                       ),
                     )
                   : ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(Gap.l, Gap.s, Gap.l, Gap.xl),
                       itemCount: rows.length,
-                      separatorBuilder: (_, _) => const Divider(height: 1),
+                      separatorBuilder: (_, _) => const SizedBox(height: Gap.m),
                       itemBuilder: (context, i) {
                         final r = rows[i];
                         final scheme = Theme.of(context).colorScheme;
-                        return ListTile(
+                        return AppCard(
                           key: Key('stock-${r.product.id}'),
-                          minVerticalPadding: 12,
+                          padding: const EdgeInsets.symmetric(horizontal: Gap.m, vertical: Gap.s),
+                          onTap: () => _open(r),
+                          child: ListTile(
+                          contentPadding: EdgeInsets.zero,
                           leading: ProductThumb(productId: r.product.id, path: r.product.photoPath),
                           title: Text(r.product.name, style: const TextStyle(fontSize: 18)),
                           subtitle: r.low ? Text(t.stockRunningLow, style: TextStyle(color: scheme.error)) : null,
@@ -115,8 +119,7 @@ class _StockScreenState extends State<StockScreen> {
                               ),
                             ),
                           ]),
-                          onTap: () => _open(r),
-                        );
+                        ));
                       },
                     ),
             ),

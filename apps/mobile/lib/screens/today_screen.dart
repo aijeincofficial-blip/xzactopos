@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../core/money.dart';
+import '../core/theme.dart';
+import '../core/ui.dart';
 import '../data/sales_models.dart';
 import '../l10n/app_localizations.dart';
 import '../sync/store_session.dart';
@@ -30,16 +32,15 @@ class TodayScreen extends StatelessWidget {
             builder: (context, snap) {
               final d = snap.data ?? const TodayTotals();
               final scheme = Theme.of(context).colorScheme;
-              return Container(
-                color: scheme.primaryContainer,
-                padding: const EdgeInsets.all(20),
+              return SummaryCard(
+                accent: true,
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(t.todaySales),
                   Text(money(d.total),
                       key: const Key('today-total'),
-                      style: Theme.of(context).textTheme.displaySmall?.copyWith(fontWeight: FontWeight.w800)),
+                      style: Theme.of(context).textTheme.displaySmall?.copyWith(fontWeight: FontWeight.w800, color: scheme.onPrimary)),
                   Text(t.todayCount(d.count), key: const Key('today-count')),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: Gap.l),
                   Row(children: [
                     _Stat(label: t.todayCash, value: money(d.cash), keyName: 'today-cash'),
                     _Stat(label: t.payEwallet, value: money(d.ewallet), keyName: 'today-ewallet'),
@@ -58,7 +59,15 @@ class TodayScreen extends StatelessWidget {
               }
               return Column(children: [
                 for (final s in today)
-                  ListTile(
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(Gap.l, Gap.s, Gap.l, Gap.s),
+                    child: AppCard(
+                      padding: const EdgeInsets.symmetric(horizontal: Gap.m, vertical: Gap.xs),
+                      onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+                        builder: (_) => scope.wrap(ReceiptScreen(saleId: s.id)),
+                      )),
+                      child: ListTile(
+                    contentPadding: EdgeInsets.zero,
                     key: Key('sale-${s.id}'),
                     title: Text(
                       money(s.total),
@@ -74,9 +83,8 @@ class TodayScreen extends StatelessWidget {
                       if (s.voided) t.receiptCancelled,
                     ].join(' · ')),
                     trailing: s.pending ? Icon(Icons.cloud_upload_outlined, size: 18, semanticLabel: t.notSentYet) : null,
-                    onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
-                      builder: (_) => scope.wrap(ReceiptScreen(saleId: s.id)),
-                    )),
+                  ),
+                    ),
                   ),
               ]);
             },
@@ -95,9 +103,12 @@ class _Stat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Expanded(
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(label, style: Theme.of(context).textTheme.bodySmall),
+        child: Padding(
+          padding: const EdgeInsets.only(right: Gap.s),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(label, maxLines: 2, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.85))),
           Text(value, key: Key(keyName), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
         ]),
+        ),
       );
 }
