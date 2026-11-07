@@ -1,6 +1,6 @@
 # Handoff
 
-Updated at the end of every task. Read this first in a fresh session.
+Updated at the end of every task. Read this first in a fresh session. New session or a different tool (Antigravity)? Start with `docs/START-HERE-antigravity.md`.
 
 ## Status
 - Phase 0 (Foundation): done, committed (6d59c99).
@@ -406,3 +406,6 @@ My debug build replaced the other session's build of the same app on the emulato
 - Web camera scan is not built (the web plugin needs a CDN script); the web keeps USB scanner and typing.
 - Release APK signing (keystore) is not set up.
 - Offline web needs a normal-browser check (see above).
+
+### Phase 7 follow-up
+Share was checked on the emulator (Android share sheet with `LL3-261107-0001.pdf`). Offline web in a normal Chrome, real barcode decoding and release signing are still open: see `docs/START-HERE-antigravity.md`.
