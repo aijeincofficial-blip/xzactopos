@@ -414,4 +414,51 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get receiptThanks => 'Salamat po!';
+
+  @override
+  String get utangTitle => 'Utang';
+
+  @override
+  String get utangTotalOwed => 'Kabuuang utang sa iyo';
+
+  @override
+  String get utangEmpty =>
+      'Wala pang may utang sa iyo. Lalabas dito ang mga customer kapag nag-utang sila.';
+
+  @override
+  String get utangSettled => 'Bayad na';
+
+  @override
+  String get utangOwes => 'May utang';
+
+  @override
+  String get utangPaid => 'Nagbayad';
+
+  @override
+  String utangPayTitle(String name) {
+    return 'Nagbayad si $name';
+  }
+
+  @override
+  String get utangAmountPaid => 'Halagang binayad';
+
+  @override
+  String get utangNote => 'Tala (kung meron)';
+
+  @override
+  String utangTooMuch(String amount) {
+    return 'Sobra ito sa utang niya ($amount)';
+  }
+
+  @override
+  String get ledgerCharge => 'Umutang';
+
+  @override
+  String get ledgerPayment => 'Nagbayad';
+
+  @override
+  String get ledgerAdjust => 'Pagwawasto';
+
+  @override
+  String get ledgerVoid => 'Kinansela ang benta';
 }

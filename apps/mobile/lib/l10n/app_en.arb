@@ -213,5 +213,33 @@
   },
   "receiptNewSale": "New sale",
   "receiptCancelled": "CANCELLED",
-  "receiptThanks": "Thank you!"
+  "receiptThanks": "Thank you!",
+  "utangTitle": "Utang",
+  "utangTotalOwed": "Total owed to you",
+  "utangEmpty": "Nobody owes you yet. Customers show up here when you sell on utang.",
+  "utangSettled": "Fully paid",
+  "utangOwes": "Owes",
+  "utangPaid": "Record payment",
+  "utangPayTitle": "{name} paid",
+  "@utangPayTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "utangAmountPaid": "Amount paid",
+  "utangNote": "Note (optional)",
+  "utangTooMuch": "That is more than they owe ({amount})",
+  "@utangTooMuch": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "ledgerCharge": "Took on utang",
+  "ledgerPayment": "Paid",
+  "ledgerAdjust": "Adjustment",
+  "ledgerVoid": "Sale cancelled"
 }

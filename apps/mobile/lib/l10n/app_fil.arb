@@ -213,5 +213,33 @@
   },
   "receiptNewSale": "Bagong benta",
   "receiptCancelled": "KINANSELA",
-  "receiptThanks": "Salamat po!"
+  "receiptThanks": "Salamat po!",
+  "utangTitle": "Utang",
+  "utangTotalOwed": "Kabuuang utang sa iyo",
+  "utangEmpty": "Wala pang may utang sa iyo. Lalabas dito ang mga customer kapag nag-utang sila.",
+  "utangSettled": "Bayad na",
+  "utangOwes": "May utang",
+  "utangPaid": "Nagbayad",
+  "utangPayTitle": "Nagbayad si {name}",
+  "@utangPayTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "utangAmountPaid": "Halagang binayad",
+  "utangNote": "Tala (kung meron)",
+  "utangTooMuch": "Sobra ito sa utang niya ({amount})",
+  "@utangTooMuch": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "ledgerCharge": "Umutang",
+  "ledgerPayment": "Nagbayad",
+  "ledgerAdjust": "Pagwawasto",
+  "ledgerVoid": "Kinansela ang benta"
 }

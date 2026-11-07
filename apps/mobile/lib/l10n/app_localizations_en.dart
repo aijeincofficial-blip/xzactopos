@@ -408,4 +408,51 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get receiptThanks => 'Thank you!';
+
+  @override
+  String get utangTitle => 'Utang';
+
+  @override
+  String get utangTotalOwed => 'Total owed to you';
+
+  @override
+  String get utangEmpty =>
+      'Nobody owes you yet. Customers show up here when you sell on utang.';
+
+  @override
+  String get utangSettled => 'Fully paid';
+
+  @override
+  String get utangOwes => 'Owes';
+
+  @override
+  String get utangPaid => 'Record payment';
+
+  @override
+  String utangPayTitle(String name) {
+    return '$name paid';
+  }
+
+  @override
+  String get utangAmountPaid => 'Amount paid';
+
+  @override
+  String get utangNote => 'Note (optional)';
+
+  @override
+  String utangTooMuch(String amount) {
+    return 'That is more than they owe ($amount)';
+  }
+
+  @override
+  String get ledgerCharge => 'Took on utang';
+
+  @override
+  String get ledgerPayment => 'Paid';
+
+  @override
+  String get ledgerAdjust => 'Adjustment';
+
+  @override
+  String get ledgerVoid => 'Sale cancelled';
 }

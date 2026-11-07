@@ -8,6 +8,7 @@ import '../sync/store_session.dart';
 import '../sync/sync_badge.dart';
 import 'products_screen.dart';
 import 'sell_screen.dart';
+import 'utang_screen.dart';
 
 /// Solo home: a few big buttons, nothing else to learn.
 class HomeScreen extends StatelessWidget {
@@ -48,6 +49,15 @@ class HomeScreen extends StatelessWidget {
               label: t.products,
               onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
                 builder: (_) => scope.wrap(const ProductsScreen()),
+              )),
+            ),
+            const SizedBox(height: 12),
+            _Tile(
+              key: const Key('tile-utang'),
+              icon: Icons.menu_book_outlined,
+              label: t.utangTitle,
+              onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+                builder: (_) => scope.wrap(const UtangScreen()),
               )),
             ),
             const SizedBox(height: 12),

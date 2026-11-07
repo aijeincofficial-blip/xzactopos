@@ -775,6 +775,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Thank you!'**
   String get receiptThanks;
+
+  /// No description provided for @utangTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Utang'**
+  String get utangTitle;
+
+  /// No description provided for @utangTotalOwed.
+  ///
+  /// In en, this message translates to:
+  /// **'Total owed to you'**
+  String get utangTotalOwed;
+
+  /// No description provided for @utangEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nobody owes you yet. Customers show up here when you sell on utang.'**
+  String get utangEmpty;
+
+  /// No description provided for @utangSettled.
+  ///
+  /// In en, this message translates to:
+  /// **'Fully paid'**
+  String get utangSettled;
+
+  /// No description provided for @utangOwes.
+  ///
+  /// In en, this message translates to:
+  /// **'Owes'**
+  String get utangOwes;
+
+  /// No description provided for @utangPaid.
+  ///
+  /// In en, this message translates to:
+  /// **'Record payment'**
+  String get utangPaid;
+
+  /// No description provided for @utangPayTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} paid'**
+  String utangPayTitle(String name);
+
+  /// No description provided for @utangAmountPaid.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount paid'**
+  String get utangAmountPaid;
+
+  /// No description provided for @utangNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Note (optional)'**
+  String get utangNote;
+
+  /// No description provided for @utangTooMuch.
+  ///
+  /// In en, this message translates to:
+  /// **'That is more than they owe ({amount})'**
+  String utangTooMuch(String amount);
+
+  /// No description provided for @ledgerCharge.
+  ///
+  /// In en, this message translates to:
+  /// **'Took on utang'**
+  String get ledgerCharge;
+
+  /// No description provided for @ledgerPayment.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid'**
+  String get ledgerPayment;
+
+  /// No description provided for @ledgerAdjust.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjustment'**
+  String get ledgerAdjust;
+
+  /// No description provided for @ledgerVoid.
+  ///
+  /// In en, this message translates to:
+  /// **'Sale cancelled'**
+  String get ledgerVoid;
 }
 
 class _AppLocalizationsDelegate
