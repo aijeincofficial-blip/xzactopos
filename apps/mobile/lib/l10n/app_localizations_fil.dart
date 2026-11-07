@@ -1215,4 +1215,92 @@ class AppLocalizationsFil extends AppLocalizations {
   String serviceEarned(String amount) {
     return 'Kita $amount';
   }
+
+  @override
+  String get tingiSection => 'Ibinebenta rin nang tingi';
+
+  @override
+  String get tingiHelp =>
+      'Magbukas ng pack para madagdagan ang piraso sa stock';
+
+  @override
+  String get tingiPieces => 'Ilang piraso sa isang pack';
+
+  @override
+  String get tingiPieceName => 'Pangalan ng piraso';
+
+  @override
+  String get tingiPiecePrice => 'Presyo bawat piraso';
+
+  @override
+  String get tingiFailed =>
+      'Hindi na-link ang piraso. Baka piraso na ito ng ibang pack.';
+
+  @override
+  String get tingiOpenPack => 'Magbukas ng pack';
+
+  @override
+  String get tingiPacks => 'Ilang pack?';
+
+  @override
+  String get tingiLowWarn =>
+      'Mas kaunti ang nabilang mong pack. Maaari pa ring ituloy.';
+
+  @override
+  String get tingiHistory => 'Mga nabuksang pack';
+
+  @override
+  String get tingiHistoryNone => 'Wala pang nabuksang pack';
+
+  @override
+  String get tingiVoidTitle => 'Bawiin ang pagbukas na ito?';
+
+  @override
+  String get tingiVoidBody =>
+      'Aalis sa stock ang mga piraso at babalik ang pack.';
+
+  @override
+  String get tingiVoidYes => 'Bawiin';
+
+  @override
+  String get tingiLinkChanged =>
+      'Nagbago ang piraso kada pack. Tingnan ang produkto.';
+
+  @override
+  String get tingiCancelled => 'Binawi';
+
+  @override
+  String tingiPieceSuffix(String name) {
+    return '$name (piraso)';
+  }
+
+  @override
+  String tingiLinkedTo(String name) {
+    return 'Ibinebenta ang piraso bilang $name';
+  }
+
+  @override
+  String tingiOpenTitle(String name) {
+    return 'Magbukas ng pack: $name';
+  }
+
+  @override
+  String tingiPreview(int count, String name) {
+    return 'Magiging $count × $name';
+  }
+
+  @override
+  String tingiOpened(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Nadagdag ang $count piraso sa stock',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String tingiHistoryRow(int packs, int pieces, String name) {
+    return '$packs pack → $pieces × $name';
+  }
 }

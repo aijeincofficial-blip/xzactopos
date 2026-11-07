@@ -42,6 +42,10 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
   late final _reorder = TextEditingController(
       text: (widget.product?.reorderPoint ?? 0) > 0 ? widget.product!.reorderPoint.toString().replaceAll(RegExp(r'\.0$'), '') : '');
   bool _busy = false;
+  late bool _tingi = widget.product?.sellsByPiece ?? false;
+  late final _pieces = TextEditingController(text: widget.product?.piecesPerPack?.toString() ?? '');
+  final _pieceName = TextEditingController();
+  final _piecePrice = TextEditingController();
   String? _barcodeError;
   Uint8List? _newPhoto;
   bool _photoBusy = false;
@@ -54,7 +58,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
 
   @override
   void dispose() {
-    for (final c in [_name, _price, _barcode, _stock, _unit, _cost, _reorder]) {
+    for (final c in [_name, _price, _barcode, _stock, _unit, _cost, _reorder, _pieces, _pieceName, _piecePrice]) {
       c.dispose();
     }
     super.dispose();
@@ -98,6 +102,36 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     );
     if (_newPhoto != null) {
       await scope.store.setPhoto(_productId, _variantId, _newPhoto!, opId: const Uuid().v7());
+    }
+    final linked = widget.product?.sellsByPiece ?? false;
+    final n = int.tryParse(_pieces.text.trim());
+    try {
+      if (_tingi && n != null) {
+        if (!linked) {
+          // the piece is its own product; made first so the server has it before the link
+          final pieceId = const Uuid().v7();
+          final pieceVariantId = const Uuid().v7();
+          final name = _pieceName.text.trim().isEmpty ? t.tingiPieceSuffix(_name.text.trim()) : _pieceName.text.trim();
+          await scope.store.saveProduct(
+            ProductDraft(id: pieceId, variantId: pieceVariantId, name: name, price: Money.parse(_piecePrice.text, currency).amount),
+            opId: const Uuid().v7(),
+          );
+          await scope.store.setTingiLink(
+              variantId: _variantId, pieceVariantId: pieceVariantId, piecesPerPack: n, opId: const Uuid().v7());
+        } else if (n != widget.product!.piecesPerPack) {
+          await scope.store.setTingiLink(
+              variantId: _variantId,
+              pieceVariantId: widget.product!.breaksIntoVariantId,
+              piecesPerPack: n,
+              opId: const Uuid().v7());
+        }
+      } else if (!_tingi && linked) {
+        await scope.store.clearTingiLink(variantId: _variantId, opId: const Uuid().v7());
+      }
+    } on StateError {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(t.tingiFailed)));
+    } on ArgumentError {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(t.tingiFailed)));
     }
     scope.engine.poke();
     if (mounted) Navigator.of(context).pop();
@@ -327,6 +361,62 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
               ),
             ),
             const SizedBox(height: Gap.m),
+
+            // Tingi: sold by piece too (owner / managers)
+            if (CatalogScope.of(context).canManageStock) ...[
+              AppCard(
+                padding: const EdgeInsets.symmetric(horizontal: Gap.m, vertical: Gap.xs),
+                child: Column(children: [
+                  SwitchListTile(
+                    key: const Key('tingi-switch'),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: Gap.s),
+                    title: Text(t.tingiSection, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                    subtitle: Text(
+                      widget.product?.sellsByPiece == true && widget.product?.pieceName != null
+                          ? t.tingiLinkedTo(widget.product!.pieceName!)
+                          : t.tingiHelp,
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    value: _tingi,
+                    onChanged: (v) => setState(() => _tingi = v),
+                  ),
+                  if (_tingi)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(Gap.s, 0, Gap.s, Gap.m),
+                      child: Column(children: [
+                        TextFormField(
+                          key: const Key('tingi-pieces'),
+                          controller: _pieces,
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(labelText: t.tingiPieces),
+                          validator: (v) {
+                            if (!_tingi) return null;
+                            final n = int.tryParse((v ?? '').trim());
+                            return (n == null || n < 1 || n > 10000) ? t.errBadAmount : null;
+                          },
+                        ),
+                        if (widget.product?.sellsByPiece != true) ...[
+                          const SizedBox(height: Gap.m),
+                          TextFormField(
+                            key: const Key('tingi-name'),
+                            controller: _pieceName,
+                            decoration: InputDecoration(labelText: t.tingiPieceName, hintText: t.tingiPieceSuffix(_name.text.trim())),
+                          ),
+                          const SizedBox(height: Gap.m),
+                          TextFormField(
+                            key: const Key('tingi-price'),
+                            controller: _piecePrice,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            decoration: InputDecoration(labelText: t.tingiPiecePrice, prefixText: '$symbol '),
+                            validator: (v) => _tingi ? _money(v, t, required: true) : null,
+                          ),
+                        ],
+                      ]),
+                    ),
+                ]),
+              ),
+              const SizedBox(height: Gap.m),
+            ],
 
             // More Options (Unit, Cost, Reorder)
             AppCard(

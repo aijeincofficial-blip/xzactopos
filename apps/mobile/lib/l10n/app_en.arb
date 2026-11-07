@@ -669,5 +669,78 @@
         "type": "String"
       }
     }
+  },
+  "tingiSection": "Sold by piece too",
+  "tingiHelp": "Open a pack to add the pieces to your stock",
+  "tingiPieces": "Pieces in one pack",
+  "tingiPieceName": "Piece name",
+  "tingiPiecePrice": "Price per piece",
+  "tingiFailed": "Could not link the pieces. This product may already be a piece of another pack.",
+  "tingiOpenPack": "Open a pack",
+  "tingiPacks": "How many packs?",
+  "tingiLowWarn": "You counted fewer packs than this. You can still go ahead.",
+  "tingiHistory": "Opened packs",
+  "tingiHistoryNone": "No packs opened yet",
+  "tingiVoidTitle": "Undo this opening?",
+  "tingiVoidBody": "The pieces leave your stock and the pack comes back.",
+  "tingiVoidYes": "Undo",
+  "tingiLinkChanged": "The pieces per pack changed. Check the product.",
+  "tingiCancelled": "Undone",
+  "tingiPieceSuffix": "{name} (piece)",
+  "@tingiPieceSuffix": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tingiLinkedTo": "Pieces are sold as {name}",
+  "@tingiLinkedTo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tingiOpenTitle": "Open a pack: {name}",
+  "@tingiOpenTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tingiPreview": "That makes {count} × {name}",
+  "@tingiPreview": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tingiOpened": "{count, plural, =1{{count} piece added to stock} other{{count} pieces added to stock}}",
+  "@tingiOpened": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tingiHistoryRow": "{packs} pack → {pieces} × {name}",
+  "@tingiHistoryRow": {
+    "placeholders": {
+      "packs": {
+        "type": "int"
+      },
+      "pieces": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
   }
 }

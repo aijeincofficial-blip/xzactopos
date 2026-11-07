@@ -669,5 +669,78 @@
         "type": "String"
       }
     }
+  },
+  "tingiSection": "Ibinebenta rin nang tingi",
+  "tingiHelp": "Magbukas ng pack para madagdagan ang piraso sa stock",
+  "tingiPieces": "Ilang piraso sa isang pack",
+  "tingiPieceName": "Pangalan ng piraso",
+  "tingiPiecePrice": "Presyo bawat piraso",
+  "tingiFailed": "Hindi na-link ang piraso. Baka piraso na ito ng ibang pack.",
+  "tingiOpenPack": "Magbukas ng pack",
+  "tingiPacks": "Ilang pack?",
+  "tingiLowWarn": "Mas kaunti ang nabilang mong pack. Maaari pa ring ituloy.",
+  "tingiHistory": "Mga nabuksang pack",
+  "tingiHistoryNone": "Wala pang nabuksang pack",
+  "tingiVoidTitle": "Bawiin ang pagbukas na ito?",
+  "tingiVoidBody": "Aalis sa stock ang mga piraso at babalik ang pack.",
+  "tingiVoidYes": "Bawiin",
+  "tingiLinkChanged": "Nagbago ang piraso kada pack. Tingnan ang produkto.",
+  "tingiCancelled": "Binawi",
+  "tingiPieceSuffix": "{name} (piraso)",
+  "@tingiPieceSuffix": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tingiLinkedTo": "Ibinebenta ang piraso bilang {name}",
+  "@tingiLinkedTo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tingiOpenTitle": "Magbukas ng pack: {name}",
+  "@tingiOpenTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tingiPreview": "Magiging {count} × {name}",
+  "@tingiPreview": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tingiOpened": "{count, plural, other{Nadagdag ang {count} piraso sa stock}}",
+  "@tingiOpened": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tingiHistoryRow": "{packs} pack → {pieces} × {name}",
+  "@tingiHistoryRow": {
+    "placeholders": {
+      "packs": {
+        "type": "int"
+      },
+      "pieces": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
   }
 }

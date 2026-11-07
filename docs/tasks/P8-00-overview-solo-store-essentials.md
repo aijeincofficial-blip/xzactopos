@@ -27,7 +27,7 @@ A tindera can run a whole day in the app: sell fast, take cash-in/out and load, 
 | P8-06 Load / e-wallet service ledger | migration, `record_service_txn` / `void_service_txn` ops, float balance, fee rules, pgTAP property test, Drift v7 + store API + sync. DONE (money model, API and what P8-07 calls: `P8-06-load-ewallet-ledger.md`) | Opus |
 | P8-07 Load / e-wallet screens | cash-in/out/load entry, float, daily fee total. DONE | Sonnet |
 | P8-08 Tingi / repack | link on the pack variant (piece = own product), `set_tingi_link` / `open_pack` / `void_open_pack` ops, `conversions`, exact cost rule, pgTAP property test, Drift v8 + store API + sync. DONE (model, cost rule, API and what P8-09 calls: `P8-08-tingi-repack.md`) | Opus |
-| P8-09 Tingi UI | set ratio, "open a pack" action | Sonnet |
+| P8-09 Tingi UI | "Sold by piece too" on the product form, "open a pack" + history/undo on Stock. DONE | Sonnet |
 | P8-10 Utang due dates + statement | migration (`due_on`), op, overdue list, share text | Opus (schema) then Sonnet (UI) |
 | P8-11 Expiry dates | per-receipt expiry, "expiring soon" on Home and Stock | Opus (schema) then Sonnet (UI) |
 | P8-12 Export and backup | CSV of sales, utang, stock, share sheet (share_plus). DONE | Sonnet |

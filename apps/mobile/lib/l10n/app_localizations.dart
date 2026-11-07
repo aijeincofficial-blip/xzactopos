@@ -2107,6 +2107,138 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Earned {amount}'**
   String serviceEarned(String amount);
+
+  /// No description provided for @tingiSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Sold by piece too'**
+  String get tingiSection;
+
+  /// No description provided for @tingiHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Open a pack to add the pieces to your stock'**
+  String get tingiHelp;
+
+  /// No description provided for @tingiPieces.
+  ///
+  /// In en, this message translates to:
+  /// **'Pieces in one pack'**
+  String get tingiPieces;
+
+  /// No description provided for @tingiPieceName.
+  ///
+  /// In en, this message translates to:
+  /// **'Piece name'**
+  String get tingiPieceName;
+
+  /// No description provided for @tingiPiecePrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Price per piece'**
+  String get tingiPiecePrice;
+
+  /// No description provided for @tingiFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not link the pieces. This product may already be a piece of another pack.'**
+  String get tingiFailed;
+
+  /// No description provided for @tingiOpenPack.
+  ///
+  /// In en, this message translates to:
+  /// **'Open a pack'**
+  String get tingiOpenPack;
+
+  /// No description provided for @tingiPacks.
+  ///
+  /// In en, this message translates to:
+  /// **'How many packs?'**
+  String get tingiPacks;
+
+  /// No description provided for @tingiLowWarn.
+  ///
+  /// In en, this message translates to:
+  /// **'You counted fewer packs than this. You can still go ahead.'**
+  String get tingiLowWarn;
+
+  /// No description provided for @tingiHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Opened packs'**
+  String get tingiHistory;
+
+  /// No description provided for @tingiHistoryNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No packs opened yet'**
+  String get tingiHistoryNone;
+
+  /// No description provided for @tingiVoidTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo this opening?'**
+  String get tingiVoidTitle;
+
+  /// No description provided for @tingiVoidBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The pieces leave your stock and the pack comes back.'**
+  String get tingiVoidBody;
+
+  /// No description provided for @tingiVoidYes.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get tingiVoidYes;
+
+  /// No description provided for @tingiLinkChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'The pieces per pack changed. Check the product.'**
+  String get tingiLinkChanged;
+
+  /// No description provided for @tingiCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Undone'**
+  String get tingiCancelled;
+
+  /// No description provided for @tingiPieceSuffix.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} (piece)'**
+  String tingiPieceSuffix(String name);
+
+  /// No description provided for @tingiLinkedTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Pieces are sold as {name}'**
+  String tingiLinkedTo(String name);
+
+  /// No description provided for @tingiOpenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open a pack: {name}'**
+  String tingiOpenTitle(String name);
+
+  /// No description provided for @tingiPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'That makes {count} × {name}'**
+  String tingiPreview(int count, String name);
+
+  /// No description provided for @tingiOpened.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{{count} piece added to stock} other{{count} pieces added to stock}}'**
+  String tingiOpened(int count);
+
+  /// No description provided for @tingiHistoryRow.
+  ///
+  /// In en, this message translates to:
+  /// **'{packs} pack → {pieces} × {name}'**
+  String tingiHistoryRow(int packs, int pieces, String name);
 }
 
 class _AppLocalizationsDelegate

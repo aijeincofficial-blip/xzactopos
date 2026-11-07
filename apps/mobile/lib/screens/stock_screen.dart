@@ -164,6 +164,28 @@ class _ActionSheet extends StatelessWidget {
               await showStockInDialog(context, scope, row);
             },
           ),
+          if (row.product.sellsByPiece) ...[
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              key: const Key('action-open-pack'),
+              style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(56), textStyle: const TextStyle(fontSize: 20)),
+              icon: const Icon(Icons.unarchive_outlined),
+              label: Text(t.tingiOpenPack),
+              onPressed: () async {
+                Navigator.pop(context);
+                await showOpenPackDialog(context, scope, row);
+              },
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              key: const Key('action-pack-history'),
+              onPressed: () async {
+                Navigator.pop(context);
+                await showPackHistory(context, scope);
+              },
+              child: Text(t.tingiHistory),
+            ),
+          ],
           const SizedBox(height: 8),
           OutlinedButton.icon(
             key: const Key('action-count'),
@@ -301,4 +323,144 @@ Future<void> showCountDialog(BuildContext context, CatalogScope scope, StockRow 
     opId: const Uuid().v7(),
   );
   scope.engine.poke();
+}
+
+/// "Open a pack": N packs leave stock, N x pieces-per-pack pieces enter it (one op).
+Future<void> showOpenPackDialog(BuildContext context, CatalogScope scope, StockRow row) async {
+  final t = AppLocalizations.of(context);
+  final messenger = ScaffoldMessenger.of(context); // the action sheet is gone by the time we finish
+  final packs = TextEditingController(text: '1');
+  final p = row.product;
+  String? error;
+  final ok = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => StatefulBuilder(
+      builder: (ctx, setState) {
+        final n = int.tryParse(packs.text.trim());
+        final valid = n != null && n >= 1 && n <= tingiMaxPacks;
+        return AlertDialog(
+          title: Text(t.tingiOpenTitle(p.name)),
+          content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            TextField(
+              key: const Key('openpack-qty'),
+              controller: packs,
+              autofocus: true,
+              keyboardType: TextInputType.number,
+              style: const TextStyle(fontSize: 24),
+              onChanged: (_) => setState(() => error = null),
+              decoration: InputDecoration(labelText: t.tingiPacks, errorText: error),
+            ),
+            const SizedBox(height: 8),
+            if (valid)
+              Text(t.tingiPreview(n * p.piecesPerPack!, p.pieceName ?? ''), key: const Key('openpack-preview')),
+            if (valid && row.counted && row.qty! < n)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(t.tingiLowWarn, key: const Key('openpack-warn'), style: TextStyle(color: Theme.of(ctx).colorScheme.error, fontSize: 12)),
+              ),
+          ]),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(t.cancel)),
+            FilledButton(
+              key: const Key('openpack-ok'),
+              onPressed: () {
+                final m = int.tryParse(packs.text.trim());
+                if (m == null || m < 1 || m > tingiMaxPacks) {
+                  setState(() => error = t.errBadAmount);
+                  return;
+                }
+                Navigator.pop(ctx, true);
+              },
+              child: Text(t.tingiOpenPack),
+            ),
+          ],
+        );
+      },
+    ),
+  );
+  if (ok != true) return;
+  final r = await scope.store.openPack(
+    id: const Uuid().v7(),
+    packVariantId: p.variantId,
+    packs: int.parse(packs.text.trim()),
+    opId: const Uuid().v7(),
+  );
+  scope.engine.poke();
+  messenger.showSnackBar(SnackBar(content: Text(t.tingiOpened(r.pieces))));
+}
+
+/// The packs opened in the last 30 days; tap one to undo it.
+Future<void> showPackHistory(BuildContext context, CatalogScope scope) {
+  final now = DateTime.now();
+  return showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    builder: (ctx) => _PackHistory(scope: scope, from: now.subtract(const Duration(days: 30)), to: now.add(const Duration(days: 1))),
+  );
+}
+
+class _PackHistory extends StatelessWidget {
+  const _PackHistory({required this.scope, required this.from, required this.to});
+  final CatalogScope scope;
+  final DateTime from;
+  final DateTime to;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
+    return SafeArea(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.7),
+        child: StreamBuilder<List<ConversionView>>(
+          stream: scope.store.watchConversions(from: from, to: to),
+          builder: (context, snap) {
+            final list = snap.data ?? const <ConversionView>[];
+            return ListView(shrinkWrap: true, padding: const EdgeInsets.all(Gap.l), children: [
+              Text(t.tingiHistory, style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: Gap.s),
+              if (list.isEmpty) Padding(padding: const EdgeInsets.all(Gap.l), child: Text(t.tingiHistoryNone)),
+              for (final c in list)
+                ListTile(
+                  key: Key('pack-${c.id}'),
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(
+                    t.tingiHistoryRow(c.packs, c.pieces, c.pieceName ?? ''),
+                    style: TextStyle(decoration: c.voidedAt != null ? TextDecoration.lineThrough : null),
+                  ),
+                  subtitle: Text(
+                    [
+                      c.packName ?? '',
+                      if (c.voidedAt != null) t.tingiCancelled,
+                      if (c.rejectedHint == 'link_changed') t.tingiLinkChanged,
+                    ].where((e) => e.isNotEmpty).join(' · '),
+                    style: TextStyle(color: c.rejectedHint != null ? scheme.error : null, fontSize: 12),
+                  ),
+                  trailing: c.pending ? Icon(Icons.cloud_upload_outlined, size: 18, color: scheme.primary, semanticLabel: t.notSentYet) : null,
+                  onTap: c.voidedAt != null ? null : () => _confirmVoid(context, c),
+                ),
+            ]);
+          },
+        ),
+      ),
+    );
+  }
+
+  Future<void> _confirmVoid(BuildContext context, ConversionView c) async {
+    final t = AppLocalizations.of(context);
+    final yes = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(t.tingiVoidTitle),
+        content: Text(t.tingiVoidBody),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(t.cancel)),
+          FilledButton(key: const Key('pack-void-yes'), onPressed: () => Navigator.pop(ctx, true), child: Text(t.tingiVoidYes)),
+        ],
+      ),
+    );
+    if (yes != true) return;
+    await scope.store.voidOpenPack(conversionId: c.id, opId: const Uuid().v7());
+    scope.engine.poke();
+  }
 }

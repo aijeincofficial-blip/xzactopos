@@ -1207,4 +1207,92 @@ class AppLocalizationsEn extends AppLocalizations {
   String serviceEarned(String amount) {
     return 'Earned $amount';
   }
+
+  @override
+  String get tingiSection => 'Sold by piece too';
+
+  @override
+  String get tingiHelp => 'Open a pack to add the pieces to your stock';
+
+  @override
+  String get tingiPieces => 'Pieces in one pack';
+
+  @override
+  String get tingiPieceName => 'Piece name';
+
+  @override
+  String get tingiPiecePrice => 'Price per piece';
+
+  @override
+  String get tingiFailed =>
+      'Could not link the pieces. This product may already be a piece of another pack.';
+
+  @override
+  String get tingiOpenPack => 'Open a pack';
+
+  @override
+  String get tingiPacks => 'How many packs?';
+
+  @override
+  String get tingiLowWarn =>
+      'You counted fewer packs than this. You can still go ahead.';
+
+  @override
+  String get tingiHistory => 'Opened packs';
+
+  @override
+  String get tingiHistoryNone => 'No packs opened yet';
+
+  @override
+  String get tingiVoidTitle => 'Undo this opening?';
+
+  @override
+  String get tingiVoidBody =>
+      'The pieces leave your stock and the pack comes back.';
+
+  @override
+  String get tingiVoidYes => 'Undo';
+
+  @override
+  String get tingiLinkChanged =>
+      'The pieces per pack changed. Check the product.';
+
+  @override
+  String get tingiCancelled => 'Undone';
+
+  @override
+  String tingiPieceSuffix(String name) {
+    return '$name (piece)';
+  }
+
+  @override
+  String tingiLinkedTo(String name) {
+    return 'Pieces are sold as $name';
+  }
+
+  @override
+  String tingiOpenTitle(String name) {
+    return 'Open a pack: $name';
+  }
+
+  @override
+  String tingiPreview(int count, String name) {
+    return 'That makes $count × $name';
+  }
+
+  @override
+  String tingiOpened(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count pieces added to stock',
+      one: '$count piece added to stock',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String tingiHistoryRow(int packs, int pieces, String name) {
+    return '$packs pack → $pieces × $name';
+  }
 }
