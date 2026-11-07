@@ -1285,6 +1285,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Scan with camera'**
   String get scanWithCamera;
+
+  /// No description provided for @receiptPrint.
+  ///
+  /// In en, this message translates to:
+  /// **'Print'**
+  String get receiptPrint;
+
+  /// No description provided for @receiptShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get receiptShare;
+
+  /// No description provided for @receiptPrintFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open the printer. Try Share instead.'**
+  String get receiptPrintFailed;
 }
 
 class _AppLocalizationsDelegate

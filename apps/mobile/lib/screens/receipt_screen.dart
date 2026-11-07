@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
 import '../core/money.dart';
+import '../core/receipt_printer.dart';
 import '../data/sales_models.dart';
 import '../l10n/app_localizations.dart';
 import '../sync/store_session.dart';
@@ -51,6 +52,37 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
     if (yes != true) return;
     await scope.store.voidSale(widget.saleId, opId: const Uuid().v7());
     scope.engine.poke();
+  }
+
+  ReceiptLabels _labels(AppLocalizations t) => ReceiptLabels(
+        number: t.receiptNumber,
+        subtotal: t.receiptSubtotal,
+        discount: t.receiptDiscount,
+        total: t.payTotal,
+        cashReceived: t.receiptCashReceived,
+        ewallet: t.payEwallet,
+        change: t.payChange,
+        onUtang: t.receiptOnUtang,
+        cancelled: t.receiptCancelled,
+        thanks: t.receiptThanks,
+      );
+
+  Future<void> _output(SaleDetail d, {required bool share}) async {
+    final t = AppLocalizations.of(context);
+    final scope = CatalogScope.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final locale = Localizations.localeOf(context).languageCode;
+    try {
+      final name = await _storeName ?? '';
+      final labels = _labels(t);
+      if (share) {
+        await receiptPrinter.share(d, storeName: name, currency: scope.store.baseCurrency, locale: locale, labels: labels);
+      } else {
+        await receiptPrinter.print(d, storeName: name, currency: scope.store.baseCurrency, locale: locale, labels: labels);
+      }
+    } catch (_) {
+      messenger.showSnackBar(SnackBar(content: Text(t.receiptPrintFailed)));
+    }
   }
 
   @override
@@ -143,7 +175,24 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                     },
                   ),
               ],
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
+              if (receiptPrinter.available)
+                Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  OutlinedButton.icon(
+                    key: const Key('receipt-print'),
+                    onPressed: () => _output(d, share: false),
+                    icon: const Icon(Icons.print_outlined),
+                    label: Text(t.receiptPrint),
+                  ),
+                  const SizedBox(width: 12),
+                  OutlinedButton.icon(
+                    key: const Key('receipt-share'),
+                    onPressed: () => _output(d, share: true),
+                    icon: const Icon(Icons.share_outlined),
+                    label: Text(t.receiptShare),
+                  ),
+                ]),
+              const SizedBox(height: 8),
               if (!s.voided)
                 Align(
                   child: TextButton.icon(

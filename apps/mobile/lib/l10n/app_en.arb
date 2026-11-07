@@ -417,5 +417,8 @@
       }
     }
   },
-  "scanWithCamera": "Scan with camera"
+  "scanWithCamera": "Scan with camera",
+  "receiptPrint": "Print",
+  "receiptShare": "Share",
+  "receiptPrintFailed": "Could not open the printer. Try Share instead."
 }

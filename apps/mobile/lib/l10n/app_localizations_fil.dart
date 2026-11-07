@@ -745,4 +745,14 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get scanWithCamera => 'I-scan gamit ang camera';
+
+  @override
+  String get receiptPrint => 'I-print';
+
+  @override
+  String get receiptShare => 'Ipadala';
+
+  @override
+  String get receiptPrintFailed =>
+      'Hindi mabuksan ang printer. Subukan ang Ipadala.';
 }

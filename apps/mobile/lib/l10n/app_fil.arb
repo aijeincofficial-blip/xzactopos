@@ -417,5 +417,8 @@
       }
     }
   },
-  "scanWithCamera": "I-scan gamit ang camera"
+  "scanWithCamera": "I-scan gamit ang camera",
+  "receiptPrint": "I-print",
+  "receiptShare": "Ipadala",
+  "receiptPrintFailed": "Hindi mabuksan ang printer. Subukan ang Ipadala."
 }

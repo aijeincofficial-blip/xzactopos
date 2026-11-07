@@ -737,4 +737,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get scanWithCamera => 'Scan with camera';
+
+  @override
+  String get receiptPrint => 'Print';
+
+  @override
+  String get receiptShare => 'Share';
+
+  @override
+  String get receiptPrintFailed =>
+      'Could not open the printer. Try Share instead.';
 }
