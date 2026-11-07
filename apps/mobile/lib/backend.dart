@@ -17,6 +17,9 @@ abstract class Backend implements SyncApi {
   /// The user's access payload, or null when they have no business yet.
   Future<Map<String, dynamic>?> myAccess();
 
+  /// Sales report from the server's rollups (report_summary), for whole days [from] to [to] inclusive.
+  Future<Map<String, dynamic>> reportSummary(DateTime from, DateTime to);
+
   /// Creates the solo store, then refreshes the session so the token carries tenant_id.
   Future<void> provisionSoloStore({
     required String tenantId,
@@ -76,6 +79,13 @@ class SupabaseBackend implements Backend {
       'p_locale': locale,
     });
     await _c.auth.refreshSession();
+  }
+
+  @override
+  Future<Map<String, dynamic>> reportSummary(DateTime from, DateTime to) async {
+    String d(DateTime x) => '${x.year.toString().padLeft(4, '0')}-${x.month.toString().padLeft(2, '0')}-${x.day.toString().padLeft(2, '0')}';
+    final res = await _c.rpc('report_summary', params: {'p_from': d(from), 'p_to': d(to)});
+    return (res as Map).cast<String, dynamic>();
   }
 
   @override

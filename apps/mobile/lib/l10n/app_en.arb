@@ -314,5 +314,60 @@
         "type": "String"
       }
     }
+  },
+  "reportsTitle": "Reports",
+  "reportsRefresh": "Refresh",
+  "reportsDays": "{count, plural, =1{{count} day} other{{count} days}}",
+  "@reportsDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reportsSales": "Sales",
+  "reportsProfit": "Estimated profit: {amount}",
+  "@reportsProfit": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "reportsPerDay": "Per day",
+  "reportsTopItems": "Best sellers",
+  "reportsNothingYet": "No sales in this period.",
+  "reportsQty": "{n} sold",
+  "@reportsQty": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "reportsUtangOwed": "Owed to you: {amount}",
+  "@reportsUtangOwed": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "reportsAsOf": "No signal. Showing the last report from {when}.",
+  "@reportsAsOf": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "reportsNeedSignal": "Reports need a signal the first time. Connect and try again.",
+  "reportsNotSent": "{count, plural, =1{{count} sale or change is not sent yet and is not included.} other{{count} sales or changes are not sent yet and are not included.}}",
+  "@reportsNotSent": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   }
 }

@@ -581,4 +581,70 @@ class AppLocalizationsFil extends AppLocalizations {
   String sellStockLow(String n) {
     return '$n na lang, paubos na';
   }
+
+  @override
+  String get reportsTitle => 'Ulat';
+
+  @override
+  String get reportsRefresh => 'I-refresh';
+
+  @override
+  String reportsDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count araw',
+      one: '$count araw',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get reportsSales => 'Benta';
+
+  @override
+  String reportsProfit(String amount) {
+    return 'Tinatayang kita: $amount';
+  }
+
+  @override
+  String get reportsPerDay => 'Bawat araw';
+
+  @override
+  String get reportsTopItems => 'Pinakamabenta';
+
+  @override
+  String get reportsNothingYet => 'Walang benta sa panahong ito.';
+
+  @override
+  String reportsQty(String n) {
+    return '$n ang nabenta';
+  }
+
+  @override
+  String reportsUtangOwed(String amount) {
+    return 'Utang sa iyo: $amount';
+  }
+
+  @override
+  String reportsAsOf(String when) {
+    return 'Walang signal. Ipinapakita ang huling ulat noong $when.';
+  }
+
+  @override
+  String get reportsNeedSignal =>
+      'Kailangan ng signal sa unang beses. Kumonekta at subukan ulit.';
+
+  @override
+  String reportsNotSent(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count benta o pagbabago ang hindi pa naipapadala kaya wala pa sa ulat.',
+      one:
+          '$count benta o pagbabago ang hindi pa naipapadala kaya wala pa sa ulat.',
+    );
+    return '$_temp0';
+  }
 }

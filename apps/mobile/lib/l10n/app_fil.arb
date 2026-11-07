@@ -314,5 +314,60 @@
         "type": "String"
       }
     }
+  },
+  "reportsTitle": "Ulat",
+  "reportsRefresh": "I-refresh",
+  "reportsDays": "{count, plural, =1{{count} araw} other{{count} araw}}",
+  "@reportsDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reportsSales": "Benta",
+  "reportsProfit": "Tinatayang kita: {amount}",
+  "@reportsProfit": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "reportsPerDay": "Bawat araw",
+  "reportsTopItems": "Pinakamabenta",
+  "reportsNothingYet": "Walang benta sa panahong ito.",
+  "reportsQty": "{n} ang nabenta",
+  "@reportsQty": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "reportsUtangOwed": "Utang sa iyo: {amount}",
+  "@reportsUtangOwed": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "reportsAsOf": "Walang signal. Ipinapakita ang huling ulat noong {when}.",
+  "@reportsAsOf": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "reportsNeedSignal": "Kailangan ng signal sa unang beses. Kumonekta at subukan ulit.",
+  "reportsNotSent": "{count, plural, =1{{count} benta o pagbabago ang hindi pa naipapadala kaya wala pa sa ulat.} other{{count} benta o pagbabago ang hindi pa naipapadala kaya wala pa sa ulat.}}",
+  "@reportsNotSent": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   }
 }

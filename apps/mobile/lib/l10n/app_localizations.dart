@@ -1045,6 +1045,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{n} left, running low'**
   String sellStockLow(String n);
+
+  /// No description provided for @reportsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reports'**
+  String get reportsTitle;
+
+  /// No description provided for @reportsRefresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get reportsRefresh;
+
+  /// No description provided for @reportsDays.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{{count} day} other{{count} days}}'**
+  String reportsDays(int count);
+
+  /// No description provided for @reportsSales.
+  ///
+  /// In en, this message translates to:
+  /// **'Sales'**
+  String get reportsSales;
+
+  /// No description provided for @reportsProfit.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated profit: {amount}'**
+  String reportsProfit(String amount);
+
+  /// No description provided for @reportsPerDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Per day'**
+  String get reportsPerDay;
+
+  /// No description provided for @reportsTopItems.
+  ///
+  /// In en, this message translates to:
+  /// **'Best sellers'**
+  String get reportsTopItems;
+
+  /// No description provided for @reportsNothingYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No sales in this period.'**
+  String get reportsNothingYet;
+
+  /// No description provided for @reportsQty.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} sold'**
+  String reportsQty(String n);
+
+  /// No description provided for @reportsUtangOwed.
+  ///
+  /// In en, this message translates to:
+  /// **'Owed to you: {amount}'**
+  String reportsUtangOwed(String amount);
+
+  /// No description provided for @reportsAsOf.
+  ///
+  /// In en, this message translates to:
+  /// **'No signal. Showing the last report from {when}.'**
+  String reportsAsOf(String when);
+
+  /// No description provided for @reportsNeedSignal.
+  ///
+  /// In en, this message translates to:
+  /// **'Reports need a signal the first time. Connect and try again.'**
+  String get reportsNeedSignal;
+
+  /// No description provided for @reportsNotSent.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{{count} sale or change is not sent yet and is not included.} other{{count} sales or changes are not sent yet and are not included.}}'**
+  String reportsNotSent(int count);
 }
 
 class _AppLocalizationsDelegate

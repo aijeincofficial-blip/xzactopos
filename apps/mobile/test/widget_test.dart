@@ -35,6 +35,16 @@ class FakeBackend implements Backend {
   Future<void> signOut() async => _ctrl.add(false);
   @override
   Future<Map<String, dynamic>?> myAccess() async => access;
+  Map<String, dynamic>? report;
+  Object? reportError;
+  final reportCalls = <(DateTime, DateTime)>[];
+  @override
+  Future<Map<String, dynamic>> reportSummary(DateTime from, DateTime to) async {
+    reportCalls.add((from, to));
+    if (reportError != null) throw reportError!;
+    return report ?? <String, dynamic>{};
+  }
+
   @override
   Future<Map<String, dynamic>> pullCatalog(Map<String, dynamic> cursors, {int limit = 500}) async => {};
   @override

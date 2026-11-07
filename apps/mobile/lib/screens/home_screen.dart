@@ -8,6 +8,7 @@ import '../l10n/app_localizations.dart';
 import '../sync/store_session.dart';
 import '../sync/sync_badge.dart';
 import 'products_screen.dart';
+import 'reports_screen.dart';
 import 'sell_screen.dart';
 import 'stock_screen.dart';
 import 'today_screen.dart';
@@ -73,6 +74,18 @@ class HomeScreen extends StatelessWidget {
               )),
             ),
             const SizedBox(height: 12),
+            // reports are for the owner and admins (the same people who change stock)
+            if (scope.canManageStock) ...[
+              _Tile(
+                key: const Key('tile-reports'),
+                icon: Icons.bar_chart,
+                label: t.reportsTitle,
+                onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+                  builder: (_) => scope.wrap(ReportsScreen(backend: backend)),
+                )),
+              ),
+              const SizedBox(height: 12),
+            ],
             StreamBuilder<List<StockRow>>(
               stream: scope.store.watchStockList(),
               builder: (context, snap) => _Tile(

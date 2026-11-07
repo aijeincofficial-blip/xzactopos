@@ -575,4 +575,68 @@ class AppLocalizationsEn extends AppLocalizations {
   String sellStockLow(String n) {
     return '$n left, running low';
   }
+
+  @override
+  String get reportsTitle => 'Reports';
+
+  @override
+  String get reportsRefresh => 'Refresh';
+
+  @override
+  String reportsDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count days',
+      one: '$count day',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get reportsSales => 'Sales';
+
+  @override
+  String reportsProfit(String amount) {
+    return 'Estimated profit: $amount';
+  }
+
+  @override
+  String get reportsPerDay => 'Per day';
+
+  @override
+  String get reportsTopItems => 'Best sellers';
+
+  @override
+  String get reportsNothingYet => 'No sales in this period.';
+
+  @override
+  String reportsQty(String n) {
+    return '$n sold';
+  }
+
+  @override
+  String reportsUtangOwed(String amount) {
+    return 'Owed to you: $amount';
+  }
+
+  @override
+  String reportsAsOf(String when) {
+    return 'No signal. Showing the last report from $when.';
+  }
+
+  @override
+  String get reportsNeedSignal =>
+      'Reports need a signal the first time. Connect and try again.';
+
+  @override
+  String reportsNotSent(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count sales or changes are not sent yet and are not included.',
+      one: '$count sale or change is not sent yet and is not included.',
+    );
+    return '$_temp0';
+  }
 }
