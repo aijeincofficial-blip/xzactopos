@@ -1,6 +1,6 @@
 -- P4-01 stock in, counts, weighted average cost, and the "levels equal the sum of movements" property
 begin;
-select plan(25);
+select plan(29);
 
 create function pg_temp.u(p text) returns uuid language sql immutable as $$ select md5('u:' || p)::uuid $$;
 create function pg_temp.t(p text) returns uuid language sql immutable as $$ select md5('t:' || p)::uuid $$;
@@ -51,11 +51,13 @@ insert into public.products (id, tenant_id, name, track_stock) values
   (pg_temp.id('p:kape'), pg_temp.t('A'), 'Kape', true),
   (pg_temp.id('p:asin'), pg_temp.t('A'), 'Asin', false),
   (pg_temp.id('p:new'), pg_temp.t('A'), 'Bago', true),
+  (pg_temp.id('p:fresh'), pg_temp.t('A'), 'Sariwa', true),
   (pg_temp.id('p:b'), pg_temp.t('B'), 'B item', true);
 insert into public.product_variants (id, tenant_id, product_id, sku, is_default, cost) values
   (pg_temp.id('v:kape'), pg_temp.t('A'), pg_temp.id('p:kape'), 'KAPE', true, 900),
   (pg_temp.id('v:asin'), pg_temp.t('A'), pg_temp.id('p:asin'), 'ASIN', true, 100),
   (pg_temp.id('v:new'), pg_temp.t('A'), pg_temp.id('p:new'), 'NEW', true, 100),
+  (pg_temp.id('v:fresh'), pg_temp.t('A'), pg_temp.id('p:fresh'), 'FRESH', true, 100),
   (pg_temp.id('v:b'), pg_temp.t('B'), pg_temp.id('p:b'), 'B1', true, 100);
 
 select pg_temp.login('owner', 'A');
@@ -86,6 +88,17 @@ select pg_temp.sell('s1', 'kape', 2); -- 16 left
 select is((pg_temp.count('c4', 'kape', 10) -> 'result' ->> 'delta')::numeric, -6::numeric, 'the correction is computed from the level at the time, after a sale in between');
 select is((pg_temp.count('c5', 'new', 5) -> 'result' ->> 'delta')::numeric, 5::numeric, 'a first count of a never-counted product starts it');
 select is(pg_temp.avg('kape'), 150::bigint, 'sales and counts never move the average cost');
+
+-- "counted": only a count, stock in or opening stock makes a product counted; sales alone do not
+select is((select counted from public.stock_levels where variant_id = pg_temp.id('v:kape')), true, 'stock in makes a product counted');
+select pg_temp.sell('s9', 'asin', 1);
+select pg_temp.push1('s9b', 'record_sale', jsonb_build_object('id', pg_temp.id('sale:s9b'), 'local_no', 'R-s9b', 'sold_at', '2026-11-08T02:00:00Z',
+  'items', jsonb_build_array(jsonb_build_object('variant_id', pg_temp.id('v:fresh'), 'qty', 1, 'unit_price', 500)),
+  'payments', jsonb_build_array(jsonb_build_object('method', 'cash', 'amount', 500))));
+select is((select counted from public.stock_levels where variant_id = pg_temp.id('v:fresh')), false, 'a sale alone leaves a product not counted (level -1)');
+select is((select qty_on_hand from public.stock_levels where variant_id = pg_temp.id('v:fresh')), -1::numeric, 'but the level is -1');
+select pg_temp.count('c6', 'fresh', 4);
+select is((select counted from public.stock_levels where variant_id = pg_temp.id('v:fresh')), true, 'a count makes it counted');
 
 -- refusals
 select is(pg_temp.recv('x1', 'kape', 0) ->> 'hint', 'qty_invalid', 'a zero stock in is refused');
