@@ -2239,6 +2239,150 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{packs} pack → {pieces} × {name}'**
   String tingiHistoryRow(int packs, int pieces, String name);
+
+  /// No description provided for @utangDueSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Set pay-by date'**
+  String get utangDueSet;
+
+  /// No description provided for @utangDueChange.
+  ///
+  /// In en, this message translates to:
+  /// **'Change date'**
+  String get utangDueChange;
+
+  /// No description provided for @utangDueClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear date'**
+  String get utangDueClear;
+
+  /// No description provided for @utangSendStatement.
+  ///
+  /// In en, this message translates to:
+  /// **'Send statement'**
+  String get utangSendStatement;
+
+  /// No description provided for @utangOverdueNone.
+  ///
+  /// In en, this message translates to:
+  /// **'Nobody is overdue'**
+  String get utangOverdueNone;
+
+  /// No description provided for @stmtTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Utang statement'**
+  String get stmtTitle;
+
+  /// No description provided for @stmtBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Balance'**
+  String get stmtBalance;
+
+  /// No description provided for @stmtDueOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay by'**
+  String get stmtDueOn;
+
+  /// No description provided for @stmtRecent.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent'**
+  String get stmtRecent;
+
+  /// No description provided for @stmtCharge.
+  ///
+  /// In en, this message translates to:
+  /// **'Utang'**
+  String get stmtCharge;
+
+  /// No description provided for @stmtPayment.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment'**
+  String get stmtPayment;
+
+  /// No description provided for @stmtAdjust.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjustment'**
+  String get stmtAdjust;
+
+  /// No description provided for @stockExpirySet.
+  ///
+  /// In en, this message translates to:
+  /// **'Set expiry date'**
+  String get stockExpirySet;
+
+  /// No description provided for @stockExpiryClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear expiry date'**
+  String get stockExpiryClear;
+
+  /// No description provided for @stockInExpiry.
+  ///
+  /// In en, this message translates to:
+  /// **'Expiry date (optional)'**
+  String get stockInExpiry;
+
+  /// No description provided for @stockNoneExpiring.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing is close to expiring.'**
+  String get stockNoneExpiring;
+
+  /// No description provided for @utangDueOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay by {date}'**
+  String utangDueOn(String date);
+
+  /// No description provided for @utangOverdueDays.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{{count} day overdue} other{{count} days overdue}}'**
+  String utangOverdueDays(int count);
+
+  /// No description provided for @utangOverdueFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue ({count})'**
+  String utangOverdueFilter(int count);
+
+  /// No description provided for @tileUtangOverdue.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} overdue'**
+  String tileUtangOverdue(int count);
+
+  /// No description provided for @stockExpiringFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Expiring ({count})'**
+  String stockExpiringFilter(int count);
+
+  /// No description provided for @stockExpiresIn.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Expires today} =1{Expires tomorrow} other{Expires in {count} days}}'**
+  String stockExpiresIn(int count);
+
+  /// No description provided for @stockExpiredAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Expired yesterday} other{Expired {count} days ago}}'**
+  String stockExpiredAgo(int count);
+
+  /// No description provided for @tileStockExpiring.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} expiring'**
+  String tileStockExpiring(int count);
 }
 
 class _AppLocalizationsDelegate

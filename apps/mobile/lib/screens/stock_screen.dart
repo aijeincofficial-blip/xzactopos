@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
 import '../core/money.dart';
@@ -10,6 +11,13 @@ import '../sync/store_session.dart';
 import '../sync/sync_badge.dart';
 import 'product_thumb.dart';
 import 'restock_screen.dart';
+
+/// Counted stock on the shelf whose expiry date is within a week (or already past).
+bool isExpiringRow(StockRow r, DateTime today) {
+  if (r.expiresOn == null || (r.qty ?? 0) <= 0) return false;
+  final left = r.daysLeft(today);
+  return left != null && left <= 7;
+}
 
 String fmtQty(double q) => q == q.roundToDouble() ? q.toInt().toString() : q.toStringAsFixed(3).replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '');
 
@@ -24,6 +32,22 @@ class StockScreen extends StatefulWidget {
 class _StockScreenState extends State<StockScreen> {
   String _query = '';
   bool _lowOnly = false;
+  bool _expiringOnly = false;
+
+  Widget? _stockSubtitle(AppLocalizations t, ColorScheme scheme, StockRow r, DateTime today) {
+    final left = r.expiresOn == null ? null : r.daysLeft(today);
+    final soon = isExpiringRow(r, today);
+    if (!r.low && left == null) return null;
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      if (r.low) Text(t.stockRunningLow, style: TextStyle(color: scheme.error)),
+      if (left != null)
+        Text(
+          left < 0 ? t.stockExpiredAgo(-left) : t.stockExpiresIn(left),
+          key: Key('expiry-${r.product.id}'),
+          style: TextStyle(color: soon ? scheme.error : scheme.outline, fontSize: 12, fontWeight: soon ? FontWeight.w700 : null),
+        ),
+    ]);
+  }
 
   Future<void> _open(StockRow row) async {
     final scope = CatalogScope.of(context);
@@ -53,8 +77,12 @@ class _StockScreenState extends State<StockScreen> {
         builder: (context, snap) {
           final all = snap.data;
           if (all == null) return const Center(child: CircularProgressIndicator());
+          final today = DateTime.now();
           final lowCount = all.where((r) => r.low).length;
-          final rows = _lowOnly ? all.where((r) => r.low).toList() : all;
+          final expiringCount = all.where((r) => isExpiringRow(r, today)).length;
+          final rows = _lowOnly
+              ? all.where((r) => r.low).toList()
+              : (_expiringOnly ? all.where((r) => isExpiringRow(r, today)).toList() : all);
           return Column(children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(Gap.xl, Gap.s, Gap.xl, Gap.s),
@@ -73,8 +101,11 @@ class _StockScreenState extends State<StockScreen> {
                 ChoiceChip(
                   key: const Key('filter-all'),
                   label: Text(t.stockAll),
-                  selected: !_lowOnly,
-                  onSelected: (_) => setState(() => _lowOnly = false),
+                  selected: !_lowOnly && !_expiringOnly,
+                  onSelected: (_) => setState(() {
+                    _lowOnly = false;
+                    _expiringOnly = false;
+                  }),
                 ),
                 const SizedBox(width: 8),
                 ChoiceChip(
@@ -82,8 +113,24 @@ class _StockScreenState extends State<StockScreen> {
                   avatar: lowCount > 0 ? const Icon(Icons.warning_amber_rounded, size: 18) : null,
                   label: Text(t.stockLowCount(lowCount)),
                   selected: _lowOnly,
-                  onSelected: (_) => setState(() => _lowOnly = true),
+                  onSelected: (_) => setState(() {
+                    _lowOnly = true;
+                    _expiringOnly = false;
+                  }),
                 ),
+                if (expiringCount > 0 || _expiringOnly) ...[
+                  const SizedBox(width: 8),
+                  ChoiceChip(
+                    key: const Key('filter-expiring'),
+                    avatar: expiringCount > 0 ? const Icon(Icons.event_busy_rounded, size: 18) : null,
+                    label: Text(t.stockExpiringFilter(expiringCount)),
+                    selected: _expiringOnly,
+                    onSelected: (_) => setState(() {
+                      _expiringOnly = true;
+                      _lowOnly = false;
+                    }),
+                  ),
+                ],
               ]),
             ),
             Expanded(
@@ -91,7 +138,7 @@ class _StockScreenState extends State<StockScreen> {
                   ? Center(
                       child: Padding(
                         padding: const EdgeInsets.all(32),
-                        child: Text(_lowOnly ? t.stockNoneLow : (all.isEmpty ? t.noProductsYet : t.noMatches),
+                        child: Text(_lowOnly ? t.stockNoneLow : (_expiringOnly ? t.stockNoneExpiring : (all.isEmpty ? t.noProductsYet : t.noMatches)),
                             textAlign: TextAlign.center),
                       ),
                     )
@@ -110,7 +157,7 @@ class _StockScreenState extends State<StockScreen> {
                           contentPadding: EdgeInsets.zero,
                           leading: ProductThumb(productId: r.product.id, path: r.product.photoPath),
                           title: Text(r.product.name, style: const TextStyle(fontSize: 18)),
-                          subtitle: r.low ? Text(t.stockRunningLow, style: TextStyle(color: scheme.error)) : null,
+                          subtitle: _stockSubtitle(t, scheme, r, today),
                           trailing: Row(mainAxisSize: MainAxisSize.min, children: [
                             if (r.pending)
                               Padding(
@@ -148,7 +195,7 @@ class _ActionSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
     return SafeArea(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           Text(row.product.name, style: Theme.of(context).textTheme.titleLarge),
@@ -164,6 +211,30 @@ class _ActionSheet extends StatelessWidget {
               await showStockInDialog(context, scope, row);
             },
           ),
+          const SizedBox(height: 8),
+          Row(children: [
+            Expanded(
+              child: TextButton.icon(
+                key: const Key('action-set-expiry'),
+                icon: const Icon(Icons.event_outlined),
+                label: Text(t.stockExpirySet),
+                onPressed: () async {
+                  Navigator.pop(context);
+                  await showSetExpiry(context, scope, row);
+                },
+              ),
+            ),
+            if (row.expiresOn != null)
+              TextButton(
+                key: const Key('action-clear-expiry'),
+                onPressed: () async {
+                  Navigator.pop(context);
+                  await scope.store.setExpiry(variantId: row.product.variantId, expiresOn: null, opId: const Uuid().v7());
+                  scope.engine.poke();
+                },
+                child: Text(t.stockExpiryClear),
+              ),
+          ]),
           if (row.product.sellsByPiece) ...[
             const SizedBox(height: 8),
             OutlinedButton.icon(
@@ -208,6 +279,7 @@ Future<void> showStockInDialog(BuildContext context, CatalogScope scope, StockRo
   final ccy = scope.store.baseCurrency;
   final qty = TextEditingController();
   final cost = TextEditingController();
+  DateTime? expiry;
   String? qtyError;
   String? costError;
   final ok = await showDialog<bool>(
@@ -229,6 +301,24 @@ Future<void> showStockInDialog(BuildContext context, CatalogScope scope, StockRo
             controller: cost,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             decoration: InputDecoration(labelText: t.stockInCost, errorText: costError),
+          ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              key: const Key('stockin-expiry'),
+              icon: const Icon(Icons.event_outlined, size: 18),
+              label: Text(expiry == null ? t.stockInExpiry : DateFormat.yMMMd(Localizations.localeOf(ctx).languageCode).format(expiry!)),
+              onPressed: () async {
+                final now = DateTime.now();
+                final d = await showDatePicker(
+                  context: ctx,
+                  initialDate: expiry ?? now.add(const Duration(days: 90)),
+                  firstDate: DateTime(now.year, now.month, now.day).subtract(const Duration(days: 30)),
+                  lastDate: now.add(const Duration(days: 3000)),
+                );
+                if (d != null) setState(() => expiry = DateTime(d.year, d.month, d.day));
+              },
+            ),
           ),
         ]),
         actions: [
@@ -262,6 +352,7 @@ Future<void> showStockInDialog(BuildContext context, CatalogScope scope, StockRo
     variantId: row.product.variantId,
     qty: double.parse(qty.text.trim().replaceAll(',', '.')),
     cost: cost.text.trim().isEmpty ? null : Money.parse(cost.text, ccy).amount,
+    expiresOn: expiry,
     opId: const Uuid().v7(),
   );
   scope.engine.poke();
@@ -463,4 +554,23 @@ class _PackHistory extends StatelessWidget {
     await scope.store.voidOpenPack(conversionId: c.id, opId: const Uuid().v7());
     scope.engine.poke();
   }
+}
+
+/// Pick the expiry date of what is on the shelf (the earliest one).
+Future<void> showSetExpiry(BuildContext context, CatalogScope scope, StockRow row) async {
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final picked = await showDatePicker(
+    context: context,
+    initialDate: row.expiresOn ?? today.add(const Duration(days: 90)),
+    firstDate: today.subtract(const Duration(days: 365)),
+    lastDate: today.add(const Duration(days: 3000)),
+  );
+  if (picked == null) return;
+  await scope.store.setExpiry(
+    variantId: row.product.variantId,
+    expiresOn: DateTime(picked.year, picked.month, picked.day),
+    opId: const Uuid().v7(),
+  );
+  scope.engine.poke();
 }

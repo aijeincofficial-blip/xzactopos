@@ -742,5 +742,85 @@
         "type": "String"
       }
     }
+  },
+  "utangDueSet": "Maglagay ng petsa ng bayad",
+  "utangDueChange": "Palitan ang petsa",
+  "utangDueClear": "Alisin ang petsa",
+  "utangSendStatement": "Ipadala ang statement",
+  "utangOverdueNone": "Walang lampas na sa petsa",
+  "stmtTitle": "Statement ng utang",
+  "stmtBalance": "Balanse",
+  "stmtDueOn": "Magbabayad sa",
+  "stmtRecent": "Kamakailan",
+  "stmtCharge": "Utang",
+  "stmtPayment": "Bayad",
+  "stmtAdjust": "Ayos",
+  "stockExpirySet": "Ilagay ang expiry date",
+  "stockExpiryClear": "Alisin ang expiry date",
+  "stockInExpiry": "Expiry date (opsyonal)",
+  "stockNoneExpiring": "Walang malapit nang mag-expire.",
+  "utangDueOn": "Magbabayad sa {date}",
+  "@utangDueOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "utangOverdueDays": "{count, plural, other{{count} araw nang lampas}}",
+  "@utangOverdueDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "utangOverdueFilter": "Lampas na ({count})",
+  "@utangOverdueFilter": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tileUtangOverdue": "{count} lampas na",
+  "@tileUtangOverdue": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "stockExpiringFilter": "Malapit mag-expire ({count})",
+  "@stockExpiringFilter": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "stockExpiresIn": "{count, plural, =0{Mag-eexpire ngayon} =1{Mag-eexpire bukas} other{Mag-eexpire sa {count} araw}}",
+  "@stockExpiresIn": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "stockExpiredAgo": "{count, plural, =1{Nag-expire kahapon} other{Nag-expire {count} araw na ang nakaraan}}",
+  "@stockExpiredAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tileStockExpiring": "{count} malapit mag-expire",
+  "@tileStockExpiring": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   }
 }

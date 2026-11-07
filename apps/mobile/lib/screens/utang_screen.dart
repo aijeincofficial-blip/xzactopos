@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
+import '../core/export.dart';
 import '../core/money.dart';
+import '../core/utang_statement.dart';
 import '../core/theme.dart';
 import '../core/ui.dart';
 import '../core/search.dart';
@@ -14,7 +16,8 @@ import 'customer_picker.dart';
 
 /// Who owes what. Biggest balance first; tap a customer for the history and to record a payment.
 class UtangScreen extends StatefulWidget {
-  const UtangScreen({super.key});
+  const UtangScreen({super.key, this.storeName = ''});
+  final String storeName;
 
   @override
   State<UtangScreen> createState() => _UtangScreenState();
@@ -22,6 +25,7 @@ class UtangScreen extends StatefulWidget {
 
 class _UtangScreenState extends State<UtangScreen> {
   String _q = '';
+  bool _overdueOnly = false;
 
   @override
   Widget build(BuildContext context) {
@@ -46,7 +50,10 @@ class _UtangScreenState extends State<UtangScreen> {
           final all = snap.data;
           if (all == null) return const Center(child: CircularProgressIndicator());
           final owed = all.where((c) => c.balance > 0).fold<int>(0, (a, c) => a + c.balance);
-          final list = _q.isEmpty ? all : all.where((c) => searchKey(c.name).contains(_q)).toList();
+          final today = DateTime.now();
+          final overdueCount = all.where((c) => c.overdue(today)).length;
+          final byName = _q.isEmpty ? all : all.where((c) => searchKey(c.name).contains(_q)).toList();
+          final list = _overdueOnly ? byName.where((c) => c.overdue(today)).toList() : byName;
           return Column(children: [
             SummaryCard(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -67,11 +74,31 @@ class _UtangScreenState extends State<UtangScreen> {
                   ),
                 ),
               ),
+            if (overdueCount > 0 || _overdueOnly)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: Gap.xl),
+                child: Row(children: [
+                  ChoiceChip(
+                    key: const Key('filter-utang-all'),
+                    label: Text(t.stockAll),
+                    selected: !_overdueOnly,
+                    onSelected: (_) => setState(() => _overdueOnly = false),
+                  ),
+                  const SizedBox(width: 8),
+                  ChoiceChip(
+                    key: const Key('filter-utang-overdue'),
+                    avatar: overdueCount > 0 ? const Icon(Icons.schedule_rounded, size: 18) : null,
+                    label: Text(t.utangOverdueFilter(overdueCount)),
+                    selected: _overdueOnly,
+                    onSelected: (_) => setState(() => _overdueOnly = true),
+                  ),
+                ]),
+              ),
             Expanded(
               child: list.isEmpty
                   ? EmptyState(
                       icon: all.isEmpty ? Icons.menu_book_rounded : Icons.search_off_rounded,
-                      text: all.isEmpty ? t.utangEmpty : t.noMatches,
+                      text: all.isEmpty ? t.utangEmpty : (_overdueOnly ? t.utangOverdueNone : t.noMatches),
                     )
                   : ListView.separated(
                       padding: const EdgeInsets.fromLTRB(Gap.xl, Gap.s, Gap.xl, 96),
@@ -83,12 +110,20 @@ class _UtangScreenState extends State<UtangScreen> {
                           key: Key('customer-row-${c.id}'),
                           padding: const EdgeInsets.symmetric(horizontal: Gap.l, vertical: Gap.s), radius: Gap.radiusL,
                           onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
-                            builder: (_) => scope.wrap(CustomerScreen(customerId: c.id)),
+                            builder: (_) => scope.wrap(CustomerScreen(customerId: c.id, storeName: widget.storeName)),
                           )),
                           child: ListTile(
                           contentPadding: EdgeInsets.zero,
                           title: Text(c.name, style: const TextStyle(fontSize: 18)),
-                          subtitle: c.phone == null ? null : Text(c.phone!),
+                          subtitle: (c.phone == null && !c.overdue(today))
+                              ? null
+                              : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                  if (c.phone != null) Text(c.phone!),
+                                  if (c.overdue(today))
+                                    Text(t.utangOverdueDays(c.daysOverdue(today)),
+                                        key: Key('overdue-${c.id}'),
+                                        style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12, fontWeight: FontWeight.w700)),
+                                ]),
                           trailing: Row(mainAxisSize: MainAxisSize.min, children: [
                             if (c.pending)
                               Padding(
@@ -115,8 +150,55 @@ class _UtangScreenState extends State<UtangScreen> {
 }
 
 class CustomerScreen extends StatelessWidget {
-  const CustomerScreen({super.key, required this.customerId});
+  const CustomerScreen({super.key, required this.customerId, this.storeName = ''});
   final String customerId;
+  final String storeName;
+
+  Future<void> _setDue(BuildContext context, CustomerView c) async {
+    final scope = CatalogScope.of(context);
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: c.dueOn ?? today.add(const Duration(days: 7)),
+      firstDate: today.subtract(const Duration(days: 60)),
+      lastDate: today.add(const Duration(days: 700)),
+    );
+    if (picked == null) return;
+    await scope.store.setUtangDue(customerId: c.id, dueOn: DateTime(picked.year, picked.month, picked.day), opId: const Uuid().v7());
+    scope.engine.poke();
+  }
+
+  Future<void> _clearDue(BuildContext context, CustomerView c) async {
+    final scope = CatalogScope.of(context);
+    await scope.store.setUtangDue(customerId: c.id, dueOn: null, opId: const Uuid().v7());
+    scope.engine.poke();
+  }
+
+  /// A plain-text statement (no phone number, no notes) through the system share sheet.
+  Future<void> _sendStatement(BuildContext context, CustomerView c) async {
+    final t = AppLocalizations.of(context);
+    final scope = CatalogScope.of(context);
+    final locale = Localizations.localeOf(context).languageCode;
+    final ledger = await scope.store.watchLedger(c.id).first;
+    final text = utangStatementText(
+      storeName: storeName,
+      customer: c,
+      ledger: ledger,
+      currency: scope.store.baseCurrency,
+      locale: locale,
+      labels: StatementLabels(
+        title: t.stmtTitle,
+        balance: t.stmtBalance,
+        dueOn: t.stmtDueOn,
+        recent: t.stmtRecent,
+        charge: t.stmtCharge,
+        payment: t.stmtPayment,
+        adjust: t.stmtAdjust,
+      ),
+    );
+    await textSharer.shareText(text);
+  }
 
   Future<void> _recordPayment(BuildContext context, CustomerView c) async {
     final t = AppLocalizations.of(context);
@@ -291,6 +373,34 @@ class CustomerScreen extends StatelessWidget {
                             key: const Key('customer-balance'),
                             style: Theme.of(context).textTheme.displaySmall?.copyWith(fontWeight: FontWeight.w800)),
                       if (c.phone != null) Text(c.phone!),
+                      if (c.balance > 0) ...[
+                        const SizedBox(height: 4),
+                        if (c.dueOn != null)
+                          Text(
+                            c.overdue(DateTime.now())
+                                ? t.utangOverdueDays(c.daysOverdue(DateTime.now()))
+                                : t.utangDueOn(DateFormat.yMMMd(locale).format(c.dueOn!)),
+                            key: const Key('customer-due'),
+                            style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                color: c.overdue(DateTime.now()) ? Theme.of(context).colorScheme.error : null),
+                          ),
+                        Wrap(spacing: 8, children: [
+                          TextButton(
+                            key: const Key('set-due'),
+                            onPressed: () => _setDue(context, c),
+                            child: Text(c.dueOn == null ? t.utangDueSet : t.utangDueChange),
+                          ),
+                          if (c.dueOn != null)
+                            TextButton(key: const Key('clear-due'), onPressed: () => _clearDue(context, c), child: Text(t.utangDueClear)),
+                        ]),
+                      ],
+                      TextButton.icon(
+                        key: const Key('send-statement'),
+                        icon: const Icon(Icons.ios_share_rounded, size: 18),
+                        onPressed: () => _sendStatement(context, c),
+                        label: Text(t.utangSendStatement),
+                      ),
                       if (scope.canManageStock)
                         TextButton(
                           key: const Key('adjust-balance'),
@@ -318,7 +428,7 @@ class CustomerScreen extends StatelessWidget {
                               DateFormat.yMMMd(locale).add_jm().format(e.at),
                               if (e.localNo != null) e.localNo!,
                               if (e.note != null && e.note != 'void') e.note!,
-                            ].join(' Â· ');
+                            ].join(' · ');
                             return ListTile(
                               key: Key('ledger-$i'),
                               title: Text(label),
@@ -330,7 +440,7 @@ class CustomerScreen extends StatelessWidget {
                                     child: Icon(Icons.cloud_upload_outlined, size: 18, semanticLabel: t.notSentYet),
                                   ),
                                 Text(
-                                  e.amount > 0 ? '+${money(e.amount)}' : 'âˆ’${money(-e.amount)}',
+                                  e.amount > 0 ? '+${money(e.amount)}' : '−${money(-e.amount)}',
                                   style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: e.amount > 0 ? Theme.of(context).colorScheme.error : Colors.green.shade700),
                                 ),
                               ]),

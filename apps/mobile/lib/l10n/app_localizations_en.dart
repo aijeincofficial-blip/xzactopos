@@ -1295,4 +1295,111 @@ class AppLocalizationsEn extends AppLocalizations {
   String tingiHistoryRow(int packs, int pieces, String name) {
     return '$packs pack → $pieces × $name';
   }
+
+  @override
+  String get utangDueSet => 'Set pay-by date';
+
+  @override
+  String get utangDueChange => 'Change date';
+
+  @override
+  String get utangDueClear => 'Clear date';
+
+  @override
+  String get utangSendStatement => 'Send statement';
+
+  @override
+  String get utangOverdueNone => 'Nobody is overdue';
+
+  @override
+  String get stmtTitle => 'Utang statement';
+
+  @override
+  String get stmtBalance => 'Balance';
+
+  @override
+  String get stmtDueOn => 'Pay by';
+
+  @override
+  String get stmtRecent => 'Recent';
+
+  @override
+  String get stmtCharge => 'Utang';
+
+  @override
+  String get stmtPayment => 'Payment';
+
+  @override
+  String get stmtAdjust => 'Adjustment';
+
+  @override
+  String get stockExpirySet => 'Set expiry date';
+
+  @override
+  String get stockExpiryClear => 'Clear expiry date';
+
+  @override
+  String get stockInExpiry => 'Expiry date (optional)';
+
+  @override
+  String get stockNoneExpiring => 'Nothing is close to expiring.';
+
+  @override
+  String utangDueOn(String date) {
+    return 'Pay by $date';
+  }
+
+  @override
+  String utangOverdueDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count days overdue',
+      one: '$count day overdue',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String utangOverdueFilter(int count) {
+    return 'Overdue ($count)';
+  }
+
+  @override
+  String tileUtangOverdue(int count) {
+    return '$count overdue';
+  }
+
+  @override
+  String stockExpiringFilter(int count) {
+    return 'Expiring ($count)';
+  }
+
+  @override
+  String stockExpiresIn(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Expires in $count days',
+      one: 'Expires tomorrow',
+      zero: 'Expires today',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String stockExpiredAgo(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Expired $count days ago',
+      one: 'Expired yesterday',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String tileStockExpiring(int count) {
+    return '$count expiring';
+  }
 }

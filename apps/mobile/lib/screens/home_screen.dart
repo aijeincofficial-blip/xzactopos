@@ -37,25 +37,37 @@ class HomeScreen extends StatelessWidget {
         Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => scope.wrap(screen)));
 
     final cards = <Widget>[
-      _Tile(
-        key: const Key('tile-utang'),
-        icon: Icons.menu_book_rounded,
-        color: scheme.primary,
-        label: t.utangTitle,
-        subLabel: t.tileUtangSub,
-        onTap: () => open(const UtangScreen()),
+      StreamBuilder<List<CustomerView>>(
+        stream: scope.store.watchOverdueCustomers(),
+        builder: (context, snap) {
+          final overdue = (snap.data ?? const <CustomerView>[]).length;
+          return _Tile(
+            key: const Key('tile-utang'),
+            icon: Icons.menu_book_rounded,
+            color: scheme.primary,
+            label: t.utangTitle,
+            subLabel: overdue > 0 ? t.tileUtangOverdue(overdue) : t.tileUtangSub,
+            badge: overdue,
+            onTap: () => open(UtangScreen(storeName: storeName)),
+          );
+        },
       ),
       StreamBuilder<List<StockRow>>(
         stream: scope.store.watchStockList(),
         builder: (context, snap) {
-          final lowCount = (snap.data ?? const <StockRow>[]).where((r) => r.low).length;
+          final rows = snap.data ?? const <StockRow>[];
+          final today = DateTime.now();
+          final lowCount = rows.where((r) => r.low).length;
+          final expiring = rows.where((r) => isExpiringRow(r, today)).length;
           return _Tile(
             key: const Key('tile-stock'),
             icon: Icons.inventory_2_rounded,
             color: scheme.tertiary,
             label: t.stockTitle,
-            subLabel: lowCount > 0 ? t.tileStockLow(lowCount) : t.tileStockSub,
-            badge: lowCount,
+            subLabel: lowCount > 0
+                ? t.tileStockLow(lowCount)
+                : (expiring > 0 ? t.tileStockExpiring(expiring) : t.tileStockSub),
+            badge: lowCount + expiring,
             onTap: () => open(const StockScreen()),
           );
         },

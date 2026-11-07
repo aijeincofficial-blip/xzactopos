@@ -1303,4 +1303,110 @@ class AppLocalizationsFil extends AppLocalizations {
   String tingiHistoryRow(int packs, int pieces, String name) {
     return '$packs pack → $pieces × $name';
   }
+
+  @override
+  String get utangDueSet => 'Maglagay ng petsa ng bayad';
+
+  @override
+  String get utangDueChange => 'Palitan ang petsa';
+
+  @override
+  String get utangDueClear => 'Alisin ang petsa';
+
+  @override
+  String get utangSendStatement => 'Ipadala ang statement';
+
+  @override
+  String get utangOverdueNone => 'Walang lampas na sa petsa';
+
+  @override
+  String get stmtTitle => 'Statement ng utang';
+
+  @override
+  String get stmtBalance => 'Balanse';
+
+  @override
+  String get stmtDueOn => 'Magbabayad sa';
+
+  @override
+  String get stmtRecent => 'Kamakailan';
+
+  @override
+  String get stmtCharge => 'Utang';
+
+  @override
+  String get stmtPayment => 'Bayad';
+
+  @override
+  String get stmtAdjust => 'Ayos';
+
+  @override
+  String get stockExpirySet => 'Ilagay ang expiry date';
+
+  @override
+  String get stockExpiryClear => 'Alisin ang expiry date';
+
+  @override
+  String get stockInExpiry => 'Expiry date (opsyonal)';
+
+  @override
+  String get stockNoneExpiring => 'Walang malapit nang mag-expire.';
+
+  @override
+  String utangDueOn(String date) {
+    return 'Magbabayad sa $date';
+  }
+
+  @override
+  String utangOverdueDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count araw nang lampas',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String utangOverdueFilter(int count) {
+    return 'Lampas na ($count)';
+  }
+
+  @override
+  String tileUtangOverdue(int count) {
+    return '$count lampas na';
+  }
+
+  @override
+  String stockExpiringFilter(int count) {
+    return 'Malapit mag-expire ($count)';
+  }
+
+  @override
+  String stockExpiresIn(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Mag-eexpire sa $count araw',
+      one: 'Mag-eexpire bukas',
+      zero: 'Mag-eexpire ngayon',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String stockExpiredAgo(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Nag-expire $count araw na ang nakaraan',
+      one: 'Nag-expire kahapon',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String tileStockExpiring(int count) {
+    return '$count malapit mag-expire';
+  }
 }

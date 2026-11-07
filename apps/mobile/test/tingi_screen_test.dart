@@ -37,6 +37,8 @@ Future<void> openStockAction(WidgetTester tester, ProductView pack, String actio
   await tester.pumpAndSettle();
   await tester.tap(find.byKey(Key('stock-${pack.id}')));
   await tester.pumpAndSettle();
+  await tester.ensureVisible(find.byKey(Key(action)));
+  await tester.pumpAndSettle();
   await tester.tap(find.byKey(Key(action)));
   await tester.pumpAndSettle();
 }
@@ -89,6 +91,8 @@ void main() {
     expect(await store.stockLeft(piece.variantId), 20);
 
     await tester.tap(find.byKey(Key('stock-${pack.id}')));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const Key('action-pack-history')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('action-pack-history')));
     await tester.pumpAndSettle();

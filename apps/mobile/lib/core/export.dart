@@ -73,3 +73,18 @@ class SystemCsvSharer implements CsvSharer {
 }
 
 CsvSharer csvSharer = const SystemCsvSharer();
+
+/// Where plain text (an utang statement) goes: the system share sheet; tests replace it.
+abstract class TextSharer {
+  Future<void> shareText(String text);
+}
+
+class SystemTextSharer implements TextSharer {
+  const SystemTextSharer();
+  @override
+  Future<void> shareText(String text) async {
+    await SharePlus.instance.share(ShareParams(text: text));
+  }
+}
+
+TextSharer textSharer = const SystemTextSharer();
