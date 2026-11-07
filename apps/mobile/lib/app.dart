@@ -84,6 +84,11 @@ class LanguageButton extends StatelessWidget {
     final other = scope.locale == 'fil' ? 'en' : 'fil';
     return TextButton(
       key: const Key('language-button'),
+      style: TextButton.styleFrom(
+        minimumSize: const Size(36, 36),
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
       onPressed: () => scope.setLocale(other),
       child: Text(other.toUpperCase()),
     );

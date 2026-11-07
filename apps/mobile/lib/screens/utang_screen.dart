@@ -57,7 +57,7 @@ class _UtangScreenState extends State<UtangScreen> {
             ),
             if (all.isNotEmpty)
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                padding: const EdgeInsets.fromLTRB(Gap.xl, Gap.s, Gap.xl, Gap.s),
                 child: TextField(
                   key: const Key('utang-search'),
                   onChanged: (v) => setState(() => _q = searchKey(v)),
@@ -74,14 +74,14 @@ class _UtangScreenState extends State<UtangScreen> {
                       text: all.isEmpty ? t.utangEmpty : t.noMatches,
                     )
                   : ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(Gap.l, Gap.s, Gap.l, 96),
+                      padding: const EdgeInsets.fromLTRB(Gap.xl, Gap.s, Gap.xl, 96),
                       itemCount: list.length,
                       separatorBuilder: (_, _) => const SizedBox(height: Gap.m),
                       itemBuilder: (context, i) {
                         final c = list[i];
                         return AppCard(
                           key: Key('customer-row-${c.id}'),
-                          padding: const EdgeInsets.symmetric(horizontal: Gap.m, vertical: Gap.s),
+                          padding: const EdgeInsets.symmetric(horizontal: Gap.l, vertical: Gap.s), radius: Gap.radiusL,
                           onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
                             builder: (_) => scope.wrap(CustomerScreen(customerId: c.id)),
                           )),

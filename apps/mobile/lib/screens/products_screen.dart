@@ -113,7 +113,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
         children: [
           const _NeedsAttentionBanner(),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            padding: const EdgeInsets.fromLTRB(Gap.xl, Gap.s, Gap.xl, Gap.s),
             child: TextField(
               key: const Key('product-search'),
               controller: _search,
@@ -142,40 +142,40 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 final items = snap.data;
                 if (items == null) return const Center(child: CircularProgressIndicator());
                 if (items.isEmpty) {
-                  return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(32),
-                      child: Text(_query.isEmpty ? t.noProductsYet : t.noMatches,
-                          textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleMedium),
-                    ),
+                  return EmptyState(
+                    icon: _query.isEmpty ? Icons.category_rounded : Icons.search_off_rounded,
+                    text: _query.isEmpty ? t.noProductsYet : t.noMatches,
                   );
                 }
+                final scheme = Theme.of(context).colorScheme;
                 return ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(Gap.l, Gap.s, Gap.l, 96),
+                  padding: const EdgeInsets.fromLTRB(Gap.xl, Gap.s, Gap.xl, 96),
                   itemCount: items.length,
                   separatorBuilder: (_, _) => const SizedBox(height: Gap.m),
                   itemBuilder: (context, i) {
                     final p = items[i];
                     return AppCard(
-                      padding: const EdgeInsets.symmetric(horizontal: Gap.m, vertical: Gap.s),
+                      padding: const EdgeInsets.symmetric(horizontal: Gap.l, vertical: Gap.s),
+                      radius: Gap.radiusL,
                       onTap: () => _open(product: p),
                       child: ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: ProductThumb(productId: p.id, path: p.photoPath),
-                      title: Text(p.name, style: const TextStyle(fontSize: 18)),
-                      subtitle: p.barcode == null ? null : Text(p.barcode!),
-                      trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-                        if (p.pending)
-                          Padding(
-                            padding: const EdgeInsets.only(right: 8),
-                            child: Icon(Icons.cloud_upload_outlined, size: 18, semanticLabel: t.notSentYet),
+                        contentPadding: EdgeInsets.zero,
+                        leading: ProductThumb(productId: p.id, path: p.photoPath),
+                        title: Text(p.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                        subtitle: p.barcode == null ? null : Text(p.barcode!, style: TextStyle(color: scheme.outline, fontSize: 13)),
+                        trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                          if (p.pending)
+                            Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: Icon(Icons.cloud_upload_outlined, size: 18, color: scheme.primary, semanticLabel: t.notSentYet),
+                            ),
+                          Text(
+                            p.price == null ? '—' : Money(p.price!, p.currency).format(locale),
+                            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900, letterSpacing: -0.5),
                           ),
-                        Text(
-                          p.price == null ? '—' : Money(p.price!, p.currency).format(locale),
-                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-                        ),
-                      ]),
-                    ));
+                        ]),
+                      ),
+                    );
                   },
                 );
               },

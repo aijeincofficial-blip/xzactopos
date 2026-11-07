@@ -178,7 +178,7 @@ class _SellScreenState extends State<SellScreen> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(Gap.l, Gap.s, Gap.l, Gap.s),
+              padding: const EdgeInsets.fromLTRB(Gap.xl, Gap.s, Gap.xl, Gap.s),
               child: TextField(
                 key: const Key('sell-search'),
                 controller: _search,
@@ -256,9 +256,9 @@ class _SellScreenState extends State<SellScreen> {
           );
         }
         return GridView.builder(
-          padding: const EdgeInsets.fromLTRB(Gap.l, Gap.xs, Gap.l, Gap.l),
+          padding: const EdgeInsets.fromLTRB(Gap.xl, Gap.xs, Gap.xl, Gap.l),
           gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-              maxCrossAxisExtent: 180, mainAxisExtent: 120, crossAxisSpacing: Gap.m, mainAxisSpacing: Gap.m),
+              maxCrossAxisExtent: 180, mainAxisExtent: 136, crossAxisSpacing: Gap.m, mainAxisSpacing: Gap.m),
           itemCount: items.length,
           itemBuilder: (context, i) {
             final p = items[i];
@@ -338,18 +338,46 @@ class _Tile extends StatelessWidget {
       key: Key('tile-${product.id}'),
       onTap: onTap,
       padding: const EdgeInsets.all(Gap.m + 2),
+      radius: Gap.radiusL,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Text(product.name,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              product.photoPath != null
+                  ? ProductThumb(productId: product.id, path: product.photoPath, size: 36)
+                  : CoinBadge(
+                      icon: Icons.inventory_2_rounded,
+                      color: scheme.primary,
+                      size: 36,
+                    ),
+              if (left != null)
+                Flexible(
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: _StockText(left: left!, reorderPoint: product.reorderPoint),
+                  ),
+                ),
+            ],
           ),
-          Text(product.price == null ? '—' : money(product.price!),
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: scheme.primary)),
-          if (left != null) _StockText(left: left!, reorderPoint: product.reorderPoint),
+          const Spacer(),
+          Text(
+            product.name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            product.price == null ? '—' : money(product.price!),
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -0.6,
+              color: scheme.onSurface,
+            ),
+          ),
         ],
       ),
     );
@@ -425,20 +453,28 @@ class _CartPanel extends StatelessWidget {
               ),
             ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(Gap.l, Gap.s, Gap.l, Gap.l),
+            padding: const EdgeInsets.fromLTRB(Gap.xl, Gap.s, Gap.xl, Gap.xl),
             child: Row(children: [
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(t.sellItems(cart.itemCount), style: TextStyle(color: scheme.outline)),
+                  Text(t.sellItems(cart.itemCount), style: TextStyle(color: scheme.outline, fontWeight: FontWeight.w600, fontSize: 13)),
+                  const SizedBox(height: 2),
                   Text(money(cart.subtotal),
-                      key: const Key('cart-total'), style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
+                      key: const Key('cart-total'),
+                      style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w900, letterSpacing: -0.8)),
                 ]),
               ),
               FilledButton.icon(
                 key: const Key('pay-button'),
-                style: FilledButton.styleFrom(minimumSize: const Size(140, 56), textStyle: const TextStyle(fontSize: 20)),
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size(150, 58),
+                  backgroundColor: const Color(0xFF0F172A),
+                  foregroundColor: Colors.white,
+                  shape: const StadiumBorder(),
+                  textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: 0.3),
+                ),
                 onPressed: onPay,
-                icon: const Icon(Icons.payments_outlined),
+                icon: const Icon(Icons.payments_rounded, color: Color(0xFF34D399), size: 22),
                 label: Text(t.sellPay),
               ),
             ]),

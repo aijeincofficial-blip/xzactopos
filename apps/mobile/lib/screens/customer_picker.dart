@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
 import '../core/money.dart';
@@ -26,6 +26,7 @@ Future<PickedCustomer?> showNewCustomerDialog(BuildContext context, LocalStore s
           textCapitalization: TextCapitalization.words,
           decoration: InputDecoration(labelText: t.customerName),
         ),
+        const SizedBox(height: 12),
         TextField(
           key: const Key('customer-phone'),
           controller: phone,

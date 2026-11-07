@@ -39,6 +39,11 @@ class SyncBadge extends StatelessWidget {
               message: label,
               child: TextButton.icon(
                 key: const Key('sync-badge'),
+                style: TextButton.styleFrom(
+                  minimumSize: const Size(36, 36),
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
                 onPressed: scope.engine.syncNow,
                 icon: Icon(icon, color: color, size: 20, semanticLabel: label),
                 label: Text(n > 0 ? '$n' : '', style: TextStyle(color: color, fontWeight: FontWeight.w600)),

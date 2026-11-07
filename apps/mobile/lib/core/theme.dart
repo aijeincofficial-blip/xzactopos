@@ -1,13 +1,12 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 /// The two colour sets the owner can pick from (light and dark exist for both).
-/// See docs/plan-solo-design.md (D-02) and docs/design-audit/palettes.png.
 enum AppPalette { freshTide, goldenIndigo }
 
-/// Spacing and radius scale; screens should use these instead of typed numbers.
+/// Spacing and radius scale for the whole app.
 class Gap {
-  static const double xs = 4, s = 8, m = 12, l = 16, xl = 24;
-  static const double radiusS = 12, radiusM = 16, radiusL = 22, radiusXL = 28;
+  static const double xs = 4, s = 8, m = 12, l = 16, xl = 20, xxl = 28;
+  static const double radiusS = 12, radiusM = 18, radiusL = 24, radiusXL = 30;
 }
 
 class _P {
@@ -22,69 +21,83 @@ class _P {
     required this.tertiary,
     required this.background,
     required this.surface,
+    required this.cardBorder,
     required this.text,
+    required this.textMuted,
   });
   final Color primary, primaryContainer, onPrimaryContainer;
   final Color secondary, onSecondary, secondaryContainer, onSecondaryContainer;
   final Color tertiary; // warning (low stock)
-  final Color background, surface, text;
+  final Color background, surface, cardBorder, text, textMuted;
 }
 
-// utang owed, void, errors (deeper in light themes, lighter with dark text in dark themes, for contrast)
+// Utang owed, void, errors
 const _errorLight = Color(0xFFD6334A);
 const _errorDark = Color(0xFFFF8A94);
 
+// Fresh cool porcelain aesthetic inspired by modern fintech/Web3
 const _freshLight = _P(
   primary: Color(0xFF1E6FF2),
-  primaryContainer: Color(0xFFDCE9FF),
-  onPrimaryContainer: Color(0xFF0B2F6B),
-  secondary: Color(0xFF0A8268), // mint, deep enough for white text (4.5:1)
+  primaryContainer: Color(0xFFEDF4FF),
+  onPrimaryContainer: Color(0xFF0F3980),
+  secondary: Color(0xFF0A8268), // mint / emerald
   onSecondary: Colors.white,
-  secondaryContainer: Color(0xFFCCF3E9),
-  onSecondaryContainer: Color(0xFF05382C),
-  tertiary: Color(0xFFF5A524),
-  background: Color(0xFFF3F8FF),
+  secondaryContainer: Color(0xFFE4F7F2),
+  onSecondaryContainer: Color(0xFF064839),
+  tertiary: Color(0xFFF59E0B), // amber
+  background: Color(0xFFF1F4F9), // cool porcelain mist
   surface: Colors.white,
-  text: Color(0xFF0F2038),
+  cardBorder: Color(0xFFE4E9F2),
+  text: Color(0xFF0F172A),
+  textMuted: Color(0xFF64748B),
 );
+
 const _freshDark = _P(
   primary: Color(0xFF5B9BFF),
-  primaryContainer: Color(0xFF163A73),
+  primaryContainer: Color(0xFF152A4A),
   onPrimaryContainer: Color(0xFFD6E5FF),
   secondary: Color(0xFF2FD9B2),
   onSecondary: Color(0xFF04241C),
-  secondaryContainer: Color(0xFF0F4A3D),
+  secondaryContainer: Color(0xFF0F3B32),
   onSecondaryContainer: Color(0xFFC6F5EA),
   tertiary: Color(0xFFFFB84D),
-  background: Color(0xFF0A1424),
-  surface: Color(0xFF14233A),
-  text: Color(0xFFE8F0FF),
+  background: Color(0xFF0B101D),
+  surface: Color(0xFF131B2E),
+  cardBorder: Color(0xFF1E2B45),
+  text: Color(0xFFF1F5F9),
+  textMuted: Color(0xFF94A3B8),
 );
+
 const _goldLight = _P(
-  primary: Color(0xFF3D5AFE),
-  primaryContainer: Color(0xFFE0E5FF),
-  onPrimaryContainer: Color(0xFF1B2A8A),
-  secondary: Color(0xFFFFC63D),
-  onSecondary: Color(0xFF2B2000),
-  secondaryContainer: Color(0xFFFFEFC2),
-  onSecondaryContainer: Color(0xFF3F2F00),
-  tertiary: Color(0xFFFF8A3D),
-  background: Color(0xFFF6F7FF),
+  primary: Color(0xFF3B52E8),
+  primaryContainer: Color(0xFFEEF1FF),
+  onPrimaryContainer: Color(0xFF1A277A),
+  secondary: Color(0xFFF59E0B),
+  onSecondary: Color(0xFF261900),
+  secondaryContainer: Color(0xFFFEF3C7),
+  onSecondaryContainer: Color(0xFF78350F),
+  tertiary: Color(0xFFEA580C),
+  background: Color(0xFFF2F4FA),
   surface: Colors.white,
-  text: Color(0xFF14183A),
+  cardBorder: Color(0xFFE5E8F3),
+  text: Color(0xFF0F172A),
+  textMuted: Color(0xFF64748B),
 );
+
 const _goldDark = _P(
   primary: Color(0xFF8197FF),
-  primaryContainer: Color(0xFF27307A),
+  primaryContainer: Color(0xFF222B60),
   onPrimaryContainer: Color(0xFFDDE2FF),
   secondary: Color(0xFFFFD25E),
   onSecondary: Color(0xFF2B2000),
-  secondaryContainer: Color(0xFF5A4500),
+  secondaryContainer: Color(0xFF4D3800),
   onSecondaryContainer: Color(0xFFFFEFC2),
   tertiary: Color(0xFFFF9D5C),
-  background: Color(0xFF0D1024),
-  surface: Color(0xFF191E3F),
-  text: Color(0xFFECEEFF),
+  background: Color(0xFF0C1021),
+  surface: Color(0xFF151C36),
+  cardBorder: Color(0xFF222D52),
+  text: Color(0xFFF1F5F9),
+  textMuted: Color(0xFF94A3B8),
 );
 
 ThemeData buildTheme(AppPalette palette, Brightness brightness) {
@@ -108,9 +121,16 @@ ThemeData buildTheme(AppPalette palette, Brightness brightness) {
     onError: dark ? const Color(0xFF3B0008) : Colors.white,
     surface: p.surface,
     onSurface: p.text,
+    outline: p.textMuted,
+    outlineVariant: p.cardBorder,
   );
-  const shape = StadiumBorder(); // pill buttons
-  final cardShape = RoundedRectangleBorder(borderRadius: BorderRadius.circular(Gap.radiusXL));
+
+  const shape = StadiumBorder();
+  final cardShape = RoundedRectangleBorder(
+    borderRadius: BorderRadius.circular(Gap.radiusXL),
+    side: BorderSide(color: p.cardBorder, width: 1.0),
+  );
+
   return ThemeData(
     useMaterial3: true,
     colorScheme: scheme,
@@ -119,43 +139,68 @@ ThemeData buildTheme(AppPalette palette, Brightness brightness) {
       backgroundColor: p.background,
       surfaceTintColor: Colors.transparent,
       foregroundColor: p.text,
+      elevation: 0,
       scrolledUnderElevation: 0,
+      centerTitle: false,
+      titleTextStyle: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: p.text),
     ),
     cardTheme: CardThemeData(color: p.surface, elevation: 0, surfaceTintColor: Colors.transparent, shape: cardShape),
     filledButtonTheme: FilledButtonThemeData(
-      style: FilledButton.styleFrom(minimumSize: const Size(64, 56), shape: shape),
+      style: FilledButton.styleFrom(
+        minimumSize: const Size(64, 56),
+        shape: shape,
+        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+      ),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
-      style: ElevatedButton.styleFrom(minimumSize: const Size(64, 56), shape: shape),
+      style: ElevatedButton.styleFrom(
+        minimumSize: const Size(64, 56),
+        shape: shape,
+        elevation: 0,
+        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+      ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
-      style: OutlinedButton.styleFrom(minimumSize: const Size(64, 56), shape: shape),
+      style: OutlinedButton.styleFrom(
+        minimumSize: const Size(64, 56),
+        shape: shape,
+        side: BorderSide(color: p.cardBorder, width: 1.5),
+        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+      ),
     ),
     floatingActionButtonTheme: FloatingActionButtonThemeData(
       backgroundColor: p.secondary,
       foregroundColor: p.onSecondary,
-      shape: shape,
+      shape: const StadiumBorder(),
+      elevation: 4,
     ),
     inputDecorationTheme: InputDecorationTheme(
-      contentPadding: const EdgeInsets.symmetric(horizontal: Gap.l, vertical: Gap.l),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       filled: true,
       fillColor: p.surface,
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(Gap.radiusL), borderSide: BorderSide.none),
+      hintStyle: TextStyle(color: p.textMuted, fontSize: 15),
+      prefixIconColor: p.textMuted,
+      suffixIconColor: p.textMuted,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(Gap.radiusXL),
+        borderSide: BorderSide(color: p.cardBorder, width: 1.0),
+      ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(Gap.radiusL),
-        borderSide: BorderSide(color: scheme.outlineVariant.withValues(alpha: 0.5)),
+        borderRadius: BorderRadius.circular(Gap.radiusXL),
+        borderSide: BorderSide(color: p.cardBorder, width: 1.0),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(Gap.radiusL),
-        borderSide: BorderSide(color: p.primary, width: 2),
+        borderRadius: BorderRadius.circular(Gap.radiusXL),
+        borderSide: BorderSide(color: p.primary, width: 2.0),
       ),
     ),
     chipTheme: ChipThemeData(
-      selectedColor: p.secondaryContainer,
-      labelStyle: TextStyle(color: p.text),
+      selectedColor: p.primaryContainer,
+      labelStyle: TextStyle(color: p.text, fontWeight: FontWeight.w600, fontSize: 14),
       shape: const StadiumBorder(),
-      side: BorderSide.none,
+      side: BorderSide(color: p.cardBorder, width: 1.0),
       backgroundColor: p.surface,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
     ),
     dialogTheme: DialogThemeData(backgroundColor: p.surface, surfaceTintColor: Colors.transparent, shape: cardShape),
     bottomSheetTheme: BottomSheetThemeData(
@@ -166,7 +211,7 @@ ThemeData buildTheme(AppPalette palette, Brightness brightness) {
   );
 }
 
-/// Chosen palette and brightness, with a way to change them (like [LocaleScope]).
+/// Chosen palette and brightness, with a way to change them.
 class ThemeScope extends InheritedWidget {
   const ThemeScope({
     super.key,

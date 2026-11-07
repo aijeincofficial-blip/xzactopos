@@ -48,7 +48,7 @@ class _StockScreenState extends State<StockScreen> {
           final rows = _lowOnly ? all.where((r) => r.low).toList() : all;
           return Column(children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+              padding: const EdgeInsets.fromLTRB(Gap.xl, Gap.s, Gap.xl, Gap.s),
               child: TextField(
                 key: const Key('stock-search'),
                 onChanged: (v) => setState(() => _query = v),
@@ -59,7 +59,7 @@ class _StockScreenState extends State<StockScreen> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: Gap.xl),
               child: Row(children: [
                 ChoiceChip(
                   key: const Key('filter-all'),
@@ -87,7 +87,7 @@ class _StockScreenState extends State<StockScreen> {
                       ),
                     )
                   : ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(Gap.l, Gap.s, Gap.l, Gap.xl),
+                      padding: const EdgeInsets.fromLTRB(Gap.xl, Gap.s, Gap.xl, Gap.xl),
                       itemCount: rows.length,
                       separatorBuilder: (_, _) => const SizedBox(height: Gap.m),
                       itemBuilder: (context, i) {
@@ -95,7 +95,7 @@ class _StockScreenState extends State<StockScreen> {
                         final scheme = Theme.of(context).colorScheme;
                         return AppCard(
                           key: Key('stock-${r.product.id}'),
-                          padding: const EdgeInsets.symmetric(horizontal: Gap.m, vertical: Gap.s),
+                          padding: const EdgeInsets.symmetric(horizontal: Gap.l, vertical: Gap.s), radius: Gap.radiusL,
                           onTap: () => _open(r),
                           child: ListTile(
                           contentPadding: EdgeInsets.zero,

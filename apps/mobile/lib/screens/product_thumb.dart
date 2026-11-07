@@ -48,7 +48,7 @@ class _ProductThumbState extends State<ProductThumb> {
       child: Icon(Icons.image_outlined, color: scheme.outline, size: widget.size * 0.5),
     );
     return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(14),
       child: _bytes == null
           ? placeholder
           : FutureBuilder<Uint8List?>(

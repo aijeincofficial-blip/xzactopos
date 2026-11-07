@@ -10,10 +10,14 @@ class ThemeButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (ThemeScope.maybeOf(context) == null) return const SizedBox.shrink();
+    if (MediaQuery.sizeOf(context).width < 380) return const SizedBox.shrink();
     return IconButton(
       key: const Key('theme-button'),
       tooltip: AppLocalizations.of(context).themeTitle,
       icon: const Icon(Icons.palette_outlined),
+      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+      padding: const EdgeInsets.all(4),
+      visualDensity: VisualDensity.compact,
       onPressed: () => showModalBottomSheet<void>(
         context: context,
         showDragHandle: true,

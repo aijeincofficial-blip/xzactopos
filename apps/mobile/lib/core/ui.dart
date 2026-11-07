@@ -1,85 +1,111 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 import 'theme.dart';
 
-/// One look for every card in the app: white surface, big radius, soft shadow (no heavy borders).
+/// Sculptural white card with soft diffuse dual shadow and subtle hairline border.
+/// Exactly captures the floating, tactile ceramic aesthetic from the reference.
 class AppCard extends StatelessWidget {
-  const AppCard({super.key, required this.child, this.onTap, this.padding = const EdgeInsets.all(Gap.l), this.color});
+  const AppCard({
+    super.key,
+    required this.child,
+    this.onTap,
+    this.padding = const EdgeInsets.all(Gap.xl),
+    this.color,
+    this.radius,
+  });
+
   final Widget child;
   final VoidCallback? onTap;
   final EdgeInsetsGeometry padding;
   final Color? color;
+  final double? radius;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final dark = scheme.brightness == Brightness.dark;
-    final radius = BorderRadius.circular(Gap.radiusXL);
+    final r = BorderRadius.circular(radius ?? Gap.radiusXL);
+
     return DecoratedBox(
       decoration: BoxDecoration(
         color: color ?? scheme.surface,
-        borderRadius: radius,
-        boxShadow: dark ? null : [BoxShadow(color: scheme.primary.withValues(alpha: 0.10), blurRadius: 18, offset: const Offset(0, 6))],
-        border: dark ? Border.all(color: scheme.outlineVariant.withValues(alpha: 0.4)) : null,
+        borderRadius: r,
+        border: Border.all(
+          color: dark ? scheme.outlineVariant.withValues(alpha: 0.5) : const Color(0xFFE4E9F2),
+          width: 1.0,
+        ),
+        boxShadow: dark
+            ? null
+            : const [
+                BoxShadow(
+                  color: Color(0x0A101E33),
+                  blurRadius: 24,
+                  offset: Offset(0, 8),
+                  spreadRadius: 0,
+                ),
+                BoxShadow(
+                  color: Color(0x04101E33),
+                  blurRadius: 6,
+                  offset: Offset(0, 2),
+                  spreadRadius: 0,
+                ),
+              ],
       ),
       child: Material(
         type: MaterialType.transparency,
-        borderRadius: radius,
+        borderRadius: r,
         clipBehavior: Clip.antiAlias,
-        child: InkWell(onTap: onTap, child: Padding(padding: padding, child: child)),
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(padding: padding, child: child),
+        ),
       ),
     );
   }
 }
 
-/// The big number at the top of a screen (Home, Today, Utang): a large rounded card with the page margins.
+/// A sculptural Hero Card directly styled after the reference swap card:
+/// Pure white surface, clean label with pill badge on top right, huge bold numbers,
+/// and subtle secondary indicators.
 class SummaryCard extends StatelessWidget {
-  const SummaryCard({super.key, required this.child, this.accent = false, this.onTap});
-  final Widget child;
+  const SummaryCard({
+    super.key,
+    required this.child,
+    this.accent = false,
+    this.onTap,
+  });
 
-  /// primary gradient with light text (money in) instead of a soft container colour.
+  final Widget child;
   final bool accent;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final fg = accent ? scheme.onPrimary : scheme.onPrimaryContainer;
-    final radius = BorderRadius.circular(Gap.radiusXL);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(Gap.l, Gap.s, Gap.l, Gap.s),
-      child: Ink(
-        decoration: BoxDecoration(
-          borderRadius: radius,
-          color: accent ? null : scheme.primaryContainer,
-          gradient: accent
-              ? LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [scheme.primary, Color.lerp(scheme.primary, Colors.black, 0.28)!],
-                )
-              : null,
-          boxShadow: accent ? [BoxShadow(color: scheme.primary.withValues(alpha: 0.28), blurRadius: 22, offset: const Offset(0, 10))] : null,
-        ),
-        child: InkWell(
-          borderRadius: radius,
-          onTap: onTap,
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(Gap.xl),
-            child: DefaultTextStyle.merge(style: TextStyle(color: fg), child: child),
-          ),
-        ),
+      padding: const EdgeInsets.symmetric(horizontal: Gap.xl, vertical: Gap.s),
+      child: AppCard(
+        onTap: onTap,
+        padding: const EdgeInsets.all(Gap.xl + 4),
+        radius: Gap.radiusXL,
+        child: child,
       ),
     );
   }
 }
-/// Small rounded square with an icon, used on Home tiles and list rows.
-class IconBadge extends StatelessWidget {
-  const IconBadge({super.key, required this.icon, required this.color, this.onColor, this.size = 44});
+
+/// Circular coin-style token badge inspired by the BNB/USDT coins in the reference.
+class CoinBadge extends StatelessWidget {
+  const CoinBadge({
+    super.key,
+    required this.icon,
+    required this.color,
+    this.iconColor = Colors.white,
+    this.size = 46,
+  });
+
   final IconData icon;
   final Color color;
-  final Color? onColor;
+  final Color iconColor;
   final double size;
 
   @override
@@ -87,15 +113,100 @@ class IconBadge extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(Gap.radiusM - 2)),
-      child: Icon(icon, size: size * 0.55, color: onColor ?? Colors.white),
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.35),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Center(
+        child: Icon(icon, size: size * 0.52, color: iconColor),
+      ),
     );
   }
 }
 
-/// A calm empty state: icon, one sentence, optional action. Centered, with page margins.
+/// Small rounded square or circular badge with an icon.
+class IconBadge extends StatelessWidget {
+  const IconBadge({
+    super.key,
+    required this.icon,
+    required this.color,
+    this.onColor,
+    this.size = 46,
+  });
+
+  final IconData icon;
+  final Color color;
+  final Color? onColor;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return CoinBadge(
+      icon: icon,
+      color: color,
+      iconColor: onColor ?? Colors.white,
+      size: size,
+    );
+  }
+}
+
+/// Floating Pill Badge for counts, statuses, or micro-tags (like [Max] in the reference).
+class StatusPill extends StatelessWidget {
+  const StatusPill({
+    super.key,
+    required this.label,
+    this.textKey,
+    this.color,
+    this.textColor,
+  });
+
+  final String label;
+  final Key? textKey;
+  final Color? color;
+  final Color? textColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final bg = color ?? scheme.primaryContainer;
+    final fg = textColor ?? scheme.onPrimaryContainer;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        label,
+        key: textKey,
+        style: TextStyle(
+          color: fg,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.3,
+        ),
+      ),
+    );
+  }
+}
+
+/// Calm, refined empty state.
 class EmptyState extends StatelessWidget {
-  const EmptyState({super.key, required this.icon, required this.text, this.action});
+  const EmptyState({
+    super.key,
+    required this.icon,
+    required this.text,
+    this.action,
+  });
+
   final IconData icon;
   final String text;
   final Widget? action;
@@ -105,15 +216,33 @@ class EmptyState extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(Gap.xl),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(icon, size: 56, color: scheme.outline),
-          const SizedBox(height: Gap.m),
-          Text(text, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: scheme.onSurfaceVariant)),
-          if (action != null) ...[const SizedBox(height: Gap.l), action!],
-        ]),
+        padding: const EdgeInsets.all(Gap.xxl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 76,
+              height: 76,
+              decoration: BoxDecoration(
+                color: scheme.surface,
+                shape: BoxShape.circle,
+                border: Border.all(color: const Color(0xFFE4E9F2)),
+              ),
+              child: Icon(icon, size: 36, color: scheme.outline),
+            ),
+            const SizedBox(height: Gap.l),
+            Text(
+              text,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: scheme.onSurface.withValues(alpha: 0.7),
+                    height: 1.4,
+                  ),
+            ),
+            if (action != null) ...[const SizedBox(height: Gap.xl), action!],
+          ],
+        ),
       ),
     );
   }
 }
-

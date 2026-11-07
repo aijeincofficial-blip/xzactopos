@@ -19,34 +19,79 @@ class TodayScreen extends StatelessWidget {
     final t = AppLocalizations.of(context);
     final scope = CatalogScope.of(context);
     final locale = Localizations.localeOf(context).languageCode;
+    final scheme = Theme.of(context).colorScheme;
+    final dark = scheme.brightness == Brightness.dark;
     String money(int a) => Money(a, scope.store.baseCurrency).format(locale);
     final now = DateTime.now();
     bool isToday(DateTime d) => d.year == now.year && d.month == now.month && d.day == now.day;
+
     return Scaffold(
       appBar: AppBar(title: Text(t.todayTitle), actions: const [SyncBadge()]),
       body: ListView(
-        padding: const EdgeInsets.only(bottom: 24),
+        padding: const EdgeInsets.only(bottom: Gap.xxl),
         children: [
           StreamBuilder<TodayTotals>(
             stream: scope.store.watchToday(),
             builder: (context, snap) {
               final d = snap.data ?? const TodayTotals();
-              final scheme = Theme.of(context).colorScheme;
               return SummaryCard(
-                accent: true,
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(t.todaySales),
-                  Text(money(d.total),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          t.todaySales.toUpperCase(),
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            color: scheme.outline,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                        StatusPill(
+                          label: t.todayCount(d.count),
+                          textKey: const Key('today-count'),
+                          color: dark ? scheme.primaryContainer : const Color(0xFF0F172A),
+                          textColor: Colors.white,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: Gap.s),
+                    Text(
+                      money(d.total),
                       key: const Key('today-total'),
-                      style: Theme.of(context).textTheme.displaySmall?.copyWith(fontWeight: FontWeight.w800, color: scheme.onPrimary)),
-                  Text(t.todayCount(d.count), key: const Key('today-count')),
-                  const SizedBox(height: Gap.l),
-                  Row(children: [
-                    _Stat(label: t.todayCash, value: money(d.cash), keyName: 'today-cash'),
-                    _Stat(label: t.payEwallet, value: money(d.ewallet), keyName: 'today-ewallet'),
-                    _Stat(label: t.todayUtang, value: money(d.utang), keyName: 'today-utang'),
-                  ]),
-                ]),
+                      style: TextStyle(
+                        fontSize: 34,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -1.2,
+                        color: scheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: Gap.m),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: dark ? const Color(0xFF192237) : const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: dark ? scheme.outlineVariant : const Color(0xFFE2E8F0),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          _Stat(label: t.todayCash, value: money(d.cash), keyName: 'today-cash'),
+                          Container(width: 1, height: 24, color: dark ? scheme.outlineVariant : const Color(0xFFE2E8F0)),
+                          _Stat(label: t.payEwallet, value: money(d.ewallet), keyName: 'today-ewallet'),
+                          Container(width: 1, height: 24, color: dark ? scheme.outlineVariant : const Color(0xFFE2E8F0)),
+                          _Stat(label: t.todayUtang, value: money(d.utang), keyName: 'today-utang'),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               );
             },
           ),
@@ -55,38 +100,57 @@ class TodayScreen extends StatelessWidget {
             builder: (context, snap) {
               final today = (snap.data ?? const <SaleSummary>[]).where((s) => isToday(s.soldAt)).toList();
               if (today.isEmpty) {
-                return Padding(padding: const EdgeInsets.all(32), child: Center(child: Text(t.todayNone)));
+                return EmptyState(
+                  icon: Icons.receipt_long_rounded,
+                  text: t.todayNone,
+                );
               }
-              return Column(children: [
-                for (final s in today)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(Gap.l, Gap.s, Gap.l, Gap.s),
-                    child: AppCard(
-                      padding: const EdgeInsets.symmetric(horizontal: Gap.m, vertical: Gap.xs),
-                      onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
-                        builder: (_) => scope.wrap(ReceiptScreen(saleId: s.id)),
-                      )),
-                      child: ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    key: Key('sale-${s.id}'),
-                    title: Text(
-                      money(s.total),
-                      style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          decoration: s.voided ? TextDecoration.lineThrough : null),
+              return Column(
+                children: [
+                  for (final s in today)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: Gap.xl, vertical: Gap.xs),
+                      child: AppCard(
+                        padding: const EdgeInsets.symmetric(horizontal: Gap.l, vertical: Gap.s),
+                        radius: Gap.radiusL,
+                        onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+                          builder: (_) => scope.wrap(ReceiptScreen(saleId: s.id)),
+                        )),
+                        child: ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          key: Key('sale-${s.id}'),
+                          leading: CoinBadge(
+                            icon: Icons.receipt_rounded,
+                            color: s.voided ? scheme.outline : scheme.primary,
+                            size: 40,
+                          ),
+                          title: Text(
+                            money(s.total),
+                            style: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.5,
+                              color: s.voided ? scheme.outline : scheme.onSurface,
+                              decoration: s.voided ? TextDecoration.lineThrough : null,
+                            ),
+                          ),
+                          subtitle: Text(
+                            [
+                              DateFormat.jm(locale).format(s.soldAt),
+                              s.localNo,
+                              if (s.customerName != null) s.customerName!,
+                              if (s.voided) t.receiptCancelled,
+                            ].join(' · '),
+                            style: TextStyle(color: scheme.outline, fontSize: 13),
+                          ),
+                          trailing: s.pending
+                              ? Icon(Icons.cloud_upload_outlined, size: 18, color: scheme.primary, semanticLabel: t.notSentYet)
+                              : const Icon(Icons.chevron_right_rounded, size: 20, color: Color(0xFFCBD5E1)),
+                        ),
+                      ),
                     ),
-                    subtitle: Text([
-                      DateFormat.jm(locale).format(s.soldAt),
-                      s.localNo,
-                      if (s.customerName != null) s.customerName!,
-                      if (s.voided) t.receiptCancelled,
-                    ].join(' · ')),
-                    trailing: s.pending ? Icon(Icons.cloud_upload_outlined, size: 18, semanticLabel: t.notSentYet) : null,
-                  ),
-                    ),
-                  ),
-              ]);
+                ],
+              );
             },
           ),
         ],
@@ -102,13 +166,33 @@ class _Stat extends StatelessWidget {
   final String keyName;
 
   @override
-  Widget build(BuildContext context) => Expanded(
-        child: Padding(
-          padding: const EdgeInsets.only(right: Gap.s),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(label, maxLines: 2, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.85))),
-          Text(value, key: Key(keyName), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
-        ]),
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: scheme.outline,
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+          ),
         ),
-      );
+        const SizedBox(height: 2),
+        Text(
+          value,
+          key: Key(keyName),
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.3,
+          ),
+        ),
+      ],
+    );
+  }
 }
