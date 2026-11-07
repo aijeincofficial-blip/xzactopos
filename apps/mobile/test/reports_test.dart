@@ -131,4 +131,32 @@ void main() {
     expect(find.byKey(const Key('tile-reports')), findsNothing);
     await leave(tester);
   });
+
+  testWidgets('expenses come off the profit, but stock purchases do not (they are already in cost of goods)', (tester) async {
+    final data = sample()
+      ..['expenses'] = {
+        'total': 5500,
+        'cash': 5500,
+        'ewallet': 0,
+        'count': 3,
+        'by_category': [
+          {'category': 'stock_purchase', 'amount': 4000, 'count': 1},
+          {'category': 'utilities', 'amount': 1000, 'count': 1},
+          {'category': 'transport', 'amount': 500, 'count': 1},
+        ],
+        'days': [],
+      };
+    await openReports(tester, data: data);
+    expect(text(tester, 'report-profit'), 'Estimated profit: ₱60.00', reason: 'sales minus cost of goods, unchanged');
+    expect(text(tester, 'report-expenses'), 'Expenses (not stock): ₱15.00');
+    expect(text(tester, 'report-net-profit'), 'Profit after expenses: ₱45.00');
+    expect(text(tester, 'report-stock-bought'), 'Stock bought: ₱40.00');
+    await leave(tester);
+  });
+
+  testWidgets('no expenses, or an older server without them, shows no expense lines', (tester) async {
+    await openReports(tester, data: sample());
+    expect(find.byKey(const Key('report-net-profit')), findsNothing);
+    await leave(tester);
+  });
 }

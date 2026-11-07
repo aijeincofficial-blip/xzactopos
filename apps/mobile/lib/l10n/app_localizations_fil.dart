@@ -1091,4 +1091,23 @@ class AppLocalizationsFil extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get reportsExpensesNote =>
+      'Kasama na sa puhunan ang binili mong paninda, kaya hindi ito ibinabawas ulit.';
+
+  @override
+  String reportsExpenses(String amount) {
+    return 'Gastos (di kasama ang paninda): $amount';
+  }
+
+  @override
+  String reportsNetProfit(String amount) {
+    return 'Kita pagkatapos ng gastos: $amount';
+  }
+
+  @override
+  String reportsStockBought(String amount) {
+    return 'Pinambili ng paninda: $amount';
+  }
 }

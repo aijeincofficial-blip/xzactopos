@@ -604,5 +604,30 @@
         "type": "int"
       }
     }
+  },
+  "reportsExpensesNote": "Kasama na sa puhunan ang binili mong paninda, kaya hindi ito ibinabawas ulit.",
+  "reportsExpenses": "Gastos (di kasama ang paninda): {amount}",
+  "@reportsExpenses": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "reportsNetProfit": "Kita pagkatapos ng gastos: {amount}",
+  "@reportsNetProfit": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "reportsStockBought": "Pinambili ng paninda: {amount}",
+  "@reportsStockBought": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
   }
 }

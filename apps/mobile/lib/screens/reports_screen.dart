@@ -167,6 +167,17 @@ class _ReportsScreenState extends State<ReportsScreen> {
     // Additional performance metrics
     final aov = txns > 0 ? (net / txns).round() : 0;
     final profit = net - cogs;
+    // Expenses from the server rollup. Stock purchases are left out of the profit: the goods are already
+    // in cost of goods when they sell, so taking them off again would count them twice.
+    final exp = l.data['expenses'];
+    var expTotal = 0, stockBought = 0;
+    if (exp is Map) {
+      expTotal = ((exp['total'] as num?) ?? 0).toInt();
+      for (final c in ((exp['by_category'] as List?) ?? const []).cast<Map<String, dynamic>>()) {
+        if (c['category'] == 'stock_purchase') stockBought += ((c['amount'] as num?) ?? 0).toInt();
+      }
+    }
+    final opExpenses = expTotal - stockBought;
     final profitMargin = (net > 0 && cogs > 0) ? ((profit / net) * 100).toStringAsFixed(0) : null;
     final totalPayments = cashAmount + ewalletAmount + utangAmount;
     final cashPct = totalPayments > 0 ? (cashAmount / totalPayments * 100).round() : 0;
@@ -295,6 +306,21 @@ class _ReportsScreenState extends State<ReportsScreen> {
                       ),
                   ],
                 ),
+              if (expTotal > 0 && cogs > 0) ...[
+                const SizedBox(height: Gap.m),
+                Text(t.reportsExpenses(money(opExpenses)),
+                    key: const Key('report-expenses'), style: TextStyle(color: scheme.outline, fontSize: 13, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 2),
+                Text(t.reportsNetProfit(money(profit - opExpenses)),
+                    key: const Key('report-net-profit'),
+                    style: TextStyle(color: (profit - opExpenses) < 0 ? scheme.error : scheme.success, fontSize: 15, fontWeight: FontWeight.w800)),
+                if (stockBought > 0) ...[
+                  const SizedBox(height: 2),
+                  Text(t.reportsStockBought(money(stockBought)),
+                      key: const Key('report-stock-bought'), style: TextStyle(color: scheme.outline, fontSize: 12)),
+                  Text(t.reportsExpensesNote, style: TextStyle(color: scheme.outline, fontSize: 11)),
+                ],
+              ],
               const SizedBox(height: Gap.l),
               Divider(height: 1, color: scheme.outlineVariant.withValues(alpha: 0.4)),
               const SizedBox(height: Gap.l),

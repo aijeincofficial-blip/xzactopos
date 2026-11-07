@@ -1084,4 +1084,23 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get reportsExpensesNote =>
+      'Stock you bought is already in your cost of goods, so it is not taken off twice.';
+
+  @override
+  String reportsExpenses(String amount) {
+    return 'Expenses (not stock): $amount';
+  }
+
+  @override
+  String reportsNetProfit(String amount) {
+    return 'Profit after expenses: $amount';
+  }
+
+  @override
+  String reportsStockBought(String amount) {
+    return 'Stock bought: $amount';
+  }
 }

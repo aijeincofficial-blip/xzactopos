@@ -1885,6 +1885,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{{count} expense} other{{count} expenses}}'**
   String expensesCount(int count);
+
+  /// No description provided for @reportsExpensesNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock you bought is already in your cost of goods, so it is not taken off twice.'**
+  String get reportsExpensesNote;
+
+  /// No description provided for @reportsExpenses.
+  ///
+  /// In en, this message translates to:
+  /// **'Expenses (not stock): {amount}'**
+  String reportsExpenses(String amount);
+
+  /// No description provided for @reportsNetProfit.
+  ///
+  /// In en, this message translates to:
+  /// **'Profit after expenses: {amount}'**
+  String reportsNetProfit(String amount);
+
+  /// No description provided for @reportsStockBought.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock bought: {amount}'**
+  String reportsStockBought(String amount);
 }
 
 class _AppLocalizationsDelegate

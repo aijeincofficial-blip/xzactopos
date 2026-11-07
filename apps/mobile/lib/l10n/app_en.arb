@@ -604,5 +604,30 @@
         "type": "int"
       }
     }
+  },
+  "reportsExpensesNote": "Stock you bought is already in your cost of goods, so it is not taken off twice.",
+  "reportsExpenses": "Expenses (not stock): {amount}",
+  "@reportsExpenses": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "reportsNetProfit": "Profit after expenses: {amount}",
+  "@reportsNetProfit": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "reportsStockBought": "Stock bought: {amount}",
+  "@reportsStockBought": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
   }
 }
