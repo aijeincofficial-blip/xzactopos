@@ -128,5 +128,38 @@
   "takePhoto": "Kumuha ng litrato",
   "choosePhoto": "Pumili ng litrato",
   "photoFailed": "Hindi magamit ang litratong iyan. Subukan ang iba.",
-  "errPhotoTooLarge": "Masyadong malaki ang litrato."
+  "errPhotoTooLarge": "Masyadong malaki ang litrato.",
+  "ok": "OK",
+  "sellSearchHint": "Hanapin o i-scan para idagdag",
+  "sellCartEmpty": "Pindutin ang produkto para idagdag",
+  "sellPay": "Bayad",
+  "sellNoPrice": "Lagyan muna ng presyo ang produktong ito",
+  "sellUnknownBarcode": "Walang produktong may barcode na {code}",
+  "@sellUnknownBarcode": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "sellQuantity": "Dami",
+  "sellClearTitle": "Burahin ang benta na ito?",
+  "sellClearBody": "Aalisin ang lahat sa listahan.",
+  "sellItems": "{count, plural, =1{{count} produkto} other{{count} produkto}}",
+  "@sellItems": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sellStockLeft": "{n} ang natira",
+  "@sellStockLeft": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "sellOutOfStock": "Ubos na (pwede pa ring ibenta)"
 }

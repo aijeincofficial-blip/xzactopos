@@ -275,4 +275,52 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get errPhotoTooLarge => 'Masyadong malaki ang litrato.';
+
+  @override
+  String get ok => 'OK';
+
+  @override
+  String get sellSearchHint => 'Hanapin o i-scan para idagdag';
+
+  @override
+  String get sellCartEmpty => 'Pindutin ang produkto para idagdag';
+
+  @override
+  String get sellPay => 'Bayad';
+
+  @override
+  String get sellNoPrice => 'Lagyan muna ng presyo ang produktong ito';
+
+  @override
+  String sellUnknownBarcode(String code) {
+    return 'Walang produktong may barcode na $code';
+  }
+
+  @override
+  String get sellQuantity => 'Dami';
+
+  @override
+  String get sellClearTitle => 'Burahin ang benta na ito?';
+
+  @override
+  String get sellClearBody => 'Aalisin ang lahat sa listahan.';
+
+  @override
+  String sellItems(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count produkto',
+      one: '$count produkto',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String sellStockLeft(String n) {
+    return '$n ang natira';
+  }
+
+  @override
+  String get sellOutOfStock => 'Ubos na (pwede pa ring ibenta)';
 }

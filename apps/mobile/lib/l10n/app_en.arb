@@ -128,5 +128,38 @@
   "takePhoto": "Take photo",
   "choosePhoto": "Choose photo",
   "photoFailed": "Could not use that photo. Try another one.",
-  "errPhotoTooLarge": "The photo is too large."
+  "errPhotoTooLarge": "The photo is too large.",
+  "ok": "OK",
+  "sellSearchHint": "Search or scan to add",
+  "sellCartEmpty": "Tap an item to add it",
+  "sellPay": "Pay",
+  "sellNoPrice": "Set a price for this product first",
+  "sellUnknownBarcode": "No product has barcode {code}",
+  "@sellUnknownBarcode": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "sellQuantity": "Quantity",
+  "sellClearTitle": "Clear this sale?",
+  "sellClearBody": "Everything in the list will be removed.",
+  "sellItems": "{count, plural, =1{{count} item} other{{count} items}}",
+  "@sellItems": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sellStockLeft": "{n} left",
+  "@sellStockLeft": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "sellOutOfStock": "None left (you can still sell)"
 }

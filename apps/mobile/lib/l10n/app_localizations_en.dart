@@ -270,4 +270,52 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errPhotoTooLarge => 'The photo is too large.';
+
+  @override
+  String get ok => 'OK';
+
+  @override
+  String get sellSearchHint => 'Search or scan to add';
+
+  @override
+  String get sellCartEmpty => 'Tap an item to add it';
+
+  @override
+  String get sellPay => 'Pay';
+
+  @override
+  String get sellNoPrice => 'Set a price for this product first';
+
+  @override
+  String sellUnknownBarcode(String code) {
+    return 'No product has barcode $code';
+  }
+
+  @override
+  String get sellQuantity => 'Quantity';
+
+  @override
+  String get sellClearTitle => 'Clear this sale?';
+
+  @override
+  String get sellClearBody => 'Everything in the list will be removed.';
+
+  @override
+  String sellItems(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items',
+      one: '$count item',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String sellStockLeft(String n) {
+    return '$n left';
+  }
+
+  @override
+  String get sellOutOfStock => 'None left (you can still sell)';
 }

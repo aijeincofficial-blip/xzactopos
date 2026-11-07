@@ -535,6 +535,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The photo is too large.'**
   String get errPhotoTooLarge;
+
+  /// No description provided for @ok.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get ok;
+
+  /// No description provided for @sellSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search or scan to add'**
+  String get sellSearchHint;
+
+  /// No description provided for @sellCartEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap an item to add it'**
+  String get sellCartEmpty;
+
+  /// No description provided for @sellPay.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay'**
+  String get sellPay;
+
+  /// No description provided for @sellNoPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Set a price for this product first'**
+  String get sellNoPrice;
+
+  /// No description provided for @sellUnknownBarcode.
+  ///
+  /// In en, this message translates to:
+  /// **'No product has barcode {code}'**
+  String sellUnknownBarcode(String code);
+
+  /// No description provided for @sellQuantity.
+  ///
+  /// In en, this message translates to:
+  /// **'Quantity'**
+  String get sellQuantity;
+
+  /// No description provided for @sellClearTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear this sale?'**
+  String get sellClearTitle;
+
+  /// No description provided for @sellClearBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Everything in the list will be removed.'**
+  String get sellClearBody;
+
+  /// No description provided for @sellItems.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{{count} item} other{{count} items}}'**
+  String sellItems(int count);
+
+  /// No description provided for @sellStockLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} left'**
+  String sellStockLeft(String n);
+
+  /// No description provided for @sellOutOfStock.
+  ///
+  /// In en, this message translates to:
+  /// **'None left (you can still sell)'**
+  String get sellOutOfStock;
 }
 
 class _AppLocalizationsDelegate
