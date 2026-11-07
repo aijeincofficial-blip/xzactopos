@@ -3,14 +3,22 @@ import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 import 'theme.dart';
 
-/// App-bar button that opens the colours / brightness chooser.
+/// Opens the modal bottom sheet for choosing theme colors and mode.
+void showThemeSheet(BuildContext context) {
+  showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    builder: (_) => const _ThemeSheet(),
+  );
+}
+
+/// App-bar or card button that opens the colours / brightness chooser.
 class ThemeButton extends StatelessWidget {
   const ThemeButton({super.key});
 
   @override
   Widget build(BuildContext context) {
     if (ThemeScope.maybeOf(context) == null) return const SizedBox.shrink();
-    if (MediaQuery.sizeOf(context).width < 380) return const SizedBox.shrink();
     return IconButton(
       key: const Key('theme-button'),
       tooltip: AppLocalizations.of(context).themeTitle,
@@ -18,21 +26,21 @@ class ThemeButton extends StatelessWidget {
       constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
       padding: const EdgeInsets.all(4),
       visualDensity: VisualDensity.compact,
-      onPressed: () => showModalBottomSheet<void>(
-        context: context,
-        showDragHandle: true,
-        builder: (_) => const _ThemeSheet(),
-      ),
+      onPressed: () => showThemeSheet(context),
     );
   }
 }
 
-class _ThemeSheet extends StatelessWidget {
+class _ThemeSheet extends StatefulWidget {
   const _ThemeSheet();
 
   @override
+  State<_ThemeSheet> createState() => _ThemeSheetState();
+}
+
+class _ThemeSheetState extends State<_ThemeSheet> {
+  @override
   Widget build(BuildContext context) {
-    // the sheet is inside the app-level ThemeScope, so it rebuilds after each tap
     final scope = ThemeScope.maybeOf(context)!;
     final t = AppLocalizations.of(context);
     final palettes = {
@@ -58,7 +66,10 @@ class _ThemeSheet extends StatelessWidget {
               label: e.value,
               selected: scope.palette == e.key,
               swatch: buildTheme(e.key, Brightness.light).colorScheme,
-              onTap: () => scope.setPalette(e.key),
+              onTap: () {
+                scope.setPalette(e.key);
+                setState(() {});
+              },
             ),
           const SizedBox(height: Gap.m),
           Text(t.themeMode, style: Theme.of(context).textTheme.labelLarge),
@@ -68,13 +79,17 @@ class _ThemeSheet extends StatelessWidget {
             showSelectedIcon: false,
             segments: [for (final e in modes.entries) ButtonSegment(value: e.key, label: Text(e.value))],
             selected: {scope.mode},
-            onSelectionChanged: (s) => scope.setMode(s.first),
+            onSelectionChanged: (s) {
+              scope.setMode(s.first);
+              setState(() {});
+            },
           ),
         ]),
       ),
     );
   }
 }
+
 class _Choice extends StatelessWidget {
   const _Choice({super.key, required this.label, required this.selected, required this.swatch, required this.onTap});
   final String label;
@@ -96,4 +111,3 @@ class _Choice extends StatelessWidget {
     );
   }
 }
-
