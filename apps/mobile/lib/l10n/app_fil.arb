@@ -629,5 +629,45 @@
         "type": "String"
       }
     }
+  },
+  "servicesTitle": "Load at e-wallet",
+  "servicesFeesToday": "Kita ngayon (fee)",
+  "servicesFloat": "Laman ng wallet",
+  "servicesNeedsTopup": "Kailangan ng dagdag",
+  "servicesNone": "Wala pang load o e-wallet ngayon",
+  "serviceCashIn": "Cash in",
+  "serviceCashOut": "Cash out",
+  "serviceLoad": "Magbenta ng load",
+  "serviceMoveFloat": "Galawin ang float",
+  "serviceCashInHint": "Cash ang bigay ng customer, ikaw ang magpapadala",
+  "serviceCashOutHint": "E-wallet ang padala ng customer, ikaw ang magbibigay ng cash",
+  "serviceFloatTopup": "Dagdag mula sa kaha",
+  "serviceFloatWithdraw": "Kunin papunta sa kaha",
+  "serviceFloatAdjust": "Ayusin ang balanse",
+  "walletGcash": "GCash",
+  "walletMaya": "Maya",
+  "walletLoad": "Load",
+  "walletOther": "Iba pa",
+  "serviceWallet": "Wallet",
+  "serviceAmount": "Halaga",
+  "serviceLoadAmount": "Halaga ng load",
+  "serviceFee": "Singil mo (fee)",
+  "servicePrice": "Binayad ng customer (cash)",
+  "serviceRef": "Numero o reference (opsyonal)",
+  "serviceNote": "Paalala",
+  "serviceNoteRequired": "Kailangan ng paalala",
+  "servicePriceTooLow": "Hindi dapat mas mababa sa halaga ng load ang presyo",
+  "serviceAdjustHint": "Gamitin ang minus kung bawas, hal. -50",
+  "serviceVoidTitle": "Kanselahin ang entry na ito?",
+  "serviceVoidBody": "Mananatili ito sa listahan, may guhit, at ibabalik ang pera.",
+  "serviceVoidYes": "Kanselahin",
+  "serviceNeedsPin": "Kailangan ng PIN ng supervisor",
+  "serviceEarned": "Kita {amount}",
+  "@serviceEarned": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
   }
 }

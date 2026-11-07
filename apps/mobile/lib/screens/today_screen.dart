@@ -12,6 +12,7 @@ import '../backend.dart';
 import 'day_close_screen.dart';
 import 'expenses_screen.dart';
 import 'receipt_screen.dart';
+import 'services_screen.dart';
 
 /// Today's takings and the sales made today, newest first. Tap a sale to see its receipt (and cancel it).
 class TodayScreen extends StatelessWidget {
@@ -97,6 +98,26 @@ class TodayScreen extends StatelessWidget {
                 ),
               );
             },
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: Gap.xl, vertical: Gap.xs),
+            child: StreamBuilder<ServiceTotals>(
+              stream: scope.store.watchTodayServices(),
+              builder: (context, snap) => AppCard(
+                key: const Key('tile-services'),
+                padding: const EdgeInsets.all(Gap.m),
+                radius: Gap.radiusL,
+                onTap: () => Navigator.of(context)
+                    .push(MaterialPageRoute<void>(builder: (_) => scope.wrap(ServicesScreen(backend: backend)))),
+                child: Row(children: [
+                  Icon(Icons.swap_horiz_rounded, color: scheme.primary),
+                  const SizedBox(width: Gap.m),
+                  Expanded(child: Text(t.servicesTitle, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700))),
+                  Text(money((snap.data ?? const ServiceTotals()).fees),
+                      key: const Key('today-service-fees'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+                ]),
+              ),
+            ),
           ),
           if (scope.canManageStock)
             Padding(

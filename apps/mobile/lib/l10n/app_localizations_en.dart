@@ -1103,4 +1103,108 @@ class AppLocalizationsEn extends AppLocalizations {
   String reportsStockBought(String amount) {
     return 'Stock bought: $amount';
   }
+
+  @override
+  String get servicesTitle => 'Load & e-wallet';
+
+  @override
+  String get servicesFeesToday => 'Earned today (fees)';
+
+  @override
+  String get servicesFloat => 'Wallet float';
+
+  @override
+  String get servicesNeedsTopup => 'Needs a top-up';
+
+  @override
+  String get servicesNone => 'No load or e-wallet entries today';
+
+  @override
+  String get serviceCashIn => 'Cash in';
+
+  @override
+  String get serviceCashOut => 'Cash out';
+
+  @override
+  String get serviceLoad => 'Sell load';
+
+  @override
+  String get serviceMoveFloat => 'Move float';
+
+  @override
+  String get serviceCashInHint =>
+      'Customer gives cash, you send e-wallet money';
+
+  @override
+  String get serviceCashOutHint =>
+      'Customer sends e-wallet money, you give cash';
+
+  @override
+  String get serviceFloatTopup => 'Top up from the drawer';
+
+  @override
+  String get serviceFloatWithdraw => 'Withdraw to the drawer';
+
+  @override
+  String get serviceFloatAdjust => 'Correct the balance';
+
+  @override
+  String get walletGcash => 'GCash';
+
+  @override
+  String get walletMaya => 'Maya';
+
+  @override
+  String get walletLoad => 'Load';
+
+  @override
+  String get walletOther => 'Other';
+
+  @override
+  String get serviceWallet => 'Wallet';
+
+  @override
+  String get serviceAmount => 'Amount';
+
+  @override
+  String get serviceLoadAmount => 'Load amount';
+
+  @override
+  String get serviceFee => 'Fee you charge';
+
+  @override
+  String get servicePrice => 'Customer pays (cash)';
+
+  @override
+  String get serviceRef => 'Phone or reference (optional)';
+
+  @override
+  String get serviceNote => 'Note';
+
+  @override
+  String get serviceNoteRequired => 'A note is needed';
+
+  @override
+  String get servicePriceTooLow => 'The price must be at least the load amount';
+
+  @override
+  String get serviceAdjustHint => 'Use a minus for less, e.g. -50';
+
+  @override
+  String get serviceVoidTitle => 'Cancel this entry?';
+
+  @override
+  String get serviceVoidBody =>
+      'It stays in the list, crossed out, and the money moves back.';
+
+  @override
+  String get serviceVoidYes => 'Cancel entry';
+
+  @override
+  String get serviceNeedsPin => 'Needs supervisor PIN';
+
+  @override
+  String serviceEarned(String amount) {
+    return 'Earned $amount';
+  }
 }

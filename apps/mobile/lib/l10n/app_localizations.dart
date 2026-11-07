@@ -1909,6 +1909,204 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Stock bought: {amount}'**
   String reportsStockBought(String amount);
+
+  /// No description provided for @servicesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Load & e-wallet'**
+  String get servicesTitle;
+
+  /// No description provided for @servicesFeesToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Earned today (fees)'**
+  String get servicesFeesToday;
+
+  /// No description provided for @servicesFloat.
+  ///
+  /// In en, this message translates to:
+  /// **'Wallet float'**
+  String get servicesFloat;
+
+  /// No description provided for @servicesNeedsTopup.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs a top-up'**
+  String get servicesNeedsTopup;
+
+  /// No description provided for @servicesNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No load or e-wallet entries today'**
+  String get servicesNone;
+
+  /// No description provided for @serviceCashIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash in'**
+  String get serviceCashIn;
+
+  /// No description provided for @serviceCashOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash out'**
+  String get serviceCashOut;
+
+  /// No description provided for @serviceLoad.
+  ///
+  /// In en, this message translates to:
+  /// **'Sell load'**
+  String get serviceLoad;
+
+  /// No description provided for @serviceMoveFloat.
+  ///
+  /// In en, this message translates to:
+  /// **'Move float'**
+  String get serviceMoveFloat;
+
+  /// No description provided for @serviceCashInHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer gives cash, you send e-wallet money'**
+  String get serviceCashInHint;
+
+  /// No description provided for @serviceCashOutHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer sends e-wallet money, you give cash'**
+  String get serviceCashOutHint;
+
+  /// No description provided for @serviceFloatTopup.
+  ///
+  /// In en, this message translates to:
+  /// **'Top up from the drawer'**
+  String get serviceFloatTopup;
+
+  /// No description provided for @serviceFloatWithdraw.
+  ///
+  /// In en, this message translates to:
+  /// **'Withdraw to the drawer'**
+  String get serviceFloatWithdraw;
+
+  /// No description provided for @serviceFloatAdjust.
+  ///
+  /// In en, this message translates to:
+  /// **'Correct the balance'**
+  String get serviceFloatAdjust;
+
+  /// No description provided for @walletGcash.
+  ///
+  /// In en, this message translates to:
+  /// **'GCash'**
+  String get walletGcash;
+
+  /// No description provided for @walletMaya.
+  ///
+  /// In en, this message translates to:
+  /// **'Maya'**
+  String get walletMaya;
+
+  /// No description provided for @walletLoad.
+  ///
+  /// In en, this message translates to:
+  /// **'Load'**
+  String get walletLoad;
+
+  /// No description provided for @walletOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get walletOther;
+
+  /// No description provided for @serviceWallet.
+  ///
+  /// In en, this message translates to:
+  /// **'Wallet'**
+  String get serviceWallet;
+
+  /// No description provided for @serviceAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount'**
+  String get serviceAmount;
+
+  /// No description provided for @serviceLoadAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Load amount'**
+  String get serviceLoadAmount;
+
+  /// No description provided for @serviceFee.
+  ///
+  /// In en, this message translates to:
+  /// **'Fee you charge'**
+  String get serviceFee;
+
+  /// No description provided for @servicePrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer pays (cash)'**
+  String get servicePrice;
+
+  /// No description provided for @serviceRef.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone or reference (optional)'**
+  String get serviceRef;
+
+  /// No description provided for @serviceNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get serviceNote;
+
+  /// No description provided for @serviceNoteRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'A note is needed'**
+  String get serviceNoteRequired;
+
+  /// No description provided for @servicePriceTooLow.
+  ///
+  /// In en, this message translates to:
+  /// **'The price must be at least the load amount'**
+  String get servicePriceTooLow;
+
+  /// No description provided for @serviceAdjustHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Use a minus for less, e.g. -50'**
+  String get serviceAdjustHint;
+
+  /// No description provided for @serviceVoidTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel this entry?'**
+  String get serviceVoidTitle;
+
+  /// No description provided for @serviceVoidBody.
+  ///
+  /// In en, this message translates to:
+  /// **'It stays in the list, crossed out, and the money moves back.'**
+  String get serviceVoidBody;
+
+  /// No description provided for @serviceVoidYes.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel entry'**
+  String get serviceVoidYes;
+
+  /// No description provided for @serviceNeedsPin.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs supervisor PIN'**
+  String get serviceNeedsPin;
+
+  /// No description provided for @serviceEarned.
+  ///
+  /// In en, this message translates to:
+  /// **'Earned {amount}'**
+  String serviceEarned(String amount);
 }
 
 class _AppLocalizationsDelegate

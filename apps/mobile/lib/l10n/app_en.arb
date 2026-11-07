@@ -629,5 +629,45 @@
         "type": "String"
       }
     }
+  },
+  "servicesTitle": "Load & e-wallet",
+  "servicesFeesToday": "Earned today (fees)",
+  "servicesFloat": "Wallet float",
+  "servicesNeedsTopup": "Needs a top-up",
+  "servicesNone": "No load or e-wallet entries today",
+  "serviceCashIn": "Cash in",
+  "serviceCashOut": "Cash out",
+  "serviceLoad": "Sell load",
+  "serviceMoveFloat": "Move float",
+  "serviceCashInHint": "Customer gives cash, you send e-wallet money",
+  "serviceCashOutHint": "Customer sends e-wallet money, you give cash",
+  "serviceFloatTopup": "Top up from the drawer",
+  "serviceFloatWithdraw": "Withdraw to the drawer",
+  "serviceFloatAdjust": "Correct the balance",
+  "walletGcash": "GCash",
+  "walletMaya": "Maya",
+  "walletLoad": "Load",
+  "walletOther": "Other",
+  "serviceWallet": "Wallet",
+  "serviceAmount": "Amount",
+  "serviceLoadAmount": "Load amount",
+  "serviceFee": "Fee you charge",
+  "servicePrice": "Customer pays (cash)",
+  "serviceRef": "Phone or reference (optional)",
+  "serviceNote": "Note",
+  "serviceNoteRequired": "A note is needed",
+  "servicePriceTooLow": "The price must be at least the load amount",
+  "serviceAdjustHint": "Use a minus for less, e.g. -50",
+  "serviceVoidTitle": "Cancel this entry?",
+  "serviceVoidBody": "It stays in the list, crossed out, and the money moves back.",
+  "serviceVoidYes": "Cancel entry",
+  "serviceNeedsPin": "Needs supervisor PIN",
+  "serviceEarned": "Earned {amount}",
+  "@serviceEarned": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
   }
 }

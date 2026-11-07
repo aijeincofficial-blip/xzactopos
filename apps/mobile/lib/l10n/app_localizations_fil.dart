@@ -1110,4 +1110,109 @@ class AppLocalizationsFil extends AppLocalizations {
   String reportsStockBought(String amount) {
     return 'Pinambili ng paninda: $amount';
   }
+
+  @override
+  String get servicesTitle => 'Load at e-wallet';
+
+  @override
+  String get servicesFeesToday => 'Kita ngayon (fee)';
+
+  @override
+  String get servicesFloat => 'Laman ng wallet';
+
+  @override
+  String get servicesNeedsTopup => 'Kailangan ng dagdag';
+
+  @override
+  String get servicesNone => 'Wala pang load o e-wallet ngayon';
+
+  @override
+  String get serviceCashIn => 'Cash in';
+
+  @override
+  String get serviceCashOut => 'Cash out';
+
+  @override
+  String get serviceLoad => 'Magbenta ng load';
+
+  @override
+  String get serviceMoveFloat => 'Galawin ang float';
+
+  @override
+  String get serviceCashInHint =>
+      'Cash ang bigay ng customer, ikaw ang magpapadala';
+
+  @override
+  String get serviceCashOutHint =>
+      'E-wallet ang padala ng customer, ikaw ang magbibigay ng cash';
+
+  @override
+  String get serviceFloatTopup => 'Dagdag mula sa kaha';
+
+  @override
+  String get serviceFloatWithdraw => 'Kunin papunta sa kaha';
+
+  @override
+  String get serviceFloatAdjust => 'Ayusin ang balanse';
+
+  @override
+  String get walletGcash => 'GCash';
+
+  @override
+  String get walletMaya => 'Maya';
+
+  @override
+  String get walletLoad => 'Load';
+
+  @override
+  String get walletOther => 'Iba pa';
+
+  @override
+  String get serviceWallet => 'Wallet';
+
+  @override
+  String get serviceAmount => 'Halaga';
+
+  @override
+  String get serviceLoadAmount => 'Halaga ng load';
+
+  @override
+  String get serviceFee => 'Singil mo (fee)';
+
+  @override
+  String get servicePrice => 'Binayad ng customer (cash)';
+
+  @override
+  String get serviceRef => 'Numero o reference (opsyonal)';
+
+  @override
+  String get serviceNote => 'Paalala';
+
+  @override
+  String get serviceNoteRequired => 'Kailangan ng paalala';
+
+  @override
+  String get servicePriceTooLow =>
+      'Hindi dapat mas mababa sa halaga ng load ang presyo';
+
+  @override
+  String get serviceAdjustHint => 'Gamitin ang minus kung bawas, hal. -50';
+
+  @override
+  String get serviceVoidTitle => 'Kanselahin ang entry na ito?';
+
+  @override
+  String get serviceVoidBody =>
+      'Mananatili ito sa listahan, may guhit, at ibabalik ang pera.';
+
+  @override
+  String get serviceVoidYes => 'Kanselahin';
+
+  @override
+  String get serviceNeedsPin => 'Kailangan ng PIN ng supervisor';
+
+  @override
+  String serviceEarned(String amount) {
+    return 'Kita $amount';
+  }
 }
