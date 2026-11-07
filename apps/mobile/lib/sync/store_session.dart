@@ -75,6 +75,7 @@ class _StoreSessionState extends State<StoreSession> {
         baseCurrency: tenant['base_currency'] as String? ?? 'PHP',
         // a solo business has one store; with several, the server picks per user (the sale then names no store)
         locationId: stores.length == 1 ? stores.first['id'] as String? : null);
+    await _store.setMeta('store_name', tenant['name'] as String?);
     _engine.start();
   }
 

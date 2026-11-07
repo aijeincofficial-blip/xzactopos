@@ -161,5 +161,57 @@
       }
     }
   },
-  "sellOutOfStock": "Ubos na (pwede pa ring ibenta)"
+  "sellOutOfStock": "Ubos na (pwede pa ring ibenta)",
+  "payTitle": "Bayad",
+  "payTotal": "Kabuuan",
+  "payCash": "Cash",
+  "payEwallet": "GCash / Maya",
+  "payReceivedCash": "Perang tinanggap (iwanang walang laman kung eksakto)",
+  "payReceivedEwallet": "Halagang tinanggap",
+  "payExact": "Eksakto",
+  "payChange": "Sukli",
+  "payAllUtang": "Lahat utang",
+  "payOnUtang": "{amount} ang uutangin",
+  "@payOnUtang": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "payChooseCustomer": "Piliin kung sino ang may utang",
+  "payDiscount": "Bawas",
+  "payDiscountHint": "Pisong ibabawas sa kabuuan",
+  "payDone": "Tapusin ang benta",
+  "customerNew": "Bagong customer",
+  "customerName": "Pangalan ng customer",
+  "customerPhone": "Telepono (kung meron)",
+  "customerSearch": "Hanapin ang customer",
+  "receiptTitle": "Resibo",
+  "receiptNumber": "Resibo blg. {no}",
+  "@receiptNumber": {
+    "placeholders": {
+      "no": {
+        "type": "String"
+      }
+    }
+  },
+  "receiptSubtotal": "Subtotal",
+  "receiptDiscount": "Bawas",
+  "receiptCashReceived": "Cash na tinanggap",
+  "receiptOnUtang": "Utang",
+  "receiptBalance": "Utang ni {name}: {amount}",
+  "@receiptBalance": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "receiptNewSale": "Bagong benta",
+  "receiptCancelled": "KINANSELA",
+  "receiptThanks": "Salamat po!"
 }

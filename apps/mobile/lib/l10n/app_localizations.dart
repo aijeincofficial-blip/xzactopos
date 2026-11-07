@@ -607,6 +607,174 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'None left (you can still sell)'**
   String get sellOutOfStock;
+
+  /// No description provided for @payTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment'**
+  String get payTitle;
+
+  /// No description provided for @payTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get payTotal;
+
+  /// No description provided for @payCash.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash'**
+  String get payCash;
+
+  /// No description provided for @payEwallet.
+  ///
+  /// In en, this message translates to:
+  /// **'GCash / Maya'**
+  String get payEwallet;
+
+  /// No description provided for @payReceivedCash.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash received (leave empty if exact)'**
+  String get payReceivedCash;
+
+  /// No description provided for @payReceivedEwallet.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount received'**
+  String get payReceivedEwallet;
+
+  /// No description provided for @payExact.
+  ///
+  /// In en, this message translates to:
+  /// **'Exact'**
+  String get payExact;
+
+  /// No description provided for @payChange.
+  ///
+  /// In en, this message translates to:
+  /// **'Change'**
+  String get payChange;
+
+  /// No description provided for @payAllUtang.
+  ///
+  /// In en, this message translates to:
+  /// **'All on utang'**
+  String get payAllUtang;
+
+  /// No description provided for @payOnUtang.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} goes on utang'**
+  String payOnUtang(String amount);
+
+  /// No description provided for @payChooseCustomer.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose who owes'**
+  String get payChooseCustomer;
+
+  /// No description provided for @payDiscount.
+  ///
+  /// In en, this message translates to:
+  /// **'Discount'**
+  String get payDiscount;
+
+  /// No description provided for @payDiscountHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Pesos off the total'**
+  String get payDiscountHint;
+
+  /// No description provided for @payDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish sale'**
+  String get payDone;
+
+  /// No description provided for @customerNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New customer'**
+  String get customerNew;
+
+  /// No description provided for @customerName.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer name'**
+  String get customerName;
+
+  /// No description provided for @customerPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone (optional)'**
+  String get customerPhone;
+
+  /// No description provided for @customerSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search customers'**
+  String get customerSearch;
+
+  /// No description provided for @receiptTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Receipt'**
+  String get receiptTitle;
+
+  /// No description provided for @receiptNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Receipt no. {no}'**
+  String receiptNumber(String no);
+
+  /// No description provided for @receiptSubtotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Subtotal'**
+  String get receiptSubtotal;
+
+  /// No description provided for @receiptDiscount.
+  ///
+  /// In en, this message translates to:
+  /// **'Discount'**
+  String get receiptDiscount;
+
+  /// No description provided for @receiptCashReceived.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash received'**
+  String get receiptCashReceived;
+
+  /// No description provided for @receiptOnUtang.
+  ///
+  /// In en, this message translates to:
+  /// **'On utang'**
+  String get receiptOnUtang;
+
+  /// No description provided for @receiptBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}\'s utang balance: {amount}'**
+  String receiptBalance(String name, String amount);
+
+  /// No description provided for @receiptNewSale.
+  ///
+  /// In en, this message translates to:
+  /// **'New sale'**
+  String get receiptNewSale;
+
+  /// No description provided for @receiptCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'CANCELLED'**
+  String get receiptCancelled;
+
+  /// No description provided for @receiptThanks.
+  ///
+  /// In en, this message translates to:
+  /// **'Thank you!'**
+  String get receiptThanks;
 }
 
 class _AppLocalizationsDelegate

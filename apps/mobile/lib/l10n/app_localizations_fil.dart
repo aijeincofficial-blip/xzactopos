@@ -323,4 +323,95 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get sellOutOfStock => 'Ubos na (pwede pa ring ibenta)';
+
+  @override
+  String get payTitle => 'Bayad';
+
+  @override
+  String get payTotal => 'Kabuuan';
+
+  @override
+  String get payCash => 'Cash';
+
+  @override
+  String get payEwallet => 'GCash / Maya';
+
+  @override
+  String get payReceivedCash =>
+      'Perang tinanggap (iwanang walang laman kung eksakto)';
+
+  @override
+  String get payReceivedEwallet => 'Halagang tinanggap';
+
+  @override
+  String get payExact => 'Eksakto';
+
+  @override
+  String get payChange => 'Sukli';
+
+  @override
+  String get payAllUtang => 'Lahat utang';
+
+  @override
+  String payOnUtang(String amount) {
+    return '$amount ang uutangin';
+  }
+
+  @override
+  String get payChooseCustomer => 'Piliin kung sino ang may utang';
+
+  @override
+  String get payDiscount => 'Bawas';
+
+  @override
+  String get payDiscountHint => 'Pisong ibabawas sa kabuuan';
+
+  @override
+  String get payDone => 'Tapusin ang benta';
+
+  @override
+  String get customerNew => 'Bagong customer';
+
+  @override
+  String get customerName => 'Pangalan ng customer';
+
+  @override
+  String get customerPhone => 'Telepono (kung meron)';
+
+  @override
+  String get customerSearch => 'Hanapin ang customer';
+
+  @override
+  String get receiptTitle => 'Resibo';
+
+  @override
+  String receiptNumber(String no) {
+    return 'Resibo blg. $no';
+  }
+
+  @override
+  String get receiptSubtotal => 'Subtotal';
+
+  @override
+  String get receiptDiscount => 'Bawas';
+
+  @override
+  String get receiptCashReceived => 'Cash na tinanggap';
+
+  @override
+  String get receiptOnUtang => 'Utang';
+
+  @override
+  String receiptBalance(String name, String amount) {
+    return 'Utang ni $name: $amount';
+  }
+
+  @override
+  String get receiptNewSale => 'Bagong benta';
+
+  @override
+  String get receiptCancelled => 'KINANSELA';
+
+  @override
+  String get receiptThanks => 'Salamat po!';
 }

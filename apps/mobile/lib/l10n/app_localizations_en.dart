@@ -318,4 +318,94 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sellOutOfStock => 'None left (you can still sell)';
+
+  @override
+  String get payTitle => 'Payment';
+
+  @override
+  String get payTotal => 'Total';
+
+  @override
+  String get payCash => 'Cash';
+
+  @override
+  String get payEwallet => 'GCash / Maya';
+
+  @override
+  String get payReceivedCash => 'Cash received (leave empty if exact)';
+
+  @override
+  String get payReceivedEwallet => 'Amount received';
+
+  @override
+  String get payExact => 'Exact';
+
+  @override
+  String get payChange => 'Change';
+
+  @override
+  String get payAllUtang => 'All on utang';
+
+  @override
+  String payOnUtang(String amount) {
+    return '$amount goes on utang';
+  }
+
+  @override
+  String get payChooseCustomer => 'Choose who owes';
+
+  @override
+  String get payDiscount => 'Discount';
+
+  @override
+  String get payDiscountHint => 'Pesos off the total';
+
+  @override
+  String get payDone => 'Finish sale';
+
+  @override
+  String get customerNew => 'New customer';
+
+  @override
+  String get customerName => 'Customer name';
+
+  @override
+  String get customerPhone => 'Phone (optional)';
+
+  @override
+  String get customerSearch => 'Search customers';
+
+  @override
+  String get receiptTitle => 'Receipt';
+
+  @override
+  String receiptNumber(String no) {
+    return 'Receipt no. $no';
+  }
+
+  @override
+  String get receiptSubtotal => 'Subtotal';
+
+  @override
+  String get receiptDiscount => 'Discount';
+
+  @override
+  String get receiptCashReceived => 'Cash received';
+
+  @override
+  String get receiptOnUtang => 'On utang';
+
+  @override
+  String receiptBalance(String name, String amount) {
+    return '$name\'s utang balance: $amount';
+  }
+
+  @override
+  String get receiptNewSale => 'New sale';
+
+  @override
+  String get receiptCancelled => 'CANCELLED';
+
+  @override
+  String get receiptThanks => 'Thank you!';
 }

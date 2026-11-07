@@ -161,5 +161,57 @@
       }
     }
   },
-  "sellOutOfStock": "None left (you can still sell)"
+  "sellOutOfStock": "None left (you can still sell)",
+  "payTitle": "Payment",
+  "payTotal": "Total",
+  "payCash": "Cash",
+  "payEwallet": "GCash / Maya",
+  "payReceivedCash": "Cash received (leave empty if exact)",
+  "payReceivedEwallet": "Amount received",
+  "payExact": "Exact",
+  "payChange": "Change",
+  "payAllUtang": "All on utang",
+  "payOnUtang": "{amount} goes on utang",
+  "@payOnUtang": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "payChooseCustomer": "Choose who owes",
+  "payDiscount": "Discount",
+  "payDiscountHint": "Pesos off the total",
+  "payDone": "Finish sale",
+  "customerNew": "New customer",
+  "customerName": "Customer name",
+  "customerPhone": "Phone (optional)",
+  "customerSearch": "Search customers",
+  "receiptTitle": "Receipt",
+  "receiptNumber": "Receipt no. {no}",
+  "@receiptNumber": {
+    "placeholders": {
+      "no": {
+        "type": "String"
+      }
+    }
+  },
+  "receiptSubtotal": "Subtotal",
+  "receiptDiscount": "Discount",
+  "receiptCashReceived": "Cash received",
+  "receiptOnUtang": "On utang",
+  "receiptBalance": "{name}'s utang balance: {amount}",
+  "@receiptBalance": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "receiptNewSale": "New sale",
+  "receiptCancelled": "CANCELLED",
+  "receiptThanks": "Thank you!"
 }

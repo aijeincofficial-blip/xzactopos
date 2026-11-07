@@ -6,6 +6,7 @@ import '../l10n/app_localizations.dart';
 import '../sync/store_session.dart';
 import '../sync/sync_badge.dart';
 import 'cart.dart';
+import 'pay_screen.dart';
 import 'product_form_screen.dart';
 import 'product_thumb.dart';
 import 'products_screen.dart' show looksLikeBarcode;
@@ -205,8 +206,16 @@ class _SellScreenState extends State<SellScreen> {
     );
   }
 
-  // Wired up by the pay screen (next card).
-  void _pay(Cart cart) {}
+  Future<void> _pay(Cart cart) async {
+    final scope = CatalogScope.of(context);
+    await Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => scope.wrap(PayScreen(cart: cart))));
+    if (!mounted) return;
+    // the sale just made changes which items sell most
+    final next = scope.store.quickItems();
+    setState(() {
+      _quick = next;
+    });
+  }
 
   Widget _tiles(Map<String, double> stock) {
     final t = AppLocalizations.of(context);
