@@ -9,7 +9,11 @@ Updated at the end of every task. Read this first in a fresh session.
   - P1-02 hook + helpers: done. Migration `20261107000200_auth_hook_and_helpers.sql`, pgTAP `002_auth_helpers.test.sql` (42 tests).
     Hook enabled in `supabase/config.toml`; verified end-to-end (real sign-in token carries tenant_id, user_role, tenant_status, user_active).
   - P1-03 RLS policies + guard: done. Migration `20261107000300_rls_policies.sql`, pgTAP `003_rls_guard_and_policies.test.sql` (33 tests).
-  - Next: P1-04 full pgTAP isolation matrix (Opus).
+  - P1-04 isolation matrix: done. pgTAP `004_tenant_isolation_matrix.test.sql` (508 tests): 2 tenants with colliding keys x
+    5 users (superadmin, admin, cashier, warehouse, deactivated) x 10 tables x 5 metrics (own read, own update, foreign read,
+    foreign update, delete blocked) against an explicit expectation table. Mutation-tested: a leaky locations policy fails it.
+    **When adding a tenant table, add a row per role to `expected` and a probe entry**, or the coverage check fails.
+  - Next: P1-05 admin RPCs + permission keys (Opus). RPC refusal tests for deactivated users and suspended tenants go there.
 - **RLS shape:** reads follow the §5 matrix; direct client writes only for simple master data
   (tenant name/timezone/tax_mode, settings, currency rates, location name/address/active, own profile name/locale).
   Modules, roles, assignments, new locations, bins: RPC only (P1-05). Column-level grants enforce the editable columns.
