@@ -251,3 +251,23 @@ and fails on the old code (verified) / passes on the fix.
 - `flutter test` is not part of `pnpm check`.
 
 **Next:** Phase 3 (Sell screen in Flutter: cart, cash, utang, receipt, outbox `sync_push` for sales). Opus for sync + stock math.
+
+### Android (emulator) setup and check: done (branch `flutter-solo`)
+No physical phone: Android is tested on the emulator `Pixel_4_API_33` (API 33, x86_64, WHPX acceleration works).
+- **Java:** Flutter used Android Studio's bundled Java 11 (old Studio, `...\Android Studio\jre`); AGP needs 17. Fixed machine-wide with
+  `flutter config --jdk-dir="C:\Program Files\Microsoft\jdk-17.0.20.8-hotspot"` (undo: `flutter config --jdk-dir=`). Not stored in the repo.
+- First Gradle build ~14 min (downloads Gradle, AGP, NDK 28.2 auto-installed under the existing SDK license). Later builds are incremental.
+  `flutter doctor` still warns "cmdline-tools missing": harmless for builds; install from Android Studio > SDK Manager > SDK Tools to clear it.
+  Duplicate `platforms/android-33-2` folder in the SDK only causes warnings.
+- **Manifests:** main adds `INTERNET` (release builds need it for Supabase) and the label "Aking Tindahan"; `src/debug` adds
+  `usesCleartextTraffic="true"` so the debug app reaches local Supabase over HTTP. Release stays HTTPS-only.
+- **Run:** start the emulator, then `apps/mobile/run-android.ps1` (uses `http://10.0.2.2:54321`, the emulator's address for this PC).
+- **Verified on the emulator:** sign in as `tindera.p207@example.com` -> 6 products pulled into native SQLite (no wasm needed on Android);
+  airplane mode on -> edit Itlog, take a photo with the emulator camera (real Android camera app, image_picker) -> shows at once, badge
+  "Walang signal, 3 naka-save sa phone"; airplane off + tap badge -> server has the 38 KB JPEG in Storage and the product points to it.
+- **Bug found and fixed:** the app bar overflowed on phone widths (the full sync sentence + store name + buttons; up to 300 px over at 360
+  wide in Filipino offline). Below 600 px the badge is now icon + count, the sentence is the tooltip and screen-reader label.
+  Regression test `test/phone_layout_test.dart` (360 and 411 px, Filipino, offline, 3 waiting) fails on the old badge, passes now.
+- Driving the emulator from a script: type slowly (`adb shell input text` per character) — the debug build drops fast input;
+  the Escape key (keyevent 111) acts as Back. Debug builds are slow (skipped frames); judge speed on a `--release` or `--profile` build.
+- Not done: release APK signing (needs a keystore, Phase 7), profile/release performance check on the emulator.
