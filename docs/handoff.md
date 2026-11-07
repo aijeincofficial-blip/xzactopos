@@ -4,7 +4,7 @@ Updated at the end of every task. Read this first in a fresh session.
 
 ## Status
 - Phase 0 (Foundation): done, committed (6d59c99).
-- **Phase 1 (Tenancy, Auth, RBAC): in progress.** Cards in docs/tasks/P1-01..P1-08 (approved).
+- **Phase 1 (Tenancy, Auth, RBAC): done, accepted (P1-08).** Cards in docs/tasks/P1-01..P1-08. Next: Phase 2 (catalog and local store).
   - P1-01 core schema: done. Migration `20261107000100_core_tenancy.sql`, pgTAP `001_core_schema.test.sql` (38 tests).
   - P1-02 hook + helpers: done. Migration `20261107000200_auth_hook_and_helpers.sql`, pgTAP `002_auth_helpers.test.sql` (42 tests).
     Hook enabled in `supabase/config.toml`; verified end-to-end (real sign-in token carries tenant_id, user_role, tenant_status, user_active).
@@ -44,10 +44,8 @@ Updated at the end of every task. Read this first in a fresh session.
     are `errors:validation.*` keys. `uuidv7()` added to `@pos/core` (client-generated ids).
     Verified in the browser against local Supabase (dana: different actions per store, create cashier; owner: wizard, add store,
     modules page, fil switch). `pnpm check` passes (690 pgTAP tests).
-    Known gaps: the chosen language is not persisted and the user's `locale` is not applied after sign-in; no component tests
-    (vitest env is node); invite-by-email UI is not built (only username/password creation); sessions expiring mid-use are not
-    handled beyond the route guard. Phase 1 acceptance (P1-08) is next.
-  - Local demo data (not in repo): tenants `demo-full` (owner/dana/cora/carl) and `demo-new`, password `Demo-pass-123`. Reset with `supabase db reset`.
+    Known gaps: see the Phase 1 acceptance report below.
+  - Local demo data (not in repo): tenants `demo-full` (owner/dana/cora/carl/cory/nina) and `demo-new`, password `Demo-pass-123`. Reset with `supabase db reset`.
 - **RLS shape:** reads follow the §5 matrix; direct client writes only for simple master data
   (tenant name/timezone/tax_mode, settings, currency rates, location name/address/active, own profile name/locale).
   Modules, roles, assignments, new locations, bins: RPC only (P1-05). Column-level grants enforce the editable columns.
@@ -69,6 +67,31 @@ Updated at the end of every task. Read this first in a fresh session.
 - `location_access` rules live in a trigger (role vs location type vs position). Changing a user's role must
   also clear or fix their assignments: handle in `set_user_role` RPC (P1-05).
 - `tenant_modules` is one row per tenant with booleans; `check (inventory)` keeps the core always on.
+
+## Phase 1 acceptance report (plan section 12, P1-08)
+Run on 2026-11-07 against the local stack.
+
+| Criterion | Result |
+| --- | --- |
+| pgTAP proves cross-tenant isolation for every role | **Pass.** `004_tenant_isolation_matrix` (508 tests): 2 tenants x 5 users x 10 tables x 5 metrics; mutation-tested. All 6 pgTAP files pass, 693 tests |
+| Superadmin can create a cashier and assign a store | **Pass.** `pnpm smoke:users` 16/16 (create_user, synthetic email, cashier signs in and sees only S01). Browser: owner created cashier `nina` in Store B from the Users dialog and she appeared with that store |
+| Admin with two stores and different positions sees correct permissions in each | **Pass.** Browser: `dana` (manager A, supervisor B) sees "Manage users (cashiers only)", products, stock adjust, audit log in A but only sell, PIN-gated discount, void, shifts, store reports in B. Users page offers Manage only for Store A cashiers. `/app/locations` redirects her to `/app`. Smoke test also proves the DB refuses the supervisor store |
+| `pnpm check` | **Pass.** lint, types, Vitest (core 51, client 18, functions 20), pgTAP 693 |
+| Locale after sign-in (gap fixed in this card) | **Pass.** `get_my_access.locale` = profile locale, else tenant default, else en; client applies it once per sign-in and saves changes to `profiles.locale`. Browser: chose Filipino, cleared the device cache, reloaded, still Filipino from the profile; `dana` (no profile locale) got the tenant default. Tests: Vitest `pickLocale`, pgTAP x3 (fallback, own update allowed, profile wins) |
+
+Also seen in the browser: signing in on `/t/demo-new` with a `demo-full` account is refused (wrong business); a deactivated or unknown account lands on the business-code page.
+
+### Known gaps (carry forward)
+- **CI never run.** No remote; `.github/workflows/ci.yml` and the `supabase start -x ...` exclusion list are untested (from Phase 0).
+- **No invite-by-email screen.** `invite_user` exists and is smoke-tested; the UI only creates username/password users. Platform operator tooling (provision tenant UI) is Phase 9.
+- **No component or browser-automation tests.** The admin UI was verified by hand; Vitest runs in node. Playwright was deferred by the plan.
+- **Session expiry mid-use** is handled only by the route guard on navigation; an expired token during a mutation shows the generic error.
+- **Tenant settings editing after setup** (name, timezone, tax mode, languages) has no screen; only modules and locations can change. Base currency is locked by design.
+- **Password reset and user password change** have no UI.
+- **User list is capped at 500 rows, no search or pagination** (fine for the pilot size).
+- **Users who work in a location do not see `locale` choice of others;** only their own language is saved.
+- Offline PIN material (`profiles.pin_hash`) still needs its RPC in Phase 3.
+- Local demo data only exists in the dev DB (`demo-full`, `demo-new`, password `Demo-pass-123`); `supabase db reset` removes it.
 
 ## Phase 0 acceptance report (plan section 12)
 | Criterion | Result |

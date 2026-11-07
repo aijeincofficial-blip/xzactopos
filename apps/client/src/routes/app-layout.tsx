@@ -1,8 +1,11 @@
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, Outlet, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
+import { accessQuery } from "../lib/session.tsx";
 import { PERMISSION_KEYS, type PermissionKey } from "@pos/core";
-import { signOut } from "../lib/api.ts";
+import { saveMyLocale, signOut } from "../lib/api.ts";
+import { pickLocale, storeLocale } from "../i18n/index.ts";
 import { useSession } from "../lib/session.tsx";
 import { Badge, Button, Card } from "../components/ui.tsx";
 import { LanguageSelect } from "../components/LanguageSelect.tsx";
@@ -15,10 +18,27 @@ const NAV = [
 ] as const satisfies ReadonlyArray<{ to: string; key: string; perm: PermissionKey | null }>;
 
 export function AppLayout() {
-  const { t } = useTranslation(["common", "admin"]);
+  const { t, i18n } = useTranslation(["common", "admin"]);
   const { access, can } = useSession();
   const qc = useQueryClient();
   const navigate = useNavigate();
+
+  // Apply the user's saved language once per sign-in (profile locale, else tenant default).
+  // Later manual changes are not overridden because this only re-runs for a different user.
+  useEffect(() => {
+    const l = pickLocale(access.locale, null);
+    void i18n.changeLanguage(l);
+    storeLocale(l);
+  }, [access.user_id]);
+
+  async function chooseLocale(l: "en" | "fil") {
+    try {
+      await saveMyLocale(access.user_id, l);
+      qc.setQueryData(accessQuery.queryKey, { ...access, locale: l });
+    } catch {
+      /* the language still changed locally; it will sync on the next choice */
+    }
+  }
 
   async function leave() {
     await signOut();
@@ -36,7 +56,7 @@ export function AppLayout() {
               {access.full_name || access.username} · {t(`admin:roles.${access.role}`)}
             </div>
           </div>
-          <LanguageSelect />
+          <LanguageSelect onChoose={(l) => void chooseLocale(l)} />
           <Button variant="outline" size="sm" onClick={() => void leave()}>
             {t("common:actions.signOut")}
           </Button>

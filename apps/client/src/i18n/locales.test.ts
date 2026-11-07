@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveLocale, resources } from "./index.ts";
+import { pickLocale, resolveLocale, resources } from "./index.ts";
 
 function flatten(obj: unknown, prefix = ""): Array<[string, unknown]> {
   if (typeof obj !== "object" || obj === null) return [[prefix, obj]];
@@ -29,5 +29,13 @@ describe("locale files", () => {
     expect(resolveLocale("en-US")).toBe("en");
     expect(resolveLocale("de")).toBe("en");
     expect(resolveLocale(undefined)).toBe("en");
+  });
+
+  it("picks the user's locale, then the tenant default, then English", () => {
+    expect(pickLocale("fil", "en")).toBe("fil");
+    expect(pickLocale(null, "fil")).toBe("fil");
+    expect(pickLocale(undefined, undefined)).toBe("en");
+    expect(pickLocale("de", "fil")).toBe("fil");
+    expect(pickLocale("", "")).toBe("en");
   });
 });

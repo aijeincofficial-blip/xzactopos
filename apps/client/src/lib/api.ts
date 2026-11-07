@@ -70,6 +70,12 @@ export async function signIn(slug: string, identifier: string, password: string)
   if (error) throw new ApiError("invalid_credentials", error.message);
 }
 
+/** Own profile locale: allowed by the column grant (full_name, locale) and the own-row policy. */
+export async function saveMyLocale(userId: string, locale: "en" | "fil") {
+  const { error } = await supabase.from("profiles").update({ locale }).eq("user_id", userId);
+  if (error) throw fromRaw(error);
+}
+
 export const signOut = () => supabase.auth.signOut();
 
 export interface CreateUserBody {

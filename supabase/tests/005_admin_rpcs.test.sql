@@ -1,6 +1,6 @@
 -- P1-05 admin RPCs: allowed and refused paths, business rules, audit trail.
 begin;
-select plan(53);
+select plan(56);
 
 create function pg_temp.login(p_user uuid, p_tenant uuid default null, p_role text default 'authenticated')
 returns void language sql as $$
@@ -319,6 +319,20 @@ select is(
    from jsonb_array_elements(public.get_my_access() -> 'locations') x),
   '{"S01": "manager", "S02": "supervisor", "S03": "manager"}'::jsonb,
   'get_my_access returns the per-store positions');
+reset role;
+
+-- Locale: the user's own choice wins, else the tenant default, else 'en' (the client applies this after sign-in)
+update public.profiles set locale = null where user_id = pg_temp.u('maria');
+select pg_temp.login(pg_temp.u('maria'), pg_temp.t('A'));
+set local role authenticated;
+select is(
+  public.get_my_access() ->> 'locale',
+  (select s.default_locale from public.tenant_settings s where s.tenant_id = pg_temp.t('A')),
+  'get_my_access falls back to the tenant default locale');
+select lives_ok(
+  $$ update public.profiles set locale = 'fil' where user_id = auth.uid() $$,
+  'a user may save their own locale');
+select is(public.get_my_access() ->> 'locale', 'fil', 'the saved profile locale wins over the tenant default');
 reset role;
 
 select pg_temp.login(pg_temp.u('pedro'), pg_temp.t('A'));

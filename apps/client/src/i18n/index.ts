@@ -26,7 +26,35 @@ export function resolveLocale(input: string | undefined | null): Locale {
   return "en";
 }
 
-export async function initI18n(locale: Locale = resolveLocale(globalThis.navigator?.language)) {
+/** Locale for a signed-in user: their own choice, else the tenant default, else English. */
+export function pickLocale(profileLocale: string | null | undefined, tenantDefault: string | null | undefined): Locale {
+  for (const c of [profileLocale, tenantDefault]) {
+    if (c && (SUPPORTED_LOCALES as readonly string[]).includes(c)) return c as Locale;
+  }
+  return "en";
+}
+
+const LOCALE_KEY = "pos.locale";
+
+/** Last chosen language on this device, so sign-in pages match before anyone is signed in. */
+export function storedLocale(): Locale | null {
+  try {
+    const v = localStorage.getItem(LOCALE_KEY);
+    return v && (SUPPORTED_LOCALES as readonly string[]).includes(v) ? (v as Locale) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function storeLocale(locale: Locale) {
+  try {
+    localStorage.setItem(LOCALE_KEY, locale);
+  } catch {
+    /* storage can be blocked; this is only a convenience */
+  }
+}
+
+export async function initI18n(locale: Locale = storedLocale() ?? resolveLocale(globalThis.navigator?.language)) {
   await i18n.use(initReactI18next).init({
     resources,
     lng: locale,
