@@ -486,5 +486,42 @@
       }
     }
   },
-  "sellPinHint": "Pindutin nang matagal ang item para i-pin bilang paborito"
+  "sellPinHint": "Pindutin nang matagal ang item para i-pin bilang paborito",
+  "restockTitle": "Pasuyo",
+  "restockEmpty": "Walang bibilhin. Walang paubos.",
+  "restockShareHeader": "Listahan ng bibilhin",
+  "restockCopy": "Kopyahin",
+  "restockCopied": "Nakopya na. I-paste sa mensahe.",
+  "restockNow": "Ngayon: {n}",
+  "@restockNow": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "restockBuy": "Bilhin: {count}",
+  "@restockBuy": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "restockItems": "{count, plural, other{{count} item}}",
+  "@restockItems": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "restockEstimate": "Mga {amount}",
+  "@restockEstimate": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  }
 }

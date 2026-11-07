@@ -1531,6 +1531,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Hold an item to pin it as a favorite'**
   String get sellPinHint;
+
+  /// No description provided for @restockTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Restock list'**
+  String get restockTitle;
+
+  /// No description provided for @restockEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to buy. Nothing is running low.'**
+  String get restockEmpty;
+
+  /// No description provided for @restockShareHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Shopping list'**
+  String get restockShareHeader;
+
+  /// No description provided for @restockCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy list'**
+  String get restockCopy;
+
+  /// No description provided for @restockCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'List copied. Paste it into a message.'**
+  String get restockCopied;
+
+  /// No description provided for @restockNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Now: {n}'**
+  String restockNow(String n);
+
+  /// No description provided for @restockBuy.
+  ///
+  /// In en, this message translates to:
+  /// **'Buy {count}'**
+  String restockBuy(int count);
+
+  /// No description provided for @restockItems.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{{count} item} other{{count} items}}'**
+  String restockItems(int count);
+
+  /// No description provided for @restockEstimate.
+  ///
+  /// In en, this message translates to:
+  /// **'About {amount}'**
+  String restockEstimate(String amount);
 }
 
 class _AppLocalizationsDelegate

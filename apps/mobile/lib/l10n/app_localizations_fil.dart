@@ -883,4 +883,44 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String get sellPinHint =>
       'Pindutin nang matagal ang item para i-pin bilang paborito';
+
+  @override
+  String get restockTitle => 'Pasuyo';
+
+  @override
+  String get restockEmpty => 'Walang bibilhin. Walang paubos.';
+
+  @override
+  String get restockShareHeader => 'Listahan ng bibilhin';
+
+  @override
+  String get restockCopy => 'Kopyahin';
+
+  @override
+  String get restockCopied => 'Nakopya na. I-paste sa mensahe.';
+
+  @override
+  String restockNow(String n) {
+    return 'Ngayon: $n';
+  }
+
+  @override
+  String restockBuy(int count) {
+    return 'Bilhin: $count';
+  }
+
+  @override
+  String restockItems(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count item',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String restockEstimate(String amount) {
+    return 'Mga $amount';
+  }
 }

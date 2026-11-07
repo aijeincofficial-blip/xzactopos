@@ -875,4 +875,45 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sellPinHint => 'Hold an item to pin it as a favorite';
+
+  @override
+  String get restockTitle => 'Restock list';
+
+  @override
+  String get restockEmpty => 'Nothing to buy. Nothing is running low.';
+
+  @override
+  String get restockShareHeader => 'Shopping list';
+
+  @override
+  String get restockCopy => 'Copy list';
+
+  @override
+  String get restockCopied => 'List copied. Paste it into a message.';
+
+  @override
+  String restockNow(String n) {
+    return 'Now: $n';
+  }
+
+  @override
+  String restockBuy(int count) {
+    return 'Buy $count';
+  }
+
+  @override
+  String restockItems(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items',
+      one: '$count item',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String restockEstimate(String amount) {
+    return 'About $amount';
+  }
 }

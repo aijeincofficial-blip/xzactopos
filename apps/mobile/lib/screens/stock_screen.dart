@@ -9,6 +9,7 @@ import '../l10n/app_localizations.dart';
 import '../sync/store_session.dart';
 import '../sync/sync_badge.dart';
 import 'product_thumb.dart';
+import 'restock_screen.dart';
 
 String fmtQty(double q) => q == q.roundToDouble() ? q.toInt().toString() : q.toStringAsFixed(3).replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '');
 
@@ -38,7 +39,15 @@ class _StockScreenState extends State<StockScreen> {
     final t = AppLocalizations.of(context);
     final scope = CatalogScope.of(context);
     return Scaffold(
-      appBar: AppBar(title: Text(t.stockTitle), actions: const [SyncBadge()]),
+      appBar: AppBar(title: Text(t.stockTitle), actions: [
+        IconButton(
+          key: const Key('open-restock'),
+          tooltip: t.restockTitle,
+          icon: const Icon(Icons.shopping_basket_outlined),
+          onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => scope.wrap(const RestockScreen()))),
+        ),
+        const SyncBadge(),
+      ]),
       body: StreamBuilder<List<StockRow>>(
         stream: scope.store.watchStockList(query: _query),
         builder: (context, snap) {

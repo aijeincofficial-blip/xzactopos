@@ -486,5 +486,42 @@
       }
     }
   },
-  "sellPinHint": "Hold an item to pin it as a favorite"
+  "sellPinHint": "Hold an item to pin it as a favorite",
+  "restockTitle": "Restock list",
+  "restockEmpty": "Nothing to buy. Nothing is running low.",
+  "restockShareHeader": "Shopping list",
+  "restockCopy": "Copy list",
+  "restockCopied": "List copied. Paste it into a message.",
+  "restockNow": "Now: {n}",
+  "@restockNow": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "restockBuy": "Buy {count}",
+  "@restockBuy": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "restockItems": "{count, plural, =1{{count} item} other{{count} items}}",
+  "@restockItems": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "restockEstimate": "About {amount}",
+  "@restockEstimate": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  }
 }

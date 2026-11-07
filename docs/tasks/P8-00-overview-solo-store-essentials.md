@@ -18,11 +18,11 @@ A tindera can run a whole day in the app: sell fast, take cash-in/out and load, 
 ## Cards
 | Card | Work | Model |
 | --- | --- | --- |
-| P8-01 Top sellers strip on Sell | local query, strip widget, tests | Sonnet |
+| P8-01 Pin favorites on Sell quick tiles | (top sellers already existed as `quickItems`) device-local pins, long-press, tests. DONE | Sonnet |
 | P8-02 Expenses: schema, RLS, op, pgTAP | migration, `op_record_expense`, void, rollup into reports | Opus |
 | P8-03 Expenses + day close screens | add expense, Today shows expenses, count drawer, over/short, fil + en | Sonnet |
 | P8-04 Net profit in Reports | profit = margin minus expenses, from rollups | Sonnet |
-| P8-05 Restock list | derived list from low stock + last cost, share as text, receive from the list | Sonnet |
+| P8-05 Restock list | derived list from low stock + last cost, copy as text, receive from the list. DONE | Sonnet |
 | P8-06 Load / e-wallet service ledger | migration, `op_service_txn`, float balance, fee rules, pgTAP property test | Opus |
 | P8-07 Load / e-wallet screens | cash-in/out/load entry, float, daily fee total | Sonnet |
 | P8-08 Tingi / repack | ratio on product, conversion op, stock math tests | Opus |
