@@ -6,7 +6,16 @@ Updated at the end of every task. Read this first in a fresh session.
 - Phase 0 (Foundation): done, committed (6d59c99).
 - **Phase 1 (Tenancy, Auth, RBAC): in progress.** Cards in docs/tasks/P1-01..P1-08 (approved).
   - P1-01 core schema: done. Migration `20261107000100_core_tenancy.sql`, pgTAP `001_core_schema.test.sql` (38 tests).
-  - Next: P1-02 access token hook + RLS helpers (Opus).
+  - P1-02 hook + helpers: done. Migration `20261107000200_auth_hook_and_helpers.sql`, pgTAP `002_auth_helpers.test.sql` (42 tests).
+    Hook enabled in `supabase/config.toml`; verified end-to-end (real sign-in token carries tenant_id, user_role, tenant_status, user_active).
+  - Next: P1-03 RLS policies + schema guard (Opus).
+- **Auth decision:** JWT claims are UI hints. Helpers read role/active live from `profiles` and require the profile tenant to match
+  the JWT `tenant_id` claim. Demotion/deactivation is immediate. Suspended tenants still resolve (read/export) but
+  `assert_active_user()` refuses writes. Archived tenants and deactivated users resolve to nothing.
+- Helpers for policies/RPCs: `auth_tenant_id()`, `auth_role()`, `is_superadmin()`, `is_active_user()`, `is_platform_admin()`,
+  `has_location_access(loc, min_position)`, `auth_location_ids()`, `assert_active_user()`, `assert_module(m)`, `assert_location_access(loc, pos)`.
+  Wrap in `(select ...)` inside policies.
+- Changing `supabase/config.toml` (auth) needs `supabase stop && supabase start`; `db reset` alone is not enough.
 - RLS is enabled on every table already, with no client policies yet (deny-all) until P1-03.
 - `location_access` rules live in a trigger (role vs location type vs position). Changing a user's role must
   also clear or fix their assignments: handle in `set_user_role` RPC (P1-05).
