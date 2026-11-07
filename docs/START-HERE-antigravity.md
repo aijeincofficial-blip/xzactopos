@@ -16,14 +16,14 @@ pnpm install            # if node_modules is missing
 pnpm exec supabase status   # local stack must be running (Docker Desktop)
 pnpm check              # should end with "check passed"
 ```
-Run the web build: `flutter build web --release --no-web-resources-cdn --dart-define=SUPABASE_URL=http://127.0.0.1:54321 --dart-define=SUPABASE_ANON_KEY=<anon key from supabase status -o env>` in `apps/mobile`, then `python tool/serve_web.py build/web 5301`.
+Run the web build: `flutter build web --release --no-web-resources-cdn --pwa-strategy=none --dart-define=SUPABASE_URL=http://127.0.0.1:54321 --dart-define=SUPABASE_ANON_KEY=<anon key from supabase status -o env>` in `apps/mobile`, then `python tool/serve_web.py build/web 5301`.
 Android emulator (Pixel_4_API_33, already running as `emulator-5554`): build with `--dart-define=SUPABASE_URL=http://10.0.2.2:54321`, `adb install -r build/app/outputs/flutter-apk/app-debug.apk`. See the "Android (emulator) setup" section of the handoff.
 
 ## Rules that matter (from CLAUDE.md)
 Migrations and pgTAP before UI. Every new table: RLS + isolation-matrix rows (`supabase/tests/004_tenant_isolation_matrix.test.sql`). Never edit an existing migration; add a new one (the newest `sync_push` definition is in `20261108001000_utang_adjust_sales_pull.sql`; copy from the newest when you change it). Stock only changes through `stock_movements`. Money is integer centavos. UI strings only through ARB files (`lib/l10n`, English + Filipino, plurals must use `{count}`). Run `pnpm check` before declaring a task done, commit per card, update `docs/handoff.md`.
 
 ## What to do first: close the untested Phase 7 items (small)
-1. **Offline web in a normal Chrome** (the Claude in-app browser blocks service workers). Build the web app (above), serve it, open `http://127.0.0.1:5301` in Chrome, reload once (so the worker installs and caches), stop the python server, reload: the app should still open. Check DevTools > Application > Service Workers shows `sw.js` activated. If it fails, fix `apps/mobile/web/sw.js` and extend `apps/mobile/tool/sw_test.mjs`. (Node 24 has a built-in WebSocket if you want to script Chrome through its debug port.)
+1. **Offline web in a normal Chrome** (the Claude in-app browser blocks service workers). Build the web app (above), serve it, open `http://127.0.0.1:5301` in Chrome, reload TWICE online (the first visit only caches part of the app; `main.dart.js` is cached on the second load; use a normal reload, not Ctrl+Shift+R, which bypasses the worker), stop the python server, reload (verified by an automated headless-Chrome probe on 2026-11-07: passes after two online loads): the app should still open. Check DevTools > Application > Service Workers shows `sw.js` activated. If it fails, fix `apps/mobile/web/sw.js` and extend `apps/mobile/tool/sw_test.mjs`. (Node 24 has a built-in WebSocket if you want to script Chrome through its debug port.)
 2. **Barcode decoding on a device.** The camera screen, permission prompt and live preview work on the emulator, but no real barcode has been decoded. Test with a real phone and a real barcode, or write a throwaway probe that calls `MobileScannerController().analyzeImage(path)` on a generated EAN-13 PNG on the emulator.
 3. **Release APK signing:** needs a keystore that only the owner should create and keep. Not done, do not generate one without asking the owner.
 4. Not testable here: a real Bluetooth/thermal printer.
@@ -41,6 +41,7 @@ Solo is finished. Next is the **Full-mode** list in `docs/gaps-review.md` sectio
 - Shell heredocs with quotes break the Bash tool on this machine; write scripts to a file first.
 - Never run `supabase db reset` without asking: it wipes the local demo data.
 - Android typing via `adb input text` is slow; type one character at a time and use Tab between fields.
+- Web build must use `--pwa-strategy=none`: otherwise Flutter's bootstrap registers its own self-unregistering `flutter_service_worker.js` at the same scope and replaces our `sw.js` (symptom: no sw.js in DevTools).
 - The Claude in-app browser blocks SharedWorker/service-worker fetches; the app falls back to in-page storage there (single tab).
 
 ## Where to look
