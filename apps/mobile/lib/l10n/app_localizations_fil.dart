@@ -721,4 +721,28 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get utangAdjusted => 'Naayos na ang utang';
+
+  @override
+  String get scanTitle => 'I-scan ang barcode';
+
+  @override
+  String get scanHint => 'Itutok ang camera sa barcode';
+
+  @override
+  String get scanDone => 'Tapos na';
+
+  @override
+  String get scanLight => 'Ilaw';
+
+  @override
+  String get scanCameraDenied =>
+      'Hindi magamit ang camera. Payagan ito sa settings ng phone, tapos subukan ulit.';
+
+  @override
+  String scanAdded(String name) {
+    return 'Naidagdag: $name';
+  }
+
+  @override
+  String get scanWithCamera => 'I-scan gamit ang camera';
 }

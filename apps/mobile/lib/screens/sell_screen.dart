@@ -5,6 +5,7 @@ import '../data/local_store.dart';
 import '../l10n/app_localizations.dart';
 import '../sync/store_session.dart';
 import '../sync/sync_badge.dart';
+import '../core/camera_scanner.dart';
 import 'cart.dart';
 import 'pay_screen.dart';
 import 'product_form_screen.dart';
@@ -86,6 +87,19 @@ class _SellScreenState extends State<SellScreen> {
       ),
     ));
     _searchFocus.requestFocus();
+  }
+
+  /// Camera scanning: every code goes straight into the cart; the camera stays open for the next one.
+  Future<void> _scanWithCamera() async {
+    final t = AppLocalizations.of(context);
+    final store = CatalogScope.of(context).store;
+    await cameraScanner.scanMany(context, (code) async {
+      final hit = await store.findByBarcode(code);
+      if (hit == null) return ScanFeedback(t.sellUnknownBarcode(code), ok: false);
+      if (hit.price == null) return ScanFeedback(t.sellNoPrice, ok: false);
+      _cart!.add(hit);
+      return ScanFeedback(t.scanAdded(hit.name));
+    });
   }
 
   Future<void> _editQty(int i) async {
@@ -177,7 +191,14 @@ class _SellScreenState extends State<SellScreen> {
                   border: const OutlineInputBorder(),
                   isDense: true,
                   suffixIcon: _query.isEmpty
-                      ? const Icon(Icons.qr_code_scanner)
+                      ? (cameraScanner.available
+                          ? IconButton(
+                              key: const Key('camera-scan'),
+                              tooltip: t.scanWithCamera,
+                              icon: const Icon(Icons.qr_code_scanner),
+                              onPressed: _scanWithCamera,
+                            )
+                          : const Icon(Icons.qr_code_scanner))
                       : IconButton(icon: const Icon(Icons.clear), tooltip: t.clear, onPressed: _clearSearch),
                 ),
               ),

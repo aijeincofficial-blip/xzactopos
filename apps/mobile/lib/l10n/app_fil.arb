@@ -403,5 +403,19 @@
   "utangWriteOff": "Bawasan ang utang (burahin)",
   "utangAddMore": "Dagdagan ang utang (pagwawasto)",
   "utangAdjustAmount": "Magkano?",
-  "utangAdjusted": "Naayos na ang utang"
+  "utangAdjusted": "Naayos na ang utang",
+  "scanTitle": "I-scan ang barcode",
+  "scanHint": "Itutok ang camera sa barcode",
+  "scanDone": "Tapos na",
+  "scanLight": "Ilaw",
+  "scanCameraDenied": "Hindi magamit ang camera. Payagan ito sa settings ng phone, tapos subukan ulit.",
+  "scanAdded": "Naidagdag: {name}",
+  "@scanAdded": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "scanWithCamera": "I-scan gamit ang camera"
 }

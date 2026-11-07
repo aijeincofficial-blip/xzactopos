@@ -403,5 +403,19 @@
   "utangWriteOff": "Owes less (write off)",
   "utangAddMore": "Owes more (correction)",
   "utangAdjustAmount": "How much?",
-  "utangAdjusted": "Balance adjusted"
+  "utangAdjusted": "Balance adjusted",
+  "scanTitle": "Scan a barcode",
+  "scanHint": "Point the camera at the barcode",
+  "scanDone": "Done",
+  "scanLight": "Light",
+  "scanCameraDenied": "The camera is not available. Allow it in the phone settings, then try again.",
+  "scanAdded": "Added: {name}",
+  "@scanAdded": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "scanWithCamera": "Scan with camera"
 }

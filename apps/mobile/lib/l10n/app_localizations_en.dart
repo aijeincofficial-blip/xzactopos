@@ -713,4 +713,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get utangAdjusted => 'Balance adjusted';
+
+  @override
+  String get scanTitle => 'Scan a barcode';
+
+  @override
+  String get scanHint => 'Point the camera at the barcode';
+
+  @override
+  String get scanDone => 'Done';
+
+  @override
+  String get scanLight => 'Light';
+
+  @override
+  String get scanCameraDenied =>
+      'The camera is not available. Allow it in the phone settings, then try again.';
+
+  @override
+  String scanAdded(String name) {
+    return 'Added: $name';
+  }
+
+  @override
+  String get scanWithCamera => 'Scan with camera';
 }

@@ -10,7 +10,13 @@ const int photoMaxBytes = 100 * 1024;
 /// Returns a JPEG no larger than [maxSide] px on its longest side and under [maxBytes],
 /// lowering quality (then size) until it fits. Throws [FormatException] if the bytes are not an image.
 Uint8List compressPhoto(Uint8List input, {int maxSide = photoMaxSide, int maxBytes = photoMaxBytes}) {
-  var image = img.decodeImage(input);
+  img.Image? image;
+  try {
+    image = img.decodeImage(input);
+  } catch (_) {
+    // some image versions throw on garbage bytes instead of returning null
+    image = null;
+  }
   if (image == null) throw const FormatException('Not an image');
   image = img.bakeOrientation(image);
   var side = maxSide;

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:uuid/uuid.dart';
 
+import '../core/camera_scanner.dart';
 import '../core/money.dart';
 import '../core/photo.dart';
 import '../data/local_store.dart';
@@ -56,6 +57,11 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
       c.dispose();
     }
     super.dispose();
+  }
+
+  Future<void> _scanBarcode() async {
+    final code = await cameraScanner.scanOne(context);
+    if (code != null && mounted) setState(() => _barcode.text = code);
   }
 
   Future<void> _save() async {
@@ -229,7 +235,14 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
               textInputAction: TextInputAction.next,
               decoration: InputDecoration(
                 labelText: t.barcodeOptional,
-                prefixIcon: const Icon(Icons.qr_code_scanner),
+                prefixIcon: cameraScanner.available
+                    ? IconButton(
+                        key: const Key('barcode-camera'),
+                        tooltip: t.scanWithCamera,
+                        icon: const Icon(Icons.qr_code_scanner),
+                        onPressed: _scanBarcode,
+                      )
+                    : const Icon(Icons.qr_code_scanner),
                 errorText: _barcodeError,
               ),
             ),

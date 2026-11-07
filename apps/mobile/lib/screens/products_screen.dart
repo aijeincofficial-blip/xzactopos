@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/camera_scanner.dart';
 import '../core/money.dart';
 import '../data/local_store.dart';
 import '../l10n/app_localizations.dart';
@@ -69,6 +70,18 @@ class _ProductsScreenState extends State<ProductsScreen> {
         _query = '';
       });
 
+  Future<void> _scanButton() async {
+    if (cameraScanner.available) {
+      final code = await cameraScanner.scanOne(context);
+      if (code != null && mounted) {
+        _search.text = code;
+        await _onSubmit(code);
+      }
+      return;
+    }
+    _readyToScan();
+  }
+
   void _readyToScan() {
     _search.selection = TextSelection(baseOffset: 0, extentOffset: _search.text.length);
     _searchFocus.requestFocus();
@@ -115,7 +128,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                         key: const Key('scan-button'),
                         icon: const Icon(Icons.qr_code_scanner),
                         tooltip: t.scanBarcode,
-                        onPressed: _readyToScan,
+                        onPressed: _scanButton,
                       )
                     : IconButton(icon: const Icon(Icons.clear), tooltip: t.clear, onPressed: _clearSearch),
               ),

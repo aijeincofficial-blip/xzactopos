@@ -1243,6 +1243,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Balance adjusted'**
   String get utangAdjusted;
+
+  /// No description provided for @scanTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan a barcode'**
+  String get scanTitle;
+
+  /// No description provided for @scanHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Point the camera at the barcode'**
+  String get scanHint;
+
+  /// No description provided for @scanDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get scanDone;
+
+  /// No description provided for @scanLight.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get scanLight;
+
+  /// No description provided for @scanCameraDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'The camera is not available. Allow it in the phone settings, then try again.'**
+  String get scanCameraDenied;
+
+  /// No description provided for @scanAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Added: {name}'**
+  String scanAdded(String name);
+
+  /// No description provided for @scanWithCamera.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan with camera'**
+  String get scanWithCamera;
 }
 
 class _AppLocalizationsDelegate
