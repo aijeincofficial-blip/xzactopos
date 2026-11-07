@@ -83,6 +83,21 @@ insert into expected (who, tbl, own_rows, own_updated)
 select w.who, 'processed_ops', -1, -1
 from (values ('superadmin'), ('admin'), ('cashier'), ('warehouse'), ('inactive')) w(who);
 
+-- P3-01 sales and ledger. Fixtures: movements, levels, sales, items, payments at S01 and S02; 1 customer with 1 ledger row.
+-- Store-scoped tables: owner and maria see S01+S02 (2), juan only S01 (1), pedro (warehouse W01) none. No client writes anywhere.
+insert into expected (who, tbl, own_rows, own_updated)
+select w.who, t.tbl,
+       case w.who when 'superadmin' then t.n_all when 'admin' then t.n_all when 'cashier' then t.n_s01 else 0 end, -1
+from (values ('superadmin'), ('admin'), ('cashier'), ('warehouse'), ('inactive')) w(who)
+cross join (values ('stock_movements', 2, 1), ('stock_levels', 2, 1), ('sales', 2, 1),
+                   ('sale_items', 2, 1), ('payments', 2, 1)) t(tbl, n_all, n_s01);
+
+-- customers and utang: owner, admin, cashier see the tenant's rows (1 each); warehouse and inactive none
+insert into expected (who, tbl, own_rows, own_updated)
+select w.who, t.tbl, case when w.who in ('warehouse', 'inactive') then 0 else 1 end, -1
+from (values ('superadmin'), ('admin'), ('cashier'), ('warehouse'), ('inactive')) w(who)
+cross join (values ('customers'), ('customer_ledger')) t(tbl);
+
 -- 2 tenants x (who, table) pairs x 5 metrics, plus 8 targeted checks
 select plan((select count(*)::int * 2 * 5 from expected) + 8);
 
@@ -153,6 +168,24 @@ begin
     insert into public.variant_prices (tenant_id, variant_id, currency, price) values
       (pg_temp.tid(t.label), md5('var:' || t.label || ':1')::uuid, t.ccy, 2500),
       (pg_temp.tid(t.label), md5('var:' || t.label || ':2')::uuid, t.ccy, 5200);
+
+    -- sales: one at each store, with a movement/level, item and payment; one customer with one ledger row
+    insert into public.stock_movements (tenant_id, location_id, variant_id, qty_delta, type) values
+      (pg_temp.tid(t.label), pg_temp.lid(t.label, 'S01'), md5('var:' || t.label || ':1')::uuid, 10, 'opening'),
+      (pg_temp.tid(t.label), pg_temp.lid(t.label, 'S02'), md5('var:' || t.label || ':1')::uuid, 4, 'opening');
+    insert into public.customers (id, tenant_id, name)
+      values (md5('cus:' || t.label)::uuid, pg_temp.tid(t.label), 'Aling Rosa');
+    insert into public.sales (id, tenant_id, location_id, local_no, subtotal, total, sold_at) values
+      (md5('sale:' || t.label || ':1')::uuid, pg_temp.tid(t.label), pg_temp.lid(t.label, 'S01'), 'D1-0001', 2500, 2500, now()),
+      (md5('sale:' || t.label || ':2')::uuid, pg_temp.tid(t.label), pg_temp.lid(t.label, 'S02'), 'D1-0002', 2500, 2500, now());
+    insert into public.sale_items (tenant_id, sale_id, location_id, variant_id, product_name, qty, unit_price, line_total) values
+      (pg_temp.tid(t.label), md5('sale:' || t.label || ':1')::uuid, pg_temp.lid(t.label, 'S01'), md5('var:' || t.label || ':1')::uuid, 'Cola', 1, 2500, 2500),
+      (pg_temp.tid(t.label), md5('sale:' || t.label || ':2')::uuid, pg_temp.lid(t.label, 'S02'), md5('var:' || t.label || ':1')::uuid, 'Cola', 1, 2500, 2500);
+    insert into public.payments (tenant_id, sale_id, location_id, method, amount) values
+      (pg_temp.tid(t.label), md5('sale:' || t.label || ':1')::uuid, pg_temp.lid(t.label, 'S01'), 'cash', 2500),
+      (pg_temp.tid(t.label), md5('sale:' || t.label || ':2')::uuid, pg_temp.lid(t.label, 'S02'), 'utang', 2500);
+    insert into public.customer_ledger (tenant_id, customer_id, kind, amount, sale_id)
+      values (pg_temp.tid(t.label), md5('cus:' || t.label)::uuid, 'charge', 2500, md5('sale:' || t.label || ':2')::uuid);
   end loop;
 end;
 $$;
@@ -201,7 +234,14 @@ begin
     ('products',          'tenant_id', 'name = name'),
     ('product_variants',  'tenant_id', 'sku = sku'),
     ('variant_prices',    'tenant_id', 'price = price'),
-    ('processed_ops',     'tenant_id', 'kind = kind')
+    ('processed_ops',     'tenant_id', 'kind = kind'),
+    ('stock_movements',   'tenant_id', 'qty_delta = qty_delta'),
+    ('stock_levels',      'tenant_id', 'qty_on_hand = qty_on_hand'),
+    ('sales',             'tenant_id', 'total = total'),
+    ('sale_items',        'tenant_id', 'qty = qty'),
+    ('payments',          'tenant_id', 'amount = amount'),
+    ('customers',         'tenant_id', 'name = name'),
+    ('customer_ledger',   'tenant_id', 'amount = amount')
   ) v(tbl, tcol, upd) loop
     begin
       execute format(
