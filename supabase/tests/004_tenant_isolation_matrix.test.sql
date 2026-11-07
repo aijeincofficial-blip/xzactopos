@@ -129,6 +129,12 @@ select w.who, t.tbl,
 from (values ('superadmin'), ('admin'), ('cashier'), ('warehouse'), ('inactive')) w(who)
 cross join (values ('service_txns', 1), ('wallet_float', 1), ('daily_service_summary', 0)) t(tbl, n_cashier);
 
+-- P8-08 conversions (opened packs): store-scoped like stock_movements (owner, admin: S01 + S02 = 2; cashier juan: S01 = 1;
+-- warehouse pedro (W01) and inactive none); nobody writes directly
+insert into expected (who, tbl, own_rows, own_updated)
+select w.who, 'conversions', case w.who when 'superadmin' then 2 when 'admin' then 2 when 'cashier' then 1 else 0 end, -1
+from (values ('superadmin'), ('admin'), ('cashier'), ('warehouse'), ('inactive')) w(who);
+
 -- 2 tenants x (who, table) pairs x 5 metrics, plus 8 targeted checks
 select plan((select count(*)::int * 2 * 5 from expected) + 8);
 
@@ -240,6 +246,13 @@ begin
     insert into public.service_txns (id, tenant_id, location_id, client_op_id, kind, wallet, amount, fee, currency, ref, txn_at) values
       (md5('svc:' || t.label || ':1')::uuid, pg_temp.tid(t.label), pg_temp.lid(t.label, 'S01'), md5('svcop:1')::uuid, 'cash_in', 'gcash', 50000, 1000, t.ccy, '0917', '2026-11-08T02:00:00Z'),
       (md5('svc:' || t.label || ':2')::uuid, pg_temp.tid(t.label), pg_temp.lid(t.label, 'S02'), md5('svcop:2')::uuid, 'cash_out', 'maya', 20000, 400, t.ccy, null, '2026-11-08T02:00:00Z');
+    -- opened packs: one at each store (Cola breaks into Rice, just for the fixture), colliding client op ids across tenants
+    insert into public.conversions (id, tenant_id, location_id, client_op_id, pack_variant_id, piece_variant_id, packs, ratio,
+                                    pieces, converted_at) values
+      (md5('conv:' || t.label || ':1')::uuid, pg_temp.tid(t.label), pg_temp.lid(t.label, 'S01'), md5('convop:1')::uuid,
+       md5('var:' || t.label || ':1')::uuid, md5('var:' || t.label || ':2')::uuid, 1, 20, 20, '2026-11-08T02:00:00Z'),
+      (md5('conv:' || t.label || ':2')::uuid, pg_temp.tid(t.label), pg_temp.lid(t.label, 'S02'), md5('convop:2')::uuid,
+       md5('var:' || t.label || ':1')::uuid, md5('var:' || t.label || ':2')::uuid, 2, 20, 40, '2026-11-08T02:00:00Z');
   end loop;
 end;
 $$;
@@ -304,7 +317,8 @@ begin
     ('day_closes',        'tenant_id', 'note = note'),
     ('service_txns',      'tenant_id', 'note = note'),
     ('wallet_float',      'tenant_id', 'balance = balance'),
-    ('daily_service_summary', 'tenant_id', 'fee = fee')
+    ('daily_service_summary', 'tenant_id', 'fee = fee'),
+    ('conversions',       'tenant_id', 'note = note')
   ) v(tbl, tcol, upd) loop
     begin
       execute format(
