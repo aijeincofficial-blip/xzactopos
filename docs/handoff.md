@@ -3,8 +3,14 @@
 Updated at the end of every task. Read this first in a fresh session.
 
 ## Status
-- **Phase 0 (Foundation): built, awaiting review.** Task cards: docs/tasks/P0-01..P0-05.
-- Not committed yet. Next: Phase 1 (Tenancy, Auth, RBAC). Use Opus for RLS work.
+- Phase 0 (Foundation): done, committed (6d59c99).
+- **Phase 1 (Tenancy, Auth, RBAC): in progress.** Cards in docs/tasks/P1-01..P1-08 (approved).
+  - P1-01 core schema: done. Migration `20261107000100_core_tenancy.sql`, pgTAP `001_core_schema.test.sql` (38 tests).
+  - Next: P1-02 access token hook + RLS helpers (Opus).
+- RLS is enabled on every table already, with no client policies yet (deny-all) until P1-03.
+- `location_access` rules live in a trigger (role vs location type vs position). Changing a user's role must
+  also clear or fix their assignments: handle in `set_user_role` RPC (P1-05).
+- `tenant_modules` is one row per tenant with booleans; `check (inventory)` keeps the core always on.
 
 ## Phase 0 acceptance report (plan section 12)
 | Criterion | Result |
