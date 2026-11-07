@@ -144,4 +144,20 @@ void main() {
     expect(find.byKey(const Key('cart-line-0')), findsNothing);
     await leave(tester);
   });
+
+  testWidgets('on a phone the keyboard does not pop up over the items by itself', (tester) async {
+    tester.view.physicalSize = const Size(411 * 2.625, 800 * 2.625);
+    tester.view.devicePixelRatio = 2.625;
+    addTearDown(tester.view.reset);
+    await openSell(tester);
+    expect(tester.widget<TextField>(find.byKey(const Key('sell-search'))).autofocus, isFalse);
+    expect(find.byKey(const Key('tile-$_p1')), findsOneWidget);
+    await leave(tester);
+  });
+
+  testWidgets('on a wide screen the search box is ready for a USB scanner', (tester) async {
+    await openSell(tester);
+    expect(tester.widget<TextField>(find.byKey(const Key('sell-search'))).autofocus, isTrue);
+    await leave(tester);
+  });
 }

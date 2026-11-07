@@ -14,7 +14,7 @@ Decide per item; nothing here has been changed yet.
 | B5 utang adjust | `adjust_utang` op (owner or store manager only) and an "Ayusin ang utang" dialog (owes less / owes more, with note) | pgTAP `015`, `utang_test` (2 more) |
 | B9 clean reset | `supabase db reset` replayed all 16 migrations from scratch without errors; pgTAP 1659, Flutter 154, `smoke:users` 16/16 all pass on the fresh database | run on 2026-11-08. The local demo data and test users are gone (create a new account in the app) |
 
-Still open: A1 and A2 (Phase 7), B1, B2, B3, B6, B7, B8, C1 to C4 and section D as listed below.
+Phase 7 update: A1 is closed (the app runs on the Android emulator; camera permission and preview, printing and a sale were checked there; barcode decoding and a real phone are still untested). A2 is built (`web/sw.js`, logic checked with node) but not tried in a normal browser. Still open: B1, B2, B3, B6, B7, B8, C1 to C4 and section D as listed below.
 
 ## A. Blocks a real tindera on a phone (suggest: fix before the pilot)
 | # | Gap | Origin | Call |

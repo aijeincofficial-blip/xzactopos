@@ -181,7 +181,9 @@ class _SellScreenState extends State<SellScreen> {
                 key: const Key('sell-search'),
                 controller: _search,
                 focusNode: _searchFocus,
-                autofocus: true,
+                // wide screens (a tablet or PC with a USB scanner) start ready to scan; on a phone the keyboard would
+                // cover the items, so the tindera taps the field (or the camera button) when she wants it
+                autofocus: MediaQuery.of(context).size.shortestSide >= 600,
                 textInputAction: TextInputAction.search,
                 onSubmitted: _onSubmit,
                 onChanged: (v) => setState(() => _query = v),
@@ -315,6 +317,8 @@ class _StockText extends StatelessWidget {
     final n = left == left.roundToDouble() ? left.toInt().toString() : left.toStringAsFixed(1);
     return Text(
       out ? t.sellOutOfStock : (low ? t.sellStockLow(n) : t.sellStockLeft(n)),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
       style: TextStyle(color: (out || low) ? Theme.of(context).colorScheme.error : null, fontSize: 13),
     );
   }

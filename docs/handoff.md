@@ -253,7 +253,7 @@ and fails on the old code (verified) / passes on the fix.
 - Opening stock lives on the device until Phase 4 (stock ledger). Camera barcode scan deferred.
 - `flutter test` is not part of `pnpm check`.
 
-**Next:** Phases 3 and 4 are done (sections at the end of this file). Phase 6 (reduced reports) is done too. The cross-phase gap fix round (A3 A4 A5 A6 B4 B5 B9) is done, see the end of this file and `docs/gaps-review.md`. Next: Phase 7 (APK, camera, printing).
+**Next:** Phases 3 and 4 are done (sections at the end of this file). Phase 6 (reduced reports) is done too. The cross-phase gap fix round (A3 A4 A5 A6 B4 B5 B9) is done, see the end of this file and `docs/gaps-review.md`. Phase 7 (camera, printing, offline web, phone check) is done too, see the Phase 7 section.
 
 ## Phase 3 (solo): Sell screen, cash, utang, receipt, stock ledger - done (branch `claude/phase3-sell-8261d3`, cards `docs/tasks/P3-00..P3-08`)
 Decisions are in `P3-00-overview-solo-sell.md` (confirmed by the user, including the e-wallet label, cancel sale, and Flutter in `pnpm check`).
@@ -379,3 +379,30 @@ No physical phone: Android is tested on the emulator `Pixel_4_API_33` (API 33, x
 - Driving the emulator from a script: type slowly (`adb shell input text` per character) — the debug build drops fast input;
   the Escape key (keyevent 111) acts as Back. Debug builds are slow (skipped frames); judge speed on a `--release` or `--profile` build.
 - Not done: release APK signing (needs a keystore, Phase 7), profile/release performance check on the emulator.
+
+## Phase 7 (solo): camera scan, receipt printing, offline web, phone check - done (cards `docs/tasks/P7-00-overview-solo-mobile.md`)
+`flutter-solo` (the Android emulator setup by the other session) was merged into this branch first, so the phone test below includes its manifests and phone badge.
+- **Camera scan** (`lib/core/camera_scanner.dart`): `CameraScanner` interface (`scanOne`, `scanMany` continuous), `mobile_scanner` implementation, hidden on the web. Sell has a camera button next to the search box (each code goes into the cart, unknown or priceless codes are named, the same code is ignored for 1.5 s, "Done" closes it), Products' scan button reads one code and opens the product (or offers to add it), and the product form's barcode field has a camera button. Tests use a fake camera (`test/flutter_test_config.dart` makes every test start with no camera and no printer).
+- **Receipts** (`lib/core/receipt_printer.dart`): `buildReceiptPdf` (58 mm roll; the peso sign prints as "P" because the built-in PDF font has none), `PdfReceiptPrinter` (system print dialog and share sheet), Print and Share buttons on the receipt. Direct Bluetooth ESC/POS stays a future `ReceiptPrinter`.
+- **Offline web:** Flutter 3.41 no longer registers its own service worker by default, so `web/sw.js` does it (network first with a 4 s limit, then the saved copy; same-origin GET only, never Supabase). Registered in `web/index.html`. Build with `--no-web-resources-cdn`. The app also asks for persistent storage (`navigator.storage.persist()`). `tool/sw_test.mjs` checks the worker against a fake environment (8 checks, run by `pnpm check`).
+- **Dependencies:** `mobile_scanner`, `pdf`, `printing`, `web` added. `pdf` needs `archive < 4.1`, so `image` is pinned to `>=4.5.0 <4.8.0` (newer `image` does not compile against that `archive`); `compressPhoto` now catches the decoder's exceptions because the older `image` throws on garbage bytes instead of returning null.
+- **Sell screen on phones:** the search box no longer autofocuses below 600 px width (the keyboard covered the items); stock hint text on tiles is one line with an ellipsis (it overflowed by 39 px at phone width).
+
+### Phase 7 acceptance report
+| Criterion | Result |
+| --- | --- |
+| APK builds | **Pass.** `flutter build apk --debug` works on this machine (the `flutter doctor` cmdline-tools warning does not block builds); merged manifest has `CAMERA` and `INTERNET`, minSdk 24 |
+| Runs on a phone (A1) | **Pass on the Android 13 emulator** (`emulator-5554`), debug build with `--dart-define=SUPABASE_URL=http://10.0.2.2:54321`: sign up a new account, name the store, home grid fits the screen, add a product, sell it, receipt. Native SQLite works (no wasm). Typing through `adb` is slow and error-prone (see the earlier Android note) |
+| Camera scan | **Partly.** The scan screen opens from the Products search, Android shows the camera permission prompt, and after "While using the app" the live preview (the emulator's virtual scene) fills the screen with the hint "Itutok ang camera sa barcode". **No barcode was decoded**: the virtual scene has none. Decoding is covered only through the fake camera in tests; try a real barcode on a real phone or load a barcode image into the emulator's virtual scene |
+| Receipt print | **Pass on the emulator.** Print opens Android's print UI with the 58 mm receipt preview (store, number, items, total, cash, "Salamat po!", prices as "P12.00"). Share and a real printer were not tried |
+| Web offline first load (A2) | **Logic checked, browser not.** The worker passes its 8 node checks. The Claude in-app browser refuses to fetch any service worker script ("unknown error fetching the script", the same restriction as shared workers), so registration and an offline reload were not tried in a browser. Test in a normal Chrome: load the app online twice, switch the network off, reload |
+| Persistent storage | **Written, not confirmed.** `persist()` is requested at start; the in-app browser reported `persisted() = false` |
+| `pnpm check` | **Pass.** pgTAP 1659 (15 files), service worker checks 8/8, Flutter analyze clean, 169 tests |
+
+My debug build replaced the other session's build of the same app on the emulator (same package, same debug key, data kept). The emulator has a test account `p7.accept@example.com` on the freshly reset database.
+
+### Known gaps
+- Barcode decoding by the camera and the Share action are untested on a device; no real Bluetooth/thermal printer.
+- Web camera scan is not built (the web plugin needs a CDN script); the web keeps USB scanner and typing.
+- Release APK signing (keystore) is not set up.
+- Offline web needs a normal-browser check (see above).
