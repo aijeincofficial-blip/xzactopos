@@ -30,10 +30,13 @@ Written 2026-11-07 for the solo UI revamp planned after Phase 8. The owner likes
 6. **Colour:** keep the two palettes; use colour for meaning (cash, e-wallet, utang, low stock), not decoration; optional per-item colour dot.
 7. **Keep:** offline sync badge, theme switch, Filipino/English, tokens in `AppColors`.
 
-## Open questions for the owner
-- Bottom tabs or keep Home tiles?
-- Keypad tab on Sell: yes/no?
-- Photos on tiles or text-only by default?
+## Decisions (owner approved the recommendation, 2026-11-07)
+- **Bottom tabs:** Sell, Stock, Utang, Reports, More. Sell is the default screen; Today becomes a small strip at the top of Sell instead of a separate Home. Settings, Expenses, Restock and Export live under More.
+- **Sell screen:** keep search/scan and the favorites grid; add a collapsed cart bar with a large Charge button and a text-list toggle. Keypad tab is added once load/e-wallet (P8-07) exists.
+- **Look:** drop glowing coin badges and the obsidian `>>>` pill; flat icons in a lightly tinted circle, one hairline border per card, solid primary Charge button; keep both palettes.
+- **Numbers first** (owed, low stock) using the payCash / payEwallet / payUtang colours.
+- **Skip:** heavy animation, gradients, photo-only tiles.
+- Photos stay optional; default tile is text with a small photo when one exists.
 
 ## Sources
 - Square POS redesign: https://squareup.com/us/en/the-bottom-line/inside-square/square-pos-redesign
