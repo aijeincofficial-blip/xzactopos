@@ -78,6 +78,11 @@ select w.who, c.tbl, case when w.who = 'inactive' then 0 else c.n end, -1
 from (values ('superadmin'), ('admin'), ('cashier'), ('warehouse'), ('inactive')) w(who)
 cross join (values ('categories', 1), ('products', 2), ('product_variants', 2), ('variant_prices', 2)) c(tbl, n);
 
+-- P2-02 processed_ops: server-only, no client privilege at all
+insert into expected (who, tbl, own_rows, own_updated)
+select w.who, 'processed_ops', -1, -1
+from (values ('superadmin'), ('admin'), ('cashier'), ('warehouse'), ('inactive')) w(who);
+
 -- 2 tenants x (who, table) pairs x 5 metrics, plus 8 targeted checks
 select plan((select count(*)::int * 2 * 5 from expected) + 8);
 
@@ -195,7 +200,8 @@ begin
     ('categories',        'tenant_id', 'name = name'),
     ('products',          'tenant_id', 'name = name'),
     ('product_variants',  'tenant_id', 'sku = sku'),
-    ('variant_prices',    'tenant_id', 'price = price')
+    ('variant_prices',    'tenant_id', 'price = price'),
+    ('processed_ops',     'tenant_id', 'kind = kind')
   ) v(tbl, tcol, upd) loop
     begin
       execute format(

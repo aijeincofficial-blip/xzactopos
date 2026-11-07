@@ -149,3 +149,22 @@ Cards `docs/tasks/P2-00..P2-07` (overview + 7). Decisions are listed in P2-00; c
 - Delta-sync indexes `(tenant_id, updated_at, id)`.
 - Tests: pgTAP `008_catalog_schema.test.sql` (20); isolation matrix gained 4 tables x 5 roles (now 926 pgTAP tests total).
   Mutation-tested: `products` policy set to `using (true)` fails the matrix for every role. `pnpm check` green.
+
+### P2-02 catalog RPCs and pull: done (branch `flutter-solo`)
+- Migration `20261108000300_catalog_rpcs.sql`:
+  - `processed_ops` (pk `tenant_id, client_op_id`, server-only, no client privilege). Op ids are per tenant, so one tenant can never read or block another's.
+    Internal `claim_op` / `finish_op`: claim at the start (a concurrent duplicate waits on the key), store the result at the end; a failed op rolls back its claim.
+  - `upsert_product(op_id, product jsonb)` returns `{product_id, variant_id, sku, created, replay}`. Payload: `{id, name, price, unit?, category_id?, tax_rate?,
+    track_stock?, active?, photo_path?, variant: {id, sku?, barcode?, cost?, reorder_point?, active?}}`. Price is base-currency minor units and required on create.
+    Missing keys keep their value on update. SKU auto `P-<12 hex>` when blank. Same op id + other kind -> `op_id_reused`.
+  - `archive_product(op_id, product_id)`: tombstones product, variants and prices (`deleted_at`), frees the barcode.
+  - `sync_pull_catalog(cursors jsonb, limit)`: per table `{rows, cursor {ts, k}, has_more}`, keyset by `(updated_at, key)`, explicit columns, tombstones included.
+    Runs as the caller (RLS applies). **Holds back rows newer than now() - 5 s** so a slow writer is never skipped by a cursor.
+  - Permission (`catalog.manage`): superadmin and admins who manage at least one live store: full. Warehouse: cost and SKU of existing products only.
+    Others: `not_allowed`. Writes need an active tenant and the inventory module.
+  - Hints for i18n: not_allowed, cost_and_sku_only, op_id_required, op_id_reused, id_required, id_conflict, name_required, price_required,
+    duplicate_sku, duplicate_barcode, bad_category, invalid_value, product_archived, variant_mismatch, not_found, no_account, limit_products.
+- Tests: pgTAP `009_catalog_rpcs.test.sql` (42); matrix gained `processed_ops` (1018 pgTAP total). Mutation-tested: `catalog_write_mode()` returning
+  'full' for everyone fails 6 tests. `pnpm check` green.
+- Gotcha: Supabase grants EXECUTE to anon on new functions; every client RPC needs `revoke execute ... from public, anon` (guard test 003 #6 catches it).
+- Not verified from a clean `supabase db reset` (kept the local demo data); the migration was applied with `supabase migration up`.
