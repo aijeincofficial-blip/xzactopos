@@ -8,7 +8,18 @@ Updated at the end of every task. Read this first in a fresh session.
   - P1-01 core schema: done. Migration `20261107000100_core_tenancy.sql`, pgTAP `001_core_schema.test.sql` (38 tests).
   - P1-02 hook + helpers: done. Migration `20261107000200_auth_hook_and_helpers.sql`, pgTAP `002_auth_helpers.test.sql` (42 tests).
     Hook enabled in `supabase/config.toml`; verified end-to-end (real sign-in token carries tenant_id, user_role, tenant_status, user_active).
-  - Next: P1-03 RLS policies + schema guard (Opus).
+  - P1-03 RLS policies + guard: done. Migration `20261107000300_rls_policies.sql`, pgTAP `003_rls_guard_and_policies.test.sql` (33 tests).
+  - Next: P1-04 full pgTAP isolation matrix (Opus).
+- **RLS shape:** reads follow the §5 matrix; direct client writes only for simple master data
+  (tenant name/timezone/tax_mode, settings, currency rates, location name/address/active, own profile name/locale).
+  Modules, roles, assignments, new locations, bins: RPC only (P1-05). Column-level grants enforce the editable columns.
+- `profiles.pin_hash` is not client-readable (column grant). Offline PIN material needs a dedicated RPC later (Phase 3).
+- Default privileges: new tables never grant anon or client DELETE/TRUNCATE; new functions are not executable by anon/public.
+  New functions still need an explicit `grant execute ... to authenticated` when clients should call them.
+- Guard test fails if any public table lacks RLS, `tenant_id` (allow-list: tenants, currencies, platform_admins),
+  or a tenant-leading index; if anon has any grant; if a SECURITY DEFINER function lacks a pinned search_path.
+- `audit_log.location_id` added so admins read audit entries for stores they manage.
+- Policy gotcha: `x = any ((select fn()))` treats the array as a subquery; write `x = any ((select fn())::uuid[])`.
 - **Auth decision:** JWT claims are UI hints. Helpers read role/active live from `profiles` and require the profile tenant to match
   the JWT `tenant_id` claim. Demotion/deactivation is immediate. Suspended tenants still resolve (read/export) but
   `assert_active_user()` refuses writes. Archived tenants and deactivated users resolve to nothing.
