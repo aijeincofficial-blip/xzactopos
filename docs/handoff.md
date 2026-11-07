@@ -117,3 +117,11 @@ Also seen in the browser: signing in on `/t/demo-new` with a `demo-full` account
 
 ## Recalibration (after Phase 1)
 Solo sari-sari focus + Flutter client: see `docs/recalibration-solo-flutter.md`. Next cards: S-01, S-02 (docs/tasks). Phase 1 is closed; continue with Phase S, then Phase 2 in Flutter.
+
+### S-01 solo provisioning: done (branch `flutter-solo`)
+- Migration `20261108000100_solo_store.sql`: `provision_solo_store(tenant_id, location_id, store_name, locale='fil')`, callable by any signed-in user with no business.
+  Creates tenant (PHP, Asia/Manila, setup complete), modules inventory+POS on / warehouse off, settings (fil default, locales fil+en), limits,
+  owner profile as superadmin (username from the email prefix, else `owner`), one store `MAIN`, audit entry. Second call -> `user_has_tenant`.
+- pgTAP `007_solo_store.test.sql` (13). `pnpm check` green: 706 pgTAP tests. No existing migration or test was edited.
+- **For S-02:** RLS reads need the `tenant_id` claim, which a session only has after refreshing its token. The client must call
+  `refreshSession()` right after `provision_solo_store`, before reading anything.
