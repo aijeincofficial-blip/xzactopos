@@ -40,16 +40,9 @@ class AppCard extends StatelessWidget {
             ? null
             : const [
                 BoxShadow(
-                  color: Color(0x0A101E33),
-                  blurRadius: 24,
-                  offset: Offset(0, 8),
-                  spreadRadius: 0,
-                ),
-                BoxShadow(
-                  color: Color(0x04101E33),
-                  blurRadius: 6,
-                  offset: Offset(0, 2),
-                  spreadRadius: 0,
+                  color: Color(0x08101E33),
+                  blurRadius: 12,
+                  offset: Offset(0, 3),
                 ),
               ],
       ),
@@ -96,19 +89,21 @@ class SummaryCard extends StatelessWidget {
   }
 }
 
-/// Circular coin-style token badge inspired by the BNB/USDT coins in the reference.
+/// A flat icon in a lightly tinted circle (the old glowing "coin" is gone: no glow, no white-on-solid).
 class CoinBadge extends StatelessWidget {
   const CoinBadge({
     super.key,
     required this.icon,
     required this.color,
-    this.iconColor = Colors.white,
+    this.iconColor,
     this.size = 46,
   });
 
   final IconData icon;
   final Color color;
-  final Color iconColor;
+
+  /// Defaults to [color].
+  final Color? iconColor;
   final double size;
 
   @override
@@ -116,20 +111,8 @@ class CoinBadge extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.35),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Center(
-        child: Icon(icon, size: size * 0.52, color: iconColor),
-      ),
+      decoration: BoxDecoration(color: color.withValues(alpha: 0.14), shape: BoxShape.circle),
+      child: Center(child: Icon(icon, size: size * 0.5, color: iconColor ?? color)),
     );
   }
 }
@@ -151,12 +134,7 @@ class IconBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CoinBadge(
-      icon: icon,
-      color: color,
-      iconColor: onColor ?? Colors.white,
-      size: size,
-    );
+    return CoinBadge(icon: icon, color: color, iconColor: onColor, size: size);
   }
 }
 

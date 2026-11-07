@@ -107,11 +107,11 @@ extension AppColors on ColorScheme {
   /// Positive state (online, healthy, paid).
   Color get success => secondary;
 
-  /// Dark "obsidian" surface for the primary action pill.
-  Color get obsidian => isDark ? const Color(0xFF1E293B) : const Color(0xFF0F172A);
+  /// The solid surface of the main action buttons (the palette's primary; kept under its old name).
+  Color get obsidian => primary;
 
   /// Text/icons on [obsidian].
-  Color get onObsidian => Colors.white;
+  Color get onObsidian => onPrimary;
 
   /// Quiet fill for small circular chips (arrows, counters).
   Color get chipFill => isDark ? surface : primaryContainer;
@@ -120,7 +120,7 @@ extension AppColors on ColorScheme {
   Color get accent => tertiary;
 
   /// Bright accent that stays readable on [obsidian].
-  Color get glow => isDark ? secondary : const Color(0xFF34D399);
+  Color get glow => onPrimary;
 
   /// Payment-type colors for reports: cash, e-wallet, utang.
   Color get payCash => success;

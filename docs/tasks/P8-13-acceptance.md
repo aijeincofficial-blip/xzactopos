@@ -31,9 +31,9 @@ Screenshots: `docs/p8-acceptance/`.
 Selling and pinning on Sell, load entries and float moves, tingi (product form and open a pack), expiry, pay-by dates and statement sharing, CSV sharing, supervisor PIN approval (needs a second user with a PIN), offline then reconnect, Reports with expenses. These have widget and store tests but no emulator run.
 
 ## Findings to fix (go into the UI revamp)
-1. **Expense dialog is cramped with the keyboard open**: category chips are cut off and the paid-from and note fields are below the fold. Use a full-screen or bottom-sheet form.
+1. ~~Expense dialog is cramped with the keyboard open~~ FIXED: now a bottom sheet (screenshot `11_expense_sheet.png`). The Save button still needs a scroll below the note.
 2. **Filipino labels are truncated** on the Load & e-wallet action buttons ("Magbenta n...", "Galawin an...").
-3. **Today is crowded** and the Expenses and Close-the-day cards have different heights.
+3. Today: the Expenses and Close-the-day cards are now the same height (fixed); the screen is still busy and is the main target of the bottom-tab step.
 4. **Day close has no opening cash (sukli).** With only an expense and no sales, expected cash is negative (-125.50). Add an optional starting cash to the day close.
 5. **E-wallet sale payments and e-wallet expenses do not move the wallet float** (no wallet is named). The owner corrects with a float adjustment.
 6. Fixed during this phase: garbled characters in the utang ledger (a double-encoded middle dot and minus sign) and a Settings change that broke two tests.
@@ -44,3 +44,7 @@ Selling and pinning on Sell, load entries and float moves, tingi (product form a
 - Supervisor-only admins need signal once to get a PIN approval; offline approval is a Full-mode item.
 - Refused ops (missing approval) are not written to the audit log; wrong PINs are.
 - Release APK signing still needs the owner's keystore (not created).
+
+## UI revamp, step 1 (calm look) done after the acceptance run
+Flat tinted icon circles instead of glowing coins, one solid primary button instead of the dark `>>>` pill (the `obsidian` token now equals the palette primary), one light shadow per card, amount owed shown first on the Utang tile. Screenshot `10_home_revamp.png`. `flutter analyze` clean, 271 tests pass.
+**Step 2, not started:** bottom tabs (Sell, Stock, Utang, Reports, More) with Today as a strip on Sell, and the Keypad tab. It changes how every screen is reached, so it needs the Home-tile based test helpers (`openHome`, `tile-*` keys, `pageBack`) rewritten first; plan that as its own card.

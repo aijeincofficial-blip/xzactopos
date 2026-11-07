@@ -17,8 +17,7 @@ import 'stock_screen.dart';
 import 'today_screen.dart';
 import 'utang_screen.dart';
 
-/// Solo home: sculpted white hero card, obsidian action pill, tactile service tiles,
-/// and a dedicated store settings & management card.
+/// Solo home: today's total, one Sell button, and the daily tools with their numbers first.
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key, required this.backend, required this.storeName});
   final Backend backend;
@@ -38,14 +37,18 @@ class HomeScreen extends StatelessWidget {
 
     final cards = <Widget>[
       StreamBuilder<List<CustomerView>>(
-        stream: scope.store.watchOverdueCustomers(),
+        stream: scope.store.watchCustomers(),
         builder: (context, snap) {
-          final overdue = (snap.data ?? const <CustomerView>[]).length;
+          final all = snap.data ?? const <CustomerView>[];
+          final today = DateTime.now();
+          final overdue = all.where((c) => c.overdue(today)).length;
+          final owed = all.where((c) => c.balance > 0).fold<int>(0, (a, c) => a + c.balance);
           return _Tile(
             key: const Key('tile-utang'),
             icon: Icons.menu_book_rounded,
             color: scheme.primary,
             label: t.utangTitle,
+            value: owed > 0 ? Money(owed, scope.store.baseCurrency).format(locale) : null,
             subLabel: overdue > 0 ? t.tileUtangOverdue(overdue) : t.tileUtangSub,
             badge: overdue,
             onTap: () => open(UtangScreen(storeName: storeName)),
@@ -319,7 +322,7 @@ class HomeScreen extends StatelessWidget {
             // Primary Obsidian Action Button: "Magbenta"
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: Gap.xl, vertical: Gap.xs),
-              child: _ObsidianSellButton(
+              child: _SellButton(
                 key: const Key('tile-sell'),
                 label: t.sell,
                 onTap: () => open(const SellScreen()),
@@ -336,7 +339,7 @@ class HomeScreen extends StatelessWidget {
                   crossAxisCount: 2,
                   mainAxisSpacing: Gap.m,
                   crossAxisSpacing: Gap.m,
-                  mainAxisExtent: 118,
+                  mainAxisExtent: 120,
                 ),
                 children: cards,
               ),
@@ -391,66 +394,20 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
-/// The luxurious obsidian action button inspired by "Slide to Swap".
-class _ObsidianSellButton extends StatelessWidget {
-  const _ObsidianSellButton({super.key, required this.label, required this.onTap});
+/// The main action: one solid button.
+class _SellButton extends StatelessWidget {
+  const _SellButton({super.key, required this.label, required this.onTap});
   final String label;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final bg = scheme.obsidian;
-
-    return Material(
-      color: bg,
-      shape: const StadiumBorder(),
-      elevation: 0,
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Container(
-          height: 56,
-          padding: const EdgeInsets.symmetric(horizontal: 14),
-          child: Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: [scheme.secondary, scheme.primary],
-                  ),
-                ),
-                child: const Center(
-                  child: Icon(Icons.point_of_sale_rounded, color: Colors.white, size: 20),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w800,
-                    color: scheme.onObsidian,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: const [
-                  Icon(Icons.arrow_forward_ios_rounded, size: 13, color: Colors.white54),
-                  Icon(Icons.arrow_forward_ios_rounded, size: 13, color: Colors.white70),
-                  Icon(Icons.arrow_forward_ios_rounded, size: 13, color: Colors.white),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
+    return FilledButton.icon(
+      onPressed: onTap,
+      style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(60), shape: const StadiumBorder()),
+      icon: Icon(Icons.point_of_sale_rounded, color: scheme.onPrimary),
+      label: Text(label, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
     );
   }
 }
@@ -462,9 +419,13 @@ class _Tile extends StatelessWidget {
     required this.color,
     required this.label,
     required this.subLabel,
+    this.value,
     this.onTap,
     this.badge = 0,
   });
+
+  /// The number that matters (amount owed, products), shown before the label.
+  final String? value;
 
   final IconData icon;
   final Color color;
@@ -508,14 +469,22 @@ class _Tile extends StatelessWidget {
             ],
           ),
           const Spacer(),
+          if (value != null)
+            Text(
+              value!,
+              key: Key('${key is ValueKey ? (key! as ValueKey).value : label}-value'),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, letterSpacing: -0.6),
+            ),
           Text(
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.3,
+            style: TextStyle(
+              fontSize: value != null ? 13 : 15,
+              fontWeight: value != null ? FontWeight.w600 : FontWeight.w800,
+              letterSpacing: -0.2,
             ),
           ),
           const SizedBox(height: 1),

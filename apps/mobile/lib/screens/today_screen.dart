@@ -27,7 +27,8 @@ class TodayScreen extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     String money(int a) => Money(a, scope.store.baseCurrency).format(locale);
     final now = DateTime.now();
-    bool isToday(DateTime d) => d.year == now.year && d.month == now.month && d.day == now.day;
+    bool isToday(DateTime d) =>
+        d.year == now.year && d.month == now.month && d.day == now.day;
 
     return Scaffold(
       appBar: AppBar(title: Text(t.todayTitle), actions: const [SyncBadge()]),
@@ -75,22 +76,43 @@ class TodayScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: Gap.m),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
                       decoration: BoxDecoration(
                         color: scheme.chipFill,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: scheme.outlineVariant,
-                        ),
+                        border: Border.all(color: scheme.outlineVariant),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceAround,
                         children: [
-                          _Stat(label: t.todayCash, value: money(d.cash), keyName: 'today-cash'),
-                          Container(width: 1, height: 24, color: scheme.outlineVariant),
-                          _Stat(label: t.payEwallet, value: money(d.ewallet), keyName: 'today-ewallet'),
-                          Container(width: 1, height: 24, color: scheme.outlineVariant),
-                          _Stat(label: t.todayUtang, value: money(d.utang), keyName: 'today-utang'),
+                          _Stat(
+                            label: t.todayCash,
+                            value: money(d.cash),
+                            keyName: 'today-cash',
+                          ),
+                          Container(
+                            width: 1,
+                            height: 24,
+                            color: scheme.outlineVariant,
+                          ),
+                          _Stat(
+                            label: t.payEwallet,
+                            value: money(d.ewallet),
+                            keyName: 'today-ewallet',
+                          ),
+                          Container(
+                            width: 1,
+                            height: 24,
+                            color: scheme.outlineVariant,
+                          ),
+                          _Stat(
+                            label: t.todayUtang,
+                            value: money(d.utang),
+                            keyName: 'today-utang',
+                          ),
                         ],
                       ),
                     ),
@@ -100,68 +122,141 @@ class TodayScreen extends StatelessWidget {
             },
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: Gap.xl, vertical: Gap.xs),
+            padding: const EdgeInsets.symmetric(
+              horizontal: Gap.xl,
+              vertical: Gap.xs,
+            ),
             child: StreamBuilder<ServiceTotals>(
               stream: scope.store.watchTodayServices(),
               builder: (context, snap) => AppCard(
                 key: const Key('tile-services'),
                 padding: const EdgeInsets.all(Gap.m),
                 radius: Gap.radiusL,
-                onTap: () => Navigator.of(context)
-                    .push(MaterialPageRoute<void>(builder: (_) => scope.wrap(ServicesScreen(backend: backend)))),
-                child: Row(children: [
-                  Icon(Icons.swap_horiz_rounded, color: scheme.primary),
-                  const SizedBox(width: Gap.m),
-                  Expanded(child: Text(t.servicesTitle, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700))),
-                  Text(money((snap.data ?? const ServiceTotals()).fees),
-                      key: const Key('today-service-fees'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-                ]),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) =>
+                        scope.wrap(ServicesScreen(backend: backend)),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.swap_horiz_rounded, color: scheme.primary),
+                    const SizedBox(width: Gap.m),
+                    Expanded(
+                      child: Text(
+                        t.servicesTitle,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      money((snap.data ?? const ServiceTotals()).fees),
+                      key: const Key('today-service-fees'),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
           if (scope.canManageStock)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: Gap.xl, vertical: Gap.xs),
-              child: Row(children: [
-                Expanded(
-                  child: StreamBuilder<ExpenseTotals>(
-                    stream: scope.store.watchTodayExpenses(),
-                    builder: (context, snap) => AppCard(
-                      key: const Key('tile-expenses'),
-                      padding: const EdgeInsets.all(Gap.m),
-                      radius: Gap.radiusL,
-                      onTap: () => Navigator.of(context).push(
-                          MaterialPageRoute<void>(builder: (_) => scope.wrap(ExpensesScreen(backend: backend)))),
-                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text(t.expensesTitle, style: TextStyle(fontSize: 12, color: scheme.outline, fontWeight: FontWeight.w700)),
-                        const SizedBox(height: 2),
-                        Text(money((snap.data ?? const ExpenseTotals()).total),
-                            key: const Key('today-expenses'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
-                      ]),
+              padding: const EdgeInsets.symmetric(
+                horizontal: Gap.xl,
+                vertical: Gap.xs,
+              ),
+              child: IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      child: StreamBuilder<ExpenseTotals>(
+                        stream: scope.store.watchTodayExpenses(),
+                        builder: (context, snap) => AppCard(
+                          key: const Key('tile-expenses'),
+                          padding: const EdgeInsets.all(Gap.m),
+                          radius: Gap.radiusL,
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) =>
+                                  scope.wrap(ExpensesScreen(backend: backend)),
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                t.expensesTitle,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: scheme.outline,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                money(
+                                  (snap.data ?? const ExpenseTotals()).total,
+                                ),
+                                key: const Key('today-expenses'),
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: Gap.m),
+                    Expanded(
+                      child: AppCard(
+                        key: const Key('tile-close-day'),
+                        padding: const EdgeInsets.all(Gap.m),
+                        radius: Gap.radiusL,
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) =>
+                                scope.wrap(DayCloseScreen(backend: backend)),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              t.dayCloseTitle,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: scheme.outline,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Icon(
+                              Icons.lock_clock_rounded,
+                              size: 22,
+                              color: scheme.primary,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: Gap.m),
-                Expanded(
-                  child: AppCard(
-                    key: const Key('tile-close-day'),
-                    padding: const EdgeInsets.all(Gap.m),
-                    radius: Gap.radiusL,
-                    onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(builder: (_) => scope.wrap(DayCloseScreen(backend: backend)))),
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(t.dayCloseTitle, style: TextStyle(fontSize: 12, color: scheme.outline, fontWeight: FontWeight.w700)),
-                      const SizedBox(height: 2),
-                      Icon(Icons.lock_clock_rounded, size: 22, color: scheme.primary),
-                    ]),
-                  ),
-                ),
-              ]),
+              ),
             ),
           StreamBuilder<List<SaleSummary>>(
             stream: scope.store.watchSales(),
             builder: (context, snap) {
-              final today = (snap.data ?? const <SaleSummary>[]).where((s) => isToday(s.soldAt)).toList();
+              final today = (snap.data ?? const <SaleSummary>[])
+                  .where((s) => isToday(s.soldAt))
+                  .toList();
               if (today.isEmpty) {
                 return EmptyState(
                   icon: Icons.receipt_long_rounded,
@@ -172,13 +267,22 @@ class TodayScreen extends StatelessWidget {
                 children: [
                   for (final s in today)
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: Gap.xl, vertical: Gap.xs),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: Gap.xl,
+                        vertical: Gap.xs,
+                      ),
                       child: AppCard(
-                        padding: const EdgeInsets.symmetric(horizontal: Gap.l, vertical: Gap.s),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: Gap.l,
+                          vertical: Gap.s,
+                        ),
                         radius: Gap.radiusL,
-                        onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
-                          builder: (_) => scope.wrap(ReceiptScreen(saleId: s.id)),
-                        )),
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) =>
+                                scope.wrap(ReceiptScreen(saleId: s.id)),
+                          ),
+                        ),
                         child: ListTile(
                           contentPadding: EdgeInsets.zero,
                           key: Key('sale-${s.id}'),
@@ -193,8 +297,12 @@ class TodayScreen extends StatelessWidget {
                               fontSize: 17,
                               fontWeight: FontWeight.w800,
                               letterSpacing: -0.5,
-                              color: s.voided ? scheme.outline : scheme.onSurface,
-                              decoration: s.voided ? TextDecoration.lineThrough : null,
+                              color: s.voided
+                                  ? scheme.outline
+                                  : scheme.onSurface,
+                              decoration: s.voided
+                                  ? TextDecoration.lineThrough
+                                  : null,
                             ),
                           ),
                           subtitle: Text(
@@ -204,11 +312,23 @@ class TodayScreen extends StatelessWidget {
                               if (s.customerName != null) s.customerName!,
                               if (s.voided) t.receiptCancelled,
                             ].join(' · '),
-                            style: TextStyle(color: scheme.outline, fontSize: 13),
+                            style: TextStyle(
+                              color: scheme.outline,
+                              fontSize: 13,
+                            ),
                           ),
                           trailing: s.pending
-                              ? Icon(Icons.cloud_upload_outlined, size: 18, color: scheme.primary, semanticLabel: t.notSentYet)
-                              : const Icon(Icons.chevron_right_rounded, size: 20, color: Color(0xFFCBD5E1)),
+                              ? Icon(
+                                  Icons.cloud_upload_outlined,
+                                  size: 18,
+                                  color: scheme.primary,
+                                  semanticLabel: t.notSentYet,
+                                )
+                              : const Icon(
+                                  Icons.chevron_right_rounded,
+                                  size: 20,
+                                  color: Color(0xFFCBD5E1),
+                                ),
                         ),
                       ),
                     ),
@@ -223,7 +343,11 @@ class TodayScreen extends StatelessWidget {
 }
 
 class _Stat extends StatelessWidget {
-  const _Stat({required this.label, required this.value, required this.keyName});
+  const _Stat({
+    required this.label,
+    required this.value,
+    required this.keyName,
+  });
   final String label;
   final String value;
   final String keyName;

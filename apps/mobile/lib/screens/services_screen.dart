@@ -46,12 +46,12 @@ class ServicesScreen extends StatelessWidget {
     Widget action(String key, String kind, IconData icon) => Expanded(
           child: OutlinedButton(
             key: Key(key),
-            style: OutlinedButton.styleFrom(minimumSize: const Size(0, 64), padding: const EdgeInsets.symmetric(horizontal: 4)),
+            style: OutlinedButton.styleFrom(minimumSize: const Size(0, 76), padding: const EdgeInsets.symmetric(horizontal: 4)),
             onPressed: () => showServiceDialog(context, scope, kind),
             child: Column(mainAxisSize: MainAxisSize.min, children: [
               Icon(icon, size: 22),
               const SizedBox(height: 2),
-              Text(serviceKindLabel(t, kind), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12)),
+              Text(serviceKindLabel(t, kind), maxLines: 2, textAlign: TextAlign.center, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12, height: 1.1)),
             ]),
           ),
         );
@@ -90,12 +90,12 @@ class ServicesScreen extends StatelessWidget {
                 Expanded(
                   child: OutlinedButton(
                     key: const Key('service-float'),
-                    style: OutlinedButton.styleFrom(minimumSize: const Size(0, 64), padding: const EdgeInsets.symmetric(horizontal: 4)),
+                    style: OutlinedButton.styleFrom(minimumSize: const Size(0, 76), padding: const EdgeInsets.symmetric(horizontal: 4)),
                     onPressed: () => _pickFloatMove(context, scope),
                     child: Column(mainAxisSize: MainAxisSize.min, children: [
                       const Icon(Icons.account_balance_wallet_outlined, size: 22),
                       const SizedBox(height: 2),
-                      Text(t.serviceMoveFloat, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12)),
+                      Text(t.serviceMoveFloat, maxLines: 2, textAlign: TextAlign.center, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12, height: 1.1)),
                     ]),
                   ),
                 ),
