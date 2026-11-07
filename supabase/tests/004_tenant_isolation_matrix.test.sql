@@ -116,6 +116,11 @@ insert into expected (who, tbl, own_rows, own_updated)
 select w.who, 'supervisor_approvals', -1, -1
 from (values ('superadmin'), ('admin'), ('cashier'), ('warehouse'), ('inactive')) w(who);
 
+-- P8-02c day_closes: superadmin and admin read their stores' closes (2 each: S01 + S02); everyone else none; no client writes
+insert into expected (who, tbl, own_rows, own_updated)
+select w.who, 'day_closes', case when w.who in ('superadmin', 'admin') then 2 else 0 end, -1
+from (values ('superadmin'), ('admin'), ('cashier'), ('warehouse'), ('inactive')) w(who);
+
 -- 2 tenants x (who, table) pairs x 5 metrics, plus 8 targeted checks
 select plan((select count(*)::int * 2 * 5 from expected) + 8);
 
@@ -217,6 +222,11 @@ begin
     insert into public.supervisor_approvals (tenant_id, location_id, action, ref_id, requested_by, approved_by, expires_at)
       values (pg_temp.tid(t.label), pg_temp.lid(t.label, 'S02'), 'void_expense', md5('exp:' || t.label || ':2')::uuid,
               pg_temp.uid(t.label, 'maria'), pg_temp.uid(t.label, 'maria'), now() + interval '1 hour');
+    -- day closes: one at each store, colliding client op ids across tenants
+    insert into public.day_closes (id, tenant_id, location_id, client_op_id, day, currency, expected_cash, counted_cash,
+                                   difference, server_expected_cash, closed_at) values
+      (md5('dc:' || t.label || ':1')::uuid, pg_temp.tid(t.label), pg_temp.lid(t.label, 'S01'), md5('dcop:1')::uuid, '2026-11-08', t.ccy, 2500, 2400, -100, 2500, now()),
+      (md5('dc:' || t.label || ':2')::uuid, pg_temp.tid(t.label), pg_temp.lid(t.label, 'S02'), md5('dcop:2')::uuid, '2026-11-08', t.ccy, 0, 0, 0, 0, now());
   end loop;
 end;
 $$;
@@ -277,7 +287,8 @@ begin
     ('daily_item_sales',  'tenant_id', 'qty = qty'),
     ('expenses',          'tenant_id', 'note = note'),
     ('daily_expense_summary', 'tenant_id', 'amount = amount'),
-    ('supervisor_approvals', 'tenant_id', 'used_at = used_at')
+    ('supervisor_approvals', 'tenant_id', 'used_at = used_at'),
+    ('day_closes',        'tenant_id', 'note = note')
   ) v(tbl, tcol, upd) loop
     begin
       execute format(
