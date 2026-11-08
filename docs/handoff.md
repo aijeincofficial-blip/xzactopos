@@ -21,6 +21,9 @@ Updated at the end of every task. Read this first in a fresh session. New sessio
   - **F-07 (`39c3ffd`):** Sales controls, role-based discounts & void thresholds, supervisor overrides (done).
   - **F-06 (`dce0a2c`):** Offline PIN delivery (`pull_offline_pins`), offline approval verification on sync, refused op auditing (`op.refused`) (done).
   - **F-09 (`744d326`):** Warehouse bins, zones, put-away, walking-route pick lists, bin stock = warehouse stock invariant validation (done).
+  - **F-11 (`4b4c39f`):** Free-tier operations, storage metering, keep-alive ping, automated backup, and archive maintenance (done).
+  - **W-03 Extensions (`893b11d`):** Catalog categories, tingi repack conversions, expiry dates, and CSV import/export in React client (done).
+  - **F-12 (`97f5ee2`):** Platform administration, operator dashboard, multi-tenant metrics, and tenant lifecycle (done).
 - **Full mode started (2026-11-08):** F-01 store scoping and F-02 server sale number + devices are done; F-03 (tenant settings + mode switch) is next. Handoff for a new session or tool: `docs/START-HERE-antigravity.md` (rewritten today).
 - **Solo mode is wrapped up (2026-11-08).** Phases 0 to 8 plus the tabs revamp, keypad, opening cash, e-wallet float, import/export are done; acceptance and open findings: `docs/tasks/P8-13-acceptance.md`. Full mode is planned in `docs/tasks/F-00-overview-full-mode.md`; **F-01 store scoping: data layer done** (section near the end), picker UI done; **F-02 server sale number and devices: data layer done**, receipt/Today display next. Branch `claude/phase3-sell-8261d3` holds all of it, not pushed, not merged to `main`.
 - Phase 0 (Foundation): done, committed (6d59c99).
