@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { createUserSchema, fieldErrors, locationSchema, setupLanguagesSchema, slugSchema, tenantSettingsSchema, upgradeSchema } from "./schemas.ts";
+import {
+  createUserSchema,
+  fieldErrors,
+  inviteUserSchema,
+  locationSchema,
+  setPinSchema,
+  setupLanguagesSchema,
+  slugSchema,
+  tenantSettingsSchema,
+  upgradeSchema,
+} from "./schemas.ts";
 import { loginEmail } from "./api.ts";
 
 const user = { username: "ana", fullName: "", password: "longenough", role: "cashier", locationId: "x", position: "" };
@@ -88,6 +98,47 @@ describe("schemas", () => {
 
     const badDays = { ...valid, offlineSessionDays: 45 };
     expect(tenantSettingsSchema.safeParse(badDays).success).toBe(false);
+  });
+
+  it("validates invite user schema", () => {
+    const valid = {
+      email: "manager@example.com",
+      username: "juan_mgr",
+      fullName: "Juan Manager",
+      role: "admin" as const,
+      locationId: "loc-123",
+      position: "manager" as const,
+    };
+    expect(inviteUserSchema.safeParse(valid).success).toBe(true);
+
+    const badEmail = { ...valid, email: "invalid-email" };
+    expect(inviteUserSchema.safeParse(badEmail).success).toBe(false);
+
+    const missingPosition = { ...valid, position: "" as const };
+    expect(inviteUserSchema.safeParse(missingPosition).success).toBe(false);
+
+    const superadmin = {
+      email: "owner2@example.com",
+      username: "owner2",
+      fullName: "",
+      role: "superadmin" as const,
+      locationId: "",
+      position: "" as const,
+    };
+    expect(inviteUserSchema.safeParse(superadmin).success).toBe(true);
+  });
+
+  it("validates set/change PIN schema", () => {
+    expect(setPinSchema.safeParse({ newPin: "1234", confirmPin: "1234" }).success).toBe(true);
+    expect(setPinSchema.safeParse({ currentPin: "1234", newPin: "567890", confirmPin: "567890" }).success).toBe(true);
+
+    // Mismatched confirmation
+    expect(setPinSchema.safeParse({ newPin: "1234", confirmPin: "9999" }).success).toBe(false);
+
+    // Too short / invalid digits
+    expect(setPinSchema.safeParse({ newPin: "12", confirmPin: "12" }).success).toBe(false);
+    expect(setPinSchema.safeParse({ newPin: "abcd", confirmPin: "abcd" }).success).toBe(false);
+    expect(setPinSchema.safeParse({ newPin: "123456789", confirmPin: "123456789" }).success).toBe(false);
   });
 });
 

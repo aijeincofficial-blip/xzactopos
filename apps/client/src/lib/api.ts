@@ -105,6 +105,48 @@ export async function createUser(body: CreateUserBody) {
   return data!;
 }
 
+export interface InviteUserBody {
+  email: string;
+  username: string;
+  role: Role;
+  full_name?: string;
+  locale?: "en" | "fil";
+  location_id?: string;
+  position?: Position;
+}
+
+export async function inviteUser(body: InviteUserBody) {
+  const { data, error } = await supabase.functions.invoke<{ user_id: string }>("invite_user", { body });
+  if (error) {
+    if (error instanceof FunctionsHttpError) {
+      const parsed = (await error.context.json().catch(() => null)) as {
+        error?: { code?: string; message?: string; hint?: string; field?: string };
+      } | null;
+      const e = parsed?.error;
+      if (e) {
+        throw new ApiError(e.hint ?? (e.code === "invalid_argument" ? "invalid_argument" : (e.code ?? "unknown")), e.message ?? "", e.field);
+      }
+    }
+    throw new ApiError("unknown", error.message);
+  }
+  return data!;
+}
+
+export async function clearUserPin(userId: string): Promise<void> {
+  await rpc("clear_user_pin", { p_user_id: userId });
+}
+
+export async function setMyPin(newPin: string, currentPin?: string): Promise<{ ok: boolean; hint?: string }> {
+  const res = await rpc<{ ok: boolean; hint?: string }>("set_my_pin", {
+    p_new_pin: newPin,
+    p_current_pin: currentPin || null,
+  });
+  if (res && typeof res === "object" && !res.ok) {
+    throw new ApiError(res.hint ?? "pin_wrong", res.hint ?? "pin_wrong");
+  }
+  return res;
+}
+
 export interface UserRow {
   user_id: string;
   username: string;
@@ -165,3 +207,16 @@ export const listAccess = () =>
 
 export const listCurrencies = () =>
   select<CurrencyRow>(supabase.from("currencies").select("code, name").order("code").limit(300));
+
+export interface LimitsRow {
+  max_locations: number;
+  max_users: number;
+  max_devices: number;
+  max_products: number;
+}
+
+export async function getTenantLimits(): Promise<LimitsRow | null> {
+  const { data, error } = await supabase.from("tenant_limits").select("max_locations, max_users, max_devices, max_products").maybeSingle();
+  if (error) throw fromRaw(error);
+  return data;
+}

@@ -60,6 +60,32 @@ export const createUserSchema = z
     }
   });
 
+export const inviteUserSchema = z
+  .object({
+    email: z.string().trim().email("validation.email"),
+    username: z.string().trim().toLowerCase().regex(USERNAME_RE, "validation.username"),
+    fullName: z.string().trim().max(120, "validation.max120"),
+    role: z.enum(["superadmin", "admin", "warehouse"]),
+    locationId: z.string(),
+    position: z.enum(["", "manager", "supervisor"]),
+  })
+  .superRefine((v, ctx) => {
+    if (v.role === "admin" && v.locationId && !v.position) {
+      ctx.addIssue({ code: "custom", path: ["position"], message: "validation.position_required" });
+    }
+  });
+
+export const setPinSchema = z
+  .object({
+    currentPin: z.string().optional(),
+    newPin: z.string().regex(/^\d{4,8}$/, "validation.pin_format"),
+    confirmPin: z.string(),
+  })
+  .refine((v) => v.newPin === v.confirmPin, {
+    path: ["confirmPin"],
+    message: "validation.pin_match",
+  });
+
 export const upgradeSchema = z
   .object({
     warehouse: z.boolean(),

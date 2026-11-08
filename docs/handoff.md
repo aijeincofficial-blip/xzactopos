@@ -12,8 +12,9 @@ Updated at the end of every task. Read this first in a fresh session. New sessio
 - **Full mode (React-first) In Progress (2026-11-08):**
   - **F-01 (`70b6d2e`):** Store scoping & multi-store data foundation (done).
   - **F-02 (`fa36fc0`):** Server sale number & device registry (done).
-  - **F-03:** Tenant business settings, quotas, and receipt styling (done).
-  - Next: F-04 Staff Management in React (`/app/users`).
+  - **F-03 (`6eaa150`):** Tenant business settings, quotas, and receipt styling (done).
+  - **F-04:** Staff management in React: email invites, cashier creation, multi-store positions, supervisor PIN management (done).
+  - Next: F-08 / F-09 (Warehouse & Inter-Store Transfers) or F-05 / F-10 (Per-cashier shifts & multi-store reporting).
 - **Full mode started (2026-11-08):** F-01 store scoping and F-02 server sale number + devices are done; F-03 (tenant settings + mode switch) is next. Handoff for a new session or tool: `docs/START-HERE-antigravity.md` (rewritten today).
 - **Solo mode is wrapped up (2026-11-08).** Phases 0 to 8 plus the tabs revamp, keypad, opening cash, e-wallet float, import/export are done; acceptance and open findings: `docs/tasks/P8-13-acceptance.md`. Full mode is planned in `docs/tasks/F-00-overview-full-mode.md`; **F-01 store scoping: data layer done** (section near the end), picker UI done; **F-02 server sale number and devices: data layer done**, receipt/Today display next. Branch `claude/phase3-sell-8261d3` holds all of it, not pushed, not merged to `main`.
 - Phase 0 (Foundation): done, committed (6d59c99).
@@ -576,4 +577,15 @@ Read `docs/START-HERE-claude.md` for the complete handoff from Antigravity.
 - Nav: Added Settings link to app layout navigation with strict permission check.
 - Parity: 1:1 key parity between English and Filipino translations under `settings.*` in `src/locales/en/admin.json` and `fil/admin.json`.
 - Verified: client vitest 59 tests passing, `tsc -p tsconfig.json` clean, `eslint` 0 errors.
+
+## F-04: Staff Management in React (2026-11-08)
+- apps/client: Staff Management screen (`src/routes/users.tsx`, route `/app/users`, permission `users.manage`):
+  - Onboarding & Creation: Direct cashier account creation with store assignment (`create_user` edge function with synthetic `<username>.<slug>@pos.invalid` email) + Superadmin invite by real email for managers, supervisors, and warehouse staff (`invite_user` edge function).
+  - Supervisor & Cashier PIN Management: Superadmin can clear/reset any staff member's PIN via `clear_user_pin` RPC; any logged-in user can set or change their 4-to-8 digit supervisor PIN via `set_my_pin` RPC.
+  - Multi-store assignments and positions (`manager` vs `supervisor`) with role-appropriate location type restrictions.
+  - Search, filtering (by role, location/store, and active/inactive status), and quota tracker (`tenant_limits.max_users`).
+- Logic & API: `src/lib/api.ts` (`inviteUser`, `clearUserPin`, `setMyPin`, `getTenantLimits`), `src/lib/schemas.ts` (`inviteUserSchema`, `setPinSchema` with test coverage in `schemas.test.ts`).
+- Parity: 100% key parity between English and Filipino in both `admin.json` and `errors.json`.
+- Verified: client vitest 61 tests passing, `tsc -p tsconfig.json` clean, `eslint` 0 errors.
+
 

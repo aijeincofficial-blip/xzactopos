@@ -55,8 +55,16 @@
     "username": "3-40 character: a-z, 0-9, tuldok, gitling, underscore. Dapat nagsisimula at nagtatapos sa letra o numero.",
     "password": "8 hanggang 72 character.",
     "position_required": "Pumili ng posisyon para sa tindahang ito.",
-    "location_required": "Pumili ng lokasyon."
+    "location_required": "Pumili ng lokasyon.",
+    "email": "Maglagay ng wastong email address.",
+    "pin_format": "Dapat 4 hanggang 8 tambilang ang PIN.",
+    "pin_match": "Hindi magkatugma ang PIN."
   },
+  "limit_users": "Naabot na ang limitasyon ng mga tauhan sa inyong plan.",
+  "pin_wrong": "Mali ang PIN.",
+  "pin_locked": "Masyadong maraming maling pagsubok. Pansamantalang naka-lock ang PIN.",
+  "pin_invalid": "Dapat 4 hanggang 8 tambilang ang PIN.",
+  "pin_required": "Kailangan ang kasalukuyang PIN.",
   "approval_required": "Kailangan ng pag-apruba ng PIN ng supervisor.",
   "approval_invalid": "Hindi tugma ang pag-apruba ng supervisor.",
   "approval_used": "Nagamit na ang pag-apruba ng supervisor.",

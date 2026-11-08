@@ -55,8 +55,16 @@
     "username": "3-40 characters: a-z, 0-9, dot, dash, underscore. Start and end with a letter or digit.",
     "password": "8 to 72 characters.",
     "position_required": "Choose a position for this store.",
-    "location_required": "Choose a location."
+    "location_required": "Choose a location.",
+    "email": "Enter a valid email address.",
+    "pin_format": "PIN must be 4 to 8 digits.",
+    "pin_match": "PINs do not match."
   },
+  "limit_users": "You reached the staff limit of your plan.",
+  "pin_wrong": "Incorrect PIN.",
+  "pin_locked": "Too many failed attempts. PIN is temporarily locked.",
+  "pin_invalid": "PIN must be 4 to 8 digits.",
+  "pin_required": "Current PIN is required.",
   "approval_required": "Supervisor PIN approval is required.",
   "approval_invalid": "Supervisor approval does not match.",
   "approval_used": "Supervisor approval has already been used.",
