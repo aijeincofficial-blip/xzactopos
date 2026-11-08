@@ -28,6 +28,7 @@ const NAV = [
   { to: "/app/users", key: "users", perm: "users.manage", fullOnly: true },
   { to: "/app/modules", key: "modules", perm: "tenant.modules", fullOnly: true },
   { to: "/app/settings", key: "settings", perm: "tenant.settings", fullOnly: false },
+  { to: "/app/platform", key: "platform", perm: null, fullOnly: false, platformAdminOnly: true },
 ] as const satisfies ReadonlyArray<{
   to: string;
   key: string;
@@ -35,6 +36,7 @@ const NAV = [
   perms?: readonly PermissionKey[];
   fullOnly: boolean;
   soloOnly?: boolean;
+  platformAdminOnly?: boolean;
 }>;
 
 export function AppLayout() {
@@ -103,6 +105,7 @@ export function AppLayout() {
         {access.tenant.setup_completed ? (
           <nav aria-label={t("admin:nav.label")} className="mx-auto flex max-w-5xl gap-1 px-4">
             {NAV.filter((n) => {
+              if ("platformAdminOnly" in n && n.platformAdminOnly && !access.is_platform_admin) return false;
               const permOk = "perms" in n && n.perms
                 ? (n.perms as readonly PermissionKey[]).some((p) => can(p))
                 : n.perm === null || can(n.perm);

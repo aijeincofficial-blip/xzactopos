@@ -46,6 +46,7 @@ export interface MyAccess extends MyAccessPayload {
   username: string;
   full_name: string;
   locale: "en" | "fil";
+  is_platform_admin?: boolean;
   tenant: MyAccessPayload["tenant"] & {
     id: string;
     name: string;
