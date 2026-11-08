@@ -642,6 +642,9 @@ abstract class SalesStore {
   /// The store this device works for now; null when the user has no store (or none was given).
   String? get activeLocationId;
 
+  /// Returns the active store id now from local storage.
+  Future<String?> activeStoreNow();
+
   /// Makes [locationId] the active store (kept on the device). Only one of [myStores]; anything else is an
   /// [ArgumentError] and changes nothing.
   Future<void> setActiveStore(String locationId);
@@ -866,9 +869,19 @@ abstract class SalesStore {
   Stream<List<WalletFloatView>> watchWalletFloat();
 
   /// Puts a parked (failed) record_expense / void_expense / close_day / record_service_txn / void_service_txn op back
-  /// in the queue with a new supervisor approval id, after the server refused it with one of [approvalHints]. Same op id: a refused op left nothing on
+  /// in the queue with a new supervisor approval id or offline approval payload, after the server refused it with one of [approvalHints]. Same op id: a refused op left nothing on
   /// the server, so it is applied once.
-  Future<void> requeueWithApproval({required String opId, required String approvalId});
+  Future<void> requeueWithApproval({
+    required String opId,
+    String? approvalId,
+    Map<String, dynamic>? offlineApproval,
+  });
+
+  /// Saves offline PIN hashes for the active (or specified) store location.
+  Future<void> saveOfflinePins(String locationId, List<Map<String, dynamic>> pins);
+
+  /// Retrieves cached offline PIN users for [locationId] (or active store if null).
+  Future<List<Map<String, dynamic>>> getOfflinePins({String? locationId});
 
   // ---- tingi / repack (P8-08) ----
   //

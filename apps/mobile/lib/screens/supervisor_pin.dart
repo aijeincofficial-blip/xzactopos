@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../backend.dart';
+import '../core/pin.dart';
 import '../data/sales_models.dart';
 import '../l10n/app_localizations.dart';
 import '../sync/store_session.dart';
@@ -14,20 +15,49 @@ String expenseCategoryLabel(AppLocalizations t, String category) => switch (cate
       _ => t.expenseCategoryOther,
     };
 
-/// Asks for a supervisor PIN and exchanges it for a one-time approval (needs signal). The PIN is only typed here and
-/// sent to the server; it is never stored. Returns the approval id, or null when cancelled.
-Future<String?> askSupervisorApproval(
+class SupervisorApprovalResult {
+  final String? approvalId;
+  final Map<String, dynamic>? offlineApproval;
+  final String approvedBy;
+
+  const SupervisorApprovalResult({
+    this.approvalId,
+    this.offlineApproval,
+    required this.approvedBy,
+  });
+
+  bool get isOffline => offlineApproval != null;
+}
+
+/// Asks for a supervisor PIN and exchanges it for a one-time approval.
+/// When online: exchanges with server for approval_id.
+/// When offline: validates against locally cached offline PIN hashes (via verifyPinPbkdf2)
+/// and creates an offline_approval payload.
+Future<SupervisorApprovalResult?> askSupervisorApproval(
   BuildContext context,
   Backend backend, {
   required String action,
   required String refId,
   String? locationId,
-}) {
+  String? approverId,
+}) async {
   final t = AppLocalizations.of(context);
+  final scope = CatalogScope.of(context);
+  final loc = locationId ?? await scope.store.activeStoreNow();
+
+  // Background refresh of offline PINs if online
+  backend.pullOfflinePins(locationId: loc).then((pins) {
+    if (pins.isNotEmpty && loc != null) {
+      scope.store.saveOfflinePins(loc, pins);
+    }
+  }).catchError((_) {});
+
+  if (!context.mounted) return null;
+
   final pin = TextEditingController();
   String? error;
   var busy = false;
-  return showDialog<String>(
+  return showDialog<SupervisorApprovalResult>(
     context: context,
     builder: (ctx) => StatefulBuilder(
       builder: (ctx, setState) => AlertDialog(
@@ -55,10 +85,25 @@ Future<String?> askSupervisorApproval(
                       busy = true;
                       error = null;
                     });
+                    final enteredPin = pin.text.trim();
                     try {
-                      final r = await backend.approveSupervisorAction(action: action, refId: refId, pin: pin.text.trim(), locationId: locationId);
-                      if (r.ok) {
-                        if (ctx.mounted) Navigator.pop(ctx, r.approvalId);
+                      final r = await backend.approveSupervisorAction(
+                        action: action,
+                        refId: refId,
+                        pin: enteredPin,
+                        locationId: loc,
+                        approverId: approverId,
+                      );
+                      if (r.ok && r.approvalId != null) {
+                        if (ctx.mounted) {
+                          Navigator.pop(
+                            ctx,
+                            SupervisorApprovalResult(
+                              approvalId: r.approvalId,
+                              approvedBy: r.approvedBy ?? '',
+                            ),
+                          );
+                        }
                         return;
                       }
                       setState(() {
@@ -71,9 +116,40 @@ Future<String?> askSupervisorApproval(
                         };
                       });
                     } catch (_) {
+                      // Offline fallback: verify against cached store approver PIN hashes
+                      final cachedPins = await scope.store.getOfflinePins(locationId: loc);
+                      Map<String, dynamic>? matched;
+                      for (final u in cachedPins) {
+                        if (approverId != null && u['user_id'] != approverId) continue;
+                        final hash = (u['pin_hash'] as String?) ?? '';
+                        if (verifyPinPbkdf2(enteredPin, hash)) {
+                          matched = u;
+                          break;
+                        }
+                      }
+
+                      if (matched != null) {
+                        final offlineApproval = {
+                          'approver_id': matched['user_id'],
+                          'approved_at': DateTime.now().toUtc().toIso8601String(),
+                          'action': action,
+                          'ref_id': refId,
+                        };
+                        if (ctx.mounted) {
+                          Navigator.pop(
+                            ctx,
+                            SupervisorApprovalResult(
+                              offlineApproval: offlineApproval,
+                              approvedBy: (matched['user_id'] as String?) ?? '',
+                            ),
+                          );
+                        }
+                        return;
+                      }
+
                       setState(() {
                         busy = false;
-                        error = t.approvalNeedsSignal;
+                        error = cachedPins.isEmpty ? t.approvalNeedsSignal : t.approvalWrongPin;
                       });
                     }
                   },
@@ -96,6 +172,10 @@ Future<void> retryWithApproval(BuildContext context, Backend backend, String ent
   final approval = await askSupervisorApproval(context, backend,
       action: op.kind, refId: entityId, locationId: op.payload['location_id'] as String?);
   if (approval == null) return;
-  await scope.store.requeueWithApproval(opId: op.opId, approvalId: approval);
+  await scope.store.requeueWithApproval(
+    opId: op.opId,
+    approvalId: approval.approvalId,
+    offlineApproval: approval.offlineApproval,
+  );
   scope.engine.poke();
 }

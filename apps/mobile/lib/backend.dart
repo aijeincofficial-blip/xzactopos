@@ -61,6 +61,9 @@ abstract class Backend implements SyncApi {
     String? locationId,
     String? approverId,
   });
+
+  /// Pulls store approver PIN hashes for offline verification (F-06).
+  Future<List<Map<String, dynamic>>> pullOfflinePins({String? locationId});
 }
 
 class PinResult {
@@ -75,17 +78,26 @@ class PinResult {
 class ApprovalResult {
   const ApprovalResult.ok({required String this.approvalId, required String this.approvedBy, required DateTime this.expiresAt})
       : ok = true,
+        offlineApproval = null,
+        hint = null;
+  const ApprovalResult.offline({required Map<String, dynamic> this.offlineApproval, required String this.approvedBy})
+      : ok = true,
+        approvalId = null,
+        expiresAt = null,
         hint = null;
   const ApprovalResult.refused(String this.hint)
       : ok = false,
         approvalId = null,
         approvedBy = null,
-        expiresAt = null;
+        expiresAt = null,
+        offlineApproval = null;
 
   final bool ok;
   final String? approvalId;
   final String? approvedBy;
   final DateTime? expiresAt;
+  final Map<String, dynamic>? offlineApproval;
+  bool get isOffline => offlineApproval != null;
 
   /// Why there is no approval (see [Backend.approveSupervisorAction]); null when [ok].
   final String? hint;
@@ -266,6 +278,12 @@ class SupabaseBackend implements Backend, DeviceApi {
       if (pinRefusalHints.contains(e.hint)) return ApprovalResult.refused(e.hint!);
       rethrow;
     }
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> pullOfflinePins({String? locationId}) async {
+    final res = await _auth(() => _c.rpc('pull_offline_pins', params: {'p_location_id': locationId}));
+    return (res as List).map((e) => (e as Map).cast<String, dynamic>()).toList();
   }
 
   @override

@@ -46,6 +46,7 @@ mixin DriftSales implements SalesStore {
   String? get activeLocationId => _active;
 
   /// The active store as stored now (use inside writes).
+  @override
   Future<String?> activeStoreNow() => meta(_activeKey);
 
   /// The user's only store, or null (none or several). Pulled rows that name no store (an older server) belong to it.
@@ -1781,13 +1782,40 @@ mixin DriftSales implements SalesStore {
   }
 
   @override
-  Future<void> requeueWithApproval({required String opId, required String approvalId}) {
+  Future<void> saveOfflinePins(String locationId, List<Map<String, dynamic>> pins) async {
+    await setMeta('offline_pins_$locationId', jsonEncode(pins));
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> getOfflinePins({String? locationId}) async {
+    final loc = locationId ?? await activeStoreNow() ?? 'global';
+    final raw = await meta('offline_pins_$loc');
+    if (raw == null || raw.isEmpty) return const [];
+    try {
+      final list = jsonDecode(raw) as List;
+      return list.map((e) => (e as Map).cast<String, dynamic>()).toList();
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  @override
+  Future<void> requeueWithApproval({
+    required String opId,
+    String? approvalId,
+    Map<String, dynamic>? offlineApproval,
+  }) {
+    if (approvalId == null && offlineApproval == null) {
+      throw ArgumentError('Either approvalId or offlineApproval must be provided');
+    }
     return db.transaction(() async {
       final op = await (db.select(db.outbox)..where((o) => o.opId.equals(opId))).getSingleOrNull();
       if (op == null) throw StateError('Unknown op');
       if (!approvalKinds.contains(op.kind)) throw ArgumentError('${op.kind} does not take an approval');
       if (op.status != 'failed') throw StateError('Only a refused op can be sent again');
-      final payload = (jsonDecode(op.payload) as Map).cast<String, dynamic>()..['approval_id'] = approvalId;
+      final payload = (jsonDecode(op.payload) as Map).cast<String, dynamic>();
+      if (approvalId != null) payload['approval_id'] = approvalId;
+      if (offlineApproval != null) payload['offline_approval'] = offlineApproval;
       await (db.update(db.outbox)..where((o) => o.opId.equals(opId))).write(OutboxCompanion(
             payload: Value(jsonEncode(payload)),
             status: const Value('pending'),

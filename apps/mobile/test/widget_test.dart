@@ -119,6 +119,9 @@ class FakeBackend implements Backend {
     );
   }
 
+  @override
+  Future<List<Map<String, dynamic>>> pullOfflinePins({String? locationId}) async => [];
+
   final pushed = <String>[];
   @override
   Future<void> upsertProduct(String opId, Map<String, dynamic> payload) async => pushed.add('upsert_product');
