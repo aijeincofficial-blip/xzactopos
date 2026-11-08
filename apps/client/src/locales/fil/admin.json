@@ -540,7 +540,20 @@
     "limitLocations": "Mga Lokasyon / Tindahan",
     "limitUsers": "Mga Tauhan",
     "limitDevices": "Mga Nakarehistrong Device",
-    "limitProducts": "Mga Produkto sa Catalog"
+    "limitProducts": "Mga Produkto sa Catalog",
+    "storageTitle": "Database at Quota ng Storage",
+    "storageDesc": "Libreng 500 MB na badyet ng Supabase, alokasyon ng mga talahanayan, at pagpapanatili.",
+    "statusHealthy": "Mabuti",
+    "statusWarning": "Babala (70%+ Nagamit)",
+    "statusCritical": "Kritikal (90%+ Nagamit)",
+    "usedOf": "nagamit sa",
+    "testPing": "Subukan ang Keep-Alive Ping",
+    "runMaintenance": "Linisin ang Lumang Ops (30d+)",
+    "archiveSuccess": "Tapos na ang pagpapanatili: {{ops}} lumang ops at {{approvals}} nag-expire na pag-apruba ang naitapon.",
+    "largestTables": "Pinakamalalaking Talahanayan sa Database",
+    "tableName": "Talahanayan",
+    "estRows": "Tantyang Hilera",
+    "totalSize": "Kabuuang Laki"
   },
   "transfers": {
     "title": "Mga Paglipat ng Imbentaryo",

@@ -7,6 +7,12 @@ import { fieldErrors, tenantSettingsSchema } from "../lib/schemas.ts";
 import { accessQuery } from "../lib/session.tsx";
 import { useErrorMessage, useValidationMessage } from "../lib/i18n-helpers.ts";
 import { Alert, Badge, Button, Card, Field, Input, Select } from "../components/ui.tsx";
+import {
+  fetchStorageMetrics,
+  runArchiveMaintenance,
+  checkHealthPing,
+  type HealthPingResult,
+} from "../lib/maintenance-api.ts";
 
 function timezones(): string[] {
   try {
@@ -40,6 +46,40 @@ export function SettingsPage() {
   const [cashierCanVoidOwn, setCashierCanVoidOwn] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [savedSuccess, setSavedSuccess] = useState(false);
+
+  // Storage & Maintenance states
+  const [archiveMessage, setArchiveMessage] = useState<string | null>(null);
+  const [pingResult, setPingResult] = useState<HealthPingResult | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  const storageQuery = useQuery({
+    queryKey: ["storage-metrics"],
+    queryFn: fetchStorageMetrics,
+  });
+
+  const archiveMutation = useMutation({
+    mutationFn: () => runArchiveMaintenance(30),
+    onSuccess: async (res) => {
+      await qc.invalidateQueries({ queryKey: ["storage-metrics"] });
+      setArchiveMessage(
+        t("settings.archiveSuccess", {
+          ops: res.ops_deleted,
+          approvals: res.approvals_deleted,
+        })
+      );
+      setTimeout(() => setArchiveMessage(null), 5000);
+    },
+    onError: (e) => setActionError(errMsg(e)),
+  });
+
+  const pingMutation = useMutation({
+    mutationFn: checkHealthPing,
+    onSuccess: (res) => {
+      setPingResult(res);
+      setTimeout(() => setPingResult(null), 6000);
+    },
+    onError: (e) => setActionError(errMsg(e)),
+  });
 
   useEffect(() => {
     if (q.data) {
@@ -145,6 +185,7 @@ export function SettingsPage() {
 
       {save.isError ? <Alert>{errMsg(save.error)}</Alert> : null}
       {savedSuccess ? <Alert tone="info">{t("common:saved")}</Alert> : null}
+      {actionError ? <Alert>{actionError}</Alert> : null}
 
       <form onSubmit={handleSubmit} className="grid gap-6">
         {/* Business Profile */}
@@ -360,6 +401,121 @@ export function SettingsPage() {
             </div>
           </div>
         </Card>
+
+        {/* Free-Tier Storage & Maintenance Card */}
+        {storageQuery.data ? (
+          <Card className="grid gap-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h2 className="text-lg font-semibold">{t("settings.storageTitle")}</h2>
+                <p className="text-xs text-slate-500">{t("settings.storageDesc")}</p>
+              </div>
+              <Badge
+                tone={
+                  storageQuery.data.status === "critical"
+                    ? "warn"
+                    : storageQuery.data.status === "warning"
+                    ? "warn"
+                    : "good"
+                }
+              >
+                {storageQuery.data.status === "critical"
+                  ? `⚠️ ${t("settings.statusCritical")}`
+                  : storageQuery.data.status === "warning"
+                  ? `⚠️ ${t("settings.statusWarning")}`
+                  : `✓ ${t("settings.statusHealthy")}`}
+              </Badge>
+            </div>
+
+            {/* Storage Progress Bar */}
+            <div className="grid gap-1.5">
+              <div className="flex justify-between text-xs font-medium text-slate-600">
+                <span>
+                  {storageQuery.data.used_mb} MB {t("settings.usedOf")} {storageQuery.data.limit_mb} MB
+                </span>
+                <span>{storageQuery.data.percent_used}%</span>
+              </div>
+              <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-100">
+                <div
+                  className={`h-full transition-all ${
+                    storageQuery.data.status === "critical"
+                      ? "bg-rose-500"
+                      : storageQuery.data.status === "warning"
+                      ? "bg-amber-500"
+                      : "bg-emerald-500"
+                  }`}
+                  style={{ width: `${Math.min(storageQuery.data.percent_used, 100)}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Actions & Health Ping */}
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => pingMutation.mutate()}
+                  disabled={pingMutation.isPending}
+                >
+                  {pingMutation.isPending ? t("settings.loading") : `⚡ ${t("settings.testPing")}`}
+                </Button>
+                {pingResult ? (
+                  <span className="text-xs text-emerald-600 font-medium">
+                    ✓ {pingResult.status} ({new Date(pingResult.timestamp).toLocaleTimeString()})
+                  </span>
+                ) : null}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => archiveMutation.mutate()}
+                  disabled={archiveMutation.isPending}
+                >
+                  {archiveMutation.isPending ? t("settings.saving") : `🧹 ${t("settings.runMaintenance")}`}
+                </Button>
+                {archiveMessage ? (
+                  <span className="text-xs text-emerald-600 font-medium">
+                    ✓ {archiveMessage}
+                  </span>
+                ) : null}
+              </div>
+            </div>
+
+            {/* Top Tables breakdown */}
+            <div className="mt-2">
+              <div className="text-xs font-semibold uppercase text-slate-500 mb-2">
+                {t("settings.largestTables")}
+              </div>
+              <div className="max-h-48 overflow-y-auto rounded border border-slate-200 text-xs">
+                <table className="w-full text-left">
+                  <thead className="bg-slate-50 text-slate-500 uppercase">
+                    <tr>
+                      <th className="p-2">{t("settings.tableName")}</th>
+                      <th className="p-2 text-right">{t("settings.estRows")}</th>
+                      <th className="p-2 text-right">{t("settings.totalSize")}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {storageQuery.data.tables.slice(0, 8).map((tbl) => (
+                      <tr key={tbl.table_name} className="border-t border-slate-100 font-mono">
+                        <td className="p-2 text-slate-900 font-sans">{tbl.table_name}</td>
+                        <td className="p-2 text-right text-slate-600">
+                          {Number(tbl.estimated_rows).toLocaleString()}
+                        </td>
+                        <td className="p-2 text-right text-slate-900 font-semibold">{tbl.formatted_size}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </Card>
+        ) : null}
 
         <div className="flex items-center justify-between gap-4">
           <Button type="submit" disabled={save.isPending}>

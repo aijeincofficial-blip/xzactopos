@@ -540,7 +540,20 @@
     "limitLocations": "Locations / Stores",
     "limitUsers": "Staff Users",
     "limitDevices": "Registered Devices",
-    "limitProducts": "Catalog Products"
+    "limitProducts": "Catalog Products",
+    "storageTitle": "Database & Storage Quota",
+    "storageDesc": "Supabase free-tier 500 MB budget, table allocations, and maintenance.",
+    "statusHealthy": "Healthy",
+    "statusWarning": "Warning (70%+ Used)",
+    "statusCritical": "Critical (90%+ Used)",
+    "usedOf": "used of",
+    "testPing": "Test Keep-Alive Ping",
+    "runMaintenance": "Prune Stale Ops (30d+)",
+    "archiveSuccess": "Maintenance completed: {{ops}} stale ops and {{approvals}} expired approvals cleaned up.",
+    "largestTables": "Largest Database Tables",
+    "tableName": "Table",
+    "estRows": "Est. Rows",
+    "totalSize": "Total Size"
   },
   "transfers": {
     "title": "Stock Transfers",
