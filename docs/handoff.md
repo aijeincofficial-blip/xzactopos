@@ -477,6 +477,16 @@ Share was checked on the emulator (Android share sheet with `LL3-261107-0001.pdf
   `watchExpectedCash(day, {openingCash})` add it (default when null: existing callers now include the opening),
   `closeDay(openingCash:)`, `DayCloseView.openingCash`. 10 new tests (297 total). Screen change still open:
   `docs/tasks/P8-14-opening-cash.md`.
+- P8-15 (`20261108001900_ewallet_float_payments.sql`, added card): e-wallet sale payments and e-wallet expenses may name the
+  wallet (`payments.wallet`, `expenses.wallet`: gcash | maya | other, never load; only on ewallet, else `invalid_value`; set
+  once). AFTER triggers move `wallet_float` (+payment / -expense, reversed on sale cancel / expense void; no wallet = no
+  movement, as before). `op_record_sale` / `op_record_expense` accept `wallet`, `sync_pull_sales` payments and
+  `sync_pull_expenses` rows carry it, expense audit gains `wallet` when named. Cash, expected cash, sales/expense rollups and
+  report keys unchanged. pgTAP `024` (86, incl. a 420-op property test); suite 2741 (24 files). Flutter: Drift v12,
+  `PaymentDraft(wallet:)`, `recordExpense(wallet:)`, `SalePaymentView.wallet`, `ExpenseView.wallet`, local float effects for
+  sales / expenses / their voids under the P8-06 drop rule. 10 new tests (311 total). Wallet chooser on the Pay screen and
+  expense sheet still open: `docs/tasks/P8-15-ewallet-float-payments.md`.
+  Closes the P8-06 gap / P8-13 finding 5 on the data side.
 
 ## Antigravity Session: Neo-Fintech Design, Settings Screen, Theme Fix, & Reports Enrichment
 Read `docs/START-HERE-claude.md` for the complete handoff from Antigravity.

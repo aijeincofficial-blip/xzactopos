@@ -25,9 +25,10 @@ and is the store's income for the entry.**
 - `cash_in` / `cash_out` never use the `load` wallet. A load may come from any wallet (GCash "Buy Load" = `gcash`).
 - A float may go below zero (recorded a cash-in before the top-up): allowed, never blocks an entry, flagged `negative`.
 - Fees are income but are **not** folded into the sales totals (`totals.net`); Reports show them from `services`.
-- **Gap (deferred):** `wallet_float` moves only with service entries. A sale paid by e-wallet (`payments.method = 'ewallet'`)
-  or an expense `paid_from = 'ewallet'` names no wallet, so it does not move any float; the owner corrects the balance with a
-  `float_adjust` (or a top-up / withdraw) until payments and expenses record which wallet they used.
+- **Gap (addressed on the data side by P8-15, `P8-15-ewallet-float-payments.md`):** an e-wallet sale payment and an
+  e-wallet expense can now name their wallet (`gcash` / `maya` / `other`), and then move `wallet_float` (+ / - the amount,
+  reversed on cancel / void). Rows that name no wallet (older rows, the screens until they get a wallet chooser) still move
+  no float; the owner corrects those with a `float_adjust`.
 
 ## Server
 - `service_txns`: append-only (guard trigger: only one void, `voided_at` + `void_reason` + `void_approved_by`; no edits or

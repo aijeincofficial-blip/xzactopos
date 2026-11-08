@@ -33,6 +33,7 @@ A tindera can run a whole day in the app: sell fast, take cash-in/out and load, 
 | P8-12 Export and backup | CSV of sales, utang, stock, share sheet (share_plus). DONE | Sonnet |
 | P8-13 Acceptance | emulator walk-through, report in docs/tasks/P8-13-acceptance.md. DONE | Sonnet |
 | P8-14 Opening cash (sukli) in the day close (added card) | `day_closes.opening_cash`, optional `opening_cash` on `close_day` (in `server_expected_cash`), pull + audit carry it, Drift v11, `defaultOpeningCash` (latest earlier close's count) + `expectedCash` / `closeDay` take an opening. DONE (server + data layer; model, payload, API and what the screen calls: `P8-14-opening-cash.md`). Screen change still open | Opus (data) then Sonnet (screen) |
+| P8-15 E-wallet payments and expenses move the wallet float (added card) | optional `wallet` (gcash / maya / other, never load) on each `record_sale` e-wallet payment and on an e-wallet `record_expense`; triggers move `wallet_float` on record and void; pulls carry `wallet`; Drift v12, `PaymentDraft(wallet:)`, `recordExpense(wallet:)`, local float effects with the P8-06 drop rule. DONE (server + data layer; model, payloads, API and what the Pay screen / expense sheet call: `P8-15-ewallet-float-payments.md`). Wallet chooser on the screens still open | Opus (data) then Sonnet (screens) |
 
 ## Order
 P8-01 first (no schema, immediate speed win), then P8-02 to P8-04 (expenses and day close), then P8-05, then P8-06/07 (load), then the rest by the owner's priority.

@@ -260,6 +260,9 @@ class SalePayments extends Table {
   IntColumn get amount => integer()();
   IntColumn get tendered => integer().nullable()();
   TextColumn get reference => text().nullable()();
+
+  /// The store wallet an `ewallet` payment went into: gcash | maya | other (schema v12, P8-15); null = not named.
+  TextColumn get wallet => text().nullable()();
 }
 
 // ---- Phase 8: expenses and the day close (schema v6) ----
@@ -275,6 +278,9 @@ class Expenses extends Table {
   TextColumn get currency => text()();
   TextColumn get category => text()();
   TextColumn get paidFrom => text().withDefault(const Constant('cash'))();
+
+  /// The store wallet an `ewallet` expense was paid from: gcash | maya | other (schema v12, P8-15); null = not named.
+  TextColumn get wallet => text().nullable()();
   TextColumn get note => text().nullable()();
 
   /// UTC ISO-8601, normalised (the same format as `sales.sold_at`), so text comparison orders correctly.
@@ -474,7 +480,7 @@ class AppDatabase extends _$AppDatabase {
   static const _name = 'xzactopos';
 
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 12;
 
   /// Adds a column unless it is there already (a database made by a newer build and stepped back in a test, or a
   /// table an earlier step created with today's definition). Skips a table that does not exist.
@@ -583,6 +589,12 @@ class AppDatabase extends _$AppDatabase {
             // additive only: the opening cash of a day close (every row kept with 0, what closes before P8-14 meant). The
             // server's earlier closes have opening_cash 0 as well, so no re-pull is needed.
             await _addColumnIfMissing(m, dayCloses, dayCloses.openingCash);
+          }
+          if (from < 12) {
+            // additive only: the wallet of an e-wallet sale payment / expense (every row kept with none, what rows before
+            // P8-15 meant; the server's earlier rows have no wallet either, so no re-pull is needed)
+            await _addColumnIfMissing(m, salePayments, salePayments.wallet);
+            await _addColumnIfMissing(m, expenses, expenses.wallet);
           }
         },
       );

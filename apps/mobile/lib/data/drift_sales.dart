@@ -69,6 +69,9 @@ mixin DriftSales implements SalesStore {
       throw ArgumentError('Payments must add up to the total');
     }
     if (d.utang > 0 && d.customerId == null) throw ArgumentError('Utang needs a customer');
+    for (final p in d.payments) {
+      _checkWallet(p.wallet, p.method == 'ewallet', 'an e-wallet payment');
+    }
 
     return db.transaction(() async {
       final localNo = await _nextReceiptNo(d.soldAt.toLocal());
@@ -113,7 +116,13 @@ mixin DriftSales implements SalesStore {
               amount: p.amount,
               tendered: Value(p.method == 'cash' ? (p.tendered ?? p.amount) : null),
               reference: Value(p.reference),
+              wallet: Value(p.wallet),
             ));
+        // P8-15: the customer paid into the store's wallet
+        if (p.wallet != null) {
+          await db.into(db.localFloatEffects).insert(
+              LocalFloatEffectsCompanion.insert(opId: opId, txnId: d.id, wallet: p.wallet!, amount: p.amount));
+        }
       }
       if (d.utang > 0) {
         await db.into(db.localLedger).insert(LocalLedgerCompanion.insert(
@@ -154,11 +163,20 @@ mixin DriftSales implements SalesStore {
               'amount': p.amount,
               if (p.method == 'cash') 'tendered': p.tendered ?? p.amount,
               if (p.reference != null && p.reference!.isNotEmpty) 'reference': p.reference,
+              'wallet': ?p.wallet,
             }
         ],
       });
       return SaleReceipt(d.id, localNo);
     });
+  }
+
+  /// P8-15: a named wallet must be one of [paymentWallets] and is allowed only where [allowed] (an e-wallet payment or
+  /// expense). Null = not named, always fine.
+  static void _checkWallet(String? wallet, bool allowed, String what) {
+    if (wallet == null) return;
+    if (!allowed) throw ArgumentError('Only $what names a wallet');
+    if (!paymentWallets.contains(wallet)) throw ArgumentError('Unknown wallet: $wallet');
   }
 
   @override
@@ -189,6 +207,15 @@ mixin DriftSales implements SalesStore {
               note: const Value('void'),
               occurredAt: now,
             ));
+      }
+      // P8-15: the e-wallet payments that named a wallet leave its float (the server's sale void does the same)
+      final named = await (db.select(db.salePayments)
+            ..where((p) => p.saleId.equals(saleId) & p.method.equals('ewallet') & p.wallet.isNotNull())
+            ..orderBy([(p) => OrderingTerm.asc(p.id)]))
+          .get();
+      for (final p in named) {
+        await db.into(db.localFloatEffects).insert(
+            LocalFloatEffectsCompanion.insert(opId: opId, txnId: saleId, wallet: p.wallet!, amount: -p.amount));
       }
       await enqueue(opId, 'void_sale', saleId, {'sale_id': saleId, 'reason': ?reason});
     });
@@ -418,7 +445,7 @@ mixin DriftSales implements SalesStore {
       tax: s.tax,
       customerId: s.customerId,
       items: [for (final i in items) SaleItemView(i.name, i.qty, i.unitPrice, i.lineTotal)],
-      payments: [for (final p in pays) SalePaymentView(p.method, p.amount, p.tendered, p.reference)],
+      payments: [for (final p in pays) SalePaymentView(p.method, p.amount, p.tendered, p.reference, wallet: p.wallet)],
     );
   }
 
@@ -811,6 +838,7 @@ mixin DriftSales implements SalesStore {
     required int amount,
     required String category,
     String paidFrom = 'cash',
+    String? wallet,
     String? note,
     DateTime? spentAt,
     String? approvalId,
@@ -819,6 +847,7 @@ mixin DriftSales implements SalesStore {
     if (amount <= 0) throw ArgumentError('Amount must be above zero');
     if (!expenseCategories.contains(category)) throw ArgumentError('Unknown expense category: $category');
     if (!expensePaidFrom.contains(paidFrom)) throw ArgumentError('Paid from must be cash or ewallet');
+    _checkWallet(wallet, paidFrom == 'ewallet', 'an e-wallet expense');
     final n = _text200(note);
     return db.transaction(() async {
       if (await (db.select(db.expenses)..where((e) => e.id.equals(id))).getSingleOrNull() != null) {
@@ -832,14 +861,21 @@ mixin DriftSales implements SalesStore {
             currency: baseCurrency,
             category: category,
             paidFrom: Value(paidFrom),
+            wallet: Value(wallet),
             note: Value(n),
             spentAt: at,
           ));
+      // P8-15: the money left the named wallet
+      if (wallet != null) {
+        await db.into(db.localFloatEffects)
+            .insert(LocalFloatEffectsCompanion.insert(opId: opId, txnId: id, wallet: wallet, amount: -amount));
+      }
       await enqueue(opId, 'record_expense', id, {
         'id': id,
         'amount': amount,
         'category': category,
         'paid_from': paidFrom,
+        'wallet': ?wallet,
         'note': ?n,
         'spent_at': at,
         'location_id': ?locationId,
@@ -857,6 +893,11 @@ mixin DriftSales implements SalesStore {
       final r = _text200(reason);
       await (db.update(db.expenses)..where((x) => x.id.equals(expenseId)))
           .write(ExpensesCompanion(voidedAt: Value(_iso(DateTime.now())), voidReason: Value(r)));
+      // P8-15: the money goes back to the named wallet (the server's void does the same)
+      if (e.paidFrom == 'ewallet' && e.wallet != null) {
+        await db.into(db.localFloatEffects).insert(
+            LocalFloatEffectsCompanion.insert(opId: opId, txnId: expenseId, wallet: e.wallet!, amount: e.amount));
+      }
       await enqueue(opId, 'void_expense', expenseId, {'expense_id': expenseId, 'reason': ?r, 'approval_id': ?approvalId});
     });
   }
@@ -866,6 +907,7 @@ mixin DriftSales implements SalesStore {
         amount: r.read<int>('amount'),
         category: r.read<String>('category'),
         paidFrom: r.read<String>('paid_from'),
+        wallet: r.readNullable<String>('wallet'),
         note: r.readNullable<String>('note'),
         spentAt: DateTime.parse(r.read<String>('spent_at')).toLocal(),
         voidedAt: r.readNullable<String>('voided_at') == null ? null : DateTime.parse(r.read<String>('voided_at')).toLocal(),
@@ -879,7 +921,8 @@ mixin DriftSales implements SalesStore {
   Stream<List<ExpenseView>> watchExpenses({required DateTime from, required DateTime to}) => db
       .customSelect(
         '''
-        select x.id, x.amount, x.category, x.paid_from, x.note, x.spent_at, x.voided_at, x.void_reason, x.approved_by,
+        select x.id, x.amount, x.category, x.paid_from, x.wallet, x.note, x.spent_at, x.voided_at, x.void_reason,
+               x.approved_by,
                $_pendingSql
         from expenses x
         where x.spent_at >= ?1 and x.spent_at < ?2
@@ -1070,6 +1113,8 @@ mixin DriftSales implements SalesStore {
   // An entry is one row, like an expense (the server's copy replaces it when pulled). The float is NOT summed from the
   // rows (the server's balance covers years of entries and other devices): it is the pulled balance per wallet plus
   // `local_float_effects`, one row per record / void made here, dropped once a pulled balance includes it.
+  // P8-15: sales (e-wallet payments that name a wallet, and their cancel) and e-wallet expenses that name a wallet (and
+  // their void) add rows there too, under their own op id, so the same confirm / drop / discard rules apply.
   // ---------------------------------------------------------------------------
 
   @override
@@ -1644,6 +1689,8 @@ mixin DriftSales implements SalesStore {
               currency: (r['currency'] as String).trim(),
               category: r['category'] as String,
               paidFrom: Value(r['paid_from'] as String? ?? 'cash'),
+              // absent from a server before P8-15: no wallet named
+              wallet: Value(r['wallet'] as String?),
               note: Value(r['note'] as String?),
               spentAt: _utc(r['spent_at'] as String),
               createdBy: Value(r['created_by'] as String?),
@@ -1754,6 +1801,8 @@ mixin DriftSales implements SalesStore {
                 amount: (p['amount'] as num).toInt(),
                 tendered: Value((p['tendered'] as num?)?.toInt()),
                 reference: Value(p['reference'] as String?),
+                // absent from a server before P8-15: no wallet named
+                wallet: Value(p['wallet'] as String?),
               ));
         }
       }

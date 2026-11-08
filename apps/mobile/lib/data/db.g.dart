@@ -7628,6 +7628,15 @@ class $SalePaymentsTable extends SalePayments
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _walletMeta = const VerificationMeta('wallet');
+  @override
+  late final GeneratedColumn<String> wallet = GeneratedColumn<String>(
+    'wallet',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -7636,6 +7645,7 @@ class $SalePaymentsTable extends SalePayments
     amount,
     tendered,
     reference,
+    wallet,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -7688,6 +7698,12 @@ class $SalePaymentsTable extends SalePayments
         reference.isAcceptableOrUnknown(data['reference']!, _referenceMeta),
       );
     }
+    if (data.containsKey('wallet')) {
+      context.handle(
+        _walletMeta,
+        wallet.isAcceptableOrUnknown(data['wallet']!, _walletMeta),
+      );
+    }
     return context;
   }
 
@@ -7721,6 +7737,10 @@ class $SalePaymentsTable extends SalePayments
         DriftSqlType.string,
         data['${effectivePrefix}reference'],
       ),
+      wallet: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}wallet'],
+      ),
     );
   }
 
@@ -7737,6 +7757,9 @@ class SalePayment extends DataClass implements Insertable<SalePayment> {
   final int amount;
   final int? tendered;
   final String? reference;
+
+  /// The store wallet an `ewallet` payment went into: gcash | maya | other (schema v12, P8-15); null = not named.
+  final String? wallet;
   const SalePayment({
     required this.id,
     required this.saleId,
@@ -7744,6 +7767,7 @@ class SalePayment extends DataClass implements Insertable<SalePayment> {
     required this.amount,
     this.tendered,
     this.reference,
+    this.wallet,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -7757,6 +7781,9 @@ class SalePayment extends DataClass implements Insertable<SalePayment> {
     }
     if (!nullToAbsent || reference != null) {
       map['reference'] = Variable<String>(reference);
+    }
+    if (!nullToAbsent || wallet != null) {
+      map['wallet'] = Variable<String>(wallet);
     }
     return map;
   }
@@ -7773,6 +7800,9 @@ class SalePayment extends DataClass implements Insertable<SalePayment> {
       reference: reference == null && nullToAbsent
           ? const Value.absent()
           : Value(reference),
+      wallet: wallet == null && nullToAbsent
+          ? const Value.absent()
+          : Value(wallet),
     );
   }
 
@@ -7788,6 +7818,7 @@ class SalePayment extends DataClass implements Insertable<SalePayment> {
       amount: serializer.fromJson<int>(json['amount']),
       tendered: serializer.fromJson<int?>(json['tendered']),
       reference: serializer.fromJson<String?>(json['reference']),
+      wallet: serializer.fromJson<String?>(json['wallet']),
     );
   }
   @override
@@ -7800,6 +7831,7 @@ class SalePayment extends DataClass implements Insertable<SalePayment> {
       'amount': serializer.toJson<int>(amount),
       'tendered': serializer.toJson<int?>(tendered),
       'reference': serializer.toJson<String?>(reference),
+      'wallet': serializer.toJson<String?>(wallet),
     };
   }
 
@@ -7810,6 +7842,7 @@ class SalePayment extends DataClass implements Insertable<SalePayment> {
     int? amount,
     Value<int?> tendered = const Value.absent(),
     Value<String?> reference = const Value.absent(),
+    Value<String?> wallet = const Value.absent(),
   }) => SalePayment(
     id: id ?? this.id,
     saleId: saleId ?? this.saleId,
@@ -7817,6 +7850,7 @@ class SalePayment extends DataClass implements Insertable<SalePayment> {
     amount: amount ?? this.amount,
     tendered: tendered.present ? tendered.value : this.tendered,
     reference: reference.present ? reference.value : this.reference,
+    wallet: wallet.present ? wallet.value : this.wallet,
   );
   SalePayment copyWithCompanion(SalePaymentsCompanion data) {
     return SalePayment(
@@ -7826,6 +7860,7 @@ class SalePayment extends DataClass implements Insertable<SalePayment> {
       amount: data.amount.present ? data.amount.value : this.amount,
       tendered: data.tendered.present ? data.tendered.value : this.tendered,
       reference: data.reference.present ? data.reference.value : this.reference,
+      wallet: data.wallet.present ? data.wallet.value : this.wallet,
     );
   }
 
@@ -7837,14 +7872,15 @@ class SalePayment extends DataClass implements Insertable<SalePayment> {
           ..write('method: $method, ')
           ..write('amount: $amount, ')
           ..write('tendered: $tendered, ')
-          ..write('reference: $reference')
+          ..write('reference: $reference, ')
+          ..write('wallet: $wallet')
           ..write(')'))
         .toString();
   }
 
   @override
   int get hashCode =>
-      Object.hash(id, saleId, method, amount, tendered, reference);
+      Object.hash(id, saleId, method, amount, tendered, reference, wallet);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -7854,7 +7890,8 @@ class SalePayment extends DataClass implements Insertable<SalePayment> {
           other.method == this.method &&
           other.amount == this.amount &&
           other.tendered == this.tendered &&
-          other.reference == this.reference);
+          other.reference == this.reference &&
+          other.wallet == this.wallet);
 }
 
 class SalePaymentsCompanion extends UpdateCompanion<SalePayment> {
@@ -7864,6 +7901,7 @@ class SalePaymentsCompanion extends UpdateCompanion<SalePayment> {
   final Value<int> amount;
   final Value<int?> tendered;
   final Value<String?> reference;
+  final Value<String?> wallet;
   const SalePaymentsCompanion({
     this.id = const Value.absent(),
     this.saleId = const Value.absent(),
@@ -7871,6 +7909,7 @@ class SalePaymentsCompanion extends UpdateCompanion<SalePayment> {
     this.amount = const Value.absent(),
     this.tendered = const Value.absent(),
     this.reference = const Value.absent(),
+    this.wallet = const Value.absent(),
   });
   SalePaymentsCompanion.insert({
     this.id = const Value.absent(),
@@ -7879,6 +7918,7 @@ class SalePaymentsCompanion extends UpdateCompanion<SalePayment> {
     required int amount,
     this.tendered = const Value.absent(),
     this.reference = const Value.absent(),
+    this.wallet = const Value.absent(),
   }) : saleId = Value(saleId),
        method = Value(method),
        amount = Value(amount);
@@ -7889,6 +7929,7 @@ class SalePaymentsCompanion extends UpdateCompanion<SalePayment> {
     Expression<int>? amount,
     Expression<int>? tendered,
     Expression<String>? reference,
+    Expression<String>? wallet,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -7897,6 +7938,7 @@ class SalePaymentsCompanion extends UpdateCompanion<SalePayment> {
       if (amount != null) 'amount': amount,
       if (tendered != null) 'tendered': tendered,
       if (reference != null) 'reference': reference,
+      if (wallet != null) 'wallet': wallet,
     });
   }
 
@@ -7907,6 +7949,7 @@ class SalePaymentsCompanion extends UpdateCompanion<SalePayment> {
     Value<int>? amount,
     Value<int?>? tendered,
     Value<String?>? reference,
+    Value<String?>? wallet,
   }) {
     return SalePaymentsCompanion(
       id: id ?? this.id,
@@ -7915,6 +7958,7 @@ class SalePaymentsCompanion extends UpdateCompanion<SalePayment> {
       amount: amount ?? this.amount,
       tendered: tendered ?? this.tendered,
       reference: reference ?? this.reference,
+      wallet: wallet ?? this.wallet,
     );
   }
 
@@ -7939,6 +7983,9 @@ class SalePaymentsCompanion extends UpdateCompanion<SalePayment> {
     if (reference.present) {
       map['reference'] = Variable<String>(reference.value);
     }
+    if (wallet.present) {
+      map['wallet'] = Variable<String>(wallet.value);
+    }
     return map;
   }
 
@@ -7950,7 +7997,8 @@ class SalePaymentsCompanion extends UpdateCompanion<SalePayment> {
           ..write('method: $method, ')
           ..write('amount: $amount, ')
           ..write('tendered: $tendered, ')
-          ..write('reference: $reference')
+          ..write('reference: $reference, ')
+          ..write('wallet: $wallet')
           ..write(')'))
         .toString();
   }
@@ -8023,6 +8071,15 @@ class $ExpensesTable extends Expenses with TableInfo<$ExpensesTable, Expense> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
     defaultValue: const Constant('cash'),
+  );
+  static const VerificationMeta _walletMeta = const VerificationMeta('wallet');
+  @override
+  late final GeneratedColumn<String> wallet = GeneratedColumn<String>(
+    'wallet',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
   );
   static const VerificationMeta _noteMeta = const VerificationMeta('note');
   @override
@@ -8118,6 +8175,7 @@ class $ExpensesTable extends Expenses with TableInfo<$ExpensesTable, Expense> {
     currency,
     category,
     paidFrom,
+    wallet,
     note,
     spentAt,
     createdBy,
@@ -8178,6 +8236,12 @@ class $ExpensesTable extends Expenses with TableInfo<$ExpensesTable, Expense> {
       context.handle(
         _paidFromMeta,
         paidFrom.isAcceptableOrUnknown(data['paid_from']!, _paidFromMeta),
+      );
+    }
+    if (data.containsKey('wallet')) {
+      context.handle(
+        _walletMeta,
+        wallet.isAcceptableOrUnknown(data['wallet']!, _walletMeta),
       );
     }
     if (data.containsKey('note')) {
@@ -8266,6 +8330,10 @@ class $ExpensesTable extends Expenses with TableInfo<$ExpensesTable, Expense> {
         DriftSqlType.string,
         data['${effectivePrefix}paid_from'],
       )!,
+      wallet: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}wallet'],
+      ),
       note: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}note'],
@@ -8314,6 +8382,9 @@ class Expense extends DataClass implements Insertable<Expense> {
   final String currency;
   final String category;
   final String paidFrom;
+
+  /// The store wallet an `ewallet` expense was paid from: gcash | maya | other (schema v12, P8-15); null = not named.
+  final String? wallet;
   final String? note;
 
   /// UTC ISO-8601, normalised (the same format as `sales.sold_at`), so text comparison orders correctly.
@@ -8331,6 +8402,7 @@ class Expense extends DataClass implements Insertable<Expense> {
     required this.currency,
     required this.category,
     required this.paidFrom,
+    this.wallet,
     this.note,
     required this.spentAt,
     this.createdBy,
@@ -8351,6 +8423,9 @@ class Expense extends DataClass implements Insertable<Expense> {
     map['currency'] = Variable<String>(currency);
     map['category'] = Variable<String>(category);
     map['paid_from'] = Variable<String>(paidFrom);
+    if (!nullToAbsent || wallet != null) {
+      map['wallet'] = Variable<String>(wallet);
+    }
     if (!nullToAbsent || note != null) {
       map['note'] = Variable<String>(note);
     }
@@ -8386,6 +8461,9 @@ class Expense extends DataClass implements Insertable<Expense> {
       currency: Value(currency),
       category: Value(category),
       paidFrom: Value(paidFrom),
+      wallet: wallet == null && nullToAbsent
+          ? const Value.absent()
+          : Value(wallet),
       note: note == null && nullToAbsent ? const Value.absent() : Value(note),
       spentAt: Value(spentAt),
       createdBy: createdBy == null && nullToAbsent
@@ -8421,6 +8499,7 @@ class Expense extends DataClass implements Insertable<Expense> {
       currency: serializer.fromJson<String>(json['currency']),
       category: serializer.fromJson<String>(json['category']),
       paidFrom: serializer.fromJson<String>(json['paidFrom']),
+      wallet: serializer.fromJson<String?>(json['wallet']),
       note: serializer.fromJson<String?>(json['note']),
       spentAt: serializer.fromJson<String>(json['spentAt']),
       createdBy: serializer.fromJson<String?>(json['createdBy']),
@@ -8441,6 +8520,7 @@ class Expense extends DataClass implements Insertable<Expense> {
       'currency': serializer.toJson<String>(currency),
       'category': serializer.toJson<String>(category),
       'paidFrom': serializer.toJson<String>(paidFrom),
+      'wallet': serializer.toJson<String?>(wallet),
       'note': serializer.toJson<String?>(note),
       'spentAt': serializer.toJson<String>(spentAt),
       'createdBy': serializer.toJson<String?>(createdBy),
@@ -8459,6 +8539,7 @@ class Expense extends DataClass implements Insertable<Expense> {
     String? currency,
     String? category,
     String? paidFrom,
+    Value<String?> wallet = const Value.absent(),
     Value<String?> note = const Value.absent(),
     String? spentAt,
     Value<String?> createdBy = const Value.absent(),
@@ -8474,6 +8555,7 @@ class Expense extends DataClass implements Insertable<Expense> {
     currency: currency ?? this.currency,
     category: category ?? this.category,
     paidFrom: paidFrom ?? this.paidFrom,
+    wallet: wallet.present ? wallet.value : this.wallet,
     note: note.present ? note.value : this.note,
     spentAt: spentAt ?? this.spentAt,
     createdBy: createdBy.present ? createdBy.value : this.createdBy,
@@ -8495,6 +8577,7 @@ class Expense extends DataClass implements Insertable<Expense> {
       currency: data.currency.present ? data.currency.value : this.currency,
       category: data.category.present ? data.category.value : this.category,
       paidFrom: data.paidFrom.present ? data.paidFrom.value : this.paidFrom,
+      wallet: data.wallet.present ? data.wallet.value : this.wallet,
       note: data.note.present ? data.note.value : this.note,
       spentAt: data.spentAt.present ? data.spentAt.value : this.spentAt,
       createdBy: data.createdBy.present ? data.createdBy.value : this.createdBy,
@@ -8521,6 +8604,7 @@ class Expense extends DataClass implements Insertable<Expense> {
           ..write('currency: $currency, ')
           ..write('category: $category, ')
           ..write('paidFrom: $paidFrom, ')
+          ..write('wallet: $wallet, ')
           ..write('note: $note, ')
           ..write('spentAt: $spentAt, ')
           ..write('createdBy: $createdBy, ')
@@ -8541,6 +8625,7 @@ class Expense extends DataClass implements Insertable<Expense> {
     currency,
     category,
     paidFrom,
+    wallet,
     note,
     spentAt,
     createdBy,
@@ -8560,6 +8645,7 @@ class Expense extends DataClass implements Insertable<Expense> {
           other.currency == this.currency &&
           other.category == this.category &&
           other.paidFrom == this.paidFrom &&
+          other.wallet == this.wallet &&
           other.note == this.note &&
           other.spentAt == this.spentAt &&
           other.createdBy == this.createdBy &&
@@ -8577,6 +8663,7 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
   final Value<String> currency;
   final Value<String> category;
   final Value<String> paidFrom;
+  final Value<String?> wallet;
   final Value<String?> note;
   final Value<String> spentAt;
   final Value<String?> createdBy;
@@ -8593,6 +8680,7 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
     this.currency = const Value.absent(),
     this.category = const Value.absent(),
     this.paidFrom = const Value.absent(),
+    this.wallet = const Value.absent(),
     this.note = const Value.absent(),
     this.spentAt = const Value.absent(),
     this.createdBy = const Value.absent(),
@@ -8610,6 +8698,7 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
     required String currency,
     required String category,
     this.paidFrom = const Value.absent(),
+    this.wallet = const Value.absent(),
     this.note = const Value.absent(),
     required String spentAt,
     this.createdBy = const Value.absent(),
@@ -8631,6 +8720,7 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
     Expression<String>? currency,
     Expression<String>? category,
     Expression<String>? paidFrom,
+    Expression<String>? wallet,
     Expression<String>? note,
     Expression<String>? spentAt,
     Expression<String>? createdBy,
@@ -8648,6 +8738,7 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
       if (currency != null) 'currency': currency,
       if (category != null) 'category': category,
       if (paidFrom != null) 'paid_from': paidFrom,
+      if (wallet != null) 'wallet': wallet,
       if (note != null) 'note': note,
       if (spentAt != null) 'spent_at': spentAt,
       if (createdBy != null) 'created_by': createdBy,
@@ -8667,6 +8758,7 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
     Value<String>? currency,
     Value<String>? category,
     Value<String>? paidFrom,
+    Value<String?>? wallet,
     Value<String?>? note,
     Value<String>? spentAt,
     Value<String?>? createdBy,
@@ -8684,6 +8776,7 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
       currency: currency ?? this.currency,
       category: category ?? this.category,
       paidFrom: paidFrom ?? this.paidFrom,
+      wallet: wallet ?? this.wallet,
       note: note ?? this.note,
       spentAt: spentAt ?? this.spentAt,
       createdBy: createdBy ?? this.createdBy,
@@ -8716,6 +8809,9 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
     }
     if (paidFrom.present) {
       map['paid_from'] = Variable<String>(paidFrom.value);
+    }
+    if (wallet.present) {
+      map['wallet'] = Variable<String>(wallet.value);
     }
     if (note.present) {
       map['note'] = Variable<String>(note.value);
@@ -8756,6 +8852,7 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
           ..write('currency: $currency, ')
           ..write('category: $category, ')
           ..write('paidFrom: $paidFrom, ')
+          ..write('wallet: $wallet, ')
           ..write('note: $note, ')
           ..write('spentAt: $spentAt, ')
           ..write('createdBy: $createdBy, ')
@@ -16583,6 +16680,7 @@ typedef $$SalePaymentsTableCreateCompanionBuilder =
       required int amount,
       Value<int?> tendered,
       Value<String?> reference,
+      Value<String?> wallet,
     });
 typedef $$SalePaymentsTableUpdateCompanionBuilder =
     SalePaymentsCompanion Function({
@@ -16592,6 +16690,7 @@ typedef $$SalePaymentsTableUpdateCompanionBuilder =
       Value<int> amount,
       Value<int?> tendered,
       Value<String?> reference,
+      Value<String?> wallet,
     });
 
 class $$SalePaymentsTableFilterComposer
@@ -16630,6 +16729,11 @@ class $$SalePaymentsTableFilterComposer
 
   ColumnFilters<String> get reference => $composableBuilder(
     column: $table.reference,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get wallet => $composableBuilder(
+    column: $table.wallet,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -16672,6 +16776,11 @@ class $$SalePaymentsTableOrderingComposer
     column: $table.reference,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get wallet => $composableBuilder(
+    column: $table.wallet,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$SalePaymentsTableAnnotationComposer
@@ -16700,6 +16809,9 @@ class $$SalePaymentsTableAnnotationComposer
 
   GeneratedColumn<String> get reference =>
       $composableBuilder(column: $table.reference, builder: (column) => column);
+
+  GeneratedColumn<String> get wallet =>
+      $composableBuilder(column: $table.wallet, builder: (column) => column);
 }
 
 class $$SalePaymentsTableTableManager
@@ -16739,6 +16851,7 @@ class $$SalePaymentsTableTableManager
                 Value<int> amount = const Value.absent(),
                 Value<int?> tendered = const Value.absent(),
                 Value<String?> reference = const Value.absent(),
+                Value<String?> wallet = const Value.absent(),
               }) => SalePaymentsCompanion(
                 id: id,
                 saleId: saleId,
@@ -16746,6 +16859,7 @@ class $$SalePaymentsTableTableManager
                 amount: amount,
                 tendered: tendered,
                 reference: reference,
+                wallet: wallet,
               ),
           createCompanionCallback:
               ({
@@ -16755,6 +16869,7 @@ class $$SalePaymentsTableTableManager
                 required int amount,
                 Value<int?> tendered = const Value.absent(),
                 Value<String?> reference = const Value.absent(),
+                Value<String?> wallet = const Value.absent(),
               }) => SalePaymentsCompanion.insert(
                 id: id,
                 saleId: saleId,
@@ -16762,6 +16877,7 @@ class $$SalePaymentsTableTableManager
                 amount: amount,
                 tendered: tendered,
                 reference: reference,
+                wallet: wallet,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
@@ -16796,6 +16912,7 @@ typedef $$ExpensesTableCreateCompanionBuilder =
       required String currency,
       required String category,
       Value<String> paidFrom,
+      Value<String?> wallet,
       Value<String?> note,
       required String spentAt,
       Value<String?> createdBy,
@@ -16814,6 +16931,7 @@ typedef $$ExpensesTableUpdateCompanionBuilder =
       Value<String> currency,
       Value<String> category,
       Value<String> paidFrom,
+      Value<String?> wallet,
       Value<String?> note,
       Value<String> spentAt,
       Value<String?> createdBy,
@@ -16861,6 +16979,11 @@ class $$ExpensesTableFilterComposer
 
   ColumnFilters<String> get paidFrom => $composableBuilder(
     column: $table.paidFrom,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get wallet => $composableBuilder(
+    column: $table.wallet,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -16944,6 +17067,11 @@ class $$ExpensesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get wallet => $composableBuilder(
+    column: $table.wallet,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get note => $composableBuilder(
     column: $table.note,
     builder: (column) => ColumnOrderings(column),
@@ -17014,6 +17142,9 @@ class $$ExpensesTableAnnotationComposer
   GeneratedColumn<String> get paidFrom =>
       $composableBuilder(column: $table.paidFrom, builder: (column) => column);
 
+  GeneratedColumn<String> get wallet =>
+      $composableBuilder(column: $table.wallet, builder: (column) => column);
+
   GeneratedColumn<String> get note =>
       $composableBuilder(column: $table.note, builder: (column) => column);
 
@@ -17079,6 +17210,7 @@ class $$ExpensesTableTableManager
                 Value<String> currency = const Value.absent(),
                 Value<String> category = const Value.absent(),
                 Value<String> paidFrom = const Value.absent(),
+                Value<String?> wallet = const Value.absent(),
                 Value<String?> note = const Value.absent(),
                 Value<String> spentAt = const Value.absent(),
                 Value<String?> createdBy = const Value.absent(),
@@ -17095,6 +17227,7 @@ class $$ExpensesTableTableManager
                 currency: currency,
                 category: category,
                 paidFrom: paidFrom,
+                wallet: wallet,
                 note: note,
                 spentAt: spentAt,
                 createdBy: createdBy,
@@ -17113,6 +17246,7 @@ class $$ExpensesTableTableManager
                 required String currency,
                 required String category,
                 Value<String> paidFrom = const Value.absent(),
+                Value<String?> wallet = const Value.absent(),
                 Value<String?> note = const Value.absent(),
                 required String spentAt,
                 Value<String?> createdBy = const Value.absent(),
@@ -17129,6 +17263,7 @@ class $$ExpensesTableTableManager
                 currency: currency,
                 category: category,
                 paidFrom: paidFrom,
+                wallet: wallet,
                 note: note,
                 spentAt: spentAt,
                 createdBy: createdBy,

@@ -35,7 +35,7 @@ Selling and pinning on Sell, load entries and float moves, tingi (product form a
 2. ~~Filipino labels are truncated~~ on the Load & e-wallet action buttons ("Magbenta n...", "Galawin an..."): the four buttons now allow two lines (not re-checked on the device).
 3. Today: the Expenses and Close-the-day cards are now the same height (fixed); the screen is still busy and is the main target of the bottom-tab step.
 4. **Day close has no opening cash (sukli).** With only an expense and no sales, expected cash is negative (-125.50). Add an optional starting cash to the day close.
-5. **E-wallet sale payments and e-wallet expenses do not move the wallet float** (no wallet is named). The owner corrects with a float adjustment.
+5. **E-wallet sale payments and e-wallet expenses do not move the wallet float** (no wallet is named). The owner corrects with a float adjustment. **Addressed on the data side by P8-15** (`P8-15-ewallet-float-payments.md`): payments and expenses can name the wallet and then move its float; the Pay screen and the expense sheet still need the wallet chooser.
 6. Fixed during this phase: garbled characters in the utang ledger (a double-encoded middle dot and minus sign) and a Settings change that broke two tests.
 
 ## Risks and open items

@@ -38,7 +38,7 @@ class SaleLine {
 }
 
 class PaymentDraft {
-  const PaymentDraft(this.method, this.amount, {this.tendered, this.reference});
+  const PaymentDraft(this.method, this.amount, {this.tendered, this.reference, this.wallet});
 
   /// cash | utang | ewallet
   final String method;
@@ -49,7 +49,14 @@ class PaymentDraft {
   /// Cash handed over (cash only); change = tendered - amount.
   final int? tendered;
   final String? reference;
+
+  /// The store wallet an `ewallet` payment went into, one of [paymentWallets] (P8-15): the wallet's float grows by
+  /// [amount]. Null = not named (accepted as before, moves no float). Only allowed on an `ewallet` payment.
+  final String? wallet;
 }
+
+/// The wallets a sale payment or an expense can name (P8-15): the e-wallets, never the prepaid-load float (`load`).
+const paymentWallets = ['gcash', 'maya', 'other'];
 
 class SaleDraft {
   const SaleDraft({
@@ -111,11 +118,14 @@ class SaleItemView {
 }
 
 class SalePaymentView {
-  const SalePaymentView(this.method, this.amount, this.tendered, this.reference);
+  const SalePaymentView(this.method, this.amount, this.tendered, this.reference, {this.wallet});
   final String method;
   final int amount;
   final int? tendered;
   final String? reference;
+
+  /// gcash | maya | other for an e-wallet payment that named its wallet (P8-15); else null.
+  final String? wallet;
   int get change => tendered == null ? 0 : tendered! - amount;
 }
 
@@ -283,6 +293,7 @@ class ExpenseView {
     required this.amount,
     required this.category,
     required this.paidFrom,
+    this.wallet,
     this.note,
     required this.spentAt,
     this.voidedAt,
@@ -298,6 +309,9 @@ class ExpenseView {
   final int amount;
   final String category;
   final String paidFrom; // cash | ewallet
+
+  /// gcash | maya | other when an e-wallet expense named its wallet (P8-15); else null.
+  final String? wallet;
   final String? note;
   final DateTime spentAt;
   final DateTime? voidedAt;
@@ -586,9 +600,13 @@ abstract class SalesStore {
   set locationId(String? id);
 
   /// Commits a sale in one transaction: sale, lines, payments, stock effects, utang entry and the outbox op.
+  /// P8-15: an `ewallet` payment with a [PaymentDraft.wallet] (one of [paymentWallets]; a wallet on another method or an
+  /// unknown one is an ArgumentError) adds its amount to that wallet's float at once, and the op's payment carries
+  /// `wallet`. Payments with no wallet behave exactly as before.
   Future<SaleReceipt> commitSale(SaleDraft draft, {required String opId});
 
-  /// Cancels a completed sale: stock goes back, an utang charge is reversed. Queued as one op.
+  /// Cancels a completed sale: stock goes back, an utang charge is reversed, the e-wallet payments that named a wallet
+  /// leave its float. Queued as one op.
   Future<void> voidSale(String saleId, {required String opId, String? reason});
 
   Future<void> saveCustomer({required String id, required String name, String? phone, required String opId});
@@ -679,11 +697,15 @@ abstract class SalesStore {
 
   /// Records money spent. [amount] in centavos (> 0); [category] one of [expenseCategories]; [paidFrom] one of
   /// [expensePaidFrom]. Shown at once; queued as one `record_expense` op.
+  /// P8-15: [wallet] (one of [paymentWallets], only with paidFrom `ewallet`, else ArgumentError) names the wallet the
+  /// money left: its float drops by [amount] at once (see [watchWalletFloat]); a void puts it back. Null = not named
+  /// (as before: no float movement, no `wallet` in the op).
   Future<void> recordExpense({
     required String id,
     required int amount,
     required String category,
     String paidFrom = 'cash',
+    String? wallet,
     String? note,
     DateTime? spentAt,
     String? approvalId,
@@ -772,6 +794,8 @@ abstract class SalesStore {
   /// Float per wallet: the last pulled server balance + the effects of this device's ops it does not include yet
   /// (unsent, refused-but-not-discarded, or applied after that balance was read). Wallets in [serviceWallets] order;
   /// only wallets that have a balance or a local effect. Filtered to [locationId] when it is set.
+  /// P8-15: the local effects also come from sales (e-wallet payments with a wallet: +amount; their cancel: -amount) and
+  /// expenses (e-wallet with a wallet: -amount; their void: +amount), under the same drop rule.
   Stream<List<WalletFloatView>> watchWalletFloat();
 
   /// Puts a parked (failed) record_expense / void_expense / close_day / record_service_txn / void_service_txn op back
