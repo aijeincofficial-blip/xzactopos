@@ -106,6 +106,8 @@
   },
   "openingStockOptional": "How many do you have now? (optional)",
   "openingStockHelp": "You can fix this later.",
+  "tabToday": "Today",
+  "tabPos": "POS",
   "more": "More",
   "unit": "Unit",
   "unitHelp": "pc, pack, kg, bottle…",

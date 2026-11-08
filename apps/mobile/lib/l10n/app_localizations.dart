@@ -440,6 +440,18 @@ abstract class AppLocalizations {
   /// **'You can fix this later.'**
   String get openingStockHelp;
 
+  /// No description provided for @tabToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get tabToday;
+
+  /// No description provided for @tabPos.
+  ///
+  /// In en, this message translates to:
+  /// **'POS'**
+  String get tabPos;
+
   /// No description provided for @more.
   ///
   /// In en, this message translates to:

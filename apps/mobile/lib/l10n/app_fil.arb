@@ -106,6 +106,8 @@
   },
   "openingStockOptional": "Ilan ang meron ka ngayon? (kung gusto)",
   "openingStockHelp": "Puwede mo itong ayusin mamaya.",
+  "tabToday": "Ngayon",
+  "tabPos": "POS",
   "more": "Iba pa",
   "unit": "Yunit",
   "unitHelp": "piraso, pakete, kilo, bote…",

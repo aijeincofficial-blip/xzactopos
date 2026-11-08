@@ -223,6 +223,12 @@ class AppLocalizationsFil extends AppLocalizations {
   String get openingStockHelp => 'Puwede mo itong ayusin mamaya.';
 
   @override
+  String get tabToday => 'Ngayon';
+
+  @override
+  String get tabPos => 'POS';
+
+  @override
   String get more => 'Iba pa';
 
   @override

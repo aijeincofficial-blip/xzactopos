@@ -222,6 +222,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get openingStockHelp => 'You can fix this later.';
 
   @override
+  String get tabToday => 'Today';
+
+  @override
+  String get tabPos => 'POS';
+
+  @override
   String get more => 'More';
 
   @override
