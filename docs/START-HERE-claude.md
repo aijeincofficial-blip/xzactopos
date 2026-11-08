@@ -70,9 +70,14 @@ During this session, Antigravity executed the owner's design overhaul, color har
   * **Payment Successful Pill Banner**: Pastel mint container (`#E8F7EE`) with green checkmark circle and large bold amount.
   * **Itemized Products with Stock Counts**: Each row displays a category-themed ceramic badge, product name, remaining stock e.g. `(19 left)`, quantity, and line total.
   * **Dashed Divider (`_DashedDivider`)**: Crisp horizontal dashed line dividing item lines from the financial breakdown.
-  * **Financial Breakdown**: Subtotal, Sales Today (`TodayTotals`), Kabuuan (Total), Paid via Cash/E-Wallet, and Change.
+  * **Financial Breakdown**: Subtotal, Sales Today (`TodayTotals`), Total, Paid via Cash/E-Wallet, and Change.
   * **Dual Pill Action Buttons**: Side-by-side stadium pill buttons (`Print Receipt` in solid ocean blue `#1E6FF2`, and `New Transaction` / `Share` in crisp white with border).
   * Preserved full compatibility with `ReceiptPrinter`, cancellation dialogs, and automated test keys.
+
+### E. English as Primary Default Language (`apps/mobile/lib/app.dart`)
+* Responded to owner's request (*"MAKE THE ENGLISH PRIMARY LAGUAGE DEFAULT"*):
+  * Updated `App.initialLocale` in `lib/app.dart` to `'en'`.
+  * The entire application now launches and defaults to English (`Today`, `Stock`, `POS`, `Utang`, `More`, `Sell`, `Pay`, `Print Receipt`, `Share`, etc.) while keeping Filipino fully selectable in Settings.
 
 ---
 

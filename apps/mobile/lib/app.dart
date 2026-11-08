@@ -13,7 +13,7 @@ import 'screens/store_name_screen.dart';
 import 'sync/store_session.dart';
 
 class App extends StatefulWidget {
-  const App({super.key, required this.backend, required this.openStore, this.initialLocale = 'fil'});
+  const App({super.key, required this.backend, required this.openStore, this.initialLocale = 'en'});
   final Backend backend;
 
   /// Opens the device database; called once per signed-in session (again with safeMode if that fails).
