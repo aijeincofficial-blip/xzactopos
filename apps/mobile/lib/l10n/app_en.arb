@@ -913,5 +913,19 @@
         "type": "String"
       }
     }
+  },
+  "storeSwitchAsk": "Switch store?",
+  "storeSwitchKeep": "Switch and keep the sale",
+  "storeSwitchClear": "Switch and clear the sale",
+  "storeSwitchBody": "A sale is in progress ({count, plural, =1{{count} item} other{{count} items}}). If you keep it, it will be paid at {store} and the stock comes off there.",
+  "@storeSwitchBody": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "store": {
+        "type": "String"
+      }
+    }
   }
 }

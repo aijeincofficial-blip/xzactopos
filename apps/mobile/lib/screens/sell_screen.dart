@@ -47,6 +47,7 @@ class _SellScreenState extends State<SellScreen> {
     _storeSub?.cancel();
     _search.dispose();
     _searchFocus.dispose();
+    if (identical(Cart.current, _cart)) Cart.current = null;
     _cart?.dispose();
     super.dispose();
   }
@@ -57,6 +58,7 @@ class _SellScreenState extends State<SellScreen> {
     if (_cart == null) {
       final store = CatalogScope.of(context).store;
       _cart = Cart(store)..restore();
+      Cart.current = _cart;
       _quick = store.quickItems();
       store.pinnedVariants().then((p) {
         if (mounted) setState(() => _pinned = p);

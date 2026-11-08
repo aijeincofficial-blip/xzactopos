@@ -1537,4 +1537,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String storeSwitched(String name) {
     return 'Now selling at $name';
   }
+
+  @override
+  String get storeSwitchAsk => 'Switch store?';
+
+  @override
+  String get storeSwitchKeep => 'Switch and keep the sale';
+
+  @override
+  String get storeSwitchClear => 'Switch and clear the sale';
+
+  @override
+  String storeSwitchBody(int count, String store) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items',
+      one: '$count item',
+    );
+    return 'A sale is in progress ($_temp0). If you keep it, it will be paid at $store and the stock comes off there.';
+  }
 }

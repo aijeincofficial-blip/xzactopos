@@ -913,5 +913,19 @@
         "type": "String"
       }
     }
+  },
+  "storeSwitchAsk": "Palitan ang tindahan?",
+  "storeSwitchKeep": "Palitan at panatilihin ang benta",
+  "storeSwitchClear": "Palitan at burahin ang benta",
+  "storeSwitchBody": "May benta na isinasagawa ({count, plural, other{{count} item}}). Kapag itinuloy, babayaran ito sa {store} at doon ibabawas ang stock.",
+  "@storeSwitchBody": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "store": {
+        "type": "String"
+      }
+    }
   }
 }

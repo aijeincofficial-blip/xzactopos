@@ -1541,4 +1541,23 @@ class AppLocalizationsFil extends AppLocalizations {
   String storeSwitched(String name) {
     return 'Nagbebenta na sa $name';
   }
+
+  @override
+  String get storeSwitchAsk => 'Palitan ang tindahan?';
+
+  @override
+  String get storeSwitchKeep => 'Palitan at panatilihin ang benta';
+
+  @override
+  String get storeSwitchClear => 'Palitan at burahin ang benta';
+
+  @override
+  String storeSwitchBody(int count, String store) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count item',
+    );
+    return 'May benta na isinasagawa ($_temp0). Kapag itinuloy, babayaran ito sa $store at doon ibabawas ang stock.';
+  }
 }

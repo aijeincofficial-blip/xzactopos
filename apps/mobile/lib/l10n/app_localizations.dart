@@ -2575,6 +2575,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Now selling at {name}'**
   String storeSwitched(String name);
+
+  /// No description provided for @storeSwitchAsk.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch store?'**
+  String get storeSwitchAsk;
+
+  /// No description provided for @storeSwitchKeep.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch and keep the sale'**
+  String get storeSwitchKeep;
+
+  /// No description provided for @storeSwitchClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch and clear the sale'**
+  String get storeSwitchClear;
+
+  /// No description provided for @storeSwitchBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A sale is in progress ({count, plural, =1{{count} item} other{{count} items}}). If you keep it, it will be paid at {store} and the stock comes off there.'**
+  String storeSwitchBody(int count, String store);
 }
 
 class _AppLocalizationsDelegate

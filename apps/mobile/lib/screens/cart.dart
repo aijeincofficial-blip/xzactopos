@@ -27,6 +27,9 @@ class CartLine {
 class Cart extends ChangeNotifier {
   Cart(this.store);
 
+  /// The cart on screen (set by the Sell screen), so other screens (the store picker) can see and clear it.
+  static Cart? current;
+
   final SalesStore store;
   static const _metaKey = 'cart';
   final lines = <CartLine>[];

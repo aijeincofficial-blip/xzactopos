@@ -1,7 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 
 import '../core/theme.dart';
 import '../data/sales_models.dart';
+import 'cart.dart';
 import '../l10n/app_localizations.dart';
 import '../sync/store_session.dart';
 
@@ -31,10 +34,55 @@ Future<void> showStorePicker(BuildContext context, CatalogScope scope, List<Stor
     ),
   );
   if (picked == null || picked.id == active) return;
+  if (!context.mounted) return;
+
+  // a sale in progress: ask first (stock and the receipt follow the store it is paid at)
+  final items = await _itemsInCart(scope);
+  if (!context.mounted) return;
+  var clear = false;
+  if (items > 0) {
+    final choice = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(t.storeSwitchAsk),
+        content: Text(t.storeSwitchBody(items, picked.name)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(t.cancel)),
+          TextButton(key: const Key('switch-clear'), onPressed: () => Navigator.pop(ctx, 'clear'), child: Text(t.storeSwitchClear)),
+          FilledButton(key: const Key('switch-keep'), onPressed: () => Navigator.pop(ctx, 'keep'), child: Text(t.storeSwitchKeep)),
+        ],
+      ),
+    );
+    if (choice == null) return;
+    clear = choice == 'clear';
+  }
+  if (clear) await _clearCart(scope);
   await scope.store.setActiveStore(picked.id);
   messenger
     ..hideCurrentSnackBar()
     ..showSnackBar(SnackBar(content: Text(t.storeSwitched(picked.name))));
+}
+
+/// Lines in the sale being rung up: the live cart if the Sell screen is up, else the one saved on the device.
+Future<int> _itemsInCart(CatalogScope scope) async {
+  final live = Cart.current;
+  if (live != null) return live.itemCount;
+  final raw = await scope.store.meta('cart');
+  if (raw == null) return 0;
+  try {
+    return (jsonDecode(raw) as List).length;
+  } catch (_) {
+    return 0;
+  }
+}
+
+Future<void> _clearCart(CatalogScope scope) async {
+  final live = Cart.current;
+  if (live != null) {
+    live.clear();
+  } else {
+    await scope.store.setMeta('cart', null);
+  }
 }
 
 /// The current store's name as a small chip; tapping it switches store. Shows nothing for a one-store user.

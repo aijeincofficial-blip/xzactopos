@@ -150,4 +150,52 @@ void main() {
     expect((pay['amount'], pay['method'], pay['location_id']), (2000, 'ewallet', _a));
     await leave(tester);
   });
+
+  testWidgets('with a sale in progress the switch asks first: cancel, keep the sale, or clear it', (tester) async {
+    final store = await openStores(tester, stores: _two);
+    await tester.pumpAndSettle(); // the pulled product reaches the Sell tiles
+    await tester.tap(find.byKey(const Key('tile-$_p1')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('cart-line-0')), findsOneWidget);
+
+    Future<void> pickB() async {
+      await tester.tap(find.byKey(const Key('store-chip')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('store-$_b')));
+      await tester.pumpAndSettle();
+    }
+
+    // cancel: nothing changes
+    await pickB();
+    expect(find.text('Switch store?'), findsOneWidget);
+    expect(find.textContaining('1 item'), findsWidgets);
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    expect(store.activeLocationId, _a);
+    expect(find.byKey(const Key('cart-line-0')), findsOneWidget);
+
+    // keep: the store changes, the sale stays
+    await pickB();
+    await tester.tap(find.byKey(const Key('switch-keep')));
+    await tester.pumpAndSettle();
+    expect(store.activeLocationId, _b);
+    expect(find.byKey(const Key('cart-line-0')), findsOneWidget);
+
+    // clear: back to the first store with the sale thrown away
+    await tester.tap(find.byKey(const Key('store-chip')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('store-$_a')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('switch-clear')));
+    await tester.pumpAndSettle();
+    expect(store.activeLocationId, _a);
+    expect(find.byKey(const Key('cart-line-0')), findsNothing);
+    expect(find.text('Tap an item to add it'), findsOneWidget);
+
+    // an empty cart switches without a question
+    await pickB();
+    expect(find.text('Switch store?'), findsNothing);
+    expect(store.activeLocationId, _b);
+    await leave(tester);
+  });
 }
