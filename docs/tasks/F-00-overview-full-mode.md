@@ -2,6 +2,14 @@
 
 Solo is accepted (Phases 0 to 8 plus the opening cash, keypad, wallet float, import/export and tab work; see `docs/tasks/P8-13-acceptance.md`). This overview prepares Full mode. It does not start it. Source plan: `docs/plan.md` sections 4, 5, 7, 8, 12 and 15; triaged gaps: `docs/gaps-review.md` section D. Cards below use the `F-nn` prefix; split them into `F-nn-m` files when one starts.
 
+## Direction change (owner, 2026-11-08): Full mode is React-first
+- **Solo stays as it is** (Flutter, accepted). No new Solo features are needed; only fixes.
+- **Full mode is built mainly in the React back-office (`apps/client`)**: setup, upgrade wizard, tenant settings, staff, stores, warehouse, bins, shifts review, reports. The earlier plan to build F-03 (settings) and F-04 (staff) screens in Flutter is **parked**; those cards become React cards and Flutter versions come after Full mode works.
+- **Upgrade path:** a solo tenant upgrades **in place, same tenant**: the owner starts an "Upgrade to Full" wizard in React, which turns on the modules (`set_modules`, `upsert_location`, `complete_setup`). All products, sales, stock and utang stay; nothing is copied. The Solo app only shows a note that the upgrade exists.
+- **Flutter after the upgrade:** still the phone app for selling (owner and cashiers) and, later, warehouse roles. It must be prepared for the change (store picker, server sale numbers and device registration are already done in F-01/F-02; role-based tabs and offline PIN follow).
+- **Decisions recorded:** 3 to 10 stores and 5 to 30 staff (plan on Pro); per-cashier shifts needed before staff go live; supervisor PIN must work offline (F-06 before staff go live); discounts: small threshold for cashiers, above it a supervisor PIN; React admin is kept; warehouse is in the first Full release.
+- **Findings for the wizard:** the solo owner already has the `superadmin` role (`provision_solo_store`), so `set_modules`, `upsert_location` and `complete_setup` (name, timezone, tax mode, locales; base currency locked after setup) can be called as they are. No server change is known to be needed for the wizard itself.
+
 ## What Full mode is (from the recalibration doc)
 Same app, same backend, same data. Solo is the default (one owner, one store, auto-provisioned). Full mode is switched on per tenant through `tenant_modules` and role assignments: more users, more stores, a warehouse. No data migration when a store grows. The role decides which screens a user sees; the database enforces (RPCs check role, location and module). Heavy modules are loaded only when on and are not synced when off.
 

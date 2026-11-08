@@ -8,6 +8,9 @@ Read `CLAUDE.md` (rules) first, then `docs/tasks/F-00-overview-full-mode.md` (pl
 - Next: F-03 tenant settings + mode switch, then F-04 staff, F-05 shifts, F-06 offline PIN, F-07 sales controls, F-08/F-09 warehouse and bins, F-10 reports, F-11 operations.
 - Work lives on branch `claude/phase3-sell-8261d3` (worktree `.claude/worktrees/phase3-sell-8261d3`). Nothing is pushed; `main` is untouched.
 
+## Direction (owner, 2026-11-08)
+Full mode is React-first (`apps/client`). Solo (Flutter) stays as is. A solo tenant upgrades in place (same tenant, no copy) through an "Upgrade to Full" wizard in React. Flutter settings/staff cards (old F-03/F-04) are parked until Full works in React; Flutter is only prepared for the change. Details: "Direction change" in `docs/tasks/F-00-overview-full-mode.md`.
+
 ## Owner-only items (do not do these without the owner)
 - Merge the branch to `main` and push.
 - Create the release keystore (never generate one).
