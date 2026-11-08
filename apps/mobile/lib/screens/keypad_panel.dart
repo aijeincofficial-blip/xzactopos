@@ -64,7 +64,7 @@ class _KeypadPanelState extends State<KeypadPanel> {
             padding: const EdgeInsets.all(4),
             child: OutlinedButton(
               key: Key('key-$k'),
-              style: OutlinedButton.styleFrom(minimumSize: const Size(0, 56), padding: EdgeInsets.zero),
+              style: OutlinedButton.styleFrom(minimumSize: const Size(0, 46), padding: EdgeInsets.zero),
               onPressed: () => _press(k),
               child: child ?? Text(k, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700)),
             ),
@@ -80,7 +80,7 @@ class _KeypadPanelState extends State<KeypadPanel> {
             shown,
             key: const Key('keypad-display'),
             style: TextStyle(
-              fontSize: 40,
+              fontSize: 34,
               fontWeight: FontWeight.w900,
               letterSpacing: -1,
               color: _text.isEmpty ? scheme.outline : scheme.onSurface,

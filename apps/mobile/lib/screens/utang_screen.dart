@@ -54,7 +54,7 @@ class _UtangScreenState extends State<UtangScreen> {
           final overdueCount = all.where((c) => c.overdue(today)).length;
           final byName = _q.isEmpty ? all : all.where((c) => searchKey(c.name).contains(_q)).toList();
           final list = _overdueOnly ? byName.where((c) => c.overdue(today)).toList() : byName;
-          return Column(children: [
+          return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             SummaryCard(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(t.utangTotalOwed),

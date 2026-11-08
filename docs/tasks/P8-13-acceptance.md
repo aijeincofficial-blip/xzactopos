@@ -53,3 +53,22 @@ Not done: the Keypad tab on Sell (planned after load/e-wallet), and a device che
 
 ## Import & export (added after the tabs)
 More > "Import & export" (`DataScreen`, owner/admins). **Export** (CSV through the share sheet): products, sales, utang, stock; the export section was moved out of Settings. **Import**: paste rows copied from a spreadsheet (tabs, commas or semicolons; header optional, English or Filipino column names; order without a header: name, price, barcode, cost, stock). The sheet shows how many rows are ready and which rows have problems; confirming adds them as products with opening stock. Rows with a barcode already in use (or repeated in the paste) are skipped and counted. At most 500 rows per paste. "Copy the column names" gives a header to start a spreadsheet; an exported product list can be pasted straight back in. No file picker (no new dependency); a file import can be added later. 287 Flutter tests pass; not run on the emulator yet.
+
+## Emulator check 2 (2026-11-08, after tabs, import, keypad, opening cash and wallet float)
+Debug build on the Pixel 4 emulator against the freshly reset local Supabase, new account, Filipino UI. Screenshots `docs/p8-acceptance/20_*` to `40_*`. (The build also contained Antigravity's uncommitted logo and branding work.)
+
+**Worked on the device**
+- Sign in, name the store, Sell opens first with the Today strip and the Items / Keypad toggle; bottom tabs Magbenta, Stock, Utang, Ulat, Iba pa.
+- **Import:** pasted 4 rows; the sheet said "3 produkto ang handa" and "Row 4: hindi numero ang presyo"; importing added 3 products with opening stock (Kape 24, Asukal 10, Sardinas 6). They appeared on Sell at once (the live quick-tile refresh) and reached the server.
+- **Keypad:** typed 20, it added "Iba pang item 20.00" to the cart next to a Kape; total 32.50. The cart survived an app relaunch.
+- **Pay with e-wallet:** the "Anong wallet?" chooser (GCash, Maya, Iba pa) showed; chose Maya, finished. The server's `wallet_float` has Maya = 3250, and the phone's Load at e-wallet screen shows "Maya 32.50".
+- Stock showed Kape 23 after the sale; Reports showed 32.50, 100% e-wallet; the day close started at 0.00 expected cash (an e-wallet sale adds no cash) with the new "Panimulang cash (sukli)" field.
+- Load at e-wallet action labels now wrap on two lines and fit.
+
+**Fixed after this run:** the keypad's "Idagdag sa benta" button was hidden behind the cart panel; keys are smaller now, so it is nearly fully visible (with a 2-line cart it can still sit under the cart and the pad scrolls). The Utang total card was shrink-wrapped; it is full width now.
+
+**Findings, not fixed**
+1. The first tap on More > Import & export, about 80 s after signing in, landed back on the Sell tab (same moment as a "Refresh session" log line); repeating it worked. Not reproduced; the Gate ignores repeated "signed in" events, so the cause is unknown. Watch for it.
+2. The empty Sell screen tells a new user to press "Magdagdag" but Sell has no add button (products are added under More > Products or imported). Reword or add a button.
+3. Reports: "Pumasok na cash" is cut off in the three-figure row; the keypad "Other item" has no cost, so it counts as 100% margin in the profit estimate.
+4. Not exercised on the device: expenses and the supervisor PIN flow, tingi, expiry, pay-by dates and statement sharing, CSV sharing, day close save with an earlier day's count, offline then reconnect.
