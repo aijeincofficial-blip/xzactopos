@@ -39,7 +39,7 @@ Selling and pinning on Sell, load entries and float moves, tingi (product form a
 6. Fixed during this phase: garbled characters in the utang ledger (a double-encoded middle dot and minus sign) and a Settings change that broke two tests.
 
 ## Risks and open items
-- The P8-11 migration file was edited after it was applied locally; only that function was re-applied by hand. **Run a clean `supabase db reset` replay once** (needs the owner's OK, it wipes local data).
+- ~~The P8-11 migration file was edited after it was applied locally.~~ RESOLVED 2026-11-08: a clean `supabase db reset` (owner approved) replayed all 23 migrations without errors, and `pnpm check` then passed on the fresh database (pgTAP 2618 in 22 files, Flutter 275). The local demo data and the test account `p813.accept@example.com` were wiped; create a new account in the app to test again.
 - `SupabaseBackend` calls for the new pulls and PIN approval were only tested through fakes and the one expense sync above.
 - Supervisor-only admins need signal once to get a PIN approval; offline approval is a Full-mode item.
 - Refused ops (missing approval) are not written to the audit log; wrong PINs are.
