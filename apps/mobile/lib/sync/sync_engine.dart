@@ -44,6 +44,15 @@ abstract class SyncApi {
   Future<Uint8List> downloadPhoto(String path);
 }
 
+/// Device registration (F-02). Kept apart from [SyncApi] so servers / fakes without it still work: the engine only
+/// registers when its api also implements this. `SupabaseBackend` does.
+abstract class DeviceApi {
+  /// register_device: idempotent; returns the device row `{id, name, platform, user_id, first_seen_at, last_seen_at}`.
+  /// Throws [OpRejected] for a refusal that retrying cannot fix (`id_conflict`, `device_limit`, `invalid_value`); any
+  /// other error is transient.
+  Future<Map<String, dynamic>> registerDevice(String id, {String? name, String? platform});
+}
+
 /// The server refused an op permanently (bad data, duplicate barcode, no permission). Retrying will not help.
 class OpRejected implements Exception {
   const OpRejected(this.hint);
@@ -141,10 +150,45 @@ class SyncEngine {
     return run;
   }
 
+  /// Meta key of the optional device name sent with the registration (set by a Settings screen; null = none).
+  static const deviceNameKey = 'device_name';
+
+  /// The server answered the registration in this session (ok, or refused for good). Null = not yet / failed for now.
+  Map<String, dynamic>? get device => _device;
+  Map<String, dynamic>? _device;
+  bool _deviceSettled = false;
+
+  /// Registers this device with the server (F-02), at most once per engine (= per sign-in session) unless [force] (e.g.
+  /// after the device name changed). Best effort: never throws; offline or a server error = tried again on the next run.
+  /// A permanent refusal (`id_conflict`, `device_limit`) is not retried this session: selling and syncing go on, the
+  /// server just stores those sales without a device. Returns true when the server accepted it.
+  Future<bool> registerDevice({bool force = false}) async {
+    final api = this.api;
+    if (api is! DeviceApi) return false;
+    if (_deviceSettled && !force) return _device != null;
+    try {
+      final id = await store.deviceId();
+      final name = await store.meta(deviceNameKey);
+      _device = await (api as DeviceApi).registerDevice(id, name: name, platform: devicePlatform);
+      _deviceSettled = true;
+      return true;
+    } on OpRejected catch (e) {
+      debugPrint('SyncEngine: device registration refused (${e.hint})');
+      _deviceSettled = true;
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Short platform name sent with the registration.
+  static String get devicePlatform => kIsWeb ? 'web' : defaultTargetPlatform.name;
+
   Future<void> _run() async {
     _timer?.cancel();
     status.value = SyncStatus(phase: SyncPhase.syncing, lastSyncedAt: status.value.lastSyncedAt);
     try {
+      await registerDevice();
       await _push();
       await _pull();
       _backoff = null;
@@ -187,7 +231,8 @@ class SyncEngine {
       if (r == null) return settled; // the server stopped before this op: it stays queued
       switch (r['status']) {
         case 'ok':
-          await store.posOpApplied(op.opId, (r['result'] as Map?)?['applied_at'] as String?);
+          final result = (r['result'] as Map?)?.cast<String, dynamic>();
+          await store.posOpApplied(op.opId, result?['applied_at'] as String?, result: result);
           await store.opDone(op.opId);
           settled++;
         case 'rejected':

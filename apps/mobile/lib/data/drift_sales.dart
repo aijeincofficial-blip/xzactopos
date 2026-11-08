@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:drift/drift.dart';
+import 'package:uuid/uuid.dart';
 
 import '../core/search.dart';
 import 'db.dart';
@@ -130,6 +131,17 @@ mixin DriftSales implements SalesStore {
     }
   }
 
+  static const _deviceKey = 'device_id';
+
+  @override
+  Future<String> deviceId() => db.transaction(() async {
+        final saved = await meta(_deviceKey);
+        if (saved != null) return saved;
+        final id = const Uuid().v7();
+        await setMeta(_deviceKey, id);
+        return id;
+      });
+
   // ---------------------------------------------------------------------------
   // Selling
   // ---------------------------------------------------------------------------
@@ -165,6 +177,8 @@ mixin DriftSales implements SalesStore {
 
     return db.transaction(() async {
       final loc = await activeStoreNow();
+      // F-02: the provisional number stays per device; the server gives the store's number when the sale reaches it
+      final dev = await deviceId();
       final localNo = await _nextReceiptNo(d.soldAt.toLocal());
       final soldAt = _iso(d.soldAt);
       final tax = d.lines.fold<int>(0, (a, l) => a + l.lineTax);
@@ -183,6 +197,7 @@ mixin DriftSales implements SalesStore {
             total: d.total,
             customerId: Value(d.customerId),
             soldAt: soldAt,
+            deviceId: Value(dev),
           ));
       for (final l in d.lines) {
         await db.into(db.saleItems).insert(SaleItemsCompanion.insert(
@@ -232,6 +247,7 @@ mixin DriftSales implements SalesStore {
         'id': d.id,
         'local_no': localNo,
         'location_id': ?loc,
+        'device_id': dev,
         'sold_at': soldAt,
         'subtotal': d.subtotal,
         'discount': d.discount,
@@ -515,10 +531,11 @@ mixin DriftSales implements SalesStore {
         soldAt: DateTime.parse(r.read<String>('sold_at')).toLocal(),
         customerName: r.readNullable<String>('customer_name'),
         pending: r.read<bool>('pending'),
+        saleNo: r.readNullable<String>('sale_no'),
       );
 
   static const _saleSql = '''
-    select s.id, s.local_no, s.status, s.total, s.sold_at,
+    select s.id, s.local_no, s.sale_no, s.status, s.total, s.sold_at,
            (select c.name from customers c where c.id = s.customer_id) as customer_name,
            exists (select 1 from outbox o where o.entity_id = s.id) as pending
     from sales s
@@ -1898,7 +1915,13 @@ mixin DriftSales implements SalesStore {
   // ---------------------------------------------------------------------------
 
   @override
-  Future<void> posOpApplied(String opId, String? appliedAt) async {
+  Future<void> posOpApplied(String opId, String? appliedAt, {Map<String, dynamic>? result}) async {
+    // F-02: a confirmed sale learns its server number at once (the sales pull brings it too; whichever comes first)
+    final saleNo = result?['sale_no'];
+    final saleId = result?['sale_id'];
+    if (saleNo is String && saleNo.isNotEmpty && saleId is String) {
+      await (db.update(db.sales)..where((s) => s.id.equals(saleId))).write(SalesCompanion(saleNo: Value(saleNo)));
+    }
     final at = appliedAt ?? _iso(DateTime.now());
     await (db.update(db.localMovements)..where((m) => m.opId.equals(opId)))
         .write(LocalMovementsCompanion(confirmedAfter: Value(at)));
@@ -1917,11 +1940,23 @@ mixin DriftSales implements SalesStore {
       final unsent = (await db.select(db.outbox).get()).map((o) => o.entityId).toSet();
       for (final r in rows) {
         final id = r['id'] as String;
-        if (unsent.contains(id)) continue; // a local change (e.g. a cancel) is still on its way: keep ours
+        // F-02: absent / null from a server before F-02 or for an old row: never erase a number already stored
+        final saleNo = r['sale_no'] is String ? Value(r['sale_no'] as String) : const Value<String?>.absent();
+        final deviceId = r['device_id'] is String ? Value(r['device_id'] as String) : const Value<String?>.absent();
+        if (unsent.contains(id)) {
+          // a local change (e.g. a cancel) is still on its way: keep ours, but take the server's number if we lack it
+          if (saleNo.present) {
+            await (db.update(db.sales)..where((s) => s.id.equals(id) & s.saleNo.isNull()))
+                .write(SalesCompanion(saleNo: saleNo));
+          }
+          continue;
+        }
         await db.into(db.sales).insertOnConflictUpdate(SalesCompanion.insert(
               id: id,
               // F-01: the server names the store; an older server does not (then: the user's only store, if one)
               locationId: Value(r['location_id'] as String? ?? _sole),
+              saleNo: saleNo,
+              deviceId: deviceId,
               localNo: r['local_no'] as String,
               status: Value(r['status'] as String),
               subtotal: (r['subtotal'] as num).toInt(),

@@ -6660,6 +6660,26 @@ class $SalesTable extends Sales with TableInfo<$SalesTable, Sale> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _saleNoMeta = const VerificationMeta('saleNo');
+  @override
+  late final GeneratedColumn<String> saleNo = GeneratedColumn<String>(
+    'sale_no',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _deviceIdMeta = const VerificationMeta(
+    'deviceId',
+  );
+  @override
+  late final GeneratedColumn<String> deviceId = GeneratedColumn<String>(
+    'device_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -6674,6 +6694,8 @@ class $SalesTable extends Sales with TableInfo<$SalesTable, Sale> {
     soldAt,
     voidedAt,
     voidReason,
+    saleNo,
+    deviceId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -6766,6 +6788,18 @@ class $SalesTable extends Sales with TableInfo<$SalesTable, Sale> {
         voidReason.isAcceptableOrUnknown(data['void_reason']!, _voidReasonMeta),
       );
     }
+    if (data.containsKey('sale_no')) {
+      context.handle(
+        _saleNoMeta,
+        saleNo.isAcceptableOrUnknown(data['sale_no']!, _saleNoMeta),
+      );
+    }
+    if (data.containsKey('device_id')) {
+      context.handle(
+        _deviceIdMeta,
+        deviceId.isAcceptableOrUnknown(data['device_id']!, _deviceIdMeta),
+      );
+    }
     return context;
   }
 
@@ -6823,6 +6857,14 @@ class $SalesTable extends Sales with TableInfo<$SalesTable, Sale> {
         DriftSqlType.string,
         data['${effectivePrefix}void_reason'],
       ),
+      saleNo: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sale_no'],
+      ),
+      deviceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}device_id'],
+      ),
     );
   }
 
@@ -6847,6 +6889,13 @@ class Sale extends DataClass implements Insertable<Sale> {
   final String soldAt;
   final String? voidedAt;
   final String? voidReason;
+
+  /// The server's number `<store code>-<YYMMDD>-<NNNN>` (schema v14, F-02); null until the server has confirmed the sale
+  /// (from the op result or the sales pull). Shown instead of [localNo] once known.
+  final String? saleNo;
+
+  /// The device that rang the sale up (schema v14, F-02): this phone's id for its own sales, the server's for pulled ones.
+  final String? deviceId;
   const Sale({
     required this.id,
     this.locationId,
@@ -6860,6 +6909,8 @@ class Sale extends DataClass implements Insertable<Sale> {
     required this.soldAt,
     this.voidedAt,
     this.voidReason,
+    this.saleNo,
+    this.deviceId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -6883,6 +6934,12 @@ class Sale extends DataClass implements Insertable<Sale> {
     }
     if (!nullToAbsent || voidReason != null) {
       map['void_reason'] = Variable<String>(voidReason);
+    }
+    if (!nullToAbsent || saleNo != null) {
+      map['sale_no'] = Variable<String>(saleNo);
+    }
+    if (!nullToAbsent || deviceId != null) {
+      map['device_id'] = Variable<String>(deviceId);
     }
     return map;
   }
@@ -6909,6 +6966,12 @@ class Sale extends DataClass implements Insertable<Sale> {
       voidReason: voidReason == null && nullToAbsent
           ? const Value.absent()
           : Value(voidReason),
+      saleNo: saleNo == null && nullToAbsent
+          ? const Value.absent()
+          : Value(saleNo),
+      deviceId: deviceId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deviceId),
     );
   }
 
@@ -6930,6 +6993,8 @@ class Sale extends DataClass implements Insertable<Sale> {
       soldAt: serializer.fromJson<String>(json['soldAt']),
       voidedAt: serializer.fromJson<String?>(json['voidedAt']),
       voidReason: serializer.fromJson<String?>(json['voidReason']),
+      saleNo: serializer.fromJson<String?>(json['saleNo']),
+      deviceId: serializer.fromJson<String?>(json['deviceId']),
     );
   }
   @override
@@ -6948,6 +7013,8 @@ class Sale extends DataClass implements Insertable<Sale> {
       'soldAt': serializer.toJson<String>(soldAt),
       'voidedAt': serializer.toJson<String?>(voidedAt),
       'voidReason': serializer.toJson<String?>(voidReason),
+      'saleNo': serializer.toJson<String?>(saleNo),
+      'deviceId': serializer.toJson<String?>(deviceId),
     };
   }
 
@@ -6964,6 +7031,8 @@ class Sale extends DataClass implements Insertable<Sale> {
     String? soldAt,
     Value<String?> voidedAt = const Value.absent(),
     Value<String?> voidReason = const Value.absent(),
+    Value<String?> saleNo = const Value.absent(),
+    Value<String?> deviceId = const Value.absent(),
   }) => Sale(
     id: id ?? this.id,
     locationId: locationId.present ? locationId.value : this.locationId,
@@ -6977,6 +7046,8 @@ class Sale extends DataClass implements Insertable<Sale> {
     soldAt: soldAt ?? this.soldAt,
     voidedAt: voidedAt.present ? voidedAt.value : this.voidedAt,
     voidReason: voidReason.present ? voidReason.value : this.voidReason,
+    saleNo: saleNo.present ? saleNo.value : this.saleNo,
+    deviceId: deviceId.present ? deviceId.value : this.deviceId,
   );
   Sale copyWithCompanion(SalesCompanion data) {
     return Sale(
@@ -6998,6 +7069,8 @@ class Sale extends DataClass implements Insertable<Sale> {
       voidReason: data.voidReason.present
           ? data.voidReason.value
           : this.voidReason,
+      saleNo: data.saleNo.present ? data.saleNo.value : this.saleNo,
+      deviceId: data.deviceId.present ? data.deviceId.value : this.deviceId,
     );
   }
 
@@ -7015,7 +7088,9 @@ class Sale extends DataClass implements Insertable<Sale> {
           ..write('customerId: $customerId, ')
           ..write('soldAt: $soldAt, ')
           ..write('voidedAt: $voidedAt, ')
-          ..write('voidReason: $voidReason')
+          ..write('voidReason: $voidReason, ')
+          ..write('saleNo: $saleNo, ')
+          ..write('deviceId: $deviceId')
           ..write(')'))
         .toString();
   }
@@ -7034,6 +7109,8 @@ class Sale extends DataClass implements Insertable<Sale> {
     soldAt,
     voidedAt,
     voidReason,
+    saleNo,
+    deviceId,
   );
   @override
   bool operator ==(Object other) =>
@@ -7050,7 +7127,9 @@ class Sale extends DataClass implements Insertable<Sale> {
           other.customerId == this.customerId &&
           other.soldAt == this.soldAt &&
           other.voidedAt == this.voidedAt &&
-          other.voidReason == this.voidReason);
+          other.voidReason == this.voidReason &&
+          other.saleNo == this.saleNo &&
+          other.deviceId == this.deviceId);
 }
 
 class SalesCompanion extends UpdateCompanion<Sale> {
@@ -7066,6 +7145,8 @@ class SalesCompanion extends UpdateCompanion<Sale> {
   final Value<String> soldAt;
   final Value<String?> voidedAt;
   final Value<String?> voidReason;
+  final Value<String?> saleNo;
+  final Value<String?> deviceId;
   final Value<int> rowid;
   const SalesCompanion({
     this.id = const Value.absent(),
@@ -7080,6 +7161,8 @@ class SalesCompanion extends UpdateCompanion<Sale> {
     this.soldAt = const Value.absent(),
     this.voidedAt = const Value.absent(),
     this.voidReason = const Value.absent(),
+    this.saleNo = const Value.absent(),
+    this.deviceId = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   SalesCompanion.insert({
@@ -7095,6 +7178,8 @@ class SalesCompanion extends UpdateCompanion<Sale> {
     required String soldAt,
     this.voidedAt = const Value.absent(),
     this.voidReason = const Value.absent(),
+    this.saleNo = const Value.absent(),
+    this.deviceId = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        localNo = Value(localNo),
@@ -7114,6 +7199,8 @@ class SalesCompanion extends UpdateCompanion<Sale> {
     Expression<String>? soldAt,
     Expression<String>? voidedAt,
     Expression<String>? voidReason,
+    Expression<String>? saleNo,
+    Expression<String>? deviceId,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -7129,6 +7216,8 @@ class SalesCompanion extends UpdateCompanion<Sale> {
       if (soldAt != null) 'sold_at': soldAt,
       if (voidedAt != null) 'voided_at': voidedAt,
       if (voidReason != null) 'void_reason': voidReason,
+      if (saleNo != null) 'sale_no': saleNo,
+      if (deviceId != null) 'device_id': deviceId,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -7146,6 +7235,8 @@ class SalesCompanion extends UpdateCompanion<Sale> {
     Value<String>? soldAt,
     Value<String?>? voidedAt,
     Value<String?>? voidReason,
+    Value<String?>? saleNo,
+    Value<String?>? deviceId,
     Value<int>? rowid,
   }) {
     return SalesCompanion(
@@ -7161,6 +7252,8 @@ class SalesCompanion extends UpdateCompanion<Sale> {
       soldAt: soldAt ?? this.soldAt,
       voidedAt: voidedAt ?? this.voidedAt,
       voidReason: voidReason ?? this.voidReason,
+      saleNo: saleNo ?? this.saleNo,
+      deviceId: deviceId ?? this.deviceId,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -7204,6 +7297,12 @@ class SalesCompanion extends UpdateCompanion<Sale> {
     if (voidReason.present) {
       map['void_reason'] = Variable<String>(voidReason.value);
     }
+    if (saleNo.present) {
+      map['sale_no'] = Variable<String>(saleNo.value);
+    }
+    if (deviceId.present) {
+      map['device_id'] = Variable<String>(deviceId.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -7225,6 +7324,8 @@ class SalesCompanion extends UpdateCompanion<Sale> {
           ..write('soldAt: $soldAt, ')
           ..write('voidedAt: $voidedAt, ')
           ..write('voidReason: $voidReason, ')
+          ..write('saleNo: $saleNo, ')
+          ..write('deviceId: $deviceId, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -16532,6 +16633,8 @@ typedef $$SalesTableCreateCompanionBuilder =
       required String soldAt,
       Value<String?> voidedAt,
       Value<String?> voidReason,
+      Value<String?> saleNo,
+      Value<String?> deviceId,
       Value<int> rowid,
     });
 typedef $$SalesTableUpdateCompanionBuilder =
@@ -16548,6 +16651,8 @@ typedef $$SalesTableUpdateCompanionBuilder =
       Value<String> soldAt,
       Value<String?> voidedAt,
       Value<String?> voidReason,
+      Value<String?> saleNo,
+      Value<String?> deviceId,
       Value<int> rowid,
     });
 
@@ -16616,6 +16721,16 @@ class $$SalesTableFilterComposer extends Composer<_$AppDatabase, $SalesTable> {
 
   ColumnFilters<String> get voidReason => $composableBuilder(
     column: $table.voidReason,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get saleNo => $composableBuilder(
+    column: $table.saleNo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get deviceId => $composableBuilder(
+    column: $table.deviceId,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -16688,6 +16803,16 @@ class $$SalesTableOrderingComposer
     column: $table.voidReason,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get saleNo => $composableBuilder(
+    column: $table.saleNo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get deviceId => $composableBuilder(
+    column: $table.deviceId,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$SalesTableAnnotationComposer
@@ -16740,6 +16865,12 @@ class $$SalesTableAnnotationComposer
     column: $table.voidReason,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get saleNo =>
+      $composableBuilder(column: $table.saleNo, builder: (column) => column);
+
+  GeneratedColumn<String> get deviceId =>
+      $composableBuilder(column: $table.deviceId, builder: (column) => column);
 }
 
 class $$SalesTableTableManager
@@ -16782,6 +16913,8 @@ class $$SalesTableTableManager
                 Value<String> soldAt = const Value.absent(),
                 Value<String?> voidedAt = const Value.absent(),
                 Value<String?> voidReason = const Value.absent(),
+                Value<String?> saleNo = const Value.absent(),
+                Value<String?> deviceId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => SalesCompanion(
                 id: id,
@@ -16796,6 +16929,8 @@ class $$SalesTableTableManager
                 soldAt: soldAt,
                 voidedAt: voidedAt,
                 voidReason: voidReason,
+                saleNo: saleNo,
+                deviceId: deviceId,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -16812,6 +16947,8 @@ class $$SalesTableTableManager
                 required String soldAt,
                 Value<String?> voidedAt = const Value.absent(),
                 Value<String?> voidReason = const Value.absent(),
+                Value<String?> saleNo = const Value.absent(),
+                Value<String?> deviceId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => SalesCompanion.insert(
                 id: id,
@@ -16826,6 +16963,8 @@ class $$SalesTableTableManager
                 soldAt: soldAt,
                 voidedAt: voidedAt,
                 voidReason: voidReason,
+                saleNo: saleNo,
+                deviceId: deviceId,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

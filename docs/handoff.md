@@ -3,7 +3,7 @@
 Updated at the end of every task. Read this first in a fresh session. New session or a different tool (Antigravity)? Start with `docs/START-HERE-antigravity.md`.
 
 ## Status
-- **Solo mode is wrapped up (2026-11-08).** Phases 0 to 8 plus the tabs revamp, keypad, opening cash, e-wallet float, import/export are done; acceptance and open findings: `docs/tasks/P8-13-acceptance.md`. Full mode is planned in `docs/tasks/F-00-overview-full-mode.md`; **F-01 store scoping: data layer done** (section near the end), picker UI next. Branch `claude/phase3-sell-8261d3` holds all of it, not pushed, not merged to `main`.
+- **Solo mode is wrapped up (2026-11-08).** Phases 0 to 8 plus the tabs revamp, keypad, opening cash, e-wallet float, import/export are done; acceptance and open findings: `docs/tasks/P8-13-acceptance.md`. Full mode is planned in `docs/tasks/F-00-overview-full-mode.md`; **F-01 store scoping: data layer done** (section near the end), picker UI done; **F-02 server sale number and devices: data layer done**, receipt/Today display next. Branch `claude/phase3-sell-8261d3` holds all of it, not pushed, not merged to `main`.
 - Phase 0 (Foundation): done, committed (6d59c99).
 - **Phase 3 (solo Sell screen, utang, stock ledger): done** (cards P3-01..P3-08, report at the end of this file). Phase 2 (solo catalog) accepted before it. Next: Phase 4.
 - **Phase 6 (solo reports from rollups): done** (section at the end; gaps triaged in `docs/gaps-review.md`).
@@ -506,6 +506,19 @@ Share was checked on the emulator (Android share sheet with `LL3-261107-0001.pdf
   cff195e, untouched here). Solo devices behave exactly as before.
 - Next (Sonnet, UI only): the store picker and the screen wiring listed at the end of the F-01 card (incl.
   `supervisor_pin.dart` passing `locationId`, cash / e-wallet choice on the utang payment sheet).
+
+## Full mode F-02: server sale number and devices, data layer (2026-11-08, card `docs/tasks/F-02-server-sale-number-and-devices.md`)
+- Server `20261108002100_devices_sale_no.sql`: `devices` (client UUIDv7 id, RLS: admins read all, users their own, owner
+  retires; limit `tenant_limits.max_devices`, hint `device_limit`), `register_device(p_id, p_name, p_platform)`
+  (idempotent, `id_conflict` for another tenant's id), `sale_counters` (server-only), `sales.device_id` + `sales.sale_no`
+  = `<store code>-<YYMMDD>-<NNNN>` per store and tenant-timezone day, taken atomically in the sale's transaction (gap-free,
+  replay-safe, void keeps it). Local-number rule now per device (`sales_local_no_per_device`); rows without a device keep
+  the tenant-wide rule. `record_sale` takes optional `device_id` (never refuses a sale over it) and returns `sale_no`;
+  `sync_pull_sales` rows carry `sale_no`, `device_id`. pgTAP `026` (72) + `004` matrix rows.
+- Phone: Drift v14 (`sales.sale_no`, `sales.device_id`; device id made, unsent sale ops given it, sales cursor dropped).
+  `store.deviceId()`, `SaleSummary/SaleDetail.saleNo`, `displayNo`, `provisional`; the engine registers the device once per
+  session (best effort, `DeviceApi`), the number arrives from the op result or the pull. `test/device_sale_no_test.dart` (10).
+- Next (Sonnet, UI only): show `displayNo` with a "not confirmed yet" marker on the receipt and in Today (card, last section).
 
 ## Antigravity Session: Neo-Fintech Design, Settings Screen, Theme Fix, & Reports Enrichment
 Read `docs/START-HERE-claude.md` for the complete handoff from Antigravity.

@@ -4,6 +4,7 @@ import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:uuid/uuid.dart';
 
 import '../core/search.dart';
 import 'web_connection_stub.dart' if (dart.library.js_interop) 'web_connection.dart';
@@ -251,6 +252,13 @@ class Sales extends Table {
   TextColumn get soldAt => text()();
   TextColumn get voidedAt => text().nullable()();
   TextColumn get voidReason => text().nullable()();
+
+  /// The server's number `<store code>-<YYMMDD>-<NNNN>` (schema v14, F-02); null until the server has confirmed the sale
+  /// (from the op result or the sales pull). Shown instead of [localNo] once known.
+  TextColumn get saleNo => text().nullable()();
+
+  /// The device that rang the sale up (schema v14, F-02): this phone's id for its own sales, the server's for pulled ones.
+  TextColumn get deviceId => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -503,7 +511,7 @@ class AppDatabase extends _$AppDatabase {
   static const _name = 'xzactopos';
 
   @override
-  int get schemaVersion => 13;
+  int get schemaVersion => 14;
 
   /// Adds a column unless it is there already (a database made by a newer build and stepped back in a test, or a
   /// table an earlier step created with today's definition). Skips a table that does not exist.
@@ -622,8 +630,45 @@ class AppDatabase extends _$AppDatabase {
           if (from < 13) {
             await _storeScopingStep(m);
           }
+          if (from < 14) {
+            await _deviceStep(m);
+          }
         },
       );
+
+  /// Schema v14 (F-02, server sale number and devices). Every row and every unsent op is kept.
+  ///  * `sales.sale_no` and `sales.device_id` (nullable; existing rows: null = not confirmed / unknown);
+  ///  * the device id is made now (UUIDv7, meta `device_id`, never changes afterwards) when the device has none, and every
+  ///    UNSENT `record_sale` op and its local sale row are given it, so those sales sync under the per-device receipt rule
+  ///    too (the op has not reached the server, so adding a field changes nothing that was applied);
+  ///  * the sales cursor is dropped: the last 30 days come again with their server numbers.
+  Future<void> _deviceStep(Migrator m) async {
+    final have = {
+      for (final r in await customSelect("select name from sqlite_master where type = 'table'").get()) r.read<String>('name'),
+    };
+    if (!have.contains('meta')) await m.createTable(meta);
+    await _addColumnIfMissing(m, sales, sales.saleNo);
+    await _addColumnIfMissing(m, sales, sales.deviceId);
+
+    final saved = await customSelect("select value from meta where key = 'device_id'").getSingleOrNull();
+    final dev = saved?.read<String>('value') ?? const Uuid().v7();
+    if (saved == null) {
+      await customStatement("insert into meta (key, value) values ('device_id', ?)", [dev]);
+    }
+    if (have.contains('outbox')) {
+      if (have.contains('sales')) {
+        await customStatement('''
+          update sales set device_id = ? where device_id is null
+            and id in (select o.entity_id from outbox o where o.kind = 'record_sale')''', [dev]);
+      }
+      await customStatement('''
+        update outbox set payload = json_set(payload, '\$.device_id', ?)
+        where kind = 'record_sale' and json_extract(payload, '\$.device_id') is null''', [dev]);
+    }
+    if (have.contains('sync_cursors')) {
+      await customStatement("delete from sync_cursors where table_key = 'sales'");
+    }
+  }
 
   /// Schema v13 (F-01, several stores per tenant). Every row and every unsent op is kept.
   ///  * new nullable store columns on `sales`, `local_movements`, `local_ledger`, `server_ledger`, `local_float_effects`,

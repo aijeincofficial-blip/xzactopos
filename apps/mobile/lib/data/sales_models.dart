@@ -95,9 +95,12 @@ class SaleSummary {
     required this.soldAt,
     this.customerName,
     required this.pending,
+    this.saleNo,
   });
 
   final String id;
+
+  /// The provisional number this device gave the sale offline (`<device code>-YYMMDD-NNNN`); never changes.
   final String localNo;
   final String status; // completed | voided
   final int total;
@@ -106,6 +109,16 @@ class SaleSummary {
 
   /// The server has not confirmed this sale yet.
   final bool pending;
+
+  /// The server's number `<store code>-YYMMDD-NNNN` (F-02): per store and business day, the same on every device. Null
+  /// until the server has confirmed the sale.
+  final String? saleNo;
+
+  /// The number to show: the server's once known, else the provisional local one.
+  String get displayNo => saleNo ?? localNo;
+
+  /// [displayNo] is still the provisional local number (show a small "not confirmed yet" marker).
+  bool get provisional => saleNo == null;
   bool get voided => status == 'voided';
 }
 
@@ -147,6 +160,11 @@ class SaleDetail {
   final List<SaleItemView> items;
   final List<SalePaymentView> payments;
   final String? customerId;
+
+  /// See [SaleSummary.saleNo], [SaleSummary.displayNo], [SaleSummary.provisional].
+  String? get saleNo => summary.saleNo;
+  String get displayNo => summary.displayNo;
+  bool get provisional => summary.provisional;
 
   int get change => payments.fold(0, (a, p) => a + p.change);
   int get utang => payments.where((p) => p.method == 'utang').fold(0, (a, p) => a + p.amount);
@@ -730,6 +748,11 @@ abstract class SalesStore {
   Future<String?> meta(String key);
   Future<void> setMeta(String key, String? value);
 
+  /// This device's id (F-02): a UUIDv7 made on first use and kept in meta (`device_id`); the same on every call and
+  /// across restarts. Starts over only when the device's data is cleared for a different business ([LocalStore.ensureTenant]).
+  /// Every `record_sale` op carries it as `device_id`; the sync engine registers it with the server once per session.
+  Future<String> deviceId();
+
   // ---- expenses and the day close (P8-02c) ----
   //
   // Who may write: the owner and store managers, offline, with no extra step. A store SUPERVISOR needs a single-use
@@ -890,11 +913,13 @@ abstract class SalesStore {
   Future<int?> averageCost(String variantId);
 
   // ---- sync side ----
-  /// Marks the stock/utang effects of an op as applied by the server at [appliedAt].
-  Future<void> posOpApplied(String opId, String? appliedAt);
+  /// Marks the stock/utang effects of an op as applied by the server at [appliedAt]. [result] = the op's server result:
+  /// a `record_sale` result's `sale_no` is stored on its sale (`sale_id`) at once (F-02).
+  Future<void> posOpApplied(String opId, String? appliedAt, {Map<String, dynamic>? result});
 
-  /// Applies one sync_pull_sales response: recent sales (also from other devices) with lines and payments.
-  /// Sales with unsent local changes are left alone.
+  /// Applies one sync_pull_sales response: recent sales (also from other devices) with lines and payments, their server
+  /// number (`sale_no`) and device (`device_id`). Sales with unsent local changes are left alone, except that a server
+  /// number they do not have yet is copied (F-02). A pulled row without a number never erases one already stored.
   Future<void> applyPullSales(Map<String, dynamic> response);
 
   /// Applies one sync_pull_pos response; drops local effects the server's copy now covers.

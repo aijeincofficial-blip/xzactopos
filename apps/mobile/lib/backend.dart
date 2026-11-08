@@ -106,7 +106,7 @@ const pinRefusalHints = {
   'location_denied', 'module_disabled',
 };
 
-class SupabaseBackend implements Backend {
+class SupabaseBackend implements Backend, DeviceApi {
   SupabaseClient get _c => Supabase.instance.client;
 
   @override
@@ -264,6 +264,18 @@ class SupabaseBackend implements Backend {
       return ApprovalResult.fromJson((res as Map).cast<String, dynamic>());
     } on PostgrestException catch (e) {
       if (pinRefusalHints.contains(e.hint)) return ApprovalResult.refused(e.hint!);
+      rethrow;
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> registerDevice(String id, {String? name, String? platform}) async {
+    try {
+      final res = await _auth(() => _c.rpc('register_device', params: {'p_id': id, 'p_name': name, 'p_platform': platform}));
+      return (res as Map).cast<String, dynamic>();
+    } on PostgrestException catch (e) {
+      // id_conflict / invalid_value (22023), device_limit (P0001): asking again will not help this session
+      if (isPermanent(e.code, e.hint)) throw OpRejected(e.hint ?? e.code ?? 'rejected');
       rethrow;
     }
   }
