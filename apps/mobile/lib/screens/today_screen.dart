@@ -164,32 +164,37 @@ class _TodayScreenState extends State<TodayScreen> {
                                   border: Border.all(color: scheme.outlineVariant),
                                 ),
                                 child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceAround,
                                   children: [
-                                    _Stat(
-                                      label: t.todayCash,
-                                      value: money(d.cash),
-                                      keyName: 'today-cash',
+                                    Expanded(
+                                      child: _Stat(
+                                        label: t.todayCash,
+                                        value: money(d.cash),
+                                        keyName: 'today-cash',
+                                      ),
                                     ),
                                     Container(
                                       width: 1,
                                       height: 24,
                                       color: scheme.outlineVariant,
                                     ),
-                                    _Stat(
-                                      label: t.payEwallet,
-                                      value: money(d.ewallet),
-                                      keyName: 'today-ewallet',
+                                    Expanded(
+                                      child: _Stat(
+                                        label: t.payEwallet,
+                                        value: money(d.ewallet),
+                                        keyName: 'today-ewallet',
+                                      ),
                                     ),
                                     Container(
                                       width: 1,
                                       height: 24,
                                       color: scheme.outlineVariant,
                                     ),
-                                    _Stat(
-                                      label: t.todayUtang,
-                                      value: money(d.utang),
-                                      keyName: 'today-utang',
+                                    Expanded(
+                                      child: _Stat(
+                                        label: t.todayUtang,
+                                        value: money(d.utang),
+                                        keyName: 'today-utang',
+                                      ),
                                     ),
                                   ],
                                 ),

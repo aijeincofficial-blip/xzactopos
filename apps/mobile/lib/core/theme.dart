@@ -41,7 +41,7 @@ const _freshLight = _P(
   primaryContainer: Color(0xFFEDF4FF),
   onPrimaryContainer: Color(0xFF0F3980),
   secondary: Color(0xFF10B981), // mint / emerald aligned with brand
-  onSecondary: Colors.white,
+  onSecondary: Color(0xFF042F23), // dark text on mint: white was 2.5:1, this is above 4.5:1
   secondaryContainer: Color(0xFFE6F8F3),
   onSecondaryContainer: Color(0xFF064E3B),
   tertiary: Color(0xFFF59E0B), // solar amber

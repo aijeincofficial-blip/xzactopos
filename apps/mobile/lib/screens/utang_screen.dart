@@ -35,14 +35,18 @@ class _UtangScreenState extends State<UtangScreen> {
     String money(int a) => Money(a, scope.store.baseCurrency).format(locale);
     return Scaffold(
       appBar: AppBar(title: Text(t.utangTitle), actions: const [SyncBadge()]),
-      floatingActionButton: FloatingActionButton.extended(
-        key: const Key('add-customer'),
-        icon: const Icon(Icons.person_add_alt_1),
-        label: Text(t.customerNew),
-        onPressed: () async {
-          final made = await showNewCustomerDialog(context, scope.store);
-          if (made != null) scope.engine.poke();
-        },
+      // lifted above the glass tab bar (its height arrives as bottom padding; 0 when this screen is pushed on its own)
+      floatingActionButton: Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.paddingOf(context).bottom),
+        child: FloatingActionButton.extended(
+          key: const Key('add-customer'),
+          icon: const Icon(Icons.person_add_alt_1),
+          label: Text(t.customerNew),
+          onPressed: () async {
+            final made = await showNewCustomerDialog(context, scope.store);
+            if (made != null) scope.engine.poke();
+          },
+        ),
       ),
       body: StreamBuilder<List<CustomerView>>(
         stream: scope.store.watchCustomers(),
@@ -101,7 +105,7 @@ class _UtangScreenState extends State<UtangScreen> {
                       text: all.isEmpty ? t.utangEmpty : (_overdueOnly ? t.utangOverdueNone : t.noMatches),
                     )
                   : ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(Gap.xl, Gap.s, Gap.xl, 96),
+                      padding: EdgeInsets.fromLTRB(Gap.xl, Gap.s, Gap.xl, 96 + MediaQuery.paddingOf(context).bottom),
                       itemCount: list.length,
                       separatorBuilder: (_, _) => const SizedBox(height: Gap.m),
                       itemBuilder: (context, i) {

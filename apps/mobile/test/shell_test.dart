@@ -12,12 +12,13 @@ const _v1 = '0190a000-0000-7000-8000-0000000000a1';
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
 
-  testWidgets('opens on Sell with the five tabs; Reports is there for the owner', (tester) async {
+  testWidgets('opens on POS (Sell) with the five tabs; Reports is in More for the owner', (tester) async {
     await openHome(tester);
     expect(find.byKey(const Key('sell-search')), findsOneWidget);
-    for (final k in ['tile-sell', 'tile-stock', 'tile-utang', 'tile-reports', 'tab-more']) {
+    for (final k in ['tab-today', 'tile-stock', 'tile-sell', 'tile-utang', 'tab-more']) {
       expect(find.byKey(Key(k)), findsOneWidget, reason: k);
     }
+    expect(find.byKey(const Key('tile-reports')), findsNothing, reason: 'Reports is not on the bar');
     await leave(tester);
   });
 
@@ -52,7 +53,7 @@ void main() {
     await openHome(tester);
     await tester.tap(find.byKey(const Key('tab-more')));
     await tester.pumpAndSettle();
-    for (final k in ['tile-products', 'tile-restock', 'more-today', 'more-expenses', 'more-services', 'more-close-day', 'tile-data', 'tile-settings']) {
+    for (final k in ['tile-products', 'tile-restock', 'tile-reports', 'more-expenses', 'more-services', 'more-close-day', 'tile-data', 'tile-settings']) {
       await tester.ensureVisible(find.byKey(Key(k)));
       expect(find.byKey(Key(k)), findsOneWidget, reason: k);
     }

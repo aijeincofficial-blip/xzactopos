@@ -12,7 +12,16 @@ import 'widget_test.dart' show FakeBackend;
 /// Signed in with a store already set up, English UI.
 late FakeBackend backend;
 
+/// Tests open on a phone-sized screen (the screens are taller now: amount pad, receipt ticket). A test that needs
+/// the 800x600 default (a wide screen) sets this to false first and it is restored afterwards.
+bool phoneSizedScreen = true;
+
 Future<DriftStore> openHome(WidgetTester tester) async {
+  if (phoneSizedScreen) {
+    tester.view.physicalSize = const Size(1080, 2340);
+    tester.view.devicePixelRatio = 2.625;
+    addTearDown(tester.view.reset);
+  }
   final store = DriftStore(AppDatabase(NativeDatabase.memory()));
   backend = FakeBackend(signedInAtStart: true)
     ..access = {
@@ -94,9 +103,8 @@ void main() {
 
   testWidgets('add a product from Home in a few taps; it is listed and queued', (tester) async {
     final store = await openHome(tester);
-    await tester.tap(find.byKey(const Key('tab-more'))); // the product count is on the More tab
+    await tester.tap(find.byKey(const Key('tab-more'))); // Products is in the More grid
     await tester.pumpAndSettle();
-    expect(find.text('No products on this phone yet'), findsOneWidget);
     await tester.tap(find.byKey(const Key('tile-products')));
     await tester.pumpAndSettle();
     expect(find.textContaining('No products yet'), findsOneWidget);

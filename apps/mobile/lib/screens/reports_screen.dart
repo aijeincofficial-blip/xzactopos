@@ -95,7 +95,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         future: _load,
         builder: (context, snap) {
           return ListView(
-            padding: const EdgeInsets.only(bottom: Gap.xxl),
+            padding: EdgeInsets.only(bottom: Gap.xxl + MediaQuery.paddingOf(context).bottom), // clear of the tab bar
             children: [
               Padding(
                 padding: const EdgeInsets.fromLTRB(Gap.xl, Gap.m, Gap.xl, Gap.s),

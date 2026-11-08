@@ -112,7 +112,7 @@ void main() {
     await store.receiveStock(variantId: _v1, qty: 3, opId: 'r1');
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('tile-badge')), findsOneWidget);
-    expect(find.text('1'), findsOneWidget);
+    expect(tester.widget<Text>(find.byKey(const Key('tile-badge'))).data, '1');
 
     await tester.tap(find.byKey(const Key('tile-sell')));
     await tester.pumpAndSettle();

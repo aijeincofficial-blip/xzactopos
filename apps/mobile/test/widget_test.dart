@@ -147,10 +147,10 @@ void main() {
 
   testWidgets('signed-in user with no store names it and lands on Home', (tester) async {
     final backend = FakeBackend(signedInAtStart: true);
-    await tester.pumpWidget(App(backend: backend, openStore: memoryStore));
+    await tester.pumpWidget(App(backend: backend, openStore: memoryStore, initialLocale: 'fil'));
     await tester.pumpAndSettle();
 
-    // Filipino is the default language
+    // started in Filipino (English is the app default; Filipino is chosen here)
     expect(find.text('Ano ang pangalan ng tindahan mo?'), findsOneWidget);
 
     // Empty name is refused
@@ -171,23 +171,23 @@ void main() {
     await tester.tap(find.byKey(const Key('tab-more')));
     await tester.pumpAndSettle();
     expect(find.text('Aling Nena'), findsOneWidget);
-    expect(find.text('Wala pang produkto sa phone na ito'), findsOneWidget);
 
     // leave the session so the store closes and sync timers stop
     await tester.pumpWidget(const SizedBox());
     await tester.pumpAndSettle();
   });
 
-  testWidgets('language switch changes the screen text', (tester) async {
+  testWidgets('the app starts in English, and the language button switches to Filipino', (tester) async {
     await tester.pumpWidget(App(backend: FakeBackend(signedInAtStart: true), openStore: memoryStore));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('EN'));
+    expect(find.text('Name your store'), findsOneWidget, reason: 'English is the default');
+    await tester.tap(find.text('FIL'));
     await tester.pumpAndSettle();
-    expect(find.text('Name your store'), findsOneWidget);
+    expect(find.text('Ano ang pangalan ng tindahan mo?'), findsOneWidget);
   });
 
   testWidgets('signed-out user sees the sign-up form', (tester) async {
-    await tester.pumpWidget(App(backend: FakeBackend(), openStore: memoryStore));
+    await tester.pumpWidget(App(backend: FakeBackend(), openStore: memoryStore, initialLocale: 'fil'));
     await tester.pumpAndSettle();
     expect(find.text('Gumawa ng account'), findsOneWidget);
     expect(find.byType(TextFormField), findsNWidgets(2));

@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:xzactopos_mobile/data/drift_store.dart';
 
 import 'drift_store_test.dart' show pullPage, serverPrice, serverProduct, serverVariant;
-import 'products_test.dart' show leave, openHome;
+import 'products_test.dart' show leave, openHome, phoneSizedScreen;
 import 'sales_store_test.dart' show level, posPage;
 
 const _p1 = '0190a000-0000-7000-8000-000000000001';
@@ -156,6 +156,8 @@ void main() {
   });
 
   testWidgets('on a wide screen the search box is ready for a USB scanner', (tester) async {
+    phoneSizedScreen = false; // the default 800x600 test screen is wide
+    addTearDown(() => phoneSizedScreen = true);
     await openSell(tester);
     expect(tester.widget<TextField>(find.byKey(const Key('sell-search'))).autofocus, isTrue);
     await leave(tester);

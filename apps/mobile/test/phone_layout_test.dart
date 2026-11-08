@@ -36,7 +36,7 @@ void main() {
         ..access = {
           'tenant': {'id': 't1', 'name': 'Sari-Sari ni Aling Rosa', 'base_currency': 'PHP'},
         };
-      await tester.pumpWidget(App(backend: backend, openStore: ({bool safeMode = false}) => store));
+      await tester.pumpWidget(App(backend: backend, openStore: ({bool safeMode = false}) => store, initialLocale: 'fil'));
       await tester.pumpAndSettle();
       for (var i = 0; i < 3; i++) {
         await store.saveProduct(

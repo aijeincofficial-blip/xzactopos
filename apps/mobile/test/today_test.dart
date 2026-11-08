@@ -73,7 +73,8 @@ void main() {
     expect((await store.watchCustomers().first).single.balance, 0);
     expect((await store.nextOps()).last.kind, 'void_sale');
 
-    await tester.tap(find.byKey(const Key('receipt-next')));
+    // this receipt was opened from the list (not just sold): its own back arrow, not "New Transaction"
+    await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
     await tester.pumpAndSettle();
     expect(text(tester, 'today-total'), '₱30.00');
     expect(text(tester, 'today-count'), '2 sales');

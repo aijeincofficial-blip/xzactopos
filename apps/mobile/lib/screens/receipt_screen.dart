@@ -53,10 +53,15 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
         title: Text(t.saleCancelTitle),
         content: Text(t.saleCancelBody),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(t.saleCancelNo)),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(t.saleCancelNo),
+          ),
           FilledButton(
             key: const Key('cancel-sale-yes'),
-            style: FilledButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
             onPressed: () => Navigator.pop(ctx, true),
             child: Text(t.saleCancelYes),
           ),
@@ -69,17 +74,17 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
   }
 
   ReceiptLabels _labels(AppLocalizations t) => ReceiptLabels(
-        number: t.receiptNumber,
-        subtotal: t.receiptSubtotal,
-        discount: t.receiptDiscount,
-        total: t.payTotal,
-        cashReceived: t.receiptCashReceived,
-        ewallet: t.payEwallet,
-        change: t.payChange,
-        onUtang: t.receiptOnUtang,
-        cancelled: t.receiptCancelled,
-        thanks: t.receiptThanks,
-      );
+    number: t.receiptNumber,
+    subtotal: t.receiptSubtotal,
+    discount: t.receiptDiscount,
+    total: t.payTotal,
+    cashReceived: t.receiptCashReceived,
+    ewallet: t.payEwallet,
+    change: t.payChange,
+    onUtang: t.receiptOnUtang,
+    cancelled: t.receiptCancelled,
+    thanks: t.receiptThanks,
+  );
 
   Future<void> _output(SaleDetail d, {required bool share}) async {
     final t = AppLocalizations.of(context);
@@ -90,9 +95,21 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
       final name = await _storeName ?? '';
       final labels = _labels(t);
       if (share) {
-        await receiptPrinter.share(d, storeName: name, currency: scope.store.baseCurrency, locale: locale, labels: labels);
+        await receiptPrinter.share(
+          d,
+          storeName: name,
+          currency: scope.store.baseCurrency,
+          locale: locale,
+          labels: labels,
+        );
       } else {
-        await receiptPrinter.print(d, storeName: name, currency: scope.store.baseCurrency, locale: locale, labels: labels);
+        await receiptPrinter.print(
+          d,
+          storeName: name,
+          currency: scope.store.baseCurrency,
+          locale: locale,
+          labels: labels,
+        );
       }
     } catch (_) {
       messenger.showSnackBar(SnackBar(content: Text(t.receiptPrintFailed)));
@@ -137,14 +154,19 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
         stream: _detail,
         builder: (context, snapSale) {
           final d = snapSale.data;
-          if (!snapSale.hasData && snapSale.connectionState != ConnectionState.done) {
+          if (!snapSale.hasData &&
+              snapSale.connectionState != ConnectionState.done) {
             return const Center(child: CircularProgressIndicator());
           }
           if (d == null) return Center(child: Text(t.errGeneric));
 
           final s = d.summary;
-          final cash = d.payments.where((p) => p.method == 'cash').fold<int>(0, (a, p) => a + (p.tendered ?? 0));
-          final ewallet = d.payments.where((p) => p.method == 'ewallet').fold<int>(0, (a, p) => a + p.amount);
+          final cash = d.payments
+              .where((p) => p.method == 'cash')
+              .fold<int>(0, (a, p) => a + (p.tendered ?? 0));
+          final ewallet = d.payments
+              .where((p) => p.method == 'ewallet')
+              .fold<int>(0, (a, p) => a + p.amount);
 
           return StreamBuilder<TodayTotals>(
             stream: _today,
@@ -156,7 +178,8 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                 builder: (context, snapStock) {
                   final stockRows = snapStock.data ?? const <StockRow>[];
                   final stockMap = <String, StockRow>{
-                    for (final r in stockRows) r.product.name.trim().toLowerCase(): r,
+                    for (final r in stockRows)
+                      r.product.name.trim().toLowerCase(): r,
                   };
 
                   return ListView(
@@ -198,7 +221,9 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                                 _buildPaymentBanner(
                                   voided: s.voided,
                                   totalText: money(s.total),
-                                  statusText: s.voided ? t.receiptCancelled : 'Payment Successful',
+                                  statusText: s.voided
+                                      ? t.receiptCancelled
+                                      : 'Payment Successful',
                                 ),
                                 const SizedBox(height: 16),
 
@@ -206,7 +231,10 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                                 for (final item in d.items) ...[
                                   _buildItemRow(
                                     item: item,
-                                    stockRow: stockMap[item.name.trim().toLowerCase()],
+                                    stockRow:
+                                        stockMap[item.name
+                                            .trim()
+                                            .toLowerCase()],
                                     moneyText: money(item.lineTotal),
                                   ),
                                 ],
@@ -228,7 +256,9 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                                     valueColor: const Color(0xFF10B981),
                                   ),
                                 _buildSummaryRow(
-                                  label: locale == 'fil' ? 'Benta ngayong araw:' : 'Sales Today:',
+                                  label: locale == 'fil'
+                                      ? 'Benta ngayong araw:'
+                                      : 'Sales Today:',
                                   value: money(todayTotal),
                                 ),
                                 _buildSummaryRow(
@@ -239,12 +269,16 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                                 ),
                                 if (cash > 0)
                                   _buildSummaryRow(
-                                    label: locale == 'fil' ? 'Ibinayad (Cash):' : 'Paid via Cash:',
+                                    label: locale == 'fil'
+                                        ? 'Ibinayad (Cash):'
+                                        : 'Paid via Cash:',
                                     value: money(cash),
                                   ),
                                 if (ewallet > 0)
                                   _buildSummaryRow(
-                                    label: locale == 'fil' ? 'Ibinayad (E-Wallet):' : 'Paid via E-Wallet:',
+                                    label: locale == 'fil'
+                                        ? 'Ibinayad (E-Wallet):'
+                                        : 'Paid via E-Wallet:',
                                     value: money(ewallet),
                                   ),
                                 if (d.change > 0)
@@ -260,24 +294,38 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                                     valueColor: const Color(0xFFEF4444),
                                     key: const Key('receipt-utang'),
                                   ),
-                                  if (s.customerName != null && d.customerId != null)
+                                  if (s.customerName != null &&
+                                      d.customerId != null)
                                     Padding(
                                       padding: const EdgeInsets.only(top: 2),
                                       child: StreamBuilder(
                                         stream: scope.store.watchCustomers(),
                                         builder: (_, snap) {
-                                          final c = (snap.data ?? const []).where((c) => c.id == d.customerId);
+                                          final c = (snap.data ?? const [])
+                                              .where(
+                                                (c) => c.id == d.customerId,
+                                              );
                                           if (c.isEmpty) {
                                             return Align(
                                               alignment: Alignment.centerLeft,
-                                              child: Text(s.customerName!, style: theme.textTheme.bodySmall),
+                                              child: Text(
+                                                s.customerName!,
+                                                style:
+                                                    theme.textTheme.bodySmall,
+                                              ),
                                             );
                                           }
                                           return Align(
                                             alignment: Alignment.centerLeft,
                                             child: Text(
-                                              t.receiptBalance(s.customerName!, money(c.first.balance)),
-                                              style: const TextStyle(fontSize: 12, color: Color(0xFFEF4444)),
+                                              t.receiptBalance(
+                                                s.customerName!,
+                                                money(c.first.balance),
+                                              ),
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                                color: Color(0xFFEF4444),
+                                              ),
                                             ),
                                           );
                                         },
@@ -302,7 +350,9 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  DateFormat.yMMMd(locale).add_jm().format(s.soldAt),
+                                  DateFormat.yMMMd(
+                                    locale,
+                                  ).add_jm().format(s.soldAt),
                                   textAlign: TextAlign.center,
                                   style: const TextStyle(
                                     fontSize: 11,
@@ -327,11 +377,22 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                                   Padding(
                                     padding: const EdgeInsets.only(top: 4),
                                     child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
                                       children: [
-                                        const Icon(Icons.cloud_upload_outlined, size: 13, color: Color(0xFF64748B)),
+                                        const Icon(
+                                          Icons.cloud_upload_outlined,
+                                          size: 13,
+                                          color: Color(0xFF64748B),
+                                        ),
                                         const SizedBox(width: 4),
-                                        Text(t.notSentYet, style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+                                        Text(
+                                          t.notSentYet,
+                                          style: const TextStyle(
+                                            fontSize: 11,
+                                            color: Color(0xFF64748B),
+                                          ),
+                                        ),
                                       ],
                                     ),
                                   ),
@@ -355,61 +416,79 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                       // Dual Action Buttons below Receipt Card
                       Row(
                         children: [
-                          // Left Button: Print Receipt
-                          Expanded(
-                            child: SizedBox(
-                              height: 48,
-                              child: FilledButton(
-                                key: const Key('receipt-print'),
-                                style: FilledButton.styleFrom(
-                                  backgroundColor: const Color(0xFF1E6FF2),
-                                  foregroundColor: Colors.white,
-                                  shape: const StadiumBorder(),
-                                  elevation: 2,
-                                  textStyle: const TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w700,
+                          // Left Button: Print Receipt (only when this device can print or share a PDF)
+                          if (receiptPrinter.available) ...[
+                            Expanded(
+                              child: SizedBox(
+                                height: 48,
+                                child: FilledButton(
+                                  key: const Key('receipt-print'),
+                                  style: FilledButton.styleFrom(
+                                    backgroundColor: const Color(0xFF1E6FF2),
+                                    foregroundColor: Colors.white,
+                                    shape: const StadiumBorder(),
+                                    elevation: 2,
+                                    textStyle: const TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  onPressed: () => _output(d, share: false),
+                                  child: Text(
+                                    locale == 'fil'
+                                        ? 'I-print ang Resibo'
+                                        : 'Print Receipt',
                                   ),
                                 ),
-                                onPressed: () => _output(d, share: false),
-                                child: Text(locale == 'fil' ? 'I-print ang Resibo' : 'Print Receipt'),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 12),
+                            const SizedBox(width: 12),
+                          ],
 
                           // Right Button: New Transaction (if justSold) or Share (if viewing history)
-                          Expanded(
-                            child: SizedBox(
-                              height: 48,
-                              child: OutlinedButton(
-                                key: Key(widget.justSold ? 'receipt-next' : 'receipt-share'),
-                                style: OutlinedButton.styleFrom(
-                                  backgroundColor: Colors.white,
-                                  foregroundColor: const Color(0xFF0F172A),
-                                  side: const BorderSide(color: Color(0xFFCBD5E1), width: 1.2),
-                                  shape: const StadiumBorder(),
-                                  elevation: 1,
-                                  textStyle: const TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w700,
+                          if (widget.justSold || receiptPrinter.available)
+                            Expanded(
+                              child: SizedBox(
+                                height: 48,
+                                child: OutlinedButton(
+                                  key: Key(
+                                    widget.justSold
+                                        ? 'receipt-next'
+                                        : 'receipt-share',
                                   ),
-                                ),
-                                onPressed: () {
-                                  if (widget.justSold) {
-                                    Navigator.of(context).pop();
-                                  } else {
-                                    _output(d, share: true);
-                                  }
-                                },
-                                child: Text(
-                                  widget.justSold
-                                      ? (locale == 'fil' ? 'Bagong Benta' : 'New Transaction')
-                                      : (locale == 'fil' ? 'I-share' : 'Share'),
+                                  style: OutlinedButton.styleFrom(
+                                    backgroundColor: Colors.white,
+                                    foregroundColor: const Color(0xFF0F172A),
+                                    side: const BorderSide(
+                                      color: Color(0xFFCBD5E1),
+                                      width: 1.2,
+                                    ),
+                                    shape: const StadiumBorder(),
+                                    elevation: 1,
+                                    textStyle: const TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  onPressed: () {
+                                    if (widget.justSold) {
+                                      Navigator.of(context).pop();
+                                    } else {
+                                      _output(d, share: true);
+                                    }
+                                  },
+                                  child: Text(
+                                    widget.justSold
+                                        ? (locale == 'fil'
+                                              ? 'Bagong Benta'
+                                              : 'New Transaction')
+                                        : (locale == 'fil'
+                                              ? 'I-share'
+                                              : 'Share'),
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
                         ],
                       ),
 
@@ -421,10 +500,18 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                             child: TextButton.icon(
                               key: const Key('cancel-sale'),
                               onPressed: _cancelSale,
-                              icon: const Icon(Icons.cancel_outlined, size: 16, color: Color(0xFFEF4444)),
+                              icon: const Icon(
+                                Icons.cancel_outlined,
+                                size: 16,
+                                color: Color(0xFFEF4444),
+                              ),
                               label: Text(
                                 t.saleCancelButton,
-                                style: const TextStyle(color: Color(0xFFEF4444), fontWeight: FontWeight.w600, fontSize: 13),
+                                style: const TextStyle(
+                                  color: Color(0xFFEF4444),
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13,
+                                ),
                               ),
                             ),
                           ),
@@ -493,8 +580,12 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
     required String statusText,
   }) {
     final bgColor = voided ? const Color(0xFFFEE2E2) : const Color(0xFFE8F7EE);
-    final borderColor = voided ? const Color(0xFFFCA5A5) : const Color(0xFFBCE3C9);
-    final iconColor = voided ? const Color(0xFFEF4444) : const Color(0xFF10B981);
+    final borderColor = voided
+        ? const Color(0xFFFCA5A5)
+        : const Color(0xFFBCE3C9);
+    final iconColor = voided
+        ? const Color(0xFFEF4444)
+        : const Color(0xFF10B981);
     final icon = voided ? Icons.cancel_rounded : Icons.check_circle_rounded;
 
     return Container(
@@ -628,7 +719,8 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
             cacheWidth: 80,
             cacheHeight: 80,
             fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) => _fallbackItemThumb(name),
+            errorBuilder: (context, error, stackTrace) =>
+                _fallbackItemThumb(name),
           ),
         );
       }
@@ -646,11 +738,15 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
       bg = const Color(0xFFEFF6FF);
       fg = const Color(0xFF2563EB);
       icon = Icons.local_cafe_outlined;
-    } else if (lower.contains('sardinas') || lower.contains('fish') || lower.contains('can')) {
+    } else if (lower.contains('sardinas') ||
+        lower.contains('fish') ||
+        lower.contains('can')) {
       bg = const Color(0xFFE6F8F3);
       fg = const Color(0xFF10B981);
       icon = Icons.lunch_dining_outlined;
-    } else if (lower.contains('asukal') || lower.contains('sugar') || lower.contains('bigas')) {
+    } else if (lower.contains('asukal') ||
+        lower.contains('sugar') ||
+        lower.contains('bigas')) {
       bg = const Color(0xFFFEF3C7);
       fg = const Color(0xFFD97706);
       icon = Icons.shopping_bag_outlined;
@@ -686,7 +782,9 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
               style: TextStyle(
                 fontSize: isTotal ? 15.5 : 13.5,
                 fontWeight: isTotal ? FontWeight.w800 : FontWeight.w500,
-                color: isTotal ? const Color(0xFF0F172A) : const Color(0xFF475569),
+                color: isTotal
+                    ? const Color(0xFF0F172A)
+                    : const Color(0xFF475569),
               ),
             ),
           ),
@@ -793,7 +891,8 @@ class _ReceiptTicketShadowPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _ReceiptTicketShadowPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _ReceiptTicketShadowPainter oldDelegate) =>
+      false;
 }
 
 // ---------------------------------------------------------------------------

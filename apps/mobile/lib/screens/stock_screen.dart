@@ -97,7 +97,7 @@ class _StockScreenState extends State<StockScreen> {
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: Gap.xl),
-              child: Row(children: [
+              child: Wrap(spacing: 8, runSpacing: 4, children: [
                 ChoiceChip(
                   key: const Key('filter-all'),
                   label: Text(t.stockAll),
@@ -107,7 +107,6 @@ class _StockScreenState extends State<StockScreen> {
                     _expiringOnly = false;
                   }),
                 ),
-                const SizedBox(width: 8),
                 ChoiceChip(
                   key: const Key('filter-low'),
                   avatar: lowCount > 0 ? const Icon(Icons.warning_amber_rounded, size: 18) : null,
@@ -119,7 +118,6 @@ class _StockScreenState extends State<StockScreen> {
                   }),
                 ),
                 if (expiringCount > 0 || _expiringOnly) ...[
-                  const SizedBox(width: 8),
                   ChoiceChip(
                     key: const Key('filter-expiring'),
                     avatar: expiringCount > 0 ? const Icon(Icons.event_busy_rounded, size: 18) : null,
@@ -143,7 +141,7 @@ class _StockScreenState extends State<StockScreen> {
                       ),
                     )
                   : ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(Gap.xl, Gap.s, Gap.xl, Gap.xl),
+                      padding: EdgeInsets.fromLTRB(Gap.xl, Gap.s, Gap.xl, Gap.xl + MediaQuery.paddingOf(context).bottom), // clear of the tab bar
                       itemCount: rows.length,
                       separatorBuilder: (_, _) => const SizedBox(height: Gap.m),
                       itemBuilder: (context, i) {

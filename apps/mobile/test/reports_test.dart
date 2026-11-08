@@ -35,6 +35,10 @@ Future<void> openReports(WidgetTester tester, {Map<String, dynamic>? data, Objec
   await openHome(tester);
   backend.report = data;
   backend.reportError = error;
+  await tester.tap(find.byKey(const Key('tab-more'))); // Reports now lives in the More grid
+  await tester.pumpAndSettle();
+  await tester.ensureVisible(find.byKey(const Key('tile-reports')));
+  await tester.pumpAndSettle();
   await tester.tap(find.byKey(const Key('tile-reports')));
   await tester.pumpAndSettle();
 }
@@ -112,6 +116,10 @@ void main() {
     final store = await openHome(tester);
     backend.report = sample();
     await store.saveCustomer(id: 'c-1', name: 'Rosa', opId: 'o1');
+    await tester.tap(find.byKey(const Key('tab-more'))); // Reports now lives in the More grid
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const Key('tile-reports')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('tile-reports')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('report-not-sent')), findsOneWidget);
@@ -128,6 +136,9 @@ void main() {
     await tester.pumpWidget(App(backend: b, openStore: ({bool safeMode = false}) => store, initialLocale: 'en'));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('tile-sell')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('tab-more')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('tile-products')), findsOneWidget, reason: 'More is there');
     expect(find.byKey(const Key('tile-reports')), findsNothing);
     await leave(tester);
   });
