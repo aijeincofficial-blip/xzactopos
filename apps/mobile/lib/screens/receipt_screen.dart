@@ -339,7 +339,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
 
                                 // Receipt Number and Timestamp
                                 Text(
-                                  t.receiptNumber(s.localNo),
+                                  t.receiptNumber(d.displayNo),
                                   key: const Key('receipt-no'),
                                   textAlign: TextAlign.center,
                                   style: const TextStyle(

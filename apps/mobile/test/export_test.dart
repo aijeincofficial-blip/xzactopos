@@ -30,15 +30,15 @@ void main() {
       expect(csvCell('@cmd'), "'@cmd");
     });
 
-    test('sales: money as plain decimals, UTC times, not-sent flag', () {
+    test('sales: both numbers (local and from the server), plain decimals, UTC times, not-sent flag', () {
       final csv = salesCsv([
         SaleSummary(
-            id: 's1', localNo: 'A1-0001', status: 'completed', total: 12550, soldAt: DateTime.utc(2026, 11, 8, 1, 30), customerName: 'Aling, Rosa', pending: true),
-        SaleSummary(id: 's2', localNo: 'A1-0002', status: 'voided', total: 500, soldAt: DateTime.utc(2026, 11, 8, 2), pending: false),
+            id: 's1', localNo: 'A1-0001', saleNo: 'S01-261108-0007', status: 'completed', total: 12550, soldAt: DateTime.utc(2026, 11, 8, 1, 30), customerName: 'Aling, Rosa', pending: false),
+        SaleSummary(id: 's2', localNo: 'A1-0002', status: 'voided', total: 500, soldAt: DateTime.utc(2026, 11, 8, 2), pending: true),
       ], 'PHP').split('\r\n');
-      expect(csv[0], 'receipt_no,sold_at_utc,status,customer,total,not_sent');
-      expect(csv[1], 'A1-0001,2026-11-08T01:30:00.000Z,completed,"Aling, Rosa",125.50,yes');
-      expect(csv[2], 'A1-0002,2026-11-08T02:00:00.000Z,voided,,5.00,no');
+      expect(csv[0], 'receipt_no,sale_no,sold_at_utc,status,customer,total,not_sent');
+      expect(csv[1], 'A1-0001,S01-261108-0007,2026-11-08T01:30:00.000Z,completed,"Aling, Rosa",125.50,no');
+      expect(csv[2], 'A1-0002,,2026-11-08T02:00:00.000Z,voided,,5.00,yes', reason: 'no server number yet: the column is empty');
     });
 
     test('utang keeps negative balances', () {

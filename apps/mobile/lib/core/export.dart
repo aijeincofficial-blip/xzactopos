@@ -20,10 +20,11 @@ String _plain(int amount, String currency) => Money(amount, currency).toDecimalS
 
 /// Sales (newest first): receipt number, when (UTC), status, customer, total, still waiting to be sent.
 String salesCsv(List<SaleSummary> sales, String currency) => [
-      csvRow(['receipt_no', 'sold_at_utc', 'status', 'customer', 'total', 'not_sent']),
+      csvRow(['receipt_no', 'sale_no', 'sold_at_utc', 'status', 'customer', 'total', 'not_sent']),
       for (final s in sales)
         csvRow([
           s.localNo,
+          s.saleNo ?? '',
           s.soldAt.toUtc().toIso8601String(),
           s.status,
           s.customerName ?? '',

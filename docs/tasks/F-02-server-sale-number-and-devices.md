@@ -148,3 +148,6 @@ static String get devicePlatform;             // 'web' or defaultTargetPlatform.
    `store.setMeta(SyncEngine.deviceNameKey, name)` then calls `CatalogScope.of(context).engine.registerDevice(force: true)`.
 3. Optional: utang ledger rows and the export could use the server number (needs `sale_no` in `watchLedger` /
    `LedgerEntryView`, a data-layer change).
+
+## UI step done (Sonnet)
+The receipt (`receipt-no`), the Today list, the printed/shared receipt PDF (its title, file name and number line) now show `displayNo`: the server's `sale_no` once the sale is confirmed, the local number before that. The "Not sent yet" marker that was already on the receipt covers the provisional state, so no new string was added. The sales CSV has a new `sale_no` column after `receipt_no` (the local number; empty until confirmed). Test: `test/sale_no_screen_test.dart`. Not done (optional): a device name field in Settings, and the server number in utang ledger rows.

@@ -77,14 +77,14 @@ class PdfReceiptPrinter implements ReceiptPrinter {
   Future<void> print(SaleDetail sale,
       {required String storeName, required String currency, required String locale, required ReceiptLabels labels}) async {
     final bytes = await buildReceiptPdf(sale, storeName: storeName, currency: currency, locale: locale, labels: labels);
-    await Printing.layoutPdf(name: sale.summary.localNo, format: receiptPageFormat, onLayout: (_) async => bytes);
+    await Printing.layoutPdf(name: sale.displayNo, format: receiptPageFormat, onLayout: (_) async => bytes);
   }
 
   @override
   Future<void> share(SaleDetail sale,
       {required String storeName, required String currency, required String locale, required ReceiptLabels labels}) async {
     final bytes = await buildReceiptPdf(sale, storeName: storeName, currency: currency, locale: locale, labels: labels);
-    await Printing.sharePdf(bytes: bytes, filename: '${sale.summary.localNo}.pdf');
+    await Printing.sharePdf(bytes: bytes, filename: '${sale.displayNo}.pdf');
   }
 }
 
@@ -119,7 +119,7 @@ Future<Uint8List> buildReceiptPdf(
     build: (_) => pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.stretch, children: [
       pw.Text(storeName, textAlign: pw.TextAlign.center, style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
       pw.SizedBox(height: 2),
-      pw.Text(labels.number(s.localNo), textAlign: pw.TextAlign.center, style: const pw.TextStyle(fontSize: 8)),
+      pw.Text(labels.number(d.displayNo), textAlign: pw.TextAlign.center, style: const pw.TextStyle(fontSize: 8)),
       pw.Text(DateFormat.yMMMd(locale).add_jm().format(s.soldAt), textAlign: pw.TextAlign.center, style: const pw.TextStyle(fontSize: 8)),
       if (s.voided)
         pw.Text(labels.cancelled, textAlign: pw.TextAlign.center, style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),

@@ -498,7 +498,7 @@ class _TodayScreenState extends State<TodayScreen> {
                             subtitle: Text(
                               [
                                 _formatSaleDate(s.soldAt, locale),
-                                s.localNo,
+                                s.displayNo,
                                 if (s.customerName != null) s.customerName!,
                                 if (s.voided) t.receiptCancelled,
                               ].join(' · '),
