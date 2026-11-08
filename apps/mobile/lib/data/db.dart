@@ -312,6 +312,9 @@ class DayCloses extends Table {
   TextColumn get closedAt => text()();
   TextColumn get updatedAt => text().nullable()();
 
+  /// Cash the drawer started the day with (sukli), centavos >= 0 (schema v11, P8-14). Part of [expectedCash].
+  IntColumn get openingCash => integer().withDefault(const Constant(0))();
+
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -471,7 +474,7 @@ class AppDatabase extends _$AppDatabase {
   static const _name = 'xzactopos';
 
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 11;
 
   /// Adds a column unless it is there already (a database made by a newer build and stepped back in a test, or a
   /// table an earlier step created with today's definition). Skips a table that does not exist.
@@ -575,6 +578,11 @@ class AppDatabase extends _$AppDatabase {
           if (from < 10) {
             // a new table only (IF NOT EXISTS); every existing row stays. No cursor yet, so the first pull brings every date.
             await m.createTable(stockExpiry);
+          }
+          if (from < 11) {
+            // additive only: the opening cash of a day close (every row kept with 0, what closes before P8-14 meant). The
+            // server's earlier closes have opening_cash 0 as well, so no re-pull is needed.
+            await _addColumnIfMissing(m, dayCloses, dayCloses.openingCash);
           }
         },
       );

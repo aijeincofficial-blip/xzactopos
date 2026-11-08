@@ -233,7 +233,8 @@ set local role authenticated;
 select is((select (jsonb_array_length(r -> 'rows'), r ->> 'has_more',
                    (select array_agg(k order by k) from jsonb_object_keys(r -> 'rows' -> 0) k))::text
            from (select public.sync_pull_day_closes() r) x),
-          '(7,false,"{approved_by,closed_at,closed_by,counted_cash,currency,day,difference,expected_cash,id,location_id,note,server_expected_cash,updated_at}")',
+          -- opening_cash added by P8-14 (20261108001800_opening_cash.sql)
+          '(7,false,"{approved_by,closed_at,closed_by,counted_cash,currency,day,difference,expected_cash,id,location_id,note,opening_cash,server_expected_cash,updated_at}")',
           'the owner pulls every close of the tenant with the documented fields');
 select is((select (jsonb_array_length(p1 -> 'rows'), p1 ->> 'has_more',
                    jsonb_array_length(public.sync_pull_day_closes(p1 -> 'cursor', 200) -> 'rows'))::text

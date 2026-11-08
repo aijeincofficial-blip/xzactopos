@@ -329,6 +329,7 @@ class DayCloseView {
     required this.expectedCash,
     required this.countedCash,
     required this.difference,
+    this.openingCash = 0,
     this.serverExpectedCash,
     this.note,
     required this.closedAt,
@@ -342,8 +343,12 @@ class DayCloseView {
   /// YYYY-MM-DD.
   final String day;
 
-  /// What the phone expected in the drawer when the count was saved (see [SalesStore.expectedCash]).
+  /// What the phone expected in the drawer when the count was saved (see [SalesStore.expectedCash]); includes
+  /// [openingCash].
   final int expectedCash;
+
+  /// The cash the drawer started the day with (sukli) used for this close, centavos >= 0 (0 for closes before P8-14).
+  final int openingCash;
   final int countedCash;
 
   /// counted - expected: below zero = short (kulang), above zero = over (sobra).
@@ -697,16 +702,28 @@ abstract class SalesStore {
   /// Cash that should be in the drawer for the local day of [day]: cash taken by completed sales + utang payments
   /// - cash expenses that are not voided + the cash effect of service entries not voided (cash-in +amount+fee,
   /// cash-out -amount+fee, load +price, float top-up -amount, float withdraw +amount; see [serviceCashEffect]).
-  /// Includes what this device has not sent yet. Centavos; may be below zero. (Opening float is not part of it.)
-  Future<int> expectedCash(DateTime day);
-  Stream<int> watchExpectedCash(DateTime day);
+  /// Includes what this device has not sent yet. Centavos; may be below zero.
+  ///
+  /// P8-14: PLUS the opening cash (sukli) the day started with: [openingCash] when given (centavos >= 0, else
+  /// ArgumentError), otherwise [defaultOpeningCash] of [day]. Callers that pass no [openingCash] (the day close screen
+  /// before P8-14) therefore get the default opening included; pass `openingCash: 0` for the day's cash flow alone.
+  Future<int> expectedCash(DateTime day, {int? openingCash});
+  Stream<int> watchExpectedCash(DateTime day, {int? openingCash});
 
-  /// Saves a cash count for the local day of [day]: stores the [expectedCash] of that moment, [countedCash] and the
-  /// difference, and queues one `close_day` op. Several closes per day are allowed (a re-count).
+  /// The suggested opening cash for the local day of [day]: the counted cash of the latest close (newest closed_at) of a
+  /// day BEFORE [day] at this device's store (closes with no store count too), else 0. Closes of [day] itself (re-counts)
+  /// and of later days are ignored. Centavos.
+  Future<int> defaultOpeningCash(DateTime day);
+
+  /// Saves a cash count for the local day of [day]: stores the opening cash used ([openingCash], or
+  /// [defaultOpeningCash] when null; >= 0 else ArgumentError), the [expectedCash] of that moment computed with that same
+  /// opening, [countedCash] and the difference (counted - expected), and queues one `close_day` op whose payload carries
+  /// `opening_cash` and an `expected_cash` that includes it. Several closes per day are allowed (a re-count).
   Future<void> closeDay({
     required String id,
     required DateTime day,
     required int countedCash,
+    int? openingCash,
     String? note,
     String? approvalId,
     required String opId,

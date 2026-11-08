@@ -469,6 +469,14 @@ Share was checked on the emulator (Android share sheet with `LL3-261107-0001.pdf
   `receiveStock(expiresOn:)`, `watchExpiring` / `expiringCount`, `StockRow.expiresOn` / `expired` / `expiringSoon` /
   `daysLeft`, sync kind `set_expiry`, discard removes the local date. 11 new tests (267 total). No screens yet: the UI card
   uses `docs/tasks/P8-11-expiry-dates.md`.
+- P8-14 (`20261108001800_opening_cash.sql`, added card): opening cash (sukli) in the day close. `day_closes.opening_cash`
+  (centavos >= 0, default 0, append-only), `close_day` optional `opening_cash` (bad value `amount_invalid`),
+  `server_expected_cash = opening + day cash flow`, client `expected_cash` includes it, audit meta + `sync_pull_day_closes`
+  carry it; closes without it unchanged. pgTAP `023` (37), `018` pull key list updated; suite 2655 (23 files). Flutter: Drift
+  v11, `defaultOpeningCash(day)` (count of the newest earlier close at this store, else 0), `expectedCash` /
+  `watchExpectedCash(day, {openingCash})` add it (default when null: existing callers now include the opening),
+  `closeDay(openingCash:)`, `DayCloseView.openingCash`. 10 new tests (297 total). Screen change still open:
+  `docs/tasks/P8-14-opening-cash.md`.
 
 ## Antigravity Session: Neo-Fintech Design, Settings Screen, Theme Fix, & Reports Enrichment
 Read `docs/START-HERE-claude.md` for the complete handoff from Antigravity.

@@ -32,6 +32,7 @@ A tindera can run a whole day in the app: sell fast, take cash-in/out and load, 
 | P8-11 Expiry dates | one date per product per store (earliest on the shelf, no lots), `stock_expiry` + `set_expiry` op, optional `expires_on` on `receive_stock` (earlier-date rule), Drift v10 + store API + sync. DONE (server + data layer; model, limitation, API and what the UI card calls: `P8-11-expiry-dates.md`). UI card ("expiring soon" on Home and Stock) still open | Opus (schema) then Sonnet (UI) |
 | P8-12 Export and backup | CSV of sales, utang, stock, share sheet (share_plus). DONE | Sonnet |
 | P8-13 Acceptance | emulator walk-through, report in docs/tasks/P8-13-acceptance.md. DONE | Sonnet |
+| P8-14 Opening cash (sukli) in the day close (added card) | `day_closes.opening_cash`, optional `opening_cash` on `close_day` (in `server_expected_cash`), pull + audit carry it, Drift v11, `defaultOpeningCash` (latest earlier close's count) + `expectedCash` / `closeDay` take an opening. DONE (server + data layer; model, payload, API and what the screen calls: `P8-14-opening-cash.md`). Screen change still open | Opus (data) then Sonnet (screen) |
 
 ## Order
 P8-01 first (no schema, immediate speed win), then P8-02 to P8-04 (expenses and day close), then P8-05, then P8-06/07 (load), then the rest by the owner's priority.

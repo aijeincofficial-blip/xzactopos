@@ -8912,6 +8912,18 @@ class $DayClosesTable extends DayCloses
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _openingCashMeta = const VerificationMeta(
+    'openingCash',
+  );
+  @override
+  late final GeneratedColumn<int> openingCash = GeneratedColumn<int>(
+    'opening_cash',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -8927,6 +8939,7 @@ class $DayClosesTable extends DayCloses
     approvedBy,
     closedAt,
     updatedAt,
+    openingCash,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -9038,6 +9051,15 @@ class $DayClosesTable extends DayCloses
         updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
     }
+    if (data.containsKey('opening_cash')) {
+      context.handle(
+        _openingCashMeta,
+        openingCash.isAcceptableOrUnknown(
+          data['opening_cash']!,
+          _openingCashMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -9099,6 +9121,10 @@ class $DayClosesTable extends DayCloses
         DriftSqlType.string,
         data['${effectivePrefix}updated_at'],
       ),
+      openingCash: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}opening_cash'],
+      )!,
     );
   }
 
@@ -9126,6 +9152,9 @@ class DayClose extends DataClass implements Insertable<DayClose> {
   final String? approvedBy;
   final String closedAt;
   final String? updatedAt;
+
+  /// Cash the drawer started the day with (sukli), centavos >= 0 (schema v11, P8-14). Part of [expectedCash].
+  final int openingCash;
   const DayClose({
     required this.id,
     this.locationId,
@@ -9140,6 +9169,7 @@ class DayClose extends DataClass implements Insertable<DayClose> {
     this.approvedBy,
     required this.closedAt,
     this.updatedAt,
+    required this.openingCash,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -9169,6 +9199,7 @@ class DayClose extends DataClass implements Insertable<DayClose> {
     if (!nullToAbsent || updatedAt != null) {
       map['updated_at'] = Variable<String>(updatedAt);
     }
+    map['opening_cash'] = Variable<int>(openingCash);
     return map;
   }
 
@@ -9197,6 +9228,7 @@ class DayClose extends DataClass implements Insertable<DayClose> {
       updatedAt: updatedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(updatedAt),
+      openingCash: Value(openingCash),
     );
   }
 
@@ -9219,6 +9251,7 @@ class DayClose extends DataClass implements Insertable<DayClose> {
       approvedBy: serializer.fromJson<String?>(json['approvedBy']),
       closedAt: serializer.fromJson<String>(json['closedAt']),
       updatedAt: serializer.fromJson<String?>(json['updatedAt']),
+      openingCash: serializer.fromJson<int>(json['openingCash']),
     );
   }
   @override
@@ -9238,6 +9271,7 @@ class DayClose extends DataClass implements Insertable<DayClose> {
       'approvedBy': serializer.toJson<String?>(approvedBy),
       'closedAt': serializer.toJson<String>(closedAt),
       'updatedAt': serializer.toJson<String?>(updatedAt),
+      'openingCash': serializer.toJson<int>(openingCash),
     };
   }
 
@@ -9255,6 +9289,7 @@ class DayClose extends DataClass implements Insertable<DayClose> {
     Value<String?> approvedBy = const Value.absent(),
     String? closedAt,
     Value<String?> updatedAt = const Value.absent(),
+    int? openingCash,
   }) => DayClose(
     id: id ?? this.id,
     locationId: locationId.present ? locationId.value : this.locationId,
@@ -9271,6 +9306,7 @@ class DayClose extends DataClass implements Insertable<DayClose> {
     approvedBy: approvedBy.present ? approvedBy.value : this.approvedBy,
     closedAt: closedAt ?? this.closedAt,
     updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+    openingCash: openingCash ?? this.openingCash,
   );
   DayClose copyWithCompanion(DayClosesCompanion data) {
     return DayClose(
@@ -9299,6 +9335,9 @@ class DayClose extends DataClass implements Insertable<DayClose> {
           : this.approvedBy,
       closedAt: data.closedAt.present ? data.closedAt.value : this.closedAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      openingCash: data.openingCash.present
+          ? data.openingCash.value
+          : this.openingCash,
     );
   }
 
@@ -9317,7 +9356,8 @@ class DayClose extends DataClass implements Insertable<DayClose> {
           ..write('closedBy: $closedBy, ')
           ..write('approvedBy: $approvedBy, ')
           ..write('closedAt: $closedAt, ')
-          ..write('updatedAt: $updatedAt')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('openingCash: $openingCash')
           ..write(')'))
         .toString();
   }
@@ -9337,6 +9377,7 @@ class DayClose extends DataClass implements Insertable<DayClose> {
     approvedBy,
     closedAt,
     updatedAt,
+    openingCash,
   );
   @override
   bool operator ==(Object other) =>
@@ -9354,7 +9395,8 @@ class DayClose extends DataClass implements Insertable<DayClose> {
           other.closedBy == this.closedBy &&
           other.approvedBy == this.approvedBy &&
           other.closedAt == this.closedAt &&
-          other.updatedAt == this.updatedAt);
+          other.updatedAt == this.updatedAt &&
+          other.openingCash == this.openingCash);
 }
 
 class DayClosesCompanion extends UpdateCompanion<DayClose> {
@@ -9371,6 +9413,7 @@ class DayClosesCompanion extends UpdateCompanion<DayClose> {
   final Value<String?> approvedBy;
   final Value<String> closedAt;
   final Value<String?> updatedAt;
+  final Value<int> openingCash;
   final Value<int> rowid;
   const DayClosesCompanion({
     this.id = const Value.absent(),
@@ -9386,6 +9429,7 @@ class DayClosesCompanion extends UpdateCompanion<DayClose> {
     this.approvedBy = const Value.absent(),
     this.closedAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
+    this.openingCash = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   DayClosesCompanion.insert({
@@ -9402,6 +9446,7 @@ class DayClosesCompanion extends UpdateCompanion<DayClose> {
     this.approvedBy = const Value.absent(),
     required String closedAt,
     this.updatedAt = const Value.absent(),
+    this.openingCash = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        day = Value(day),
@@ -9424,6 +9469,7 @@ class DayClosesCompanion extends UpdateCompanion<DayClose> {
     Expression<String>? approvedBy,
     Expression<String>? closedAt,
     Expression<String>? updatedAt,
+    Expression<int>? openingCash,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -9441,6 +9487,7 @@ class DayClosesCompanion extends UpdateCompanion<DayClose> {
       if (approvedBy != null) 'approved_by': approvedBy,
       if (closedAt != null) 'closed_at': closedAt,
       if (updatedAt != null) 'updated_at': updatedAt,
+      if (openingCash != null) 'opening_cash': openingCash,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -9459,6 +9506,7 @@ class DayClosesCompanion extends UpdateCompanion<DayClose> {
     Value<String?>? approvedBy,
     Value<String>? closedAt,
     Value<String?>? updatedAt,
+    Value<int>? openingCash,
     Value<int>? rowid,
   }) {
     return DayClosesCompanion(
@@ -9475,6 +9523,7 @@ class DayClosesCompanion extends UpdateCompanion<DayClose> {
       approvedBy: approvedBy ?? this.approvedBy,
       closedAt: closedAt ?? this.closedAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      openingCash: openingCash ?? this.openingCash,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -9521,6 +9570,9 @@ class DayClosesCompanion extends UpdateCompanion<DayClose> {
     if (updatedAt.present) {
       map['updated_at'] = Variable<String>(updatedAt.value);
     }
+    if (openingCash.present) {
+      map['opening_cash'] = Variable<int>(openingCash.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -9543,6 +9595,7 @@ class DayClosesCompanion extends UpdateCompanion<DayClose> {
           ..write('approvedBy: $approvedBy, ')
           ..write('closedAt: $closedAt, ')
           ..write('updatedAt: $updatedAt, ')
+          ..write('openingCash: $openingCash, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -17123,6 +17176,7 @@ typedef $$DayClosesTableCreateCompanionBuilder =
       Value<String?> approvedBy,
       required String closedAt,
       Value<String?> updatedAt,
+      Value<int> openingCash,
       Value<int> rowid,
     });
 typedef $$DayClosesTableUpdateCompanionBuilder =
@@ -17140,6 +17194,7 @@ typedef $$DayClosesTableUpdateCompanionBuilder =
       Value<String?> approvedBy,
       Value<String> closedAt,
       Value<String?> updatedAt,
+      Value<int> openingCash,
       Value<int> rowid,
     });
 
@@ -17214,6 +17269,11 @@ class $$DayClosesTableFilterComposer
 
   ColumnFilters<String> get updatedAt => $composableBuilder(
     column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get openingCash => $composableBuilder(
+    column: $table.openingCash,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -17291,6 +17351,11 @@ class $$DayClosesTableOrderingComposer
     column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get openingCash => $composableBuilder(
+    column: $table.openingCash,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$DayClosesTableAnnotationComposer
@@ -17352,6 +17417,11 @@ class $$DayClosesTableAnnotationComposer
 
   GeneratedColumn<String> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get openingCash => $composableBuilder(
+    column: $table.openingCash,
+    builder: (column) => column,
+  );
 }
 
 class $$DayClosesTableTableManager
@@ -17395,6 +17465,7 @@ class $$DayClosesTableTableManager
                 Value<String?> approvedBy = const Value.absent(),
                 Value<String> closedAt = const Value.absent(),
                 Value<String?> updatedAt = const Value.absent(),
+                Value<int> openingCash = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DayClosesCompanion(
                 id: id,
@@ -17410,6 +17481,7 @@ class $$DayClosesTableTableManager
                 approvedBy: approvedBy,
                 closedAt: closedAt,
                 updatedAt: updatedAt,
+                openingCash: openingCash,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -17427,6 +17499,7 @@ class $$DayClosesTableTableManager
                 Value<String?> approvedBy = const Value.absent(),
                 required String closedAt,
                 Value<String?> updatedAt = const Value.absent(),
+                Value<int> openingCash = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DayClosesCompanion.insert(
                 id: id,
@@ -17442,6 +17515,7 @@ class $$DayClosesTableTableManager
                 approvedBy: approvedBy,
                 closedAt: closedAt,
                 updatedAt: updatedAt,
+                openingCash: openingCash,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

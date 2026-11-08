@@ -103,6 +103,7 @@ class ExpenseServer implements SyncApi {
       case 'close_day':
         closes[ref!] = {
           'id': ref, 'location_id': p['location_id'], 'day': p['day'], 'currency': 'PHP', 'expected_cash': p['expected_cash'],
+          'opening_cash': p['opening_cash'] ?? 0, // P8-14
           'counted_cash': p['counted_cash'], 'difference': (p['counted_cash'] as int) - (p['expected_cash'] as int),
           'server_expected_cash': (p['expected_cash'] as int) + 7, 'note': p['note'], 'closed_by': 'u1',
           'approved_by': null, 'closed_at': pgTs(DateTime.parse(p['closed_at'] as String)), 'updated_at': now,
@@ -339,7 +340,9 @@ void main() {
       final op = (await store.nextOps()).last;
       expect(op.kind, 'close_day');
       expect(op.payload..remove('closed_at'), {
-        'id': 'd1', 'day': dayKey(today()), 'expected_cash': 10000, 'counted_cash': 9800, 'note': 'kulang', 'location_id': _loc,
+        // P8-14: the payload always carries the opening cash used (0 here: no earlier close)
+        'id': 'd1', 'day': dayKey(today()), 'opening_cash': 0, 'expected_cash': 10000, 'counted_cash': 9800, 'note': 'kulang',
+        'location_id': _loc,
       });
     });
 

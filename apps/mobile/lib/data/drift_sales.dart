@@ -918,8 +918,21 @@ mixin DriftSales implements SalesStore {
   // Server ledger times are kept as the server sent them (any offset), so they are compared through julianday();
   // everything else is stored as normalised UTC ISO text and compared as text (index friendly).
   // Utang payments are cash (the server has no payment method or store on them).
+  // ?1 / ?2 = the day's bounds; ?3 = the opening cash asked for (null = the default); ?4 = the day key; ?5 = this device's
+  // store (null = any). Expected cash = the day's cash flow + the opening cash (P8-14).
   static const _expectedCashSql = '''
-    select
+    select ($_cashFlowSql) + $_openingSql as expected
+  ''';
+
+  /// The opening cash: ?3 when given, else the counted cash of the newest close (by closed_at) of an EARLIER day at this
+  /// store (closes without a store count), else 0. Same-day re-counts and later days never count.
+  static const _openingSql = '''
+    coalesce(?3, (select x.counted_cash from day_closes x
+                  where x.day < ?4 and (?5 is null or x.location_id is null or x.location_id = ?5)
+                  order by x.closed_at desc, x.id desc limit 1), 0)
+  ''';
+
+  static const _cashFlowSql = '''
       coalesce((select sum(p.amount) from sale_payments p join sales s on s.id = p.sale_id
                 where s.status = 'completed' and p.method = 'cash' and s.sold_at >= ?1 and s.sold_at < ?2), 0)
     - coalesce((select sum(l.amount) from server_ledger l
@@ -931,7 +944,6 @@ mixin DriftSales implements SalesStore {
                 where e.voided_at is null and e.paid_from = 'cash' and e.spent_at >= ?1 and e.spent_at < ?2), 0)
     + coalesce((select sum($_serviceCashSql) from service_txns t
                 where t.voided_at is null and t.txn_at >= ?1 and t.txn_at < ?2), 0)
-      as expected
   ''';
 
   /// [serviceCashEffect] in SQL, for a `service_txns t` row.
@@ -941,35 +953,57 @@ mixin DriftSales implements SalesStore {
                 when 'float_topup' then -t.amount when 'float_withdraw' then t.amount else 0 end
   ''';
 
-  Selectable<QueryRow> _expectedCashQuery(DateTime day) {
+  /// The variables of [_expectedCashSql] / [_openingSql] (see the comment there).
+  List<Variable<Object>> _cashVars(DateTime day, int? openingCash) {
+    if (openingCash != null && openingCash < 0) throw ArgumentError('Opening cash cannot be negative');
     final (from, to) = _dayBounds(day);
-    return db.customSelect(_expectedCashSql,
-        variables: [Variable.withString(from), Variable.withString(to)],
-        readsFrom: {db.sales, db.salePayments, db.serverLedger, db.localLedger, db.expenses, db.serviceTxns});
+    return [
+      Variable.withString(from),
+      Variable.withString(to),
+      Variable<int>(openingCash),
+      Variable.withString(dayKey(day)),
+      Variable<String>(locationId),
+    ];
   }
 
-  @override
-  Future<int> expectedCash(DateTime day) async => (await _expectedCashQuery(day).getSingle()).read<int>('expected');
+  Selectable<QueryRow> _expectedCashQuery(DateTime day, int? openingCash) => db.customSelect(_expectedCashSql,
+      variables: _cashVars(day, openingCash),
+      readsFrom: {db.sales, db.salePayments, db.serverLedger, db.localLedger, db.expenses, db.serviceTxns, db.dayCloses});
 
   @override
-  Stream<int> watchExpectedCash(DateTime day) => _expectedCashQuery(day).watchSingle().map((r) => r.read<int>('expected'));
+  Future<int> expectedCash(DateTime day, {int? openingCash}) async =>
+      (await _expectedCashQuery(day, openingCash).getSingle()).read<int>('expected');
+
+  @override
+  Stream<int> watchExpectedCash(DateTime day, {int? openingCash}) =>
+      _expectedCashQuery(day, openingCash).watchSingle().map((r) => r.read<int>('expected'));
+
+  @override
+  Future<int> defaultOpeningCash(DateTime day) async => (await db
+          .customSelect('select $_openingSql as opening', variables: _cashVars(day, null), readsFrom: {db.dayCloses})
+          .getSingle())
+      .read<int>('opening');
 
   @override
   Future<void> closeDay({
     required String id,
     required DateTime day,
     required int countedCash,
+    int? openingCash,
     String? note,
     String? approvalId,
     required String opId,
   }) {
     if (countedCash < 0) throw ArgumentError('Counted cash cannot be negative');
+    if (openingCash != null && openingCash < 0) throw ArgumentError('Opening cash cannot be negative');
     final n = _text200(note);
     return db.transaction(() async {
       if (await (db.select(db.dayCloses)..where((d) => d.id.equals(id))).getSingleOrNull() != null) {
         throw StateError('Day close id already used');
       }
-      final expected = await expectedCash(day);
+      // one opening for both the stored row and the expected cash, so difference = counted - (flow + opening)
+      final opening = openingCash ?? await defaultOpeningCash(day);
+      final expected = await expectedCash(day, openingCash: opening);
       final key = dayKey(day);
       final at = _iso(DateTime.now());
       await db.into(db.dayCloses).insert(DayClosesCompanion.insert(
@@ -977,6 +1011,7 @@ mixin DriftSales implements SalesStore {
             locationId: Value(locationId),
             day: key,
             currency: baseCurrency,
+            openingCash: Value(opening),
             expectedCash: expected,
             countedCash: countedCash,
             difference: countedCash - expected,
@@ -986,6 +1021,7 @@ mixin DriftSales implements SalesStore {
       await enqueue(opId, 'close_day', id, {
         'id': id,
         'day': key,
+        'opening_cash': opening,
         'expected_cash': expected,
         'counted_cash': countedCash,
         'closed_at': at,
@@ -1000,8 +1036,8 @@ mixin DriftSales implements SalesStore {
   Stream<DayCloseView?> watchLatestDayClose(DateTime day) => db
       .customSelect(
         '''
-        select x.id, x.day, x.expected_cash, x.counted_cash, x.difference, x.server_expected_cash, x.note, x.closed_at,
-               x.approved_by, $_pendingSql
+        select x.id, x.day, x.opening_cash, x.expected_cash, x.counted_cash, x.difference, x.server_expected_cash, x.note,
+               x.closed_at, x.approved_by, $_pendingSql
         from day_closes x
         where x.day = ?1
         order by x.closed_at desc, x.id desc
@@ -1016,6 +1052,7 @@ mixin DriftSales implements SalesStore {
           : DayCloseView(
               id: rows.first.read<String>('id'),
               day: rows.first.read<String>('day'),
+              openingCash: rows.first.read<int>('opening_cash'),
               expectedCash: rows.first.read<int>('expected_cash'),
               countedCash: rows.first.read<int>('counted_cash'),
               difference: rows.first.read<int>('difference'),
@@ -1631,6 +1668,8 @@ mixin DriftSales implements SalesStore {
               locationId: Value(r['location_id'] as String?),
               day: r['day'] as String,
               currency: (r['currency'] as String).trim(),
+              // absent from a server before P8-14: those closes had no opening cash
+              openingCash: Value((r['opening_cash'] as num?)?.toInt() ?? 0),
               expectedCash: (r['expected_cash'] as num).toInt(),
               countedCash: (r['counted_cash'] as num).toInt(),
               difference: (r['difference'] as num).toInt(),
