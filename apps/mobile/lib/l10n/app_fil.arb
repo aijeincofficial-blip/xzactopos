@@ -900,5 +900,6 @@
   "keypadAdd": "Idagdag sa benta",
   "sellModeItems": "Mga item",
   "sellModeKeypad": "Keypad",
-  "openAmountName": "Iba pang item"
+  "openAmountName": "Iba pang item",
+  "payWalletTitle": "Anong wallet?"
 }

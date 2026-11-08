@@ -9,6 +9,7 @@ import '../data/sales_models.dart';
 import '../l10n/app_localizations.dart';
 import '../sync/store_session.dart';
 import 'cart.dart';
+import 'services_screen.dart' show walletLabel;
 import 'customer_picker.dart';
 import 'receipt_screen.dart';
 
@@ -29,6 +30,7 @@ class _PayScreenState extends State<PayScreen> {
   final _received = TextEditingController();
   final _discount = TextEditingController();
   String _method = 'cash'; // cash | ewallet
+  String _wallet = 'gcash'; // which wallet an e-wallet payment went to
   PickedCustomer? _customer;
   bool _saving = false;
 
@@ -87,7 +89,8 @@ class _PayScreenState extends State<PayScreen> {
         customerId: _utang > 0 ? _customer!.id : null,
         payments: [
           if (_applied > 0)
-            PaymentDraft(_method, _applied, tendered: _method == 'cash' ? _receivedAmt : null),
+            PaymentDraft(_method, _applied,
+                tendered: _method == 'cash' ? _receivedAmt : null, wallet: _method == 'ewallet' ? _wallet : null),
           if (_utang > 0) PaymentDraft('utang', _utang),
         ],
       );
@@ -201,6 +204,20 @@ class _PayScreenState extends State<PayScreen> {
             selected: {_method},
             onSelectionChanged: (s) => setState(() => _method = s.first),
           ),
+          if (_method == 'ewallet') ...[
+            const SizedBox(height: Gap.s),
+            Text(t.payWalletTitle, style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.outline)),
+            const SizedBox(height: 4),
+            Wrap(spacing: 8, children: [
+                for (final w in paymentWallets)
+                  ChoiceChip(
+                    key: Key('pay-wallet-$w'),
+                    label: Text(walletLabel(t, w)),
+                    selected: _wallet == w,
+                    onSelected: (_) => setState(() => _wallet = w),
+                  ),
+              ]),
+          ],
           const SizedBox(height: Gap.m),
 
           // Amount Received Field

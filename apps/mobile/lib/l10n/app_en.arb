@@ -900,5 +900,6 @@
   "keypadAdd": "Add to sale",
   "sellModeItems": "Items",
   "sellModeKeypad": "Keypad",
-  "openAmountName": "Other item"
+  "openAmountName": "Other item",
+  "payWalletTitle": "Which wallet?"
 }

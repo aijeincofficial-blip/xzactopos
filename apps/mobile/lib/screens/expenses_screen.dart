@@ -10,6 +10,7 @@ import '../data/sales_models.dart';
 import '../l10n/app_localizations.dart';
 import '../sync/store_session.dart';
 import '../sync/sync_badge.dart';
+import 'services_screen.dart' show walletLabel;
 import 'supervisor_pin.dart';
 
 /// Money spent today (stock, electricity, fare...). Add one, or cancel one that was a mistake.
@@ -254,6 +255,7 @@ Future<void> showAddExpenseDialog(
   final note = TextEditingController();
   var category = 'stock_purchase';
   var paidFrom = 'cash';
+  var wallet = 'gcash';
   String? amountError;
   // a bottom sheet: it keeps its room when the keyboard is open (a dialog got cramped there)
   final ok = await showModalBottomSheet<bool>(
@@ -314,6 +316,18 @@ Future<void> showAddExpenseDialog(
                 selected: {paidFrom},
                 onSelectionChanged: (s) => setState(() => paidFrom = s.first),
               ),
+              if (paidFrom == 'ewallet') ...[
+                const SizedBox(height: 8),
+                Wrap(spacing: 8, children: [
+                for (final w in paymentWallets)
+                  ChoiceChip(
+                    key: Key('expense-wallet-$w'),
+                    label: Text(walletLabel(t, w)),
+                    selected: wallet == w,
+                    onSelected: (_) => setState(() => wallet = w),
+                  ),
+              ]),
+              ],
               const SizedBox(height: 12),
               TextField(
                 key: const Key('expense-note'),
@@ -365,6 +379,7 @@ Future<void> showAddExpenseDialog(
     amount: Money.parse(amount.text, ccy).amount,
     category: category,
     paidFrom: paidFrom,
+    wallet: paidFrom == 'ewallet' ? wallet : null,
     note: note.text.trim().isEmpty ? null : note.text.trim(),
     opId: const Uuid().v7(),
   );

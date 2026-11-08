@@ -67,6 +67,34 @@ void main() {
     await leave(tester);
   });
 
+  testWidgets('an e-wallet expense names its wallet (GCash unless changed) and lowers that float; cash names none', (tester) async {
+    final store = await openToday(tester);
+    await tester.tap(find.byKey(const Key('tile-expenses')));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('expense-add')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('expense-wallet-gcash')), findsNothing, reason: 'cash by default');
+    await tester.enterText(find.byKey(const Key('expense-amount')), '30');
+    await tester.ensureVisible(find.text('E-wallet'));
+    await tester.tap(find.text('E-wallet'));
+    await tester.pump();
+    await tester.ensureVisible(find.byKey(const Key('expense-wallet-maya')));
+    await tester.tap(find.byKey(const Key('expense-wallet-maya')));
+    await tester.pump();
+    await tester.ensureVisible(find.byKey(const Key('expense-save')));
+    await tester.tap(find.byKey(const Key('expense-save')));
+    await tester.pumpAndSettle();
+    final op = (await store.nextOps()).firstWhere((o) => o.kind == 'record_expense');
+    expect((op.payload['paid_from'], op.payload['wallet']), ('ewallet', 'maya'));
+    expect((await store.watchWalletFloat().first).firstWhere((f) => f.wallet == 'maya').balance, -3000);
+
+    await addExpense(tester, '5');
+    final cash = (await store.nextOps()).where((o) => o.kind == 'record_expense').last;
+    expect(cash.payload.containsKey('wallet'), isFalse);
+    await leave(tester);
+  });
+
   testWidgets('cancelling an expense strikes it out and takes it off the total', (tester) async {
     final store = await openToday(tester);
     await tester.tap(find.byKey(const Key('tile-expenses')));

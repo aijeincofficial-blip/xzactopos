@@ -144,7 +144,37 @@ void main() {
     await tester.tap(find.byKey(const Key('pay-done')));
     await tester.pumpAndSettle();
     final pay = ((await store.nextOps()).single.payload['payments'] as List).single as Map;
-    expect(pay, {'method': 'ewallet', 'amount': 1250});
+    expect(pay, {'method': 'ewallet', 'amount': 1250, 'wallet': 'gcash'}, reason: 'GCash is the wallet unless another is chosen');
+    expect((await store.watchWalletFloat().first).firstWhere((f) => f.wallet == 'gcash').balance, 1250,
+        reason: 'the money arrived in the wallet');
+    await leave(tester);
+  });
+
+  testWidgets('choosing Maya sends the payment to the Maya float; cash never names a wallet', (tester) async {
+    final store = await openPay(tester, kape: 1);
+    expect(find.byKey(const Key('pay-wallet-maya')), findsNothing, reason: 'the chooser is only for e-wallet');
+    await tester.tap(find.text('GCash / Maya'));
+    await tester.pump();
+    await tester.ensureVisible(find.byKey(const Key('pay-wallet-maya')));
+    await tester.tap(find.byKey(const Key('pay-wallet-maya')));
+    await tester.pump();
+    await tester.ensureVisible(find.byKey(const Key('pay-done')));
+    await tester.tap(find.byKey(const Key('pay-done')));
+    await tester.pumpAndSettle();
+    final pay = ((await store.nextOps()).single.payload['payments'] as List).single as Map;
+    expect(pay['wallet'], 'maya');
+    final floats = await store.watchWalletFloat().first;
+    expect(floats.firstWhere((f) => f.wallet == 'maya').balance, 1250);
+    expect(floats.where((f) => f.wallet == 'gcash').every((f) => f.balance == 0), isTrue);
+    await leave(tester);
+  });
+
+  testWidgets('a cash sale has no wallet in its payment', (tester) async {
+    final store = await openPay(tester, kape: 1);
+    await tester.tap(find.byKey(const Key('pay-done')));
+    await tester.pumpAndSettle();
+    final pay = ((await store.nextOps()).single.payload['payments'] as List).single as Map;
+    expect(pay.containsKey('wallet'), isFalse);
     await leave(tester);
   });
 

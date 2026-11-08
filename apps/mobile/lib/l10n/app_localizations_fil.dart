@@ -1520,4 +1520,7 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get openAmountName => 'Iba pang item';
+
+  @override
+  String get payWalletTitle => 'Anong wallet?';
 }

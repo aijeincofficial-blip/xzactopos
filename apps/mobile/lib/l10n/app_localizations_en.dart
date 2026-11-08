@@ -1516,4 +1516,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get openAmountName => 'Other item';
+
+  @override
+  String get payWalletTitle => 'Which wallet?';
 }

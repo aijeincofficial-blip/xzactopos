@@ -2539,6 +2539,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Other item'**
   String get openAmountName;
+
+  /// No description provided for @payWalletTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Which wallet?'**
+  String get payWalletTitle;
 }
 
 class _AppLocalizationsDelegate
