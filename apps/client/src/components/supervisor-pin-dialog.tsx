@@ -3,6 +3,12 @@ import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Alert, Button, Dialog, Field, Input, Select } from "./ui.tsx";
 import { approveSupervisorAction, fetchStoreApprovers } from "../lib/approvals-api.ts";
+import {
+  pullOfflinePins,
+  getCachedOfflinePins,
+  verifyOfflineSupervisorPin,
+  type OfflineApprovalPayload,
+} from "../lib/offline-pin-api.ts";
 import { useDynamicT } from "../lib/i18n-helpers.ts";
 
 export interface SupervisorPinDialogProps {
@@ -13,7 +19,7 @@ export interface SupervisorPinDialogProps {
   refId: string;
   title?: string;
   description?: string;
-  onApproved: (approvalId: string) => void;
+  onApproved: (approvalId: string, offlineApproval?: OfflineApprovalPayload) => void;
 }
 
 export function SupervisorPinDialog({
@@ -35,7 +41,26 @@ export function SupervisorPinDialog({
 
   const approversQuery = useQuery({
     queryKey: ["store-approvers", locationId],
-    queryFn: () => fetchStoreApprovers(locationId),
+    queryFn: async () => {
+      try {
+        const [approvers] = await Promise.all([
+          fetchStoreApprovers(locationId),
+          pullOfflinePins(locationId).catch(() => []),
+        ]);
+        return approvers;
+      } catch (err) {
+        const cached = getCachedOfflinePins(locationId);
+        if (cached.length > 0) {
+          return cached.map((c) => ({
+            user_id: c.user_id,
+            full_name: c.full_name || c.username,
+            role: c.role,
+            position: c.position,
+          }));
+        }
+        throw err;
+      }
+    },
     enabled: open && Boolean(locationId),
   });
 
@@ -66,13 +91,33 @@ export function SupervisorPinDialog({
     setError(null);
 
     try {
-      const res = await approveSupervisorAction(
-        action,
-        refId,
-        pin,
-        locationId,
-        approverId || undefined,
-      );
+      let res;
+      try {
+        res = await approveSupervisorAction(
+          action,
+          refId,
+          pin,
+          locationId,
+          approverId || undefined,
+        );
+      } catch {
+        // Fallback to offline verification if network fails
+        const offlineRes = await verifyOfflineSupervisorPin(
+          approverId,
+          pin,
+          action,
+          refId,
+          locationId,
+        );
+        if (offlineRes.ok && offlineRes.offlineApproval) {
+          onApproved("", offlineRes.offlineApproval);
+          onOpenChange(false);
+          return;
+        }
+        setError(tr("errors", offlineRes.hint ?? "pin_wrong", "pin_wrong"));
+        setLoading(false);
+        return;
+      }
 
       if (!res.ok) {
         setError(tr("errors", res.hint ?? "pin_wrong", "pin_wrong"));

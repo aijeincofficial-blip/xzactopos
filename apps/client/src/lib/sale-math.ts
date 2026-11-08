@@ -65,6 +65,12 @@ export interface SaleDraft {
   customerId?: string | undefined;
   discount: number;
   approvalId?: string | undefined;
+  offlineApproval?: {
+    approver_id: string;
+    action: string;
+    ref_id: string;
+    approved_at: string;
+  } | undefined;
   lines: readonly CartLine[];
   payments: readonly PaymentDraft[];
 }
@@ -101,6 +107,7 @@ export function salePayload(d: SaleDraft): Record<string, unknown> {
     location_id: d.locationId,
     ...(d.deviceId ? { device_id: d.deviceId } : {}),
     ...(d.approvalId ? { approval_id: d.approvalId } : {}),
+    ...(d.offlineApproval ? { offline_approval: d.offlineApproval } : {}),
     sold_at: d.soldAt.toISOString(),
     subtotal: sub,
     discount: d.discount,

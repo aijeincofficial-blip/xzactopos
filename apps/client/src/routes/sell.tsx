@@ -23,6 +23,7 @@ import {
 import { createCustomer, fetchCustomers, fetchSellables, nextLocalNo, registerWebDevice, submitSale, webDevice, type Sellable, type SoldReceipt } from "../lib/sell-api.ts";
 import { supabase } from "../lib/supabase.ts";
 import { SupervisorPinDialog } from "../components/supervisor-pin-dialog.tsx";
+import type { OfflineApprovalPayload } from "../lib/offline-pin-api.ts";
 
 const WALLETS: Wallet[] = ["gcash", "maya", "other"];
 
@@ -60,6 +61,7 @@ export function SellPage() {
   const [problem, setProblem] = useState<string | null>(null);
   const [done, setDone] = useState<Done | null>(null);
   const [approvalId, setApprovalId] = useState<string | null>(null);
+  const [offlineApproval, setOfflineApproval] = useState<OfflineApprovalPayload | null>(null);
   const [showApprovalDialog, setShowApprovalDialog] = useState(false);
   const attempt = useRef<{ key: string; id: string; opId: string } | null>(null);
 
@@ -137,6 +139,7 @@ export function SellPage() {
     setCustomerId("");
     setProblem(null);
     setApprovalId(null);
+    setOfflineApproval(null);
     setShowApprovalDialog(false);
     attempt.current = null;
   }
@@ -154,13 +157,14 @@ export function SellPage() {
   });
 
   const charge = useMutation({
-    mutationFn: async (overrideApprovalId?: string): Promise<Done> => {
+    mutationFn: async (override?: { approvalId?: string; offlineApproval?: OfflineApprovalPayload }): Promise<Done> => {
       if (!store) throw new ApiError("not_allowed", "no store");
       if (discount === null || payments === null || (method === "cash" && tendered === null)) throw new ApiError("amount_invalid", "amount");
       const day = dayInTimezone(access.tenant.timezone);
       const key = JSON.stringify([cart, discount, payments, store.id, customerId]);
       if (attempt.current?.key !== key) attempt.current = { key, id: uuidv7(), opId: uuidv7() };
-      const currentApproval = overrideApprovalId || approvalId;
+      const currentApproval = override?.approvalId ?? approvalId;
+      const currentOfflineApproval = override?.offlineApproval ?? offlineApproval;
       const base = {
         id: attempt.current.id,
         soldAt: new Date(),
@@ -169,6 +173,7 @@ export function SellPage() {
         customerId: customerId || undefined,
         discount,
         approvalId: currentApproval || undefined,
+        offlineApproval: currentOfflineApproval || undefined,
         lines: cart,
         payments,
       };
@@ -201,7 +206,7 @@ export function SellPage() {
 
   function handleCharge() {
     if (!store) return;
-    if (isDiscountOverLimit && !approvalId) {
+    if (isDiscountOverLimit && !approvalId && !offlineApproval) {
       const key = JSON.stringify([cart, discount, payments, store.id, customerId]);
       if (attempt.current?.key !== key) attempt.current = { key, id: uuidv7(), opId: uuidv7() };
       setShowApprovalDialog(true);
@@ -412,9 +417,10 @@ export function SellPage() {
         locationId={store.id}
         action="sale_discount"
         refId={attempt.current?.id ?? ""}
-        onApproved={(apprId) => {
-          setApprovalId(apprId);
-          charge.mutate(apprId);
+        onApproved={(apprId, offlineAppr) => {
+          setApprovalId(apprId || null);
+          setOfflineApproval(offlineAppr || null);
+          charge.mutate({ approvalId: apprId || undefined, offlineApproval: offlineAppr || undefined });
         }}
       />
     </div>

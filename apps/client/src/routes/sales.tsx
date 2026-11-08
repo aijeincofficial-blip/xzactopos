@@ -10,6 +10,7 @@ import { ApiError } from "../lib/api.ts";
 import { supabase } from "../lib/supabase.ts";
 import { fetchRecentSales, fetchSaleDetail, voidSale } from "../lib/sell-api.ts";
 import { SupervisorPinDialog } from "../components/supervisor-pin-dialog.tsx";
+import type { OfflineApprovalPayload } from "../lib/offline-pin-api.ts";
 
 /** Sales (Solo web): the store's latest sales, each as a receipt, with cancel (void) for those allowed to. */
 export function SalesPage() {
@@ -30,6 +31,7 @@ export function SalesPage() {
   const [error, setError] = useState<string | null>(null);
   const [showApprovalDialog, setShowApprovalDialog] = useState(false);
   const [approvalId, setApprovalId] = useState<string | null>(null);
+  const [offlineApproval, setOfflineApproval] = useState<OfflineApprovalPayload | null>(null);
 
   const list = useQuery({
     queryKey: ["sales", store?.id],
@@ -58,13 +60,19 @@ export function SalesPage() {
   const needsSupervisor = isCashier && (!canVoidOwn || (detail.data?.sale.total ?? 0) > maxVoidAmt);
 
   const cancel = useMutation({
-    mutationFn: (overrideApprovalId?: string) =>
-      voidSale(openId ?? "", reason, overrideApprovalId || approvalId || undefined),
+    mutationFn: (override?: { approvalId?: string; offlineApproval?: OfflineApprovalPayload }) =>
+      voidSale(
+        openId ?? "",
+        reason,
+        override?.approvalId ?? approvalId ?? undefined,
+        override?.offlineApproval ?? offlineApproval ?? undefined,
+      ),
     onSuccess: async () => {
       setAsking(false);
       setReason("");
       setError(null);
       setApprovalId(null);
+      setOfflineApproval(null);
       setShowApprovalDialog(false);
       await Promise.all([
         qc.invalidateQueries({ queryKey: ["sales"] }),
@@ -82,7 +90,7 @@ export function SalesPage() {
   });
 
   function handleConfirmVoid() {
-    if (needsSupervisor && !approvalId) {
+    if (needsSupervisor && !approvalId && !offlineApproval) {
       setShowApprovalDialog(true);
       return;
     }
@@ -191,9 +199,10 @@ export function SalesPage() {
           locationId={detail.data?.sale.location_id ?? store?.id ?? ""}
           action="void_sale"
           refId={openId ?? ""}
-          onApproved={(apprId) => {
-            setApprovalId(apprId);
-            cancel.mutate(apprId);
+          onApproved={(apprId, offlineAppr) => {
+            setApprovalId(apprId || null);
+            setOfflineApproval(offlineAppr || null);
+            cancel.mutate({ approvalId: apprId || undefined, offlineApproval: offlineAppr || undefined });
           }}
         />
       </div>
