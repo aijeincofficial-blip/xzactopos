@@ -48,5 +48,11 @@ Solo and Full are one app and one backend, not two products. The mode (`tenant_m
 5. One commit per card with explicit paths (`git add <files>`, never `git add -A`); update `docs/handoff.md`.
 6. Model split: careful model for RLS, sync, ledger and stock math; cheaper model for screens and tests.
 
-## Heads-up: uncommitted Flutter edits that are not part of this plan
-`apps/mobile/lib/core/theme.dart`, `screens/home_shell.dart` and `screens/receipt_screen.dart` have uncommitted changes (the diff removes the F-01 store chip from More, reverts the `onSecondary` contrast fix, and reformats the receipt screen). The owner said another tool is working on them and will overwrite. **Do not commit, stash, revert or build on them**; if you touch these files, ask first.
+## TODO for Claude: review the uncommitted Flutter edits before anything else
+`apps/mobile/lib/core/theme.dart`, `screens/home_shell.dart` and `screens/receipt_screen.dart` have uncommitted changes that Antigravity did not make and did not commit. The owner asked **Claude to review them** and decide what to keep. What the diff contains:
+- `theme.dart`: `onSecondary` changed from the dark `0xFF042F23` back to `Colors.white` (undoes the contrast fix; white on mint is about 2.5:1). Likely a regression.
+- `home_shell.dart`: the `StoreChip` and its `store_picker.dart` import are removed from the More screen (removes the F-01 store picker entry point). Likely a regression.
+- `receipt_screen.dart`: mostly reformatting to a wider line width; the diff may also hide real changes, so read it in full.
+
+Review steps: read `git diff` for the three files; keep intended changes and commit them with explicit paths; restore the rest with `git checkout -- <file>` (only after confirming with the owner, because it discards the edits); then run `flutter analyze` and `flutter test`. Until Claude has done this, Antigravity does not commit, stash, revert or build on these files.
+
