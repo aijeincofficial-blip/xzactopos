@@ -61,11 +61,25 @@ During this session, Antigravity executed the owner's design overhaul, color har
 * Converted `KeypadPanel` into `AmountPad` directly integrated into `PayScreen`.
 * Tapping digit keys updates the `_received` amount directly and handles trailing decimal states without opening the software keyboard.
 
+### D. Authentic Thermal Paper Receipt Screen (`apps/mobile/lib/screens/receipt_screen.dart`)
+* Responded to owner's request (*"FOLLOW RECEIPT DESIGN ONLY THE RECIPT AND ATTACH OUR OFFICIAL LOGO"*):
+  * **Thermal Paper Perforation (`_ReceiptTicketClipper`)**: Custom sawtooth/scalloped tear edge along the top and bottom with rounded side corners and soft ambient drop shadow.
+  * **Official XZACTO Logo Lockup**: Official brand logo mark (`assets/brand/logo_mark.png`) centered on the ticket with obsidian navy `XZACTO` and cyan `POS APP` subtitles, followed by the active store name.
+  * **Payment Successful Pill Banner**: Pastel mint container (`#E8F7EE`) with green checkmark circle and large bold amount.
+  * **Itemized Products with Stock Counts**: Each row displays a category-themed ceramic badge, product name, remaining stock e.g. `(19 left)`, quantity, and line total.
+  * **Dashed Divider (`_DashedDivider`)**: Crisp horizontal dashed line dividing item lines from the financial breakdown.
+  * **Financial Breakdown**: Subtotal, Sales Today (`TodayTotals`), Kabuuan (Total), Paid via Cash/E-Wallet, and Change.
+  * **Dual Pill Action Buttons**: Side-by-side stadium pill buttons (`Print Receipt` in solid ocean blue `#1E6FF2`, and `New Transaction` / `Share` in crisp white with border).
+  * Preserved full compatibility with `ReceiptPrinter`, cancellation dialogs, and automated test keys.
+
 ---
 
 ## 3. Verified Screenshots on Android Emulator (`emulator-5554`)
 
 Artifacts captured directly from release x64 build running on Pixel 4:
+* `receipt_just_sold_real.png`: Receipt right after completing a sale with "New Transaction" action button.
+* `receipt_screen_perfect.png`: Receipt viewed from sales list with "Share" action button.
+* `receipt_dark.png`: Receipt in dark mode with high-contrast thermal ticket and obsidian backdrop.
 * `logo_pos.png`: POS tab with product catalog, centered tiles, and bottom bar displaying the official XZACTO logo mark inside the circular glowing button.
 * `logo_more.png`: More tab in light mode with clean header, 8-tile glass grid, active mint pill on "Iba pa", and the logo mark.
 * `logo_more_dark.png`: Dark mode More tab with luminous frosted icy glass bar, high-contrast outline icons, and official logo mark.
