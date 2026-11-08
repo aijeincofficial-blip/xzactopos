@@ -11,7 +11,8 @@
     "utang": "Utang",
     "expenses": "Mga gastos",
     "dayClose": "Pagsara ng araw",
-    "upgrade": "Mag-upgrade sa Full"
+    "upgrade": "Mag-upgrade sa Full",
+    "settings": "Mga Setting"
   },
   "roles": {
     "superadmin": "May-ari",
@@ -429,5 +430,50 @@
     "upgrading": "Ina-upgrade ang negosyo...",
     "successTitle": "Matagumpay na Na-activate ang Full Mode!",
     "successText": "Na-upgrade na ang iyong negosyo sa Full Mode. May access ka na ngayon sa pamamahala ng maraming lokasyon at mga tauhan."
+  },
+  "settings": {
+    "title": "Mga Setting ng Negosyo",
+    "subtitle": "Pamahalaan ang profile ng tindahan, wika, resibo, at mga limitasyon ng system.",
+    "loading": "Ikinakarga ang mga setting...",
+    "saving": "Inililigtas ang mga setting...",
+    "status": {
+      "active": "Aktibo",
+      "suspended": "Suspendido",
+      "archived": "Naka-archive"
+    },
+    "plan": {
+      "free": "Libreng Plano",
+      "pro": "Pro Plan"
+    },
+    "businessSection": "Profile ng Negosyo",
+    "businessName": "Pangalan ng Negosyo",
+    "businessCode": "Code ng Negosyo (Slug)",
+    "businessCodeHint": "Ginagamit ng mga kahera sa pag-sign in (<username>.<slug>). Hindi na mababago.",
+    "timezone": "Timezone",
+    "taxMode": "Uri ng Buwis",
+    "taxModeInclusive": "Kasama ang Buwis (VAT Inclusive)",
+    "taxModeExclusive": "Hiwalay ang Buwis (VAT Exclusive)",
+    "taxModeNone": "Walang Buwis / Non-VAT",
+    "baseCurrency": "Pangunahing Pera",
+    "currencyLockedHint": "Naka-lock ang pera upang maprotektahan ang nakaraang benta at imbentaryo.",
+    "languageSection": "Wika at Rehiyon",
+    "supportedLanguages": "Mga Sinusuportahang Wika",
+    "supportedLanguagesHint": "Magagamit ng mga tauhan at sa pag-print ng resibo.",
+    "langEn": "Ingles",
+    "langFil": "Filipino",
+    "defaultLanguage": "Pangunahing Wika ng Negosyo",
+    "receiptSection": "Pag-customize ng Resibo",
+    "receiptHeader": "Ibabaw ng Resibo (Header text)",
+    "receiptHeaderHint": "Napi-print sa itaas ng resibo (hal. slogan ng tindahan, TIN, tirahan, contact).",
+    "receiptFooter": "Ibaba ng Resibo (Footer text)",
+    "receiptFooterHint": "Napi-print sa ibaba ng resibo (hal. pasasalamat, patakaran sa pagbabalik).",
+    "offlineDuration": "Tagal ng Offline Session (Araw)",
+    "offlineDurationHint": "Pinakamaraming araw (1–30) na maaaring magbenta offline ang kahera bago mag-online muli.",
+    "limitsSection": "Kapasidad ng Plano at Limitasyon ng Resource",
+    "limitsDesc": "Kasalukuyang nagamit kumpara sa itinalagang limitasyon ng iyong plano.",
+    "limitLocations": "Mga Lokasyon / Tindahan",
+    "limitUsers": "Mga Tauhan",
+    "limitDevices": "Mga Nakarehistrong Device",
+    "limitProducts": "Mga Produkto sa Catalog"
   }
 }

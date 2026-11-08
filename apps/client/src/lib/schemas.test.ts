@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createUserSchema, fieldErrors, locationSchema, setupLanguagesSchema, slugSchema, upgradeSchema } from "./schemas.ts";
+import { createUserSchema, fieldErrors, locationSchema, setupLanguagesSchema, slugSchema, tenantSettingsSchema, upgradeSchema } from "./schemas.ts";
 import { loginEmail } from "./api.ts";
 
 const user = { username: "ana", fullName: "", password: "longenough", role: "cashier", locationId: "x", position: "" };
@@ -68,6 +68,26 @@ describe("schemas", () => {
     if (!resMissingName.success) {
       expect(fieldErrors(resMissingName.error)["locationName"]).toBe("validation.required");
     }
+  });
+
+  it("validates tenant settings schema", () => {
+    const valid = {
+      name: "Tindahan Ni Rosa",
+      timezone: "Asia/Manila",
+      taxMode: "inclusive" as const,
+      defaultLocale: "en" as const,
+      locales: ["en", "fil"] as ("en" | "fil")[],
+      offlineSessionDays: 7,
+      receiptHeader: "Welcome to Rosa!",
+      receiptFooter: "Salamat po!",
+    };
+    expect(tenantSettingsSchema.safeParse(valid).success).toBe(true);
+
+    const badLocale = { ...valid, defaultLocale: "fil" as const, locales: ["en"] as ("en" | "fil")[] };
+    expect(tenantSettingsSchema.safeParse(badLocale).success).toBe(false);
+
+    const badDays = { ...valid, offlineSessionDays: 45 };
+    expect(tenantSettingsSchema.safeParse(badDays).success).toBe(false);
   });
 });
 

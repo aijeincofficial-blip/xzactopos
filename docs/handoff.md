@@ -9,7 +9,11 @@ Updated at the end of every task. Read this first in a fresh session. New sessio
   - **W-03 (`8112fb4`):** Products & stock (catalog, prices, stock-in, count corrections, opening stock).
   - **W-04 (`8542b2c`):** Utang payments, pay-by dates, expenses list/record/void with approvals, daily drawer reconciliation & close history.
   - **W-05 (`6dc19be`):** Upgrade to Full mode wizard (`/app/upgrade`), Today screen banner, mobile Settings entry, 100% data preservation verified in PostgreSQL.
-  - Next: Full mode React cards (`F-04`+ / `W-06`+).
+- **Full mode (React-first) In Progress (2026-11-08):**
+  - **F-01 (`70b6d2e`):** Store scoping & multi-store data foundation (done).
+  - **F-02 (`fa36fc0`):** Server sale number & device registry (done).
+  - **F-03:** Tenant business settings, quotas, and receipt styling (done).
+  - Next: F-04 Staff Management in React (`/app/users`).
 - **Full mode started (2026-11-08):** F-01 store scoping and F-02 server sale number + devices are done; F-03 (tenant settings + mode switch) is next. Handoff for a new session or tool: `docs/START-HERE-antigravity.md` (rewritten today).
 - **Solo mode is wrapped up (2026-11-08).** Phases 0 to 8 plus the tabs revamp, keypad, opening cash, e-wallet float, import/export are done; acceptance and open findings: `docs/tasks/P8-13-acceptance.md`. Full mode is planned in `docs/tasks/F-00-overview-full-mode.md`; **F-01 store scoping: data layer done** (section near the end), picker UI done; **F-02 server sale number and devices: data layer done**, receipt/Today display next. Branch `claude/phase3-sell-8261d3` holds all of it, not pushed, not merged to `main`.
 - Phase 0 (Foundation): done, committed (6d59c99).
@@ -561,3 +565,15 @@ Read `docs/START-HERE-claude.md` for the complete handoff from Antigravity.
 - Logic: src/lib/product-math.ts (typed quantities, tax percent to stored rate, stock status; tested), src/lib/stock-api.ts (catalog + stock_levels join, upsert_product / rchive_product RPCs, stock ops through sync_push), pullCatalog() split out of sell-api.ts.
 - Checked on the local server in a rolled-back transaction: create product (SKU auto-made), opening stock 10, receive 10 at cost 800, count 17.5 as damage (delta -2.5, on hand 17.5), edit price/tax/barcode/reorder, archive. client typecheck, lint, vitest 51 tests pass (the locale parity test caught one stray key). Not clicked through in a browser.
 - Notes: a stock-in cost moves the average cost in the ledger but does not change the product's own cost field (server behaviour, unchanged). Not built yet: tingi/open-pack links, expiry dates, categories, product photos, variants/options (Solo shows only the default variant), CSV import/export.
+
+## F-03: Tenant Business Settings, Quotas, and Receipt Styling (2026-11-08)
+- apps/client: Business Settings screen (`src/routes/settings.tsx`, route `/app/settings`, guarded by `tenant.settings`):
+  - Business Profile: store name, business slug (read-only for cashier sign-in `<username>.<slug>`), IANA timezone picker, tax mode (`inclusive` / `exclusive` / `none`), base currency (locked to protect ledger integrity).
+  - Languages & Regional: multi-lingual selection (`en`, `fil`), default business language, and offline session duration (1 to 30 days).
+  - Receipt Customization: header (slogan, TIN, address) and footer (thank you note, return policies) text fields.
+  - Quotas & Resource Capacities: live meters showing current usage against `tenant_limits` for locations, users/staff, registered devices, and catalog products.
+- Schema & API: `src/lib/settings-api.ts` (`fetchTenantSettings`, `updateTenantSettings`), `src/lib/schemas.ts` (`tenantSettingsSchema` with validation tests in `schemas.test.ts`).
+- Nav: Added Settings link to app layout navigation with strict permission check.
+- Parity: 1:1 key parity between English and Filipino translations under `settings.*` in `src/locales/en/admin.json` and `fil/admin.json`.
+- Verified: client vitest 59 tests passing, `tsc -p tsconfig.json` clean, `eslint` 0 errors.
+

@@ -80,6 +80,22 @@ export const upgradeSchema = z
     }
   });
 
+export const tenantSettingsSchema = z
+  .object({
+    name: required.max(120, "validation.max120"),
+    timezone: required.max(64, "validation.max64"),
+    taxMode: z.enum(["inclusive", "exclusive", "none"]),
+    defaultLocale: z.enum(["en", "fil"]),
+    locales: z.array(z.enum(["en", "fil"])).min(1, "validation.locales_min"),
+    offlineSessionDays: z.number().int().min(1, "validation.min1").max(30, "validation.max30"),
+    receiptHeader: z.string().trim().max(500, "validation.max500").optional(),
+    receiptFooter: z.string().trim().max(500, "validation.max500").optional(),
+  })
+  .refine((v) => v.locales.includes(v.defaultLocale), {
+    path: ["defaultLocale"],
+    message: "validation.default_locale_in_list",
+  });
+
 /** First error message per field path, ready to show next to inputs. */
 export function fieldErrors(error: z.ZodError): Record<string, string> {
   const out: Record<string, string> = {};

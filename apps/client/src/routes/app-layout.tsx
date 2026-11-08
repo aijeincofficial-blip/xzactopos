@@ -23,6 +23,7 @@ const NAV = [
   { to: "/app/locations", key: "locations", perm: "locations.manage", fullOnly: true },
   { to: "/app/users", key: "users", perm: "users.manage", fullOnly: true },
   { to: "/app/modules", key: "modules", perm: "tenant.modules", fullOnly: true },
+  { to: "/app/settings", key: "settings", perm: "tenant.settings", fullOnly: false },
 ] as const satisfies ReadonlyArray<{ to: string; key: string; perm: PermissionKey | null; fullOnly: boolean; soloOnly?: boolean }>;
 
 export function AppLayout() {

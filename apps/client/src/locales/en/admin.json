@@ -11,7 +11,8 @@
     "utang": "Utang",
     "expenses": "Expenses",
     "dayClose": "Day close",
-    "upgrade": "Upgrade to Full"
+    "upgrade": "Upgrade to Full",
+    "settings": "Settings"
   },
   "roles": {
     "superadmin": "Owner",
@@ -429,5 +430,50 @@
     "upgrading": "Upgrading business...",
     "successTitle": "Full Mode Successfully Activated!",
     "successText": "Your business has been upgraded to Full Mode. You now have access to multi-location and team staff management."
+  },
+  "settings": {
+    "title": "Business Settings",
+    "subtitle": "Manage your store profile, localization, receipt styling, and system limits.",
+    "loading": "Loading settings...",
+    "saving": "Saving settings...",
+    "status": {
+      "active": "Active",
+      "suspended": "Suspended",
+      "archived": "Archived"
+    },
+    "plan": {
+      "free": "Free Tier",
+      "pro": "Pro Plan"
+    },
+    "businessSection": "Business Profile",
+    "businessName": "Business Name",
+    "businessCode": "Business Code (Slug)",
+    "businessCodeHint": "Used by cashiers to sign in (<username>.<slug>). Locked after registration.",
+    "timezone": "Timezone",
+    "taxMode": "Tax Mode",
+    "taxModeInclusive": "Tax Inclusive (Prices include VAT)",
+    "taxModeExclusive": "Tax Exclusive (Tax added at checkout)",
+    "taxModeNone": "No Tax / Non-VAT",
+    "baseCurrency": "Base Currency",
+    "currencyLockedHint": "Currency is locked to protect past accounting and inventory costs.",
+    "languageSection": "Languages & Regional",
+    "supportedLanguages": "Supported Languages",
+    "supportedLanguagesHint": "Available for staff and receipt generation.",
+    "langEn": "English",
+    "langFil": "Filipino",
+    "defaultLanguage": "Default Business Language",
+    "receiptSection": "Receipt Customization",
+    "receiptHeader": "Receipt Header (Header text)",
+    "receiptHeaderHint": "Prints at the top of receipts (e.g. store slogan, TIN, address, contact).",
+    "receiptFooter": "Receipt Footer (Footer text)",
+    "receiptFooterHint": "Prints at the bottom of receipts (e.g. thank-you note, return policy).",
+    "offlineDuration": "Offline Session Duration (Days)",
+    "offlineDurationHint": "Maximum number of days (1–30) cashiers can operate offline before re-verifying online.",
+    "limitsSection": "Plan Capacity & Resource Limits",
+    "limitsDesc": "Current usage against your plan's assigned infrastructure limits.",
+    "limitLocations": "Locations / Stores",
+    "limitUsers": "Staff Users",
+    "limitDevices": "Registered Devices",
+    "limitProducts": "Catalog Products"
   }
 }
