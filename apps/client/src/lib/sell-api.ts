@@ -1,5 +1,6 @@
 import { uuidv7 } from "@pos/core";
-import { ApiError, rpc } from "./api.ts";
+import { ApiError, fromRaw, rpc } from "./api.ts";
+import { supabase } from "./supabase.ts";
 import { localReceiptNo, salePayload, type SaleDraft } from "./sale-math.ts";
 
 // ---------------------------------------------------------------------------
@@ -130,12 +131,15 @@ export function nextLocalNo(day: string): string {
 // Sending a sale: `sync_push` with one `record_sale` op. Online only; the op id makes a retry safe.
 // ---------------------------------------------------------------------------
 
-interface PushResult {
-  op_id: string;
-  status: "ok" | "rejected" | "error";
-  hint?: string;
-  code?: string;
-  result?: { sale_id: string; local_no: string; sale_no: string | null };
+/** Sends one op through `sync_push`. Throws ApiError(hint) when the server refuses it; the caller shows `errors:<hint>`. */
+export async function pushOp<R = Record<string, unknown>>(kind: string, payload: Record<string, unknown>, opId: string = uuidv7()): Promise<R> {
+  const out = await rpc<Array<{ op_id: string; status: "ok" | "rejected" | "error"; hint?: string; code?: string; result?: R }>>("sync_push", {
+    p_ops: [{ op_id: opId, kind, payload }],
+  });
+  const r = out[0];
+  if (r?.status === "ok" && r.result) return r.result;
+  if (r?.status === "error") throw new ApiError("temporary", `temporary server error ${r.code ?? ""}`);
+  throw new ApiError(r?.hint ?? "rejected", `${kind} refused: ${r?.hint ?? "unknown"}`);
 }
 
 export interface SoldReceipt {
@@ -144,13 +148,81 @@ export interface SoldReceipt {
   saleNo: string | null;
 }
 
-/** Sends the sale once. Throws ApiError(hint) when the server refuses it; the caller shows `errors:<hint>`. */
+/** Sends the sale once (online only; the op id makes a retry safe). */
 export async function submitSale(draft: SaleDraft, opId: string = uuidv7()): Promise<SoldReceipt> {
-  const out = await rpc<PushResult[]>("sync_push", { p_ops: [{ op_id: opId, kind: "record_sale", payload: salePayload(draft) }] });
-  const r = out[0];
-  if (r?.status === "ok" && r.result) {
-    return { saleId: r.result.sale_id, localNo: r.result.local_no, saleNo: r.result.sale_no };
-  }
-  if (r?.status === "error") throw new ApiError("temporary", `temporary server error ${r.code ?? ""}`);
-  throw new ApiError(r?.hint ?? "rejected", `sale refused: ${r?.hint ?? "unknown"}`);
+  const r = await pushOp<{ sale_id: string; local_no: string; sale_no: string | null }>("record_sale", salePayload(draft), opId);
+  return { saleId: r.sale_id, localNo: r.local_no, saleNo: r.sale_no };
 }
+
+// ---------------------------------------------------------------------------
+// Customers (utang) and past sales
+// ---------------------------------------------------------------------------
+
+export interface Customer {
+  id: string;
+  name: string;
+  phone: string | null;
+}
+
+export async function fetchCustomers(): Promise<Customer[]> {
+  const { data, error } = await supabase.from("customers").select("id, name, phone").is("deleted_at", null).order("name").limit(1000);
+  if (error) throw fromRaw(error);
+  return data;
+}
+
+/** Creates a customer (the id is made here, like the phone does) and returns it. */
+export async function createCustomer(name: string, phone: string): Promise<Customer> {
+  const id = uuidv7();
+  await pushOp("upsert_customer", { id, name: name.trim(), ...(phone.trim() ? { phone: phone.trim() } : {}) });
+  return { id, name: name.trim(), phone: phone.trim() || null };
+}
+
+export interface SaleRow {
+  id: string;
+  sale_no: string | null;
+  local_no: string;
+  status: "completed" | "voided";
+  subtotal: number;
+  discount: number;
+  total: number;
+  sold_at: string;
+  customer_id: string | null;
+  location_id: string;
+}
+
+export interface SaleDetail {
+  sale: SaleRow;
+  customerName: string | null;
+  items: Array<{ product_name: string; qty: number; unit_price: number; line_total: number }>;
+  payments: Array<{ method: string; amount: number; tendered: number | null; wallet: string | null }>;
+}
+
+const SALE_COLS = "id, sale_no, local_no, status, subtotal, discount, total, sold_at, customer_id, location_id";
+
+export async function fetchRecentSales(locationId: string, limit = 50): Promise<SaleRow[]> {
+  const { data, error } = await supabase.from("sales").select(SALE_COLS).eq("location_id", locationId).order("sold_at", { ascending: false }).limit(limit);
+  if (error) throw fromRaw(error);
+  return data as SaleRow[];
+}
+
+export async function fetchSaleDetail(saleId: string): Promise<SaleDetail> {
+  const [s, i, p] = await Promise.all([
+    supabase.from("sales").select(SALE_COLS).eq("id", saleId).single(),
+    supabase.from("sale_items").select("product_name, qty, unit_price, line_total").eq("sale_id", saleId).order("product_name"),
+    supabase.from("payments").select("method, amount, tendered, wallet").eq("sale_id", saleId).order("amount", { ascending: false }),
+  ]);
+  if (s.error) throw fromRaw(s.error);
+  if (i.error) throw fromRaw(i.error);
+  if (p.error) throw fromRaw(p.error);
+  const sale = s.data as SaleRow;
+  let customerName: string | null = null;
+  if (sale.customer_id) {
+    const c = await supabase.from("customers").select("name").eq("id", sale.customer_id).maybeSingle();
+    customerName = c.data?.name ?? null;
+  }
+  return { sale, customerName, items: i.data as SaleDetail["items"], payments: p.data as SaleDetail["payments"] };
+}
+
+/** Cancels a sale: stock goes back and any utang charge is reversed. The server checks the caller may do it. */
+export const voidSale = (saleId: string, reason: string) => pushOp("void_sale", { sale_id: saleId, ...(reason.trim() ? { reason: reason.trim() } : {}) });
+

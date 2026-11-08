@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatMoney, money, uuidv7 } from "@pos/core";
 import { Alert, Button, Card, Input, Select } from "../components/ui.tsx";
 import { useSession } from "../lib/session.tsx";
@@ -9,23 +9,24 @@ import { ApiError } from "../lib/api.ts";
 import { dayInTimezone } from "../lib/today.ts";
 import {
   cartSubtotal,
+  buildPayments,
   cartTotal,
   changeDue,
   draftProblem,
   lineTotal,
   parseAmount,
   type CartLine,
-  type PaymentDraft,
   type SaleDraft,
   type Wallet,
 } from "../lib/sale-math.ts";
-import { fetchSellables, nextLocalNo, registerWebDevice, submitSale, webDevice, type Sellable, type SoldReceipt } from "../lib/sell-api.ts";
+import { createCustomer, fetchCustomers, fetchSellables, nextLocalNo, registerWebDevice, submitSale, webDevice, type Sellable, type SoldReceipt } from "../lib/sell-api.ts";
 
 const WALLETS: Wallet[] = ["gcash", "maya", "other"];
 
 interface Done extends SoldReceipt {
   total: number;
   change: number;
+  onUtang: number;
 }
 
 /** Sell (Solo web): search, cart, cash or e-wallet payment, one `record_sale` op through `sync_push`. Online only. */
@@ -42,7 +43,13 @@ export function SellPage() {
   const [search, setSearch] = useState("");
   const [cart, setCart] = useState<CartLine[]>([]);
   const [discountText, setDiscountText] = useState("");
-  const [method, setMethod] = useState<"cash" | "ewallet">("cash");
+  const [method, setMethod] = useState<"cash" | "ewallet" | "utang">("cash");
+  const [customerId, setCustomerId] = useState("");
+  const [paidText, setPaidText] = useState("");
+  const [newName, setNewName] = useState("");
+  const [newPhone, setNewPhone] = useState("");
+  const [showNew, setShowNew] = useState(false);
+  const qc = useQueryClient();
   const [wallet, setWallet] = useState<Wallet>("gcash");
   const [reference, setReference] = useState("");
   const [tenderedText, setTenderedText] = useState("");
@@ -58,7 +65,13 @@ export function SellPage() {
   const tendered = parseAmount(tenderedText, currency);
   const subtotal = cartSubtotal(cart);
   const total = discount === null ? subtotal : cartTotal(cart, discount);
-  const change = method === "cash" && tendered !== null && tendered > 0 ? changeDue(tendered, total) : 0;
+  const paidNow = paidText.trim() === "" ? null : parseAmount(paidText, currency);
+  const paidInvalid = paidText.trim() !== "" && paidNow === null;
+  const payments = paidInvalid || discount === null ? null : buildPayments(total, { method, paidNow, tendered, wallet, reference: reference.trim() });
+  const onUtang = payments?.find((p) => p.method === "utang")?.amount ?? 0;
+  const cashPay = payments?.find((p) => p.method === "cash");
+  const change = cashPay && tendered !== null && tendered > 0 ? changeDue(tendered, cashPay.amount) : 0;
+  const customers = useQuery({ queryKey: ["customers"], queryFn: fetchCustomers, staleTime: 30_000 });
 
   const shown = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -94,22 +107,40 @@ export function SellPage() {
     setDiscountText("");
     setTenderedText("");
     setReference("");
+    setPaidText("");
+    setCustomerId("");
     setProblem(null);
     attempt.current = null;
   }
 
-  const charge = useMutation({
-    mutationFn: async (): Promise<Done> => {
+  const addCustomer = useMutation({
+    mutationFn: () => createCustomer(newName, newPhone),
+    onSuccess: async (c) => {
+      await qc.invalidateQueries({ queryKey: ["customers"] });
+      setCustomerId(c.id);
+      setNewName("");
+      setNewPhone("");
+      setShowNew(false);
+    },
+    onError: (e) => setProblem(msg(e)),
+  });
+
+  const charge = useMutation({    mutationFn: async (): Promise<Done> => {
       if (!store) throw new ApiError("not_allowed", "no store");
-      if (discount === null || (method === "cash" && tendered === null)) throw new ApiError("amount_invalid", "amount");
+      if (discount === null || payments === null || (method === "cash" && tendered === null)) throw new ApiError("amount_invalid", "amount");
       const day = dayInTimezone(access.tenant.timezone);
-      const pay: PaymentDraft =
-        method === "cash"
-          ? { method: "cash", amount: total, tendered: tendered && tendered > 0 ? tendered : total }
-          : { method: "ewallet", amount: total, wallet, ...(reference.trim() ? { reference: reference.trim() } : {}) };
-      const key = JSON.stringify([cart, discount, pay, store.id]);
+      const key = JSON.stringify([cart, discount, payments, store.id, customerId]);
       if (attempt.current?.key !== key) attempt.current = { key, id: uuidv7(), opId: uuidv7() };
-      const base = { id: attempt.current.id, soldAt: new Date(), locationId: store.id, deviceId: webDevice().id, discount, lines: cart, payments: [pay] };
+      const base = {
+        id: attempt.current.id,
+        soldAt: new Date(),
+        locationId: store.id,
+        deviceId: webDevice().id,
+        customerId: customerId || undefined,
+        discount,
+        lines: cart,
+        payments,
+      };
       const bad = draftProblem({ ...base, localNo: "X-000000-0000" });
       if (bad) throw new ApiError(bad, bad);
       // a clash of the provisional number is the only retry case; the same op id keeps the retry safe
@@ -117,7 +148,8 @@ export function SellPage() {
         const draft: SaleDraft = { ...base, localNo: nextLocalNo(day) };
         try {
           const r = await submitSale(draft, attempt.current.opId);
-          return { ...r, total, change: pay.method === "cash" ? changeDue(pay.tendered ?? total, total) : 0 };
+          const cash = payments.find((p) => p.method === "cash");
+          return { ...r, total, change: cash ? changeDue(cash.tendered ?? cash.amount, cash.amount) : 0, onUtang: payments.find((p) => p.method === "utang")?.amount ?? 0 };
         } catch (e) {
           if (!(e instanceof ApiError && e.key === "duplicate_local_no" && n < 3)) throw e;
         }
@@ -146,6 +178,11 @@ export function SellPage() {
           {t("sell.receiptNo")} <span className="font-mono text-slate-900">{done.saleNo ?? done.localNo}</span>
         </div>
         <div className="text-2xl font-semibold">{fmt(done.total)}</div>
+        {done.onUtang > 0 ? (
+          <div className="text-sm">
+            {t("sell.onUtang")}: <strong>{fmt(done.onUtang)}</strong>
+          </div>
+        ) : null}
         {done.change > 0 ? (
           <div className="text-sm">
             {t("sell.change")}: <strong>{fmt(done.change)}</strong>
@@ -237,10 +274,52 @@ export function SellPage() {
 
         <div className="grid gap-2 border-t border-slate-200 pt-3 text-sm">
           <span className="font-medium">{t("sell.payment")}</span>
-          <Select aria-label={t("sell.payment")} data-testid="pay-method" value={method} onChange={(e) => setMethod(e.target.value as "cash" | "ewallet")}>
+          <Select aria-label={t("sell.payment")} data-testid="pay-method" value={method} onChange={(e) => setMethod(e.target.value as "cash" | "ewallet" | "utang")}>
             <option value="cash">{t("sell.cash")}</option>
             <option value="ewallet">{t("sell.ewallet")}</option>
+            <option value="utang">{t("sell.utang")}</option>
           </Select>
+
+          <Select aria-label={t("sell.customer")} data-testid="customer" value={customerId} onChange={(e) => setCustomerId(e.target.value)}>
+            <option value="">{method === "utang" ? t("sell.chooseCustomer") : t("sell.noCustomer")}</option>
+            {(customers.data ?? []).map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </Select>
+          {showNew ? (
+            <div className="grid gap-2 rounded-md border border-slate-200 p-2">
+              <Input data-testid="new-customer-name" placeholder={t("sell.customerName")} value={newName} maxLength={80} onChange={(e) => setNewName(e.target.value)} />
+              <Input placeholder={t("sell.customerPhone")} value={newPhone} maxLength={32} onChange={(e) => setNewPhone(e.target.value)} />
+              <div className="flex gap-2">
+                <Button size="sm" data-testid="save-customer" disabled={newName.trim() === "" || addCustomer.isPending} onClick={() => addCustomer.mutate()}>
+                  {t("sell.addCustomer")}
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setShowNew(false)}>
+                  {t("sell.cancel")}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Button variant="ghost" size="sm" data-testid="new-customer" onClick={() => setShowNew(true)}>
+              {t("sell.newCustomer")}
+            </Button>
+          )}
+
+          {method !== "utang" ? (
+            <label className="flex items-center justify-between gap-2">
+              <span>{t("sell.paidNow")}</span>
+              <Input className="w-28 text-right" data-testid="paid-now" inputMode="decimal" placeholder={fmt(total)} value={paidText} onChange={(e) => setPaidText(e.target.value)} />
+            </label>
+          ) : null}
+          {onUtang > 0 ? (
+            <div className="flex justify-between">
+              <span>{t("sell.onUtang")}</span>
+              <strong data-testid="on-utang">{fmt(onUtang)}</strong>
+            </div>
+          ) : null}
+
           {method === "cash" ? (
             <>
               <label className="flex items-center justify-between gap-2">
@@ -254,7 +333,8 @@ export function SellPage() {
                 </div>
               ) : null}
             </>
-          ) : (
+          ) : null}
+          {method === "ewallet" ? (
             <>
               <Select aria-label={t("sell.wallet")} data-testid="pay-wallet" value={wallet} onChange={(e) => setWallet(e.target.value as Wallet)}>
                 {WALLETS.map((w) => (
@@ -265,9 +345,8 @@ export function SellPage() {
               </Select>
               <Input placeholder={t("sell.reference")} value={reference} maxLength={64} onChange={(e) => setReference(e.target.value)} />
             </>
-          )}
+          ) : null}
         </div>
-
         {problem ? <Alert>{problem}</Alert> : null}
         <Button data-testid="charge" disabled={cart.length === 0 || charge.isPending} onClick={() => charge.mutate()}>
           {charge.isPending ? t("sell.charging") : t("sell.charge", { total: fmt(total) })}

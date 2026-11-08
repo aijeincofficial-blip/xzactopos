@@ -126,6 +126,38 @@ export function salePayload(d: SaleDraft): Record<string, unknown> {
   };
 }
 
+export interface PaymentChoice {
+  /** How the customer pays now; "utang" puts the whole sale on their account. */
+  method: PayMethod;
+  /** Amount paid now in minor units; null = the whole total. Anything left over goes on utang. */
+  paidNow: number | null;
+  /** Cash handed over (cash only); null or 0 = exact. */
+  tendered: number | null;
+  wallet?: Wallet;
+  reference?: string;
+}
+
+/**
+ * The payments list for a sale: the part paid now (cash or e-wallet), and whatever is left on utang.
+ * Returns null when the chosen amount is more than the total or below zero. A zero total has no payments.
+ */
+export function buildPayments(total: number, c: PaymentChoice): PaymentDraft[] | null {
+  if (total <= 0) return total === 0 ? [] : null;
+  if (c.method === "utang") return [{ method: "utang", amount: total }];
+  const paid = c.paidNow ?? total;
+  if (paid < 0 || paid > total) return null;
+  const out: PaymentDraft[] = [];
+  if (paid > 0) {
+    if (c.method === "cash") {
+      out.push({ method: "cash", amount: paid, tendered: c.tendered && c.tendered > 0 ? c.tendered : paid });
+    } else {
+      out.push({ method: "ewallet", amount: paid, ...(c.wallet ? { wallet: c.wallet } : {}), ...(c.reference ? { reference: c.reference } : {}) });
+    }
+  }
+  if (paid < total) out.push({ method: "utang", amount: total - paid });
+  return out;
+}
+
 /** Cash typed by the user ("125.50") to minor units; empty = 0; null when it is not a valid amount for the currency. */
 export function parseAmount(value: string, currency: string): number | null {
   const v = value.trim();

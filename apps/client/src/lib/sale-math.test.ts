@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildPayments,
   cartSubtotal,
   cartTotal,
   changeDue,
@@ -114,6 +115,42 @@ describe("cart totals and checks", () => {
       ],
     });
     expect(draftProblem(split)).toBeNull();
+  });
+});
+
+describe("buildPayments", () => {
+  it("pays the whole total by the chosen method", () => {
+    expect(buildPayments(1000, { method: "cash", paidNow: null, tendered: null })).toEqual([{ method: "cash", amount: 1000, tendered: 1000 }]);
+    expect(buildPayments(1000, { method: "cash", paidNow: null, tendered: 1500 })).toEqual([{ method: "cash", amount: 1000, tendered: 1500 }]);
+    expect(buildPayments(1000, { method: "ewallet", paidNow: null, tendered: null, wallet: "maya", reference: "R" })).toEqual([
+      { method: "ewallet", amount: 1000, wallet: "maya", reference: "R" },
+    ]);
+  });
+  it("puts the whole sale on utang, or only what is left unpaid", () => {
+    expect(buildPayments(1000, { method: "utang", paidNow: null, tendered: null })).toEqual([{ method: "utang", amount: 1000 }]);
+    expect(buildPayments(1000, { method: "cash", paidNow: 600, tendered: 1000 })).toEqual([
+      { method: "cash", amount: 600, tendered: 1000 },
+      { method: "utang", amount: 400 },
+    ]);
+    expect(buildPayments(1000, { method: "cash", paidNow: 0, tendered: null })).toEqual([{ method: "utang", amount: 1000 }]);
+  });
+  it("refuses an amount above the total or below zero, and handles a zero total", () => {
+    expect(buildPayments(1000, { method: "cash", paidNow: 1001, tendered: null })).toBeNull();
+    expect(buildPayments(1000, { method: "cash", paidNow: -1, tendered: null })).toBeNull();
+    expect(buildPayments(0, { method: "cash", paidNow: null, tendered: null })).toEqual([]);
+    expect(buildPayments(-5, { method: "cash", paidNow: null, tendered: null })).toBeNull();
+  });
+  it("always adds up to the total for 2000 seeded random choices", () => {
+    const r = rng(99);
+    for (let i = 0; i < 2000; i++) {
+      const total = Math.floor(r() * 500_000) + 1;
+      const paidNow = r() < 0.3 ? null : Math.floor(r() * (total + 1));
+      const method = (["cash", "ewallet", "utang"] as const)[Math.floor(r() * 3)] ?? "cash";
+      const pays = buildPayments(total, { method, paidNow, tendered: null });
+      expect(pays).not.toBeNull();
+      expect((pays ?? []).reduce((a, p) => a + p.amount, 0), `${method} ${total} ${paidNow}`).toBe(total);
+      expect((pays ?? []).every((p) => p.amount > 0)).toBe(true);
+    }
   });
 });
 

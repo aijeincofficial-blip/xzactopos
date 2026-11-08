@@ -1,5 +1,5 @@
 {
-  "nav": { "label": "Main", "dashboard": "Home", "sell": "Sell", "locations": "Locations", "users": "Users", "modules": "Modules" },
+  "nav": { "label": "Main", "dashboard": "Home", "sell": "Sell", "sales": "Sales", "locations": "Locations", "users": "Users", "modules": "Modules" },
   "roles": { "superadmin": "Owner", "admin": "Admin", "warehouse": "Warehouse", "cashier": "Cashier" },
   "positions": { "manager": "Manager", "supervisor": "Supervisor" },
   "modules": { "inventory": "Inventory", "pos": "POS", "warehouse": "Warehouse" },
@@ -22,6 +22,17 @@
     "payment": "Payment",
     "cash": "Cash",
     "ewallet": "E-wallet",
+    "utang": "Utang (pay later)",
+    "customer": "Customer",
+    "chooseCustomer": "Choose the customer",
+    "noCustomer": "No customer",
+    "newCustomer": "New customer",
+    "customerName": "Customer name",
+    "customerPhone": "Phone (optional)",
+    "addCustomer": "Save customer",
+    "cancel": "Cancel",
+    "paidNow": "Paid now",
+    "onUtang": "On utang",
     "wallet": "Wallet",
     "wallets": { "gcash": "GCash", "maya": "Maya", "other": "Other" },
     "reference": "Reference (optional)",
@@ -43,6 +54,18 @@
       "qty_invalid": "Every quantity must be above zero.",
       "amount_invalid": "Enter a valid amount."
     }
+  },
+  "sales": {
+    "title": "Sales",
+    "loading": "Loading sales...",
+    "error": "Could not load the sales. Check your connection and try again.",
+    "empty": "No sales yet.",
+    "back": "Back to sales",
+    "status": { "completed": "Completed", "voided": "Cancelled" },
+    "voidSale": "Cancel this sale",
+    "voidWarning": "The items go back to stock and any utang from this sale is taken off the customer. This cannot be undone.",
+    "reason": "Reason (optional)",
+    "confirmVoid": "Yes, cancel the sale"
   },
   "today": {
     "title": "Today",

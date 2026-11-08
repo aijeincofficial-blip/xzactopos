@@ -14,6 +14,7 @@ import { HomePage, LoginPage } from "./routes/public.tsx";
 import { AppLayout, DashboardPage, ForbiddenPage } from "./routes/app-layout.tsx";
 import { TodayPage } from "./routes/today.tsx";
 import { SellPage } from "./routes/sell.tsx";
+import { SalesPage } from "./routes/sales.tsx";
 import { tenantMode } from "./lib/mode.ts";
 import { useSession } from "./lib/session.tsx";
 import { SetupPage } from "./routes/setup.tsx";
@@ -87,12 +88,13 @@ const locations = createRoute({ getParentRoute: () => app, path: "/locations", b
 const users = createRoute({ getParentRoute: () => app, path: "/users", beforeLoad: requires("users.manage"), component: UsersPage });
 const modules = createRoute({ getParentRoute: () => app, path: "/modules", beforeLoad: requires("tenant.modules"), component: ModulesPage });
 const sell = createRoute({ getParentRoute: () => app, path: "/sell", beforeLoad: requires("sale.create"), component: SellPage });
+const sales = createRoute({ getParentRoute: () => app, path: "/sales", beforeLoad: requires("sale.create"), component: SalesPage });
 const forbidden = createRoute({ getParentRoute: () => app, path: "/forbidden", component: ForbiddenPage });
 
 const routeTree = root.addChildren([
   home,
   login,
-  app.addChildren([dashboard, setup, sell, locations, users, modules, forbidden]),
+  app.addChildren([dashboard, setup, sell, sales, locations, users, modules, forbidden]),
 ]);
 
 export function makeRouter(queryClient: QueryClient) {
