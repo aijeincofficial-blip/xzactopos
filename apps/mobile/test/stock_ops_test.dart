@@ -256,8 +256,9 @@ void main() {
     expect((await db.select(db.stockLevels).get()).single.counted, isFalse);
     final moves = await db.select(db.localMovements).get();
     expect({for (final m in moves) m.opId: m.counts}, {'open-op': true, 'sale-op': false});
-    // (the customers cursor would go too: the v9 step pulls customers again for their due date)
-    expect((await old.cursors()).keys, ['customer_ledger'], reason: 'stock levels will be pulled again');
+    // (the customers cursor would go too: the v9 step pulls customers again for their due date; and since F-01 the v13
+    // step pulls the utang ledger again for its store and payment method)
+    expect((await old.cursors()).keys, isEmpty, reason: 'stock levels (and the ledger) will be pulled again');
     await old.close();
   });
 

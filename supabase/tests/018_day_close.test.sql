@@ -83,11 +83,12 @@ insert into public.payments (tenant_id, sale_id, location_id, method, amount, te
   (pg_temp.t('A'), pg_temp.id('s5'), pg_temp.id('S01'), 'cash', 900, null),      -- the day before (Manila)
   (pg_temp.t('A'), pg_temp.id('s6'), pg_temp.id('S01'), 'cash', 800, null),      -- the day after (Manila)
   (pg_temp.t('A'), pg_temp.id('s7'), pg_temp.id('S01'), 'utang', 4000, null);
-insert into public.customer_ledger (tenant_id, customer_id, kind, amount, sale_id, occurred_at) values
-  (pg_temp.t('A'), pg_temp.id('cus'), 'charge', 4000, pg_temp.id('s7'), '2026-11-05T04:00:00Z'),
-  (pg_temp.t('A'), pg_temp.id('cus'), 'payment', -1500, null, '2026-11-05T05:00:00Z'),
-  (pg_temp.t('A'), pg_temp.id('cus'), 'adjust', -200, null, '2026-11-05T06:00:00Z'),
-  (pg_temp.t('A'), pg_temp.id('cus'), 'payment', -700, null, '2026-11-06T05:00:00Z');
+-- F-01 (20261108002000_store_scoping.sql): ledger rows carry the store where they happened; these were taken at S01
+insert into public.customer_ledger (tenant_id, customer_id, kind, amount, sale_id, occurred_at, location_id) values
+  (pg_temp.t('A'), pg_temp.id('cus'), 'charge', 4000, pg_temp.id('s7'), '2026-11-05T04:00:00Z', pg_temp.id('S01')),
+  (pg_temp.t('A'), pg_temp.id('cus'), 'payment', -1500, null, '2026-11-05T05:00:00Z', pg_temp.id('S01')),
+  (pg_temp.t('A'), pg_temp.id('cus'), 'adjust', -200, null, '2026-11-05T06:00:00Z', pg_temp.id('S01')),
+  (pg_temp.t('A'), pg_temp.id('cus'), 'payment', -700, null, '2026-11-06T05:00:00Z', pg_temp.id('S01'));
 insert into public.expenses (id, tenant_id, location_id, client_op_id, amount, currency, category, paid_from, spent_at, voided_at) values
   (pg_temp.id('e1'), pg_temp.t('A'), pg_temp.id('S01'), pg_temp.id('eop1'), 2500, 'PHP', 'utilities', 'cash', '2026-11-05T03:00:00Z', null),
   (pg_temp.id('e2'), pg_temp.t('A'), pg_temp.id('S01'), pg_temp.id('eop2'), 1000, 'PHP', 'transport', 'ewallet', '2026-11-05T03:00:00Z', null),
@@ -97,9 +98,10 @@ insert into public.expenses (id, tenant_id, location_id, client_op_id, amount, c
 -- S01: 10000 + 3000 cash sales + 1500 utang paid - 2500 cash expense = 12000
 select is(public.day_close_server_expected(pg_temp.t('A'), pg_temp.id('S01'), '2026-11-05'), 12000::bigint,
           'server expected cash: completed cash sales + utang payments - cash expenses, Manila day bounds');
--- S02: 7000 + 1500 (utang payments have no store: counted tenant-wide) - 400 = 8100
-select is(public.day_close_server_expected(pg_temp.t('A'), pg_temp.id('S02'), '2026-11-05'), 8100::bigint,
-          'utang payments carry no store and count at every store');
+-- S02: 7000 - 400 = 6600. Before F-01 utang payments had no store and counted at every store (8100); now the S01
+-- payment counts at S01 only (20261108002000_store_scoping.sql)
+select is(public.day_close_server_expected(pg_temp.t('A'), pg_temp.id('S02'), '2026-11-05'), 6600::bigint,
+          'an utang payment taken at another store does not count here');
 select is(public.day_close_server_expected(pg_temp.t('A'), pg_temp.id('S01'), '2026-11-04'), 900::bigint,
           'the sale one second before Manila midnight belongs to the day before');
 
@@ -130,7 +132,7 @@ set local role authenticated;
 select is(pg_temp.close('o2', 'o2', 'S01', 12000, 12000) ->> 'status', 'ok', 'a re-count of the same day is another close');
 select is((select count(*)::int from public.day_closes where location_id = pg_temp.id('S01') and day = '2026-11-05'), 2,
           'both closes are kept (the app shows the newest)');
-select is(pg_temp.close('o3', 'o3', 'S02', 9000, 9100) -> 'result' ->> 'server_expected_cash', '8100',
+select is(pg_temp.close('o3', 'o3', 'S02', 9000, 9100) -> 'result' ->> 'server_expected_cash', '6600',
           'a mismatch between the app''s and the server''s figure is stored, not refused');
 select is(pg_temp.close('o4', 'o4', 'S01', -500, 0, day => '2026-11-06') -> 'result' ->> 'difference', '500',
           'expected cash may be below zero');

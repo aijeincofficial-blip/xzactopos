@@ -167,6 +167,12 @@ class ServerLedger extends Table {
   TextColumn get occurredAt => text()();
   TextColumn get createdAt => text()();
 
+  /// The store where the entry happened (schema v13, F-01); null = not known yet (filled on the next pull).
+  TextColumn get locationId => text().nullable()();
+
+  /// cash | ewallet: how an utang payment was handed over (schema v13, F-01). Only cash counts in the drawer.
+  TextColumn get method => text().withDefault(const Constant('cash'))();
+
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -183,6 +189,12 @@ class LocalLedger extends Table {
   TextColumn get note => text().nullable()();
   TextColumn get occurredAt => text()();
   TextColumn get confirmedAfter => text().nullable()();
+
+  /// The store the entry was made for (schema v13, F-01): the active store, or the sale's store.
+  TextColumn get locationId => text().nullable()();
+
+  /// cash | ewallet (schema v13, F-01); only a payment is ever ewallet.
+  TextColumn get method => text().withDefault(const Constant('cash'))();
 }
 
 /// Server stock level per store and variant (sync_pull_pos).
@@ -216,12 +228,19 @@ class LocalMovements extends Table {
 
   /// Pieces from an opened pack (schema v8): the value they carry in centavos; moves the piece's average cost.
   IntColumn get totalCost => integer().nullable()();
+
+  /// The store whose stock this moves (schema v13, F-01); matched against `stock_levels.location_id`.
+  TextColumn get locationId => text().nullable()();
 }
 
-/// Sales made on this device (receipts). Not pulled from the server.
+/// Sales made on this device, and recent sales pulled from the server (sync_pull_sales).
 @TableIndex(name: 'sales_sold_at', columns: {#soldAt})
+@TableIndex(name: 'sales_location_sold_at', columns: {#locationId, #soldAt})
 class Sales extends Table {
   TextColumn get id => text()();
+
+  /// The store of the sale (schema v13, F-01); null = not known yet (an old row on a device with several stores).
+  TextColumn get locationId => text().nullable()();
   TextColumn get localNo => text()();
   TextColumn get status => text().withDefault(const Constant('completed'))();
   IntColumn get subtotal => integer()();
@@ -392,6 +411,9 @@ class LocalFloatEffects extends Table {
   TextColumn get wallet => text()();
   IntColumn get amount => integer()();
   TextColumn get confirmedAfter => text().nullable()();
+
+  /// The store whose wallet this moves (schema v13, F-01); matched against `wallet_float.location_id`.
+  TextColumn get locationId => text().nullable()();
 }
 
 // ---- Phase 8: tingi / repack (schema v8) ----
@@ -430,21 +452,22 @@ class Conversions extends Table {
 
 // ---- Phase 8: expiry dates (schema v10) ----
 
-/// The earliest expiry date on the shelf per variant (P8-11; one date, no lots), for this device's store. Written here by
+/// The earliest expiry date on the shelf per store and variant (P8-11; one date, no lots). Written here by
 /// set_expiry / receive_stock (then [updatedAt] is null: a local edit not yet confirmed) or pulled (sync_pull_pos
-/// `stock_expiry`, the server's updated_at). [expiresOn] 'YYYY-MM-DD', null = cleared. Keyed by variant only: a device
-/// works for one store (pulled rows of other stores are skipped when the device knows its store).
+/// `stock_expiry`, the server's updated_at). [expiresOn] 'YYYY-MM-DD', null = cleared. Keyed by (store, variant) since
+/// schema v13 (F-01): every store the user can see is kept; reads use the active store. [locationId] '' = written while
+/// no store was known (given the store as soon as the device knows its only store).
 class StockExpiry extends Table {
   @override
   String get tableName => 'stock_expiry';
 
   TextColumn get variantId => text()();
-  TextColumn get locationId => text().nullable()();
+  TextColumn get locationId => text().withDefault(const Constant(''))();
   TextColumn get expiresOn => text().nullable()();
   TextColumn get updatedAt => text().nullable()();
 
   @override
-  Set<Column> get primaryKey => {variantId};
+  Set<Column> get primaryKey => {locationId, variantId};
 }
 
 /// Small key/value facts about this device's data (e.g. which tenant it belongs to).
@@ -480,7 +503,7 @@ class AppDatabase extends _$AppDatabase {
   static const _name = 'xzactopos';
 
   @override
-  int get schemaVersion => 12;
+  int get schemaVersion => 13;
 
   /// Adds a column unless it is there already (a database made by a newer build and stepped back in a test, or a
   /// table an earlier step created with today's definition). Skips a table that does not exist.
@@ -596,6 +619,71 @@ class AppDatabase extends _$AppDatabase {
             await _addColumnIfMissing(m, salePayments, salePayments.wallet);
             await _addColumnIfMissing(m, expenses, expenses.wallet);
           }
+          if (from < 13) {
+            await _storeScopingStep(m);
+          }
         },
       );
+
+  /// Schema v13 (F-01, several stores per tenant). Every row and every unsent op is kept.
+  ///  * new nullable store columns on `sales`, `local_movements`, `local_ledger`, `server_ledger`, `local_float_effects`,
+  ///    and the payment method on both ledgers (existing rows: cash, what they meant before);
+  ///  * `stock_expiry` re-keyed to (store, variant) (rows copied; a row with no store gets '');
+  ///  * local rows learn their store from the unsent op that made them (its payload's location_id), a void from the row it
+  ///    cancels, a float effect from its sale / expense / service entry. Rows still without a store are given the device's
+  ///    only store by [DriftSales.initStores] when the device has exactly one (every solo device), else wait for a re-pull;
+  ///  * server copies that now carry a store come again: the cursors of sales, the utang ledger and expiry dates are
+  ///    dropped (other stores' expiry dates were skipped before).
+  Future<void> _storeScopingStep(Migrator m) async {
+    final have = {
+      for (final r in await customSelect("select name from sqlite_master where type = 'table'").get()) r.read<String>('name'),
+    };
+    // each statement runs only when every table it reads exists (an old database simulated by a test may lack some);
+    // rows it could not place are given the only store later, or come again with the re-pull
+    Future<void> run(Set<String> tables, String sql) async {
+      if (have.containsAll(tables)) await customStatement(sql);
+    }
+
+    // the active store lives in meta and every scoped read looks it up there: make sure the table exists
+    if (!have.contains('meta')) await m.createTable(meta);
+    await _addColumnIfMissing(m, sales, sales.locationId);
+    await _addColumnIfMissing(m, localMovements, localMovements.locationId);
+    await _addColumnIfMissing(m, localLedger, localLedger.locationId);
+    await _addColumnIfMissing(m, localLedger, localLedger.method);
+    await _addColumnIfMissing(m, serverLedger, serverLedger.locationId);
+    await _addColumnIfMissing(m, serverLedger, serverLedger.method);
+    await _addColumnIfMissing(m, localFloatEffects, localFloatEffects.locationId);
+    if (have.contains('stock_expiry')) {
+      await m.alterTable(TableMigration(stockExpiry, columnTransformer: {
+        stockExpiry.locationId: const CustomExpression<String>("coalesce(location_id, '')"),
+      }));
+    }
+    await run({'sales'}, 'CREATE INDEX IF NOT EXISTS sales_location_sold_at ON sales (location_id, sold_at)');
+
+    // the location_id in the payload of the unsent op that made a row of table [t] (matched by op id)
+    String payloadLoc(String t) =>
+        "(select json_extract(o.payload, '\$.location_id') from outbox o where o.op_id = $t.op_id)";
+    await run({'sales', 'outbox'}, '''
+      update sales set location_id = (select json_extract(o.payload, '\$.location_id') from outbox o
+                                      where o.kind = 'record_sale' and o.entity_id = sales.id)
+      where location_id is null''');
+    await run({'local_movements', 'outbox', 'sales', 'conversions'}, '''
+      update local_movements set location_id = coalesce(${payloadLoc('local_movements')},
+          (select s.location_id from outbox o join sales s on s.id = o.entity_id
+           where o.op_id = local_movements.op_id and o.kind = 'void_sale'),
+          (select c.location_id from outbox o join conversions c on c.id = o.entity_id
+           where o.op_id = local_movements.op_id and o.kind = 'void_open_pack'))
+      where location_id is null''');
+    await run({'local_ledger', 'outbox', 'sales'}, '''
+      update local_ledger set location_id = coalesce(${payloadLoc('local_ledger')},
+          (select s.location_id from sales s where s.id = local_ledger.sale_id))
+      where location_id is null''');
+    await run({'local_float_effects', 'outbox', 'sales', 'expenses', 'service_txns'}, '''
+      update local_float_effects set location_id = coalesce(${payloadLoc('local_float_effects')},
+          (select s.location_id from sales s where s.id = local_float_effects.txn_id),
+          (select e.location_id from expenses e where e.id = local_float_effects.txn_id),
+          (select t.location_id from service_txns t where t.id = local_float_effects.txn_id))
+      where location_id is null''');
+    await run({'sync_cursors'}, "delete from sync_cursors where table_key in ('sales', 'customer_ledger', 'stock_expiry')");
+  }
 }

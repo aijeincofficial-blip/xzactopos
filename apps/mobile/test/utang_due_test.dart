@@ -287,8 +287,10 @@ void main() {
     final c = await rosa(v9);
     expect((c.name, c.phone, c.balance, c.dueOn), ('Aling Rosa', '0917', 2000, null));
     expect((await v9.nextOps()).map((o) => o.opId), ['p1'], reason: 'unsent ops survive');
-    expect((await v9.cursors()).keys.toSet(), {'customer_ledger', 'stock_levels'},
-        reason: 'customers are pulled again for the date; the other cursors stay');
+    // F-01 (schema v13): the upgrade also passes the v13 step, which pulls the utang ledger again (it now carries the
+    // store and payment method), so only stock_levels keeps its cursor
+    expect((await v9.cursors()).keys.toSet(), {'stock_levels'},
+        reason: 'customers are pulled again for the date (and the ledger for its store); the other cursors stay');
     final version = await v9.db.customSelect('PRAGMA user_version').getSingle();
     expect(version.data.values.single, v9.db.schemaVersion);
     await v9.setUtangDue(customerId: _rosa, dueOn: inDays(3), opId: 'd1');

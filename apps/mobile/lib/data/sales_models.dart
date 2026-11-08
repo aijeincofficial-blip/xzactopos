@@ -593,11 +593,46 @@ class ConversionView {
   bool get voided => voidedAt != null;
 }
 
+/// One store the signed-in user may work at (F-01), from `get_my_access` locations of type `store`.
+class StoreRef {
+  const StoreRef({required this.id, required this.name});
+  final String id;
+  final String name;
+
+  Map<String, dynamic> toJson() => {'id': id, 'name': name};
+  factory StoreRef.fromJson(Map<String, dynamic> j) => StoreRef(id: j['id'] as String, name: (j['name'] as String?) ?? '');
+
+  @override
+  bool operator ==(Object other) => other is StoreRef && other.id == id && other.name == name;
+  @override
+  int get hashCode => Object.hash(id, name);
+  @override
+  String toString() => 'StoreRef($id, $name)';
+}
+
+/// How an utang payment was handed over (F-01). Only `cash` counts in the drawer at the day close.
+const utangPaymentMethods = ['cash', 'ewallet'];
+
 /// Everything the Sell, Utang and Today screens need from the device.
+///
+/// F-01 (several stores): the device works for ONE ACTIVE STORE at a time ([activeLocationId]). Every store-sensitive read
+/// (sales, Today, quick tiles, stock, expiry, openings, expenses, services, wallet float, expected cash, day closes) shows
+/// the active store only, and every store-sensitive write is made for it and queues an op that names it. Switching the
+/// store ([setActiveStore]) never touches queued ops: each keeps the store it was made for. Catalog, customers and utang
+/// balances stay tenant-wide. With no store known (no access list given) nothing is filtered, as before F-01.
 abstract class SalesStore {
-  /// The store (location) this device sells for; sent with every sale.
-  String? get locationId;
-  set locationId(String? id);
+  /// The store this device works for now; null when the user has no store (or none was given).
+  String? get activeLocationId;
+
+  /// Makes [locationId] the active store (kept on the device). Only one of [myStores]; anything else is an
+  /// [ArgumentError] and changes nothing.
+  Future<void> setActiveStore(String locationId);
+
+  /// The stores the signed-in user may pick (from the access payload given at sign-in), in the server's order.
+  Future<List<StoreRef>> myStores();
+
+  /// The active store now and whenever it changes.
+  Stream<String?> watchActiveStore();
 
   /// Commits a sale in one transaction: sale, lines, payments, stock effects, utang entry and the outbox op.
   /// P8-15: an `ewallet` payment with a [PaymentDraft.wallet] (one of [paymentWallets]; a wallet on another method or an
@@ -612,7 +647,15 @@ abstract class SalesStore {
   Future<void> saveCustomer({required String id, required String name, String? phone, required String opId});
   /// Owner write-off or correction of a customer's balance. [amount] is signed: positive = owes more, negative = owes less.
   Future<void> adjustUtang({required String customerId, required int amount, String? note, required String opId});
-  Future<void> recordUtangPayment({required String customerId, required int amount, String? note, required String opId});
+  /// An utang payment taken at the active store. [method] one of [utangPaymentMethods] (else ArgumentError): `cash`
+  /// (default) counts in that store's expected cash, `ewallet` does not. The op carries `location_id` and `method`.
+  Future<void> recordUtangPayment({
+    required String customerId,
+    required int amount,
+    String? note,
+    String method = 'cash',
+    required String opId,
+  });
 
   Stream<List<CustomerView>> watchCustomers();
   Stream<List<LedgerEntryView>> watchLedger(String customerId);
@@ -721,7 +764,8 @@ abstract class SalesStore {
   /// Today's (device local day) expense totals, voided ones left out.
   Stream<ExpenseTotals> watchTodayExpenses();
 
-  /// Cash that should be in the drawer for the local day of [day]: cash taken by completed sales + utang payments
+  /// Cash that should be in the drawer of the ACTIVE store (F-01) for the local day of [day]: cash taken by its completed
+  /// sales + the CASH utang payments taken there (e-wallet ones and other stores' never count)
   /// - cash expenses that are not voided + the cash effect of service entries not voided (cash-in +amount+fee,
   /// cash-out -amount+fee, load +price, float top-up -amount, float withdraw +amount; see [serviceCashEffect]).
   /// Includes what this device has not sent yet. Centavos; may be below zero.
@@ -793,7 +837,7 @@ abstract class SalesStore {
 
   /// Float per wallet: the last pulled server balance + the effects of this device's ops it does not include yet
   /// (unsent, refused-but-not-discarded, or applied after that balance was read). Wallets in [serviceWallets] order;
-  /// only wallets that have a balance or a local effect. Filtered to [locationId] when it is set.
+  /// only wallets that have a balance or a local effect. Filtered to the active store when one is set.
   /// P8-15: the local effects also come from sales (e-wallet payments with a wallet: +amount; their cancel: -amount) and
   /// expenses (e-wallet with a wallet: -amount; their void: +amount), under the same drop rule.
   Stream<List<WalletFloatView>> watchWalletFloat();

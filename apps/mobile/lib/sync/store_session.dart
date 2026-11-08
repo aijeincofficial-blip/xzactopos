@@ -2,12 +2,20 @@ import 'package:flutter/material.dart';
 
 import '../backend.dart';
 import '../data/local_store.dart';
+import '../data/sales_models.dart';
 import '../l10n/app_localizations.dart';
 import 'photo_loader.dart';
 import 'sync_engine.dart';
 
 /// Opens the device store. [safeMode] asks for the most compatible storage (see AppDatabase.open).
 typedef OpenStore = LocalStore Function({bool safeMode});
+
+/// The stores (locations of type `store`) in a `get_my_access` payload, in its order (by code).
+List<StoreRef> storesOf(Map<String, dynamic> access) => [
+      for (final l in ((access['locations'] as List?) ?? const []).whereType<Map>())
+        if (l['type'] == 'store' && l['id'] is String)
+          StoreRef(id: l['id'] as String, name: (l['name'] as String?) ?? (l['code'] as String?) ?? ''),
+    ];
 
 /// Opens the device store for the signed-in business and keeps sync running while it is on screen.
 class StoreSession extends StatefulWidget {
@@ -70,14 +78,10 @@ class _StoreSessionState extends State<StoreSession> {
     _photos = PhotoLoader(_store, widget.backend);
     _opened = true;
     final tenant = (widget.access['tenant'] as Map?) ?? const {};
-    final stores = ((widget.access['locations'] as List?) ?? const [])
-        .whereType<Map>()
-        .where((l) => l['type'] == 'store')
-        .toList();
     await _store.ensureTenant(tenant['id'] as String? ?? '',
         baseCurrency: tenant['base_currency'] as String? ?? 'PHP',
-        // a solo business has one store; with several, the server picks per user (the sale then names no store)
-        locationId: stores.length == 1 ? stores.first['id'] as String? : null,
+        // F-01: the stores this user may work at; the device keeps one active (a solo business has exactly one)
+        stores: storesOf(widget.access),
         discardUnsent: _discardUnsent);
     await _store.setMeta('store_name', tenant['name'] as String?);
     _engine.start();

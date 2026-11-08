@@ -7,6 +7,7 @@ import '../core/search.dart';
 import 'db.dart';
 import 'drift_sales.dart';
 import 'local_store.dart';
+import 'sales_models.dart';
 
 class DriftStore with DriftSales implements LocalStore {
   DriftStore(this.db);
@@ -22,11 +23,14 @@ class DriftStore with DriftSales implements LocalStore {
 
   @override
   Future<bool> ensureTenant(String tenantId,
-      {required String baseCurrency, String? locationId, bool discardUnsent = false}) async {
+      {required String baseCurrency, String? locationId, List<StoreRef>? stores, bool discardUnsent = false}) async {
     _base = baseCurrency;
-    this.locationId = locationId;
+    final allowed = stores ?? [if (locationId != null) StoreRef(id: locationId, name: '')];
     final row = await (db.select(db.meta)..where((m) => m.key.equals('tenant_id'))).getSingleOrNull();
-    if (row?.value == tenantId) return false;
+    if (row?.value == tenantId) {
+      await initStores(allowed, preferred: locationId);
+      return false;
+    }
     if (row != null && !discardUnsent) {
       final unsent = (await db.select(db.outbox).get()).length;
       if (unsent > 0) throw UnsentChangesException(unsent);
@@ -37,6 +41,7 @@ class DriftStore with DriftSales implements LocalStore {
       }
       await db.into(db.meta).insert(MetaCompanion.insert(key: 'tenant_id', value: tenantId));
     });
+    await initStores(allowed, preferred: locationId);
     return row != null;
   }
 
@@ -176,14 +181,17 @@ class DriftStore with DriftSales implements LocalStore {
           ));
       await _enqueue(opId, 'upsert_product', d.id, d.toPayload());
       // "How many do you have now?" becomes an `opening` stock movement on the server; once per variant
+      // F-01: at the active store (the op names it; the op id stays one per variant, so it is asked once per product)
       if (d.openingQty != null && d.openingQty! > 0) {
         final oid = openingOpId(d.variantId);
         final already = await (db.select(db.localMovements)..where((m) => m.opId.equals(oid))).get();
         final queued = await (db.select(db.outbox)..where((o) => o.opId.equals(oid))).get();
         if (already.isEmpty && queued.isEmpty) {
-          await db.into(db.localMovements).insert(
-              LocalMovementsCompanion.insert(opId: oid, variantId: d.variantId, qty: d.openingQty!, counts: const Value(true)));
-          await _enqueue(oid, 'post_opening_stock', d.id, {'variant_id': d.variantId, 'qty': d.openingQty});
+          final loc = await activeStoreNow();
+          await db.into(db.localMovements).insert(LocalMovementsCompanion.insert(
+              opId: oid, variantId: d.variantId, qty: d.openingQty!, counts: const Value(true), locationId: Value(loc)));
+          await _enqueue(oid, 'post_opening_stock', d.id,
+              {'variant_id': d.variantId, 'qty': d.openingQty, 'location_id': ?loc});
         }
       }
     });

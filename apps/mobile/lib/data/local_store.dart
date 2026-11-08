@@ -8,8 +8,12 @@ abstract class LocalStore implements SalesStore {
   /// Clears everything when the device is used for a different business. Returns true if it cleared.
   /// Throws [UnsentChangesException] instead when that would throw away changes never sent to the server,
   /// unless [discardUnsent] is true.
+  ///
+  /// F-01: [stores] = the stores the user may work at (access payload); the active store becomes the one chosen before on
+  /// this device if it is still allowed, else [locationId] if allowed, else the first store (the only one for a solo
+  /// owner). [stores] null = just [locationId] when given (one store; how tests and older callers name it).
   Future<bool> ensureTenant(String tenantId,
-      {required String baseCurrency, String? locationId, bool discardUnsent = false});
+      {required String baseCurrency, String? locationId, List<StoreRef>? stores, bool discardUnsent = false});
   String get baseCurrency;
 
   // ---- reads (work offline) ----

@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:xzactopos_mobile/app.dart';
 import 'package:xzactopos_mobile/data/db.dart';
 import 'package:xzactopos_mobile/data/drift_store.dart';
+import 'package:xzactopos_mobile/data/sales_models.dart' show StoreRef;
 
 import 'widget_test.dart' show FakeBackend;
 
@@ -41,7 +42,8 @@ Future<void> addProduct(WidgetTester tester, {required String name, required Str
 class BrokenStore extends DriftStore {
   BrokenStore() : super(AppDatabase(NativeDatabase.memory()));
   @override
-  Future<bool> ensureTenant(String tenantId, {required String baseCurrency, String? locationId, bool discardUnsent = false}) =>
+  Future<bool> ensureTenant(String tenantId,
+          {required String baseCurrency, String? locationId, List<StoreRef>? stores, bool discardUnsent = false}) =>
       Future.error(StateError('TypeError: Failed to fetch'));
 }
 

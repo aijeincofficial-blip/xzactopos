@@ -3,7 +3,7 @@
 Updated at the end of every task. Read this first in a fresh session. New session or a different tool (Antigravity)? Start with `docs/START-HERE-antigravity.md`.
 
 ## Status
-- **Solo mode is wrapped up (2026-11-08).** Phases 0 to 8 plus the tabs revamp, keypad, opening cash, e-wallet float, import/export are done; acceptance and open findings: `docs/tasks/P8-13-acceptance.md`. Full mode is planned in `docs/tasks/F-00-overview-full-mode.md` (not started; waiting for the owner's decisions listed there). Branch `claude/phase3-sell-8261d3` holds all of it, not pushed, not merged to `main`.
+- **Solo mode is wrapped up (2026-11-08).** Phases 0 to 8 plus the tabs revamp, keypad, opening cash, e-wallet float, import/export are done; acceptance and open findings: `docs/tasks/P8-13-acceptance.md`. Full mode is planned in `docs/tasks/F-00-overview-full-mode.md`; **F-01 store scoping: data layer done** (section near the end), picker UI next. Branch `claude/phase3-sell-8261d3` holds all of it, not pushed, not merged to `main`.
 - Phase 0 (Foundation): done, committed (6d59c99).
 - **Phase 3 (solo Sell screen, utang, stock ledger): done** (cards P3-01..P3-08, report at the end of this file). Phase 2 (solo catalog) accepted before it. Next: Phase 4.
 - **Phase 6 (solo reports from rollups): done** (section at the end; gaps triaged in `docs/gaps-review.md`).
@@ -488,6 +488,24 @@ Share was checked on the emulator (Android share sheet with `LL3-261107-0001.pdf
   sales / expenses / their voids under the P8-06 drop rule. 10 new tests (311 total). Wallet chooser on the Pay screen and
   expense sheet still open: `docs/tasks/P8-15-ewallet-float-payments.md`.
   Closes the P8-06 gap / P8-13 finding 5 on the data side.
+
+## Full mode F-01: store scoping, data layer (2026-11-08, card `docs/tasks/F-01-store-scoping.md`)
+- Server `20261108002000_store_scoping.sql`: `customer_ledger.location_id` (fk, same tenant) + `method` (cash | ewallet,
+  default cash), backfilled (sale's store, else the tenant's only/first store). `record_utang_payment` takes `location_id`
+  (required with several stores: `location_required`; access checked: `location_denied`) and `method`; `adjust_utang` an
+  optional `location_id`; sale / void ledger rows carry the sale's store. `day_close_server_expected` counts only CASH utang
+  payments taken at the closing store. `sync_pull_pos` ledger rows and `sync_pull_sales` rows carry `location_id` (+ `method`).
+  `record_sale` without a store: still fine with one store, `location_required` with several (unchanged rule). pgTAP `025`
+  (52); `018` fixture names S01 and S02's figure is 6600 (was 8100). Suite 2793 (25 files).
+- Phone: Drift v13 (store columns on sales, local movements, both ledgers, local float effects; `stock_expiry` keyed by
+  store + variant; local rows placed from their unsent op; sales / ledger / expiry cursors dropped). ACTIVE STORE in meta:
+  `activeLocationId`, `setActiveStore(id)` (only assigned stores), `myStores()` (`StoreRef`), `watchActiveStore()`;
+  `ensureTenant(stores:)` (StoreSession passes `storesOf(access)`); every store-sensitive read and write follows it, streams
+  re-emit on a switch. `recordUtangPayment(method:)`. 12 new tests (`store_scoping_test.dart`), 327 total; 299 pass, the
+  same 28 widget tests that already failed before this card still fail (they come from the UI changes in f76375b /
+  cff195e, untouched here). Solo devices behave exactly as before.
+- Next (Sonnet, UI only): the store picker and the screen wiring listed at the end of the F-01 card (incl.
+  `supervisor_pin.dart` passing `locationId`, cash / e-wallet choice on the utang payment sheet).
 
 ## Antigravity Session: Neo-Fintech Design, Settings Screen, Theme Fix, & Reports Enrichment
 Read `docs/START-HERE-claude.md` for the complete handoff from Antigravity.

@@ -12,7 +12,8 @@ Same app, same backend, same data. Solo is the default (one owner, one store, au
 - Idempotent `sync_push` ops, delta pulls with 5 s hold-back, the Drift outbox pattern, per-location wallet float, day close, expenses, services, tingi conversions, stock ledger with average cost.
 
 ## Solo limitations Full mode must resolve first
-These were accepted for one store and are wrong or incomplete with several stores or staff:
+These were accepted for one store and are wrong or incomplete with several stores or staff (1, 2 and the opening-cash /
+per-store part of 7 are resolved on the data side by F-01):
 1. **No store on local sales** (`sales` table on the phone has no store column); the sale op only works when the user has exactly one store (gap B3). Sales, expected cash and reports must be per store.
 2. **Utang ledger has no store or payment method** (`customer_ledger`); the day close counts every utang payment as cash, tenant-wide.
 3. **Receipt numbers** use a random 3-character device code, so two devices can clash (gap B1). Needs server `sale_no` and a `devices` table.
@@ -27,7 +28,7 @@ These were accepted for one store and are wrong or incomplete with several store
 | Card | Work | Model |
 | --- | --- | --- |
 | F-00a Housekeeping | Merge the solo branch to `main` (owner's OK), CI remote and first green run (C1), keystore by the owner, decide the React admin, write `docs/START-HERE-full-mode.md` | Sonnet |
-| F-01 Store scoping | `location_id` on local sales and on `customer_ledger` (migration + backfill), store picker, every sale/stock/report query scoped to the chosen store, B3 fixed, day close and wallet float per store | Opus (schema, sync, ledger) then Sonnet (picker UI) |
+| F-01 Store scoping | `location_id` on local sales and on `customer_ledger` (migration + backfill), store picker, every sale/stock/report query scoped to the chosen store, B3 fixed, day close and wallet float per store. **Data layer DONE (2026-11-08, `F-01-store-scoping.md`); picker UI open (Sonnet), steps listed at the end of that card. Reports stay all-stores until F-10.** | Opus (schema, sync, ledger) then Sonnet (picker UI) |
 | F-02 Server sale number and devices | `devices` table, server-issued `sale_no` per store, keep offline local number until sync (B1) | Opus |
 | F-03 Tenant settings and the mode switch | Settings screen (name, timezone, tax mode, languages), "Add staff / another store / warehouse" flow that toggles `tenant_modules`, limits shown, nothing changes for a solo owner who does not use it | Sonnet (RPCs exist) |
 | F-04 Staff in the Flutter app | List, create cashier, invite by email, roles and positions, store assignment, deactivate; cashier and warehouse home screens (fewer tabs); set PIN screen | Sonnet (Opus if a new RPC is needed) |

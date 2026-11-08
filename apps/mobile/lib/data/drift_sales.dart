@@ -18,10 +18,100 @@ mixin DriftSales implements SalesStore {
   String get baseCurrency;
   Future<void> enqueue(String opId, String kind, String entityId, Map<String, dynamic> payload);
 
-  @override
-  String? locationId;
-
   static String _iso(DateTime t) => t.toUtc().toIso8601String();
+
+  // ---------------------------------------------------------------------------
+  // The active store (F-01)
+  //
+  // Kept in `meta` ('active_location_id'), and every scoped query reads it from there ([activeSql]) with `meta` among
+  // its tables, so a watched list, total or balance follows a store switch at once. Writes read it in their own
+  // transaction ([activeStoreNow]). Rows store the store they belong to; a query shows `x.location_id = active`, or
+  // everything when no store is known (no access list: tests and the pre-F-01 behaviour).
+  // ---------------------------------------------------------------------------
+
+  static const _activeKey = 'active_location_id';
+  static const _storesKey = 'stores';
+
+  /// The active store as an SQL scalar (null when none).
+  static const activeSql = "(select am.value from meta am where am.key = 'active_location_id')";
+
+  /// "[col] belongs to the active store" (always true when no store is active).
+  static String inActive(String col) => '($activeSql is null or $col = $activeSql)';
+
+  String? _active;
+  List<StoreRef> _stores = const [];
+
+  @override
+  String? get activeLocationId => _active;
+
+  /// The active store as stored now (use inside writes).
+  Future<String?> activeStoreNow() => meta(_activeKey);
+
+  /// The user's only store, or null (none or several). Pulled rows that name no store (an older server) belong to it.
+  String? get _sole => _stores.length == 1 ? _stores.first.id : null;
+
+  @override
+  Future<List<StoreRef>> myStores() async {
+    if (_stores.isEmpty) {
+      final raw = await meta(_storesKey);
+      if (raw != null) {
+        _stores = [for (final j in (jsonDecode(raw) as List).cast<Map<String, dynamic>>()) StoreRef.fromJson(j)];
+      }
+    }
+    return List.unmodifiable(_stores);
+  }
+
+  @override
+  Stream<String?> watchActiveStore() => (db.select(db.meta)..where((m) => m.key.equals(_activeKey)))
+      .watchSingleOrNull()
+      .map((r) => r?.value)
+      .distinct();
+
+  @override
+  Future<void> setActiveStore(String locationId) async {
+    if (!(await myStores()).any((s) => s.id == locationId)) {
+      throw ArgumentError('Not one of your stores: $locationId');
+    }
+    await setMeta(_activeKey, locationId);
+    _active = locationId;
+  }
+
+  /// Called by `ensureTenant` with the stores the user may work at. Picks the active store: the one chosen before on this
+  /// device if still allowed, else [preferred] if allowed, else the first. With exactly one store, rows that do not know
+  /// their store yet (made before schema v13, or while no store was known) are given it, so a solo device behaves exactly
+  /// as before. With several, such rows wait for the re-pull that brings their store (local ones stay unshown until then).
+  Future<void> initStores(List<StoreRef> stores, {String? preferred}) async {
+    _stores = List.unmodifiable(stores);
+    final saved = await meta(_activeKey);
+    bool ok(String? id) => id != null && stores.any((s) => s.id == id);
+    final pick = ok(saved) ? saved : (ok(preferred) ? preferred : (stores.isEmpty ? null : stores.first.id));
+    await db.transaction(() async {
+      await setMeta(_storesKey, stores.isEmpty ? null : jsonEncode([for (final s in stores) s.toJson()]));
+      if (pick != saved) await setMeta(_activeKey, pick);
+      if (stores.length == 1) await _fillUnknownStore(stores.first.id);
+    });
+    _active = pick;
+  }
+
+  Future<void> _fillUnknownStore(String loc) async {
+    final v = [Variable.withString(loc)];
+    for (final t in [
+      'sales', 'local_movements', 'local_ledger', 'server_ledger', 'local_float_effects', 'expenses', 'day_closes',
+      'service_txns', 'conversions',
+    ]) {
+      await db.customUpdate('update $t set location_id = ?1 where location_id is null', variables: v, updates: _tables(t));
+    }
+    // expiry rows written with no store: the local (unsent) date wins over a pulled one of the same product
+    await db.customUpdate('''
+      insert or replace into stock_expiry (variant_id, location_id, expires_on, updated_at)
+      select e.variant_id, ?1, e.expires_on, e.updated_at from stock_expiry e
+      where e.location_id = '' and (e.updated_at is null or not exists (
+        select 1 from stock_expiry x where x.location_id = ?1 and x.variant_id = e.variant_id))''',
+        variables: v, updates: {db.stockExpiry});
+    await db.customUpdate("delete from stock_expiry where location_id = ''", updates: {db.stockExpiry});
+  }
+
+  Set<TableInfo> _tables(String name) => {db.allTables.firstWhere((t) => t.actualTableName == name)};
 
   // ---------------------------------------------------------------------------
   // Meta
@@ -74,16 +164,18 @@ mixin DriftSales implements SalesStore {
     }
 
     return db.transaction(() async {
+      final loc = await activeStoreNow();
       final localNo = await _nextReceiptNo(d.soldAt.toLocal());
       final soldAt = _iso(d.soldAt);
       final tax = d.lines.fold<int>(0, (a, l) => a + l.lineTax);
-      // cost snapshot: the average cost of this product (the server's, moved by this device's stock-ins and opened packs
-      // it has not caught up on, same rule as the server), else the cost on the line
-      final eff = await _effectiveStock();
+      // cost snapshot: the average cost of this product at this store (the server's, moved by this device's stock-ins and
+      // opened packs it has not caught up on, same rule as the server), else the cost on the line
+      final eff = await _effectiveStock(loc);
       int costOf(SaleLine l) => eff[l.variantId]?.avg ?? l.unitCost;
 
       await db.into(db.sales).insert(SalesCompanion.insert(
             id: d.id,
+            locationId: Value(loc),
             localNo: localNo,
             subtotal: d.subtotal,
             discount: Value(d.discount),
@@ -105,8 +197,8 @@ mixin DriftSales implements SalesStore {
               tracked: Value(l.tracked),
             ));
         if (l.tracked) {
-          await db.into(db.localMovements).insert(
-              LocalMovementsCompanion.insert(opId: opId, variantId: l.variantId, qty: -l.qty));
+          await db.into(db.localMovements).insert(LocalMovementsCompanion.insert(
+              opId: opId, variantId: l.variantId, qty: -l.qty, locationId: Value(loc)));
         }
       }
       for (final p in d.payments) {
@@ -120,8 +212,8 @@ mixin DriftSales implements SalesStore {
             ));
         // P8-15: the customer paid into the store's wallet
         if (p.wallet != null) {
-          await db.into(db.localFloatEffects).insert(
-              LocalFloatEffectsCompanion.insert(opId: opId, txnId: d.id, wallet: p.wallet!, amount: p.amount));
+          await db.into(db.localFloatEffects).insert(LocalFloatEffectsCompanion.insert(
+              opId: opId, txnId: d.id, wallet: p.wallet!, amount: p.amount, locationId: Value(loc)));
         }
       }
       if (d.utang > 0) {
@@ -132,13 +224,14 @@ mixin DriftSales implements SalesStore {
               amount: d.utang,
               saleId: Value(d.id),
               occurredAt: soldAt,
+              locationId: Value(loc),
             ));
       }
 
       await enqueue(opId, 'record_sale', d.id, {
         'id': d.id,
         'local_no': localNo,
-        'location_id': ?locationId,
+        'location_id': ?loc,
         'sold_at': soldAt,
         'subtotal': d.subtotal,
         'discount': d.discount,
@@ -185,13 +278,15 @@ mixin DriftSales implements SalesStore {
       final sale = await (db.select(db.sales)..where((s) => s.id.equals(saleId))).getSingleOrNull();
       if (sale == null) throw StateError('Unknown sale');
       if (sale.status == 'voided') throw StateError('Sale is already cancelled');
+      // its effects go back where the sale was made (the active store only for an old row that does not know its store)
+      final loc = sale.locationId ?? await activeStoreNow();
       final now = _iso(DateTime.now());
       await (db.update(db.sales)..where((s) => s.id.equals(saleId)))
           .write(SalesCompanion(status: const Value('voided'), voidedAt: Value(now), voidReason: Value(reason)));
       final items = await (db.select(db.saleItems)..where((i) => i.saleId.equals(saleId))).get();
       for (final i in items.where((i) => i.tracked)) {
         await db.into(db.localMovements).insert(
-            LocalMovementsCompanion.insert(opId: opId, variantId: i.variantId, qty: i.qty));
+            LocalMovementsCompanion.insert(opId: opId, variantId: i.variantId, qty: i.qty, locationId: Value(loc)));
       }
       final utang = await (db.select(db.salePayments)
             ..where((p) => p.saleId.equals(saleId) & p.method.equals('utang')))
@@ -206,6 +301,7 @@ mixin DriftSales implements SalesStore {
               saleId: Value(saleId),
               note: const Value('void'),
               occurredAt: now,
+              locationId: Value(loc),
             ));
       }
       // P8-15: the e-wallet payments that named a wallet leave its float (the server's sale void does the same)
@@ -214,10 +310,10 @@ mixin DriftSales implements SalesStore {
             ..orderBy([(p) => OrderingTerm.asc(p.id)]))
           .get();
       for (final p in named) {
-        await db.into(db.localFloatEffects).insert(
-            LocalFloatEffectsCompanion.insert(opId: opId, txnId: saleId, wallet: p.wallet!, amount: -p.amount));
+        await db.into(db.localFloatEffects).insert(LocalFloatEffectsCompanion.insert(
+            opId: opId, txnId: saleId, wallet: p.wallet!, amount: -p.amount, locationId: Value(loc)));
       }
-      await enqueue(opId, 'void_sale', saleId, {'sale_id': saleId, 'reason': ?reason});
+      await enqueue(opId, 'void_sale', saleId, {'sale_id': saleId, 'reason': ?reason, 'location_id': ?loc});
     });
   }
 
@@ -251,10 +347,13 @@ mixin DriftSales implements SalesStore {
     required String customerId,
     required int amount,
     String? note,
+    String method = 'cash',
     required String opId,
   }) {
     if (amount <= 0) throw ArgumentError('Amount must be above zero');
+    if (!utangPaymentMethods.contains(method)) throw ArgumentError('Unknown payment method: $method');
     return db.transaction(() async {
+      final loc = await activeStoreNow();
       final at = _iso(DateTime.now());
       await db.into(db.localLedger).insert(LocalLedgerCompanion.insert(
             opId: opId,
@@ -263,12 +362,16 @@ mixin DriftSales implements SalesStore {
             amount: -amount,
             note: Value(note),
             occurredAt: at,
+            locationId: Value(loc),
+            method: Value(method),
           ));
       await enqueue(opId, 'record_utang_payment', customerId, {
         'customer_id': customerId,
         'amount': amount,
         if (note != null && note.isNotEmpty) 'note': note,
         'occurred_at': at,
+        'location_id': ?loc,
+        'method': method,
       });
     });
   }
@@ -277,6 +380,7 @@ mixin DriftSales implements SalesStore {
   Future<void> adjustUtang({required String customerId, required int amount, String? note, required String opId}) {
     if (amount == 0) throw ArgumentError('Amount must not be zero');
     return db.transaction(() async {
+      final loc = await activeStoreNow();
       final at = _iso(DateTime.now());
       await db.into(db.localLedger).insert(LocalLedgerCompanion.insert(
             opId: opId,
@@ -285,12 +389,14 @@ mixin DriftSales implements SalesStore {
             amount: amount,
             note: Value(note),
             occurredAt: at,
+            locationId: Value(loc),
           ));
       await enqueue(opId, 'adjust_utang', customerId, {
         'customer_id': customerId,
         'amount': amount,
         if (note != null && note.isNotEmpty) 'note': note,
         'occurred_at': at,
+        'location_id': ?loc,
       });
     });
   }
@@ -418,10 +524,11 @@ mixin DriftSales implements SalesStore {
     from sales s
   ''';
 
+  /// The active store's sales (all when no store is known).
   @override
   Stream<List<SaleSummary>> watchSales({int limit = 200}) => db
-      .customSelect('$_saleSql order by s.sold_at desc, s.local_no desc limit ?1',
-          variables: [Variable.withInt(limit)], readsFrom: {db.sales, db.customers, db.outbox})
+      .customSelect('$_saleSql where ${inActive('s.location_id')} order by s.sold_at desc, s.local_no desc limit ?1',
+          variables: [Variable.withInt(limit)], readsFrom: {db.sales, db.customers, db.outbox, db.meta})
       .watch()
       .map((rows) => rows.map(_summary).toList());
 
@@ -463,16 +570,18 @@ mixin DriftSales implements SalesStore {
     return db
         .customSelect(
           '''
-          select (select count(*) from sales s where s.status = 'completed' and s.sold_at >= ?1 and s.sold_at < ?2) as n,
-                 coalesce((select sum(s.total) from sales s where s.status = 'completed' and s.sold_at >= ?1 and s.sold_at < ?2), 0) as total,
+          select (select count(*) from sales s where s.status = 'completed' and s.sold_at >= ?1 and s.sold_at < ?2
+                    and ${inActive('s.location_id')}) as n,
+                 coalesce((select sum(s.total) from sales s where s.status = 'completed' and s.sold_at >= ?1 and s.sold_at < ?2
+                    and ${inActive('s.location_id')}), 0) as total,
                  coalesce(sum(case when p.method = 'cash' then p.amount end), 0) as cash,
                  coalesce(sum(case when p.method = 'ewallet' then p.amount end), 0) as ewallet,
                  coalesce(sum(case when p.method = 'utang' then p.amount end), 0) as utang
           from sale_payments p join sales s on s.id = p.sale_id
-          where s.status = 'completed' and s.sold_at >= ?1 and s.sold_at < ?2
+          where s.status = 'completed' and s.sold_at >= ?1 and s.sold_at < ?2 and ${inActive('s.location_id')}
           ''',
           variables: [Variable.withString(from), Variable.withString(to)],
-          readsFrom: {db.sales, db.salePayments},
+          readsFrom: {db.sales, db.salePayments, db.meta},
         )
         .watchSingle()
         .map((r) => TodayTotals(
@@ -498,14 +607,20 @@ mixin DriftSales implements SalesStore {
   /// Quantity and average cost per variant as this device sees them: the server's levels plus this device's movements
   /// the server has not caught up on, replayed in order with the server's average-cost rule (stock in with a cost:
   /// [receiptAvgCost]; pieces from an opened pack: [conversionAvgCost]; everything else moves the quantity only).
-  Future<Map<String, ({double qty, int? avg})>> _effectiveStock() async {
+  /// F-01: at store [loc] (every store when null).
+  Future<Map<String, ({double qty, int? avg})>> _effectiveStock(String? loc) async {
     final qty = <String, double>{};
     final avg = <String, int?>{};
-    for (final l in await db.select(db.stockLevels).get()) {
+    final levels =
+        await (db.select(db.stockLevels)..where((x) => loc == null ? const Constant(true) : x.locationId.equals(loc))).get();
+    for (final l in levels) {
       qty[l.variantId] = (qty[l.variantId] ?? 0) + l.qty;
       if (l.avgCost != null) avg[l.variantId] = l.avgCost;
     }
-    final moves = await (db.select(db.localMovements)..orderBy([(m) => OrderingTerm.asc(m.id)])).get();
+    final moves = await (db.select(db.localMovements)
+          ..where((x) => loc == null ? const Constant(true) : x.locationId.equals(loc))
+          ..orderBy([(m) => OrderingTerm.asc(m.id)]))
+        .get();
     for (final m in moves) {
       final q0 = qty[m.variantId] ?? 0;
       if (m.qty > 0 && m.unitCost != null) {
@@ -520,19 +635,19 @@ mixin DriftSales implements SalesStore {
   }
 
   @override
-  Future<int?> averageCost(String variantId) async => (await _effectiveStock())[variantId]?.avg;
+  Future<int?> averageCost(String variantId) async => (await _effectiveStock(await activeStoreNow()))[variantId]?.avg;
 
   @override
   Stream<Map<String, double>> watchStock() => db
       .customSelect(
         '''
         select variant_id, sum(q) as q from (
-          select variant_id, qty as q, counted as c from stock_levels
+          select variant_id, qty as q, counted as c from stock_levels where ${inActive('location_id')}
           union all
-          select variant_id, qty as q, counts as c from local_movements
+          select variant_id, qty as q, counts as c from local_movements where ${inActive('location_id')}
         ) group by variant_id having max(c) = 1
         ''',
-        readsFrom: {db.stockLevels, db.localMovements},
+        readsFrom: {db.stockLevels, db.localMovements, db.meta},
       )
       .watch()
       .map((rows) => {for (final r in rows) r.read<String>('variant_id'): r.read<double>('q')});
@@ -548,20 +663,22 @@ mixin DriftSales implements SalesStore {
     if (qty <= 0) throw ArgumentError('Quantity must be above zero');
     final exp = expiresOn == null ? null : _expiryKey(expiresOn);
     return db.transaction(() async {
+      final loc = await activeStoreNow();
       if (exp != null) {
         // the server's rule on what this device sees: the earlier date while stock is on hand, else the new one
         final before = await stockLeft(variantId);
-        final old = (await _expiryRow(variantId))?.expiresOn;
+        final old = (await _expiryRow(variantId, loc))?.expiresOn;
         final keep = before > 0 && old != null && old.compareTo(exp) < 0;
-        await _writeExpiry(variantId, keep ? old : exp);
+        await _writeExpiry(variantId, loc, keep ? old : exp);
       }
       await db.into(db.localMovements).insert(LocalMovementsCompanion.insert(
-          opId: opId, variantId: variantId, qty: qty, counts: const Value(true), unitCost: Value(cost)));
+          opId: opId, variantId: variantId, qty: qty, counts: const Value(true), unitCost: Value(cost),
+          locationId: Value(loc)));
       await enqueue(opId, 'receive_stock', variantId, {
         'variant_id': variantId,
         'qty': qty,
         'unit_cost': ?cost,
-        'location_id': ?locationId,
+        'location_id': ?loc,
         'expires_on': ?exp,
       });
     });
@@ -584,12 +701,19 @@ mixin DriftSales implements SalesStore {
     return dayKey(day);
   }
 
-  Future<StockExpiryData?> _expiryRow(String variantId) =>
-      (db.select(db.stockExpiry)..where((e) => e.variantId.equals(variantId))).getSingleOrNull();
+  /// The expiry row of [variantId] at store [loc]; with no store known, a local edit first, else any row.
+  Future<StockExpiryData?> _expiryRow(String variantId, String? loc) async {
+    final rows = await (db.select(db.stockExpiry)
+          ..where((e) => e.variantId.equals(variantId) & (loc == null ? const Constant(true) : e.locationId.equals(loc)))
+          ..orderBy([(e) => OrderingTerm.asc(e.updatedAt.isNotNull()), (e) => OrderingTerm.asc(e.locationId)]))
+        .get();
+    return rows.isEmpty ? null : rows.first;
+  }
 
-  Future<void> _writeExpiry(String variantId, String? key) => db.into(db.stockExpiry).insertOnConflictUpdate(
+  /// A local (unconfirmed) date for [variantId] at store [loc] ('' = no store known).
+  Future<void> _writeExpiry(String variantId, String? loc, String? key) => db.into(db.stockExpiry).insertOnConflictUpdate(
       StockExpiryCompanion.insert(
-          variantId: variantId, locationId: Value(locationId), expiresOn: Value(key), updatedAt: const Value(null)));
+          variantId: variantId, locationId: Value(loc ?? ''), expiresOn: Value(key), updatedAt: const Value(null)));
 
   @override
   Future<void> setExpiry({required String variantId, required DateTime? expiresOn, required String opId}) {
@@ -598,8 +722,9 @@ mixin DriftSales implements SalesStore {
       if (await (db.select(db.variants)..where((v) => v.id.equals(variantId))).getSingleOrNull() == null) {
         throw StateError('Unknown product');
       }
-      await _writeExpiry(variantId, key);
-      await enqueue(opId, 'set_expiry', variantId, {'variant_id': variantId, 'expires_on': key, 'location_id': ?locationId});
+      final loc = await activeStoreNow();
+      await _writeExpiry(variantId, loc, key);
+      await enqueue(opId, 'set_expiry', variantId, {'variant_id': variantId, 'expires_on': key, 'location_id': ?loc});
     });
   }
 
@@ -626,6 +751,9 @@ mixin DriftSales implements SalesStore {
       o.kind == 'set_expiry' ||
       (o.kind == 'receive_stock' && (jsonDecode(o.payload) as Map).containsKey('expires_on'));
 
+  /// The store a queued op names (null = none: an op made while no store was known).
+  static String? _opLocation(OutboxData o) => (jsonDecode(o.payload) as Map)['location_id'] as String?;
+
   @override
   Future<void> adjustStock({
     required String variantId,
@@ -635,15 +763,16 @@ mixin DriftSales implements SalesStore {
   }) {
     if (counted < 0) throw ArgumentError('Count cannot be negative');
     return db.transaction(() async {
+      final loc = await activeStoreNow();
       final delta = counted - await stockLeft(variantId);
       if (delta.abs() < 0.0005) return; // already right: the server would write nothing either
-      await db.into(db.localMovements).insert(
-          LocalMovementsCompanion.insert(opId: opId, variantId: variantId, qty: delta, counts: const Value(true)));
+      await db.into(db.localMovements).insert(LocalMovementsCompanion.insert(
+          opId: opId, variantId: variantId, qty: delta, counts: const Value(true), locationId: Value(loc)));
       await enqueue(opId, 'adjust_stock', variantId, {
         'variant_id': variantId,
         'counted': counted,
         'reason': reason,
-        'location_id': ?locationId,
+        'location_id': ?loc,
       });
     });
   }
@@ -663,19 +792,25 @@ mixin DriftSales implements SalesStore {
           '''
           select p.id, v.id as variant_id, p.name, p.unit, v.sku, v.barcode, pr.price, p.photo_path, p.active,
                  p.track_stock, p.tax_rate, v.cost, v.reorder_point, $tingiLinkSql,
-                 (select e.expires_on from stock_expiry e where e.variant_id = v.id) as expires_on,
+                 (select min(e.expires_on) from stock_expiry e
+                  where e.variant_id = v.id and ${inActive('e.location_id')}) as expires_on,
                  exists (select 1 from outbox o where o.entity_id = p.id or o.entity_id = v.id) as pending,
-                 coalesce((select sum(l.qty) from stock_levels l where l.variant_id = v.id), 0)
-               + coalesce((select sum(m.qty) from local_movements m where m.variant_id = v.id), 0) as qty,
-                 (coalesce((select max(l.counted) from stock_levels l where l.variant_id = v.id), 0)
-                  or coalesce((select max(m.counts) from local_movements m where m.variant_id = v.id), 0)) as counted
+                 coalesce((select sum(l.qty) from stock_levels l where l.variant_id = v.id and ${inActive('l.location_id')}), 0)
+               + coalesce((select sum(m.qty) from local_movements m
+                           where m.variant_id = v.id and ${inActive('m.location_id')}), 0) as qty,
+                 (coalesce((select max(l.counted) from stock_levels l
+                            where l.variant_id = v.id and ${inActive('l.location_id')}), 0)
+                  or coalesce((select max(m.counts) from local_movements m
+                               where m.variant_id = v.id and ${inActive('m.location_id')}), 0)) as counted
           from products p
           join variants v on v.product_id = p.id and v.is_default = 1 and v.deleted_at is null
           left join prices pr on pr.variant_id = v.id and pr.currency = ?1 and pr.deleted_at is null
           where p.deleted_at is null and p.track_stock = 1$where
           ''',
           variables: vars,
-          readsFrom: {db.products, db.variants, db.prices, db.stockLevels, db.localMovements, db.outbox, db.stockExpiry},
+          readsFrom: {
+            db.products, db.variants, db.prices, db.stockLevels, db.localMovements, db.outbox, db.stockExpiry, db.meta,
+          },
         )
         .watch()
         .map((rows) {
@@ -722,8 +857,8 @@ mixin DriftSales implements SalesStore {
   Future<double> stockLeft(String variantId) async {
     final r = await db.customSelect(
       '''
-      select coalesce((select sum(qty) from stock_levels where variant_id = ?1), 0)
-           + coalesce((select sum(qty) from local_movements where variant_id = ?1), 0) as q
+      select coalesce((select sum(qty) from stock_levels where variant_id = ?1 and ${inActive('location_id')}), 0)
+           + coalesce((select sum(qty) from local_movements where variant_id = ?1 and ${inActive('location_id')}), 0) as q
       ''',
       variables: [Variable.withString(variantId)],
     ).getSingle();
@@ -765,7 +900,7 @@ mixin DriftSales implements SalesStore {
       left join (
         select i.variant_id, sum(i.qty) as sold
         from sale_items i join sales s on s.id = i.sale_id
-        where s.status = 'completed' and s.sold_at >= ?2
+        where s.status = 'completed' and s.sold_at >= ?2 and ${inActive('s.location_id')}
         group by i.variant_id
       ) t on t.variant_id = v.id
       where p.deleted_at is null and p.active = 1 and pr.price is not null and v.sku <> '$openAmountSku'
@@ -853,10 +988,11 @@ mixin DriftSales implements SalesStore {
       if (await (db.select(db.expenses)..where((e) => e.id.equals(id))).getSingleOrNull() != null) {
         throw StateError('Expense id already used');
       }
+      final loc = await activeStoreNow();
       final at = _iso(spentAt ?? DateTime.now());
       await db.into(db.expenses).insert(ExpensesCompanion.insert(
             id: id,
-            locationId: Value(locationId),
+            locationId: Value(loc),
             amount: amount,
             currency: baseCurrency,
             category: category,
@@ -867,8 +1003,8 @@ mixin DriftSales implements SalesStore {
           ));
       // P8-15: the money left the named wallet
       if (wallet != null) {
-        await db.into(db.localFloatEffects)
-            .insert(LocalFloatEffectsCompanion.insert(opId: opId, txnId: id, wallet: wallet, amount: -amount));
+        await db.into(db.localFloatEffects).insert(LocalFloatEffectsCompanion.insert(
+            opId: opId, txnId: id, wallet: wallet, amount: -amount, locationId: Value(loc)));
       }
       await enqueue(opId, 'record_expense', id, {
         'id': id,
@@ -878,7 +1014,7 @@ mixin DriftSales implements SalesStore {
         'wallet': ?wallet,
         'note': ?n,
         'spent_at': at,
-        'location_id': ?locationId,
+        'location_id': ?loc,
         'approval_id': ?approvalId,
       });
     });
@@ -895,8 +1031,9 @@ mixin DriftSales implements SalesStore {
           .write(ExpensesCompanion(voidedAt: Value(_iso(DateTime.now())), voidReason: Value(r)));
       // P8-15: the money goes back to the named wallet (the server's void does the same)
       if (e.paidFrom == 'ewallet' && e.wallet != null) {
-        await db.into(db.localFloatEffects).insert(
-            LocalFloatEffectsCompanion.insert(opId: opId, txnId: expenseId, wallet: e.wallet!, amount: e.amount));
+        await db.into(db.localFloatEffects).insert(LocalFloatEffectsCompanion.insert(
+            opId: opId, txnId: expenseId, wallet: e.wallet!, amount: e.amount,
+            locationId: Value(e.locationId ?? await activeStoreNow())));
       }
       await enqueue(opId, 'void_expense', expenseId, {'expense_id': expenseId, 'reason': ?r, 'approval_id': ?approvalId});
     });
@@ -925,11 +1062,11 @@ mixin DriftSales implements SalesStore {
                x.approved_by,
                $_pendingSql
         from expenses x
-        where x.spent_at >= ?1 and x.spent_at < ?2
+        where x.spent_at >= ?1 and x.spent_at < ?2 and ${inActive('x.location_id')}
         order by x.spent_at desc, x.id desc
         ''',
         variables: [Variable.withString(_iso(from)), Variable.withString(_iso(to))],
-        readsFrom: {db.expenses, db.outbox},
+        readsFrom: {db.expenses, db.outbox, db.meta},
       )
       .watch()
       .map((rows) => rows.map(_expense).toList());
@@ -944,10 +1081,10 @@ mixin DriftSales implements SalesStore {
                  coalesce(sum(case when paid_from = 'cash' then amount end), 0) as cash,
                  coalesce(sum(case when paid_from = 'ewallet' then amount end), 0) as ewallet
           from expenses
-          where voided_at is null and spent_at >= ?1 and spent_at < ?2
+          where voided_at is null and spent_at >= ?1 and spent_at < ?2 and ${inActive('location_id')}
           ''',
           variables: [Variable.withString(from), Variable.withString(to)],
-          readsFrom: {db.expenses},
+          readsFrom: {db.expenses, db.meta},
         )
         .watchSingle()
         .map((r) => ExpenseTotals(
@@ -960,33 +1097,37 @@ mixin DriftSales implements SalesStore {
 
   // Server ledger times are kept as the server sent them (any offset), so they are compared through julianday();
   // everything else is stored as normalised UTC ISO text and compared as text (index friendly).
-  // Utang payments are cash (the server has no payment method or store on them).
-  // ?1 / ?2 = the day's bounds; ?3 = the opening cash asked for (null = the default); ?4 = the day key; ?5 = this device's
-  // store (null = any). Expected cash = the day's cash flow + the opening cash (P8-14).
-  static const _expectedCashSql = '''
+  // F-01: everything is the active store's ([activeSql]; every store when none), and only CASH utang payments taken at
+  // that store count (the same rule as the server's day_close_server_expected).
+  // ?1 / ?2 = the day's bounds; ?3 = the opening cash asked for (null = the default); ?4 = the day key.
+  // Expected cash = the day's cash flow + the opening cash (P8-14).
+  static final _expectedCashSql = '''
     select ($_cashFlowSql) + $_openingSql as expected
   ''';
 
-  /// The opening cash: ?3 when given, else the counted cash of the newest close (by closed_at) of an EARLIER day at this
-  /// store (closes without a store count), else 0. Same-day re-counts and later days never count.
+  /// The opening cash: ?3 when given, else the counted cash of the newest close (by closed_at) of an EARLIER day at the
+  /// active store (closes without a store count), else 0. Same-day re-counts and later days never count.
   static const _openingSql = '''
     coalesce(?3, (select x.counted_cash from day_closes x
-                  where x.day < ?4 and (?5 is null or x.location_id is null or x.location_id = ?5)
+                  where x.day < ?4 and ($activeSql is null or x.location_id is null or x.location_id = $activeSql)
                   order by x.closed_at desc, x.id desc limit 1), 0)
   ''';
 
-  static const _cashFlowSql = '''
+  static final _cashFlowSql = '''
       coalesce((select sum(p.amount) from sale_payments p join sales s on s.id = p.sale_id
-                where s.status = 'completed' and p.method = 'cash' and s.sold_at >= ?1 and s.sold_at < ?2), 0)
+                where s.status = 'completed' and p.method = 'cash' and s.sold_at >= ?1 and s.sold_at < ?2
+                  and ${inActive('s.location_id')}), 0)
     - coalesce((select sum(l.amount) from server_ledger l
-                where l.kind = 'payment' and julianday(l.occurred_at) >= julianday(?1)
-                  and julianday(l.occurred_at) < julianday(?2)), 0)
+                where l.kind = 'payment' and l.method = 'cash' and ${inActive('l.location_id')}
+                  and julianday(l.occurred_at) >= julianday(?1) and julianday(l.occurred_at) < julianday(?2)), 0)
     - coalesce((select sum(l.amount) from local_ledger l
-                where l.kind = 'payment' and l.occurred_at >= ?1 and l.occurred_at < ?2), 0)
+                where l.kind = 'payment' and l.method = 'cash' and ${inActive('l.location_id')}
+                  and l.occurred_at >= ?1 and l.occurred_at < ?2), 0)
     - coalesce((select sum(e.amount) from expenses e
-                where e.voided_at is null and e.paid_from = 'cash' and e.spent_at >= ?1 and e.spent_at < ?2), 0)
+                where e.voided_at is null and e.paid_from = 'cash' and e.spent_at >= ?1 and e.spent_at < ?2
+                  and ${inActive('e.location_id')}), 0)
     + coalesce((select sum($_serviceCashSql) from service_txns t
-                where t.voided_at is null and t.txn_at >= ?1 and t.txn_at < ?2), 0)
+                where t.voided_at is null and t.txn_at >= ?1 and t.txn_at < ?2 and ${inActive('t.location_id')}), 0)
   ''';
 
   /// [serviceCashEffect] in SQL, for a `service_txns t` row.
@@ -1005,13 +1146,14 @@ mixin DriftSales implements SalesStore {
       Variable.withString(to),
       Variable<int>(openingCash),
       Variable.withString(dayKey(day)),
-      Variable<String>(locationId),
     ];
   }
 
   Selectable<QueryRow> _expectedCashQuery(DateTime day, int? openingCash) => db.customSelect(_expectedCashSql,
       variables: _cashVars(day, openingCash),
-      readsFrom: {db.sales, db.salePayments, db.serverLedger, db.localLedger, db.expenses, db.serviceTxns, db.dayCloses});
+      readsFrom: {
+        db.sales, db.salePayments, db.serverLedger, db.localLedger, db.expenses, db.serviceTxns, db.dayCloses, db.meta,
+      });
 
   @override
   Future<int> expectedCash(DateTime day, {int? openingCash}) async =>
@@ -1023,7 +1165,7 @@ mixin DriftSales implements SalesStore {
 
   @override
   Future<int> defaultOpeningCash(DateTime day) async => (await db
-          .customSelect('select $_openingSql as opening', variables: _cashVars(day, null), readsFrom: {db.dayCloses})
+          .customSelect('select $_openingSql as opening', variables: _cashVars(day, null), readsFrom: {db.dayCloses, db.meta})
           .getSingle())
       .read<int>('opening');
 
@@ -1045,13 +1187,14 @@ mixin DriftSales implements SalesStore {
         throw StateError('Day close id already used');
       }
       // one opening for both the stored row and the expected cash, so difference = counted - (flow + opening)
+      final loc = await activeStoreNow();
       final opening = openingCash ?? await defaultOpeningCash(day);
       final expected = await expectedCash(day, openingCash: opening);
       final key = dayKey(day);
       final at = _iso(DateTime.now());
       await db.into(db.dayCloses).insert(DayClosesCompanion.insert(
             id: id,
-            locationId: Value(locationId),
+            locationId: Value(loc),
             day: key,
             currency: baseCurrency,
             openingCash: Value(opening),
@@ -1069,12 +1212,13 @@ mixin DriftSales implements SalesStore {
         'counted_cash': countedCash,
         'closed_at': at,
         'note': ?n,
-        'location_id': ?locationId,
+        'location_id': ?loc,
         'approval_id': ?approvalId,
       });
     });
   }
 
+  /// The active store's newest close of the day (closes without a store count, as for the opening cash).
   @override
   Stream<DayCloseView?> watchLatestDayClose(DateTime day) => db
       .customSelect(
@@ -1082,12 +1226,12 @@ mixin DriftSales implements SalesStore {
         select x.id, x.day, x.opening_cash, x.expected_cash, x.counted_cash, x.difference, x.server_expected_cash, x.note,
                x.closed_at, x.approved_by, $_pendingSql
         from day_closes x
-        where x.day = ?1
+        where x.day = ?1 and ($activeSql is null or x.location_id is null or x.location_id = $activeSql)
         order by x.closed_at desc, x.id desc
         limit 1
         ''',
         variables: [Variable.withString(dayKey(day))],
-        readsFrom: {db.dayCloses, db.outbox},
+        readsFrom: {db.dayCloses, db.outbox, db.meta},
       )
       .watch()
       .map((rows) => rows.isEmpty
@@ -1154,10 +1298,11 @@ mixin DriftSales implements SalesStore {
       if (await (db.select(db.serviceTxns)..where((t) => t.id.equals(id))).getSingleOrNull() != null) {
         throw StateError('Service entry id already used');
       }
+      final loc = await activeStoreNow();
       final at = _iso(txnAt ?? DateTime.now());
       await db.into(db.serviceTxns).insert(ServiceTxnsCompanion.insert(
             id: id,
-            locationId: Value(locationId),
+            locationId: Value(loc),
             kind: kind,
             wallet: wallet,
             amount: amount,
@@ -1169,7 +1314,7 @@ mixin DriftSales implements SalesStore {
             txnAt: at,
           ));
       await db.into(db.localFloatEffects).insert(LocalFloatEffectsCompanion.insert(
-          opId: opId, txnId: id, wallet: wallet, amount: serviceFloatEffect(kind, amount)));
+          opId: opId, txnId: id, wallet: wallet, amount: serviceFloatEffect(kind, amount), locationId: Value(loc)));
       await enqueue(opId, 'record_service_txn', id, {
         'id': id,
         'kind': kind,
@@ -1180,7 +1325,7 @@ mixin DriftSales implements SalesStore {
         'ref': ?r,
         'note': ?n,
         'txn_at': at,
-        'location_id': ?locationId,
+        'location_id': ?loc,
         'approval_id': ?approvalId,
       });
     });
@@ -1196,7 +1341,8 @@ mixin DriftSales implements SalesStore {
       await (db.update(db.serviceTxns)..where((x) => x.id.equals(txnId)))
           .write(ServiceTxnsCompanion(voidedAt: Value(_iso(DateTime.now())), voidReason: Value(r)));
       await db.into(db.localFloatEffects).insert(LocalFloatEffectsCompanion.insert(
-          opId: opId, txnId: txnId, wallet: t.wallet, amount: -serviceFloatEffect(t.kind, t.amount)));
+          opId: opId, txnId: txnId, wallet: t.wallet, amount: -serviceFloatEffect(t.kind, t.amount),
+          locationId: Value(t.locationId ?? await activeStoreNow())));
       await enqueue(opId, 'void_service_txn', txnId, {'txn_id': txnId, 'reason': ?r, 'approval_id': ?approvalId});
     });
   }
@@ -1318,8 +1464,9 @@ mixin DriftSales implements SalesStore {
       final pieces = packs * ratio;
       if (pieces > 1000000) throw ArgumentError('Too many pieces at once');
 
-      // the cost rule (P8-08): the pack's average cost, else its variant cost when > 0; packs x that, exact
-      final packAvg = (await _effectiveStock())[packVariantId]?.avg;
+      // the cost rule (P8-08): the pack's average cost at this store, else its variant cost when > 0; packs x that, exact
+      final loc = await activeStoreNow();
+      final packAvg = (await _effectiveStock(loc))[packVariantId]?.avg;
       final packCost = packAvg ?? (pack.$1.cost > 0 ? pack.$1.cost : null);
       final total = packCost == null ? null : packs * packCost;
       final pieceCost = conversionAvgCost(oldQty: 0, pieces: pieces, totalCost: total);
@@ -1327,7 +1474,7 @@ mixin DriftSales implements SalesStore {
 
       await db.into(db.conversions).insert(ConversionsCompanion.insert(
             id: id,
-            locationId: Value(locationId),
+            locationId: Value(loc),
             packVariantId: packVariantId,
             pieceVariantId: pieceId,
             packs: packs,
@@ -1339,10 +1486,11 @@ mixin DriftSales implements SalesStore {
             note: Value(n),
             convertedAt: when,
           ));
-      await db.into(db.localMovements).insert(
-          LocalMovementsCompanion.insert(opId: opId, variantId: packVariantId, qty: -packs.toDouble()));
       await db.into(db.localMovements).insert(LocalMovementsCompanion.insert(
-          opId: opId, variantId: pieceId, qty: pieces.toDouble(), counts: const Value(true), totalCost: Value(total)));
+          opId: opId, variantId: packVariantId, qty: -packs.toDouble(), locationId: Value(loc)));
+      await db.into(db.localMovements).insert(LocalMovementsCompanion.insert(
+          opId: opId, variantId: pieceId, qty: pieces.toDouble(), counts: const Value(true), totalCost: Value(total),
+          locationId: Value(loc)));
       await enqueue(opId, 'open_pack', id, {
         'id': id,
         'pack_variant_id': packVariantId,
@@ -1352,7 +1500,7 @@ mixin DriftSales implements SalesStore {
         'pieces_per_pack': ratio,
         'note': ?n,
         'at': when,
-        'location_id': ?locationId,
+        'location_id': ?loc,
       });
       return OpenedPack(
         conversionId: id,
@@ -1375,10 +1523,12 @@ mixin DriftSales implements SalesStore {
       final r = _text200(reason);
       await (db.update(db.conversions)..where((x) => x.id.equals(conversionId)))
           .write(ConversionsCompanion(voidedAt: Value(_iso(DateTime.now())), voidReason: Value(r)));
-      await db.into(db.localMovements).insert(
-          LocalMovementsCompanion.insert(opId: opId, variantId: c.packVariantId, qty: c.packs.toDouble()));
-      await db.into(db.localMovements).insert(
-          LocalMovementsCompanion.insert(opId: opId, variantId: c.pieceVariantId, qty: -c.pieces.toDouble()));
+      // back at the store where the pack was opened
+      final loc = c.locationId ?? await activeStoreNow();
+      await db.into(db.localMovements).insert(LocalMovementsCompanion.insert(
+          opId: opId, variantId: c.packVariantId, qty: c.packs.toDouble(), locationId: Value(loc)));
+      await db.into(db.localMovements).insert(LocalMovementsCompanion.insert(
+          opId: opId, variantId: c.pieceVariantId, qty: -c.pieces.toDouble(), locationId: Value(loc)));
       await enqueue(opId, 'void_open_pack', conversionId, {'conversion_id': conversionId, 'reason': ?r});
     });
   }
@@ -1393,11 +1543,11 @@ mixin DriftSales implements SalesStore {
                (select p.name from variants v join products p on p.id = v.product_id where v.id = x.piece_variant_id) as piece_name,
                $_pendingSql
         from conversions x
-        where x.converted_at >= ?1 and x.converted_at < ?2
+        where x.converted_at >= ?1 and x.converted_at < ?2 and ${inActive('x.location_id')}
         order by x.converted_at desc, x.id desc
         ''',
         variables: [Variable.withString(_iso(from)), Variable.withString(_iso(to))],
-        readsFrom: {db.conversions, db.outbox, db.variants, db.products},
+        readsFrom: {db.conversions, db.outbox, db.variants, db.products, db.meta},
       )
       .watch()
       .map((rows) => [
@@ -1442,7 +1592,7 @@ mixin DriftSales implements SalesStore {
         }
         await db.into(db.conversions).insertOnConflictUpdate(ConversionsCompanion.insert(
               id: id,
-              locationId: Value(r['location_id'] as String?),
+              locationId: Value(r['location_id'] as String? ?? _sole),
               packVariantId: r['pack_variant_id'] as String,
               pieceVariantId: r['piece_variant_id'] as String,
               packs: (r['packs'] as num).toInt(),
@@ -1470,11 +1620,11 @@ mixin DriftSales implements SalesStore {
         select x.id, x.kind, x.wallet, x.amount, x.fee, x.price, x.ref, x.note, x.txn_at, x.voided_at, x.void_reason,
                x.approved_by, $_pendingSql
         from service_txns x
-        where x.txn_at >= ?1 and x.txn_at < ?2
+        where x.txn_at >= ?1 and x.txn_at < ?2 and ${inActive('x.location_id')}
         order by x.txn_at desc, x.id desc
         ''',
         variables: [Variable.withString(_iso(from)), Variable.withString(_iso(to))],
-        readsFrom: {db.serviceTxns, db.outbox},
+        readsFrom: {db.serviceTxns, db.outbox, db.meta},
       )
       .watch()
       .map((rows) => [
@@ -1510,10 +1660,10 @@ mixin DriftSales implements SalesStore {
                  coalesce(sum(case when t.kind = 'load' then coalesce(t.price, t.amount + t.fee) end), 0) as load_sales,
                  coalesce(sum($_serviceCashSql), 0) as cash
           from service_txns t
-          where t.voided_at is null and t.txn_at >= ?1 and t.txn_at < ?2
+          where t.voided_at is null and t.txn_at >= ?1 and t.txn_at < ?2 and ${inActive('t.location_id')}
           ''',
           variables: [Variable.withString(from), Variable.withString(to)],
-          readsFrom: {db.serviceTxns},
+          readsFrom: {db.serviceTxns, db.meta},
         )
         .watchSingle()
         .map((r) => ServiceTotals(
@@ -1531,13 +1681,12 @@ mixin DriftSales implements SalesStore {
       .customSelect(
         '''
         select wallet, sum(b) as balance, max(p) as pending from (
-          select w.wallet, w.balance as b, 0 as p from wallet_float w where ?1 is null or w.location_id = ?1
+          select w.wallet, w.balance as b, 0 as p from wallet_float w where ${inActive('w.location_id')}
           union all
-          select e.wallet, e.amount as b, 1 as p from local_float_effects e
+          select e.wallet, e.amount as b, 1 as p from local_float_effects e where ${inActive('e.location_id')}
         ) group by wallet
         ''',
-        variables: [Variable<String>(locationId)],
-        readsFrom: {db.walletFloats, db.localFloatEffects},
+        readsFrom: {db.walletFloats, db.localFloatEffects, db.meta},
       )
       .watch()
       .map((rows) {
@@ -1572,7 +1721,7 @@ mixin DriftSales implements SalesStore {
         }
         await db.into(db.serviceTxns).insertOnConflictUpdate(ServiceTxnsCompanion.insert(
               id: id,
-              locationId: Value(r['location_id'] as String?),
+              locationId: Value(r['location_id'] as String? ?? _sole),
               kind: r['kind'] as String,
               wallet: r['wallet'] as String,
               amount: (r['amount'] as num).toInt(),
@@ -1635,11 +1784,15 @@ mixin DriftSales implements SalesStore {
   /// (Its stock, utang and float effects are removed by op id in `discardFailed`.)
   Future<void> undoLocalOp(String kind, String entityId, [Map<String, dynamic> payload = const {}]) async {
     if (kind == 'set_expiry' || (kind == 'receive_stock' && payload.containsKey('expires_on'))) {
-      // the locally written date goes (unless another unsent op still carries one for the variant); the server's date, if
-      // it has one, comes back with the full re-pull that discardFailed forces
-      final others = (await (db.select(db.outbox)..where((o) => o.entityId.equals(entityId))).get()).where(_carriesExpiry);
+      // the locally written date at the op's store goes (unless another unsent op still carries one for the variant
+      // there); the server's date, if it has one, comes back with the full re-pull that discardFailed forces
+      final loc = payload['location_id'] as String? ?? await activeStoreNow() ?? '';
+      final others = (await (db.select(db.outbox)..where((o) => o.entityId.equals(entityId))).get())
+          .where((o) => _carriesExpiry(o) && (_opLocation(o) == null || _opLocation(o) == loc));
       if (others.isEmpty) {
-        await (db.delete(db.stockExpiry)..where((e) => e.variantId.equals(entityId) & e.updatedAt.isNull())).go();
+        await (db.delete(db.stockExpiry)
+              ..where((e) => e.variantId.equals(entityId) & e.locationId.equals(loc) & e.updatedAt.isNull()))
+            .go();
       }
     }
     switch (kind) {
@@ -1684,7 +1837,7 @@ mixin DriftSales implements SalesStore {
         }
         await db.into(db.expenses).insertOnConflictUpdate(ExpensesCompanion.insert(
               id: id,
-              locationId: Value(r['location_id'] as String?),
+              locationId: Value(r['location_id'] as String? ?? _sole),
               amount: (r['amount'] as num).toInt(),
               currency: (r['currency'] as String).trim(),
               category: r['category'] as String,
@@ -1712,7 +1865,7 @@ mixin DriftSales implements SalesStore {
       for (final r in ((response['rows'] as List?) ?? const []).cast<Map<String, dynamic>>()) {
         await db.into(db.dayCloses).insertOnConflictUpdate(DayClosesCompanion.insert(
               id: r['id'] as String,
-              locationId: Value(r['location_id'] as String?),
+              locationId: Value(r['location_id'] as String? ?? _sole),
               day: r['day'] as String,
               currency: (r['currency'] as String).trim(),
               // absent from a server before P8-14: those closes had no opening cash
@@ -1767,6 +1920,8 @@ mixin DriftSales implements SalesStore {
         if (unsent.contains(id)) continue; // a local change (e.g. a cancel) is still on its way: keep ours
         await db.into(db.sales).insertOnConflictUpdate(SalesCompanion.insert(
               id: id,
+              // F-01: the server names the store; an older server does not (then: the user's only store, if one)
+              locationId: Value(r['location_id'] as String? ?? _sole),
               localNo: r['local_no'] as String,
               status: Value(r['status'] as String),
               subtotal: (r['subtotal'] as num).toInt(),
@@ -1846,15 +2001,16 @@ mixin DriftSales implements SalesStore {
               dueOn: Value(r['due_on'] as String?),
             ));
       }
-      // expiry dates: this device's store only; keep the local date while an op carrying one for that variant is unsent
-      final expiryHeld = {for (final o in await db.select(db.outbox).get()) if (_carriesExpiry(o)) o.entityId};
+      // expiry dates: every store the user can see (F-01; reads use the active store); keep the local date of a store
+      // while an op carrying one for that variant there (or naming no store) is unsent
+      final expiryOps = [for (final o in await db.select(db.outbox).get()) if (_carriesExpiry(o)) o];
       for (final r in rowsOf('stock_expiry')) {
         final vid = r['variant_id'] as String;
-        if (locationId != null && r['location_id'] != locationId) continue;
-        if (expiryHeld.contains(vid)) continue;
+        final loc = r['location_id'] as String? ?? _sole ?? '';
+        if (expiryOps.any((o) => o.entityId == vid && (_opLocation(o) == null || _opLocation(o) == loc))) continue;
         await db.into(db.stockExpiry).insertOnConflictUpdate(StockExpiryCompanion.insert(
               variantId: vid,
-              locationId: Value(r['location_id'] as String?),
+              locationId: Value(loc),
               expiresOn: Value(r['expires_on'] as String?),
               updatedAt: Value(r['updated_at'] as String?),
             ));
@@ -1869,6 +2025,9 @@ mixin DriftSales implements SalesStore {
               note: Value(r['note'] as String?),
               occurredAt: r['occurred_at'] as String,
               createdAt: r['created_at'] as String,
+              // F-01; an older server sends neither: the user's only store, cash (what such a row meant)
+              locationId: Value(r['location_id'] as String? ?? _sole),
+              method: Value(r['method'] as String? ?? 'cash'),
             ));
       }
       for (final t in _posTables) {
@@ -1886,17 +2045,22 @@ mixin DriftSales implements SalesStore {
       final st = response['server_time'];
       if (!more && st is String) {
         final horizon = DateTime.parse(st).subtract(const Duration(seconds: 5));
-        // a stock effect also needs the local level row to be at least as new as the op, otherwise a newer
-        // change (not returned yet because of the hold-back) would leave the level short for a while
+        // a stock effect also needs the local level row (of its store) to be at least as new as the op, otherwise a
+        // newer change (not returned yet because of the hold-back) would leave the level short for a while. A movement
+        // that does not know its store compares with the newest level of the variant at any store.
         final levelAt = <String, DateTime>{};
+        void keep(String k, DateTime t) {
+          final old = levelAt[k];
+          if (old == null || t.isAfter(old)) levelAt[k] = t;
+        }
         for (final l in await db.select(db.stockLevels).get()) {
           final t = DateTime.parse(l.updatedAt);
-          final old = levelAt[l.variantId];
-          if (old == null || t.isAfter(old)) levelAt[l.variantId] = t;
+          keep('${l.locationId}|${l.variantId}', t);
+          keep('*|${l.variantId}', t);
         }
         for (final m in await (db.select(db.localMovements)..where((x) => x.confirmedAfter.isNotNull())).get()) {
           final at = DateTime.parse(m.confirmedAfter!);
-          final lvl = levelAt[m.variantId];
+          final lvl = levelAt['${m.locationId ?? '*'}|${m.variantId}'];
           if (!at.isAfter(horizon) && lvl != null && !lvl.isBefore(at)) {
             await (db.delete(db.localMovements)..where((x) => x.id.equals(m.id))).go();
           }

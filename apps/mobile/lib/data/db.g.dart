@@ -4370,6 +4370,27 @@ class $ServerLedgerTable extends ServerLedger
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _locationIdMeta = const VerificationMeta(
+    'locationId',
+  );
+  @override
+  late final GeneratedColumn<String> locationId = GeneratedColumn<String>(
+    'location_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _methodMeta = const VerificationMeta('method');
+  @override
+  late final GeneratedColumn<String> method = GeneratedColumn<String>(
+    'method',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('cash'),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -4380,6 +4401,8 @@ class $ServerLedgerTable extends ServerLedger
     note,
     occurredAt,
     createdAt,
+    locationId,
+    method,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -4450,6 +4473,18 @@ class $ServerLedgerTable extends ServerLedger
     } else if (isInserting) {
       context.missing(_createdAtMeta);
     }
+    if (data.containsKey('location_id')) {
+      context.handle(
+        _locationIdMeta,
+        locationId.isAcceptableOrUnknown(data['location_id']!, _locationIdMeta),
+      );
+    }
+    if (data.containsKey('method')) {
+      context.handle(
+        _methodMeta,
+        method.isAcceptableOrUnknown(data['method']!, _methodMeta),
+      );
+    }
     return context;
   }
 
@@ -4491,6 +4526,14 @@ class $ServerLedgerTable extends ServerLedger
         DriftSqlType.string,
         data['${effectivePrefix}created_at'],
       )!,
+      locationId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}location_id'],
+      ),
+      method: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}method'],
+      )!,
     );
   }
 
@@ -4510,6 +4553,12 @@ class ServerLedgerData extends DataClass
   final String? note;
   final String occurredAt;
   final String createdAt;
+
+  /// The store where the entry happened (schema v13, F-01); null = not known yet (filled on the next pull).
+  final String? locationId;
+
+  /// cash | ewallet: how an utang payment was handed over (schema v13, F-01). Only cash counts in the drawer.
+  final String method;
   const ServerLedgerData({
     required this.id,
     required this.customerId,
@@ -4519,6 +4568,8 @@ class ServerLedgerData extends DataClass
     this.note,
     required this.occurredAt,
     required this.createdAt,
+    this.locationId,
+    required this.method,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -4535,6 +4586,10 @@ class ServerLedgerData extends DataClass
     }
     map['occurred_at'] = Variable<String>(occurredAt);
     map['created_at'] = Variable<String>(createdAt);
+    if (!nullToAbsent || locationId != null) {
+      map['location_id'] = Variable<String>(locationId);
+    }
+    map['method'] = Variable<String>(method);
     return map;
   }
 
@@ -4550,6 +4605,10 @@ class ServerLedgerData extends DataClass
       note: note == null && nullToAbsent ? const Value.absent() : Value(note),
       occurredAt: Value(occurredAt),
       createdAt: Value(createdAt),
+      locationId: locationId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(locationId),
+      method: Value(method),
     );
   }
 
@@ -4567,6 +4626,8 @@ class ServerLedgerData extends DataClass
       note: serializer.fromJson<String?>(json['note']),
       occurredAt: serializer.fromJson<String>(json['occurredAt']),
       createdAt: serializer.fromJson<String>(json['createdAt']),
+      locationId: serializer.fromJson<String?>(json['locationId']),
+      method: serializer.fromJson<String>(json['method']),
     );
   }
   @override
@@ -4581,6 +4642,8 @@ class ServerLedgerData extends DataClass
       'note': serializer.toJson<String?>(note),
       'occurredAt': serializer.toJson<String>(occurredAt),
       'createdAt': serializer.toJson<String>(createdAt),
+      'locationId': serializer.toJson<String?>(locationId),
+      'method': serializer.toJson<String>(method),
     };
   }
 
@@ -4593,6 +4656,8 @@ class ServerLedgerData extends DataClass
     Value<String?> note = const Value.absent(),
     String? occurredAt,
     String? createdAt,
+    Value<String?> locationId = const Value.absent(),
+    String? method,
   }) => ServerLedgerData(
     id: id ?? this.id,
     customerId: customerId ?? this.customerId,
@@ -4602,6 +4667,8 @@ class ServerLedgerData extends DataClass
     note: note.present ? note.value : this.note,
     occurredAt: occurredAt ?? this.occurredAt,
     createdAt: createdAt ?? this.createdAt,
+    locationId: locationId.present ? locationId.value : this.locationId,
+    method: method ?? this.method,
   );
   ServerLedgerData copyWithCompanion(ServerLedgerCompanion data) {
     return ServerLedgerData(
@@ -4617,6 +4684,10 @@ class ServerLedgerData extends DataClass
           ? data.occurredAt.value
           : this.occurredAt,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      locationId: data.locationId.present
+          ? data.locationId.value
+          : this.locationId,
+      method: data.method.present ? data.method.value : this.method,
     );
   }
 
@@ -4630,7 +4701,9 @@ class ServerLedgerData extends DataClass
           ..write('saleId: $saleId, ')
           ..write('note: $note, ')
           ..write('occurredAt: $occurredAt, ')
-          ..write('createdAt: $createdAt')
+          ..write('createdAt: $createdAt, ')
+          ..write('locationId: $locationId, ')
+          ..write('method: $method')
           ..write(')'))
         .toString();
   }
@@ -4645,6 +4718,8 @@ class ServerLedgerData extends DataClass
     note,
     occurredAt,
     createdAt,
+    locationId,
+    method,
   );
   @override
   bool operator ==(Object other) =>
@@ -4657,7 +4732,9 @@ class ServerLedgerData extends DataClass
           other.saleId == this.saleId &&
           other.note == this.note &&
           other.occurredAt == this.occurredAt &&
-          other.createdAt == this.createdAt);
+          other.createdAt == this.createdAt &&
+          other.locationId == this.locationId &&
+          other.method == this.method);
 }
 
 class ServerLedgerCompanion extends UpdateCompanion<ServerLedgerData> {
@@ -4669,6 +4746,8 @@ class ServerLedgerCompanion extends UpdateCompanion<ServerLedgerData> {
   final Value<String?> note;
   final Value<String> occurredAt;
   final Value<String> createdAt;
+  final Value<String?> locationId;
+  final Value<String> method;
   final Value<int> rowid;
   const ServerLedgerCompanion({
     this.id = const Value.absent(),
@@ -4679,6 +4758,8 @@ class ServerLedgerCompanion extends UpdateCompanion<ServerLedgerData> {
     this.note = const Value.absent(),
     this.occurredAt = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.locationId = const Value.absent(),
+    this.method = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ServerLedgerCompanion.insert({
@@ -4690,6 +4771,8 @@ class ServerLedgerCompanion extends UpdateCompanion<ServerLedgerData> {
     this.note = const Value.absent(),
     required String occurredAt,
     required String createdAt,
+    this.locationId = const Value.absent(),
+    this.method = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        customerId = Value(customerId),
@@ -4706,6 +4789,8 @@ class ServerLedgerCompanion extends UpdateCompanion<ServerLedgerData> {
     Expression<String>? note,
     Expression<String>? occurredAt,
     Expression<String>? createdAt,
+    Expression<String>? locationId,
+    Expression<String>? method,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -4717,6 +4802,8 @@ class ServerLedgerCompanion extends UpdateCompanion<ServerLedgerData> {
       if (note != null) 'note': note,
       if (occurredAt != null) 'occurred_at': occurredAt,
       if (createdAt != null) 'created_at': createdAt,
+      if (locationId != null) 'location_id': locationId,
+      if (method != null) 'method': method,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -4730,6 +4817,8 @@ class ServerLedgerCompanion extends UpdateCompanion<ServerLedgerData> {
     Value<String?>? note,
     Value<String>? occurredAt,
     Value<String>? createdAt,
+    Value<String?>? locationId,
+    Value<String>? method,
     Value<int>? rowid,
   }) {
     return ServerLedgerCompanion(
@@ -4741,6 +4830,8 @@ class ServerLedgerCompanion extends UpdateCompanion<ServerLedgerData> {
       note: note ?? this.note,
       occurredAt: occurredAt ?? this.occurredAt,
       createdAt: createdAt ?? this.createdAt,
+      locationId: locationId ?? this.locationId,
+      method: method ?? this.method,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -4772,6 +4863,12 @@ class ServerLedgerCompanion extends UpdateCompanion<ServerLedgerData> {
     if (createdAt.present) {
       map['created_at'] = Variable<String>(createdAt.value);
     }
+    if (locationId.present) {
+      map['location_id'] = Variable<String>(locationId.value);
+    }
+    if (method.present) {
+      map['method'] = Variable<String>(method.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -4789,6 +4886,8 @@ class ServerLedgerCompanion extends UpdateCompanion<ServerLedgerData> {
           ..write('note: $note, ')
           ..write('occurredAt: $occurredAt, ')
           ..write('createdAt: $createdAt, ')
+          ..write('locationId: $locationId, ')
+          ..write('method: $method, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -4892,6 +4991,27 @@ class $LocalLedgerTable extends LocalLedger
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _locationIdMeta = const VerificationMeta(
+    'locationId',
+  );
+  @override
+  late final GeneratedColumn<String> locationId = GeneratedColumn<String>(
+    'location_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _methodMeta = const VerificationMeta('method');
+  @override
+  late final GeneratedColumn<String> method = GeneratedColumn<String>(
+    'method',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('cash'),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -4903,6 +5023,8 @@ class $LocalLedgerTable extends LocalLedger
     note,
     occurredAt,
     confirmedAfter,
+    locationId,
+    method,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -4980,6 +5102,18 @@ class $LocalLedgerTable extends LocalLedger
         ),
       );
     }
+    if (data.containsKey('location_id')) {
+      context.handle(
+        _locationIdMeta,
+        locationId.isAcceptableOrUnknown(data['location_id']!, _locationIdMeta),
+      );
+    }
+    if (data.containsKey('method')) {
+      context.handle(
+        _methodMeta,
+        method.isAcceptableOrUnknown(data['method']!, _methodMeta),
+      );
+    }
     return context;
   }
 
@@ -5025,6 +5159,14 @@ class $LocalLedgerTable extends LocalLedger
         DriftSqlType.string,
         data['${effectivePrefix}confirmed_after'],
       ),
+      locationId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}location_id'],
+      ),
+      method: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}method'],
+      )!,
     );
   }
 
@@ -5044,6 +5186,12 @@ class LocalLedgerData extends DataClass implements Insertable<LocalLedgerData> {
   final String? note;
   final String occurredAt;
   final String? confirmedAfter;
+
+  /// The store the entry was made for (schema v13, F-01): the active store, or the sale's store.
+  final String? locationId;
+
+  /// cash | ewallet (schema v13, F-01); only a payment is ever ewallet.
+  final String method;
   const LocalLedgerData({
     required this.id,
     required this.opId,
@@ -5054,6 +5202,8 @@ class LocalLedgerData extends DataClass implements Insertable<LocalLedgerData> {
     this.note,
     required this.occurredAt,
     this.confirmedAfter,
+    this.locationId,
+    required this.method,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -5073,6 +5223,10 @@ class LocalLedgerData extends DataClass implements Insertable<LocalLedgerData> {
     if (!nullToAbsent || confirmedAfter != null) {
       map['confirmed_after'] = Variable<String>(confirmedAfter);
     }
+    if (!nullToAbsent || locationId != null) {
+      map['location_id'] = Variable<String>(locationId);
+    }
+    map['method'] = Variable<String>(method);
     return map;
   }
 
@@ -5091,6 +5245,10 @@ class LocalLedgerData extends DataClass implements Insertable<LocalLedgerData> {
       confirmedAfter: confirmedAfter == null && nullToAbsent
           ? const Value.absent()
           : Value(confirmedAfter),
+      locationId: locationId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(locationId),
+      method: Value(method),
     );
   }
 
@@ -5109,6 +5267,8 @@ class LocalLedgerData extends DataClass implements Insertable<LocalLedgerData> {
       note: serializer.fromJson<String?>(json['note']),
       occurredAt: serializer.fromJson<String>(json['occurredAt']),
       confirmedAfter: serializer.fromJson<String?>(json['confirmedAfter']),
+      locationId: serializer.fromJson<String?>(json['locationId']),
+      method: serializer.fromJson<String>(json['method']),
     );
   }
   @override
@@ -5124,6 +5284,8 @@ class LocalLedgerData extends DataClass implements Insertable<LocalLedgerData> {
       'note': serializer.toJson<String?>(note),
       'occurredAt': serializer.toJson<String>(occurredAt),
       'confirmedAfter': serializer.toJson<String?>(confirmedAfter),
+      'locationId': serializer.toJson<String?>(locationId),
+      'method': serializer.toJson<String>(method),
     };
   }
 
@@ -5137,6 +5299,8 @@ class LocalLedgerData extends DataClass implements Insertable<LocalLedgerData> {
     Value<String?> note = const Value.absent(),
     String? occurredAt,
     Value<String?> confirmedAfter = const Value.absent(),
+    Value<String?> locationId = const Value.absent(),
+    String? method,
   }) => LocalLedgerData(
     id: id ?? this.id,
     opId: opId ?? this.opId,
@@ -5149,6 +5313,8 @@ class LocalLedgerData extends DataClass implements Insertable<LocalLedgerData> {
     confirmedAfter: confirmedAfter.present
         ? confirmedAfter.value
         : this.confirmedAfter,
+    locationId: locationId.present ? locationId.value : this.locationId,
+    method: method ?? this.method,
   );
   LocalLedgerData copyWithCompanion(LocalLedgerCompanion data) {
     return LocalLedgerData(
@@ -5167,6 +5333,10 @@ class LocalLedgerData extends DataClass implements Insertable<LocalLedgerData> {
       confirmedAfter: data.confirmedAfter.present
           ? data.confirmedAfter.value
           : this.confirmedAfter,
+      locationId: data.locationId.present
+          ? data.locationId.value
+          : this.locationId,
+      method: data.method.present ? data.method.value : this.method,
     );
   }
 
@@ -5181,7 +5351,9 @@ class LocalLedgerData extends DataClass implements Insertable<LocalLedgerData> {
           ..write('saleId: $saleId, ')
           ..write('note: $note, ')
           ..write('occurredAt: $occurredAt, ')
-          ..write('confirmedAfter: $confirmedAfter')
+          ..write('confirmedAfter: $confirmedAfter, ')
+          ..write('locationId: $locationId, ')
+          ..write('method: $method')
           ..write(')'))
         .toString();
   }
@@ -5197,6 +5369,8 @@ class LocalLedgerData extends DataClass implements Insertable<LocalLedgerData> {
     note,
     occurredAt,
     confirmedAfter,
+    locationId,
+    method,
   );
   @override
   bool operator ==(Object other) =>
@@ -5210,7 +5384,9 @@ class LocalLedgerData extends DataClass implements Insertable<LocalLedgerData> {
           other.saleId == this.saleId &&
           other.note == this.note &&
           other.occurredAt == this.occurredAt &&
-          other.confirmedAfter == this.confirmedAfter);
+          other.confirmedAfter == this.confirmedAfter &&
+          other.locationId == this.locationId &&
+          other.method == this.method);
 }
 
 class LocalLedgerCompanion extends UpdateCompanion<LocalLedgerData> {
@@ -5223,6 +5399,8 @@ class LocalLedgerCompanion extends UpdateCompanion<LocalLedgerData> {
   final Value<String?> note;
   final Value<String> occurredAt;
   final Value<String?> confirmedAfter;
+  final Value<String?> locationId;
+  final Value<String> method;
   const LocalLedgerCompanion({
     this.id = const Value.absent(),
     this.opId = const Value.absent(),
@@ -5233,6 +5411,8 @@ class LocalLedgerCompanion extends UpdateCompanion<LocalLedgerData> {
     this.note = const Value.absent(),
     this.occurredAt = const Value.absent(),
     this.confirmedAfter = const Value.absent(),
+    this.locationId = const Value.absent(),
+    this.method = const Value.absent(),
   });
   LocalLedgerCompanion.insert({
     this.id = const Value.absent(),
@@ -5244,6 +5424,8 @@ class LocalLedgerCompanion extends UpdateCompanion<LocalLedgerData> {
     this.note = const Value.absent(),
     required String occurredAt,
     this.confirmedAfter = const Value.absent(),
+    this.locationId = const Value.absent(),
+    this.method = const Value.absent(),
   }) : opId = Value(opId),
        customerId = Value(customerId),
        kind = Value(kind),
@@ -5259,6 +5441,8 @@ class LocalLedgerCompanion extends UpdateCompanion<LocalLedgerData> {
     Expression<String>? note,
     Expression<String>? occurredAt,
     Expression<String>? confirmedAfter,
+    Expression<String>? locationId,
+    Expression<String>? method,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -5270,6 +5454,8 @@ class LocalLedgerCompanion extends UpdateCompanion<LocalLedgerData> {
       if (note != null) 'note': note,
       if (occurredAt != null) 'occurred_at': occurredAt,
       if (confirmedAfter != null) 'confirmed_after': confirmedAfter,
+      if (locationId != null) 'location_id': locationId,
+      if (method != null) 'method': method,
     });
   }
 
@@ -5283,6 +5469,8 @@ class LocalLedgerCompanion extends UpdateCompanion<LocalLedgerData> {
     Value<String?>? note,
     Value<String>? occurredAt,
     Value<String?>? confirmedAfter,
+    Value<String?>? locationId,
+    Value<String>? method,
   }) {
     return LocalLedgerCompanion(
       id: id ?? this.id,
@@ -5294,6 +5482,8 @@ class LocalLedgerCompanion extends UpdateCompanion<LocalLedgerData> {
       note: note ?? this.note,
       occurredAt: occurredAt ?? this.occurredAt,
       confirmedAfter: confirmedAfter ?? this.confirmedAfter,
+      locationId: locationId ?? this.locationId,
+      method: method ?? this.method,
     );
   }
 
@@ -5327,6 +5517,12 @@ class LocalLedgerCompanion extends UpdateCompanion<LocalLedgerData> {
     if (confirmedAfter.present) {
       map['confirmed_after'] = Variable<String>(confirmedAfter.value);
     }
+    if (locationId.present) {
+      map['location_id'] = Variable<String>(locationId.value);
+    }
+    if (method.present) {
+      map['method'] = Variable<String>(method.value);
+    }
     return map;
   }
 
@@ -5341,7 +5537,9 @@ class LocalLedgerCompanion extends UpdateCompanion<LocalLedgerData> {
           ..write('saleId: $saleId, ')
           ..write('note: $note, ')
           ..write('occurredAt: $occurredAt, ')
-          ..write('confirmedAfter: $confirmedAfter')
+          ..write('confirmedAfter: $confirmedAfter, ')
+          ..write('locationId: $locationId, ')
+          ..write('method: $method')
           ..write(')'))
         .toString();
   }
@@ -5860,6 +6058,17 @@ class $LocalMovementsTable extends LocalMovements
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _locationIdMeta = const VerificationMeta(
+    'locationId',
+  );
+  @override
+  late final GeneratedColumn<String> locationId = GeneratedColumn<String>(
+    'location_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -5870,6 +6079,7 @@ class $LocalMovementsTable extends LocalMovements
     confirmedAfter,
     unitCost,
     totalCost,
+    locationId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -5937,6 +6147,12 @@ class $LocalMovementsTable extends LocalMovements
         totalCost.isAcceptableOrUnknown(data['total_cost']!, _totalCostMeta),
       );
     }
+    if (data.containsKey('location_id')) {
+      context.handle(
+        _locationIdMeta,
+        locationId.isAcceptableOrUnknown(data['location_id']!, _locationIdMeta),
+      );
+    }
     return context;
   }
 
@@ -5978,6 +6194,10 @@ class $LocalMovementsTable extends LocalMovements
         DriftSqlType.int,
         data['${effectivePrefix}total_cost'],
       ),
+      locationId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}location_id'],
+      ),
     );
   }
 
@@ -6002,6 +6222,9 @@ class LocalMovement extends DataClass implements Insertable<LocalMovement> {
 
   /// Pieces from an opened pack (schema v8): the value they carry in centavos; moves the piece's average cost.
   final int? totalCost;
+
+  /// The store whose stock this moves (schema v13, F-01); matched against `stock_levels.location_id`.
+  final String? locationId;
   const LocalMovement({
     required this.id,
     required this.opId,
@@ -6011,6 +6234,7 @@ class LocalMovement extends DataClass implements Insertable<LocalMovement> {
     this.confirmedAfter,
     this.unitCost,
     this.totalCost,
+    this.locationId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -6028,6 +6252,9 @@ class LocalMovement extends DataClass implements Insertable<LocalMovement> {
     }
     if (!nullToAbsent || totalCost != null) {
       map['total_cost'] = Variable<int>(totalCost);
+    }
+    if (!nullToAbsent || locationId != null) {
+      map['location_id'] = Variable<String>(locationId);
     }
     return map;
   }
@@ -6048,6 +6275,9 @@ class LocalMovement extends DataClass implements Insertable<LocalMovement> {
       totalCost: totalCost == null && nullToAbsent
           ? const Value.absent()
           : Value(totalCost),
+      locationId: locationId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(locationId),
     );
   }
 
@@ -6065,6 +6295,7 @@ class LocalMovement extends DataClass implements Insertable<LocalMovement> {
       confirmedAfter: serializer.fromJson<String?>(json['confirmedAfter']),
       unitCost: serializer.fromJson<int?>(json['unitCost']),
       totalCost: serializer.fromJson<int?>(json['totalCost']),
+      locationId: serializer.fromJson<String?>(json['locationId']),
     );
   }
   @override
@@ -6079,6 +6310,7 @@ class LocalMovement extends DataClass implements Insertable<LocalMovement> {
       'confirmedAfter': serializer.toJson<String?>(confirmedAfter),
       'unitCost': serializer.toJson<int?>(unitCost),
       'totalCost': serializer.toJson<int?>(totalCost),
+      'locationId': serializer.toJson<String?>(locationId),
     };
   }
 
@@ -6091,6 +6323,7 @@ class LocalMovement extends DataClass implements Insertable<LocalMovement> {
     Value<String?> confirmedAfter = const Value.absent(),
     Value<int?> unitCost = const Value.absent(),
     Value<int?> totalCost = const Value.absent(),
+    Value<String?> locationId = const Value.absent(),
   }) => LocalMovement(
     id: id ?? this.id,
     opId: opId ?? this.opId,
@@ -6102,6 +6335,7 @@ class LocalMovement extends DataClass implements Insertable<LocalMovement> {
         : this.confirmedAfter,
     unitCost: unitCost.present ? unitCost.value : this.unitCost,
     totalCost: totalCost.present ? totalCost.value : this.totalCost,
+    locationId: locationId.present ? locationId.value : this.locationId,
   );
   LocalMovement copyWithCompanion(LocalMovementsCompanion data) {
     return LocalMovement(
@@ -6115,6 +6349,9 @@ class LocalMovement extends DataClass implements Insertable<LocalMovement> {
           : this.confirmedAfter,
       unitCost: data.unitCost.present ? data.unitCost.value : this.unitCost,
       totalCost: data.totalCost.present ? data.totalCost.value : this.totalCost,
+      locationId: data.locationId.present
+          ? data.locationId.value
+          : this.locationId,
     );
   }
 
@@ -6128,7 +6365,8 @@ class LocalMovement extends DataClass implements Insertable<LocalMovement> {
           ..write('counts: $counts, ')
           ..write('confirmedAfter: $confirmedAfter, ')
           ..write('unitCost: $unitCost, ')
-          ..write('totalCost: $totalCost')
+          ..write('totalCost: $totalCost, ')
+          ..write('locationId: $locationId')
           ..write(')'))
         .toString();
   }
@@ -6143,6 +6381,7 @@ class LocalMovement extends DataClass implements Insertable<LocalMovement> {
     confirmedAfter,
     unitCost,
     totalCost,
+    locationId,
   );
   @override
   bool operator ==(Object other) =>
@@ -6155,7 +6394,8 @@ class LocalMovement extends DataClass implements Insertable<LocalMovement> {
           other.counts == this.counts &&
           other.confirmedAfter == this.confirmedAfter &&
           other.unitCost == this.unitCost &&
-          other.totalCost == this.totalCost);
+          other.totalCost == this.totalCost &&
+          other.locationId == this.locationId);
 }
 
 class LocalMovementsCompanion extends UpdateCompanion<LocalMovement> {
@@ -6167,6 +6407,7 @@ class LocalMovementsCompanion extends UpdateCompanion<LocalMovement> {
   final Value<String?> confirmedAfter;
   final Value<int?> unitCost;
   final Value<int?> totalCost;
+  final Value<String?> locationId;
   const LocalMovementsCompanion({
     this.id = const Value.absent(),
     this.opId = const Value.absent(),
@@ -6176,6 +6417,7 @@ class LocalMovementsCompanion extends UpdateCompanion<LocalMovement> {
     this.confirmedAfter = const Value.absent(),
     this.unitCost = const Value.absent(),
     this.totalCost = const Value.absent(),
+    this.locationId = const Value.absent(),
   });
   LocalMovementsCompanion.insert({
     this.id = const Value.absent(),
@@ -6186,6 +6428,7 @@ class LocalMovementsCompanion extends UpdateCompanion<LocalMovement> {
     this.confirmedAfter = const Value.absent(),
     this.unitCost = const Value.absent(),
     this.totalCost = const Value.absent(),
+    this.locationId = const Value.absent(),
   }) : opId = Value(opId),
        variantId = Value(variantId),
        qty = Value(qty);
@@ -6198,6 +6441,7 @@ class LocalMovementsCompanion extends UpdateCompanion<LocalMovement> {
     Expression<String>? confirmedAfter,
     Expression<int>? unitCost,
     Expression<int>? totalCost,
+    Expression<String>? locationId,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -6208,6 +6452,7 @@ class LocalMovementsCompanion extends UpdateCompanion<LocalMovement> {
       if (confirmedAfter != null) 'confirmed_after': confirmedAfter,
       if (unitCost != null) 'unit_cost': unitCost,
       if (totalCost != null) 'total_cost': totalCost,
+      if (locationId != null) 'location_id': locationId,
     });
   }
 
@@ -6220,6 +6465,7 @@ class LocalMovementsCompanion extends UpdateCompanion<LocalMovement> {
     Value<String?>? confirmedAfter,
     Value<int?>? unitCost,
     Value<int?>? totalCost,
+    Value<String?>? locationId,
   }) {
     return LocalMovementsCompanion(
       id: id ?? this.id,
@@ -6230,6 +6476,7 @@ class LocalMovementsCompanion extends UpdateCompanion<LocalMovement> {
       confirmedAfter: confirmedAfter ?? this.confirmedAfter,
       unitCost: unitCost ?? this.unitCost,
       totalCost: totalCost ?? this.totalCost,
+      locationId: locationId ?? this.locationId,
     );
   }
 
@@ -6260,6 +6507,9 @@ class LocalMovementsCompanion extends UpdateCompanion<LocalMovement> {
     if (totalCost.present) {
       map['total_cost'] = Variable<int>(totalCost.value);
     }
+    if (locationId.present) {
+      map['location_id'] = Variable<String>(locationId.value);
+    }
     return map;
   }
 
@@ -6273,7 +6523,8 @@ class LocalMovementsCompanion extends UpdateCompanion<LocalMovement> {
           ..write('counts: $counts, ')
           ..write('confirmedAfter: $confirmedAfter, ')
           ..write('unitCost: $unitCost, ')
-          ..write('totalCost: $totalCost')
+          ..write('totalCost: $totalCost, ')
+          ..write('locationId: $locationId')
           ..write(')'))
         .toString();
   }
@@ -6292,6 +6543,17 @@ class $SalesTable extends Sales with TableInfo<$SalesTable, Sale> {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+  );
+  static const VerificationMeta _locationIdMeta = const VerificationMeta(
+    'locationId',
+  );
+  @override
+  late final GeneratedColumn<String> locationId = GeneratedColumn<String>(
+    'location_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
   );
   static const VerificationMeta _localNoMeta = const VerificationMeta(
     'localNo',
@@ -6401,6 +6663,7 @@ class $SalesTable extends Sales with TableInfo<$SalesTable, Sale> {
   @override
   List<GeneratedColumn> get $columns => [
     id,
+    locationId,
     localNo,
     status,
     subtotal,
@@ -6428,6 +6691,12 @@ class $SalesTable extends Sales with TableInfo<$SalesTable, Sale> {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
     } else if (isInserting) {
       context.missing(_idMeta);
+    }
+    if (data.containsKey('location_id')) {
+      context.handle(
+        _locationIdMeta,
+        locationId.isAcceptableOrUnknown(data['location_id']!, _locationIdMeta),
+      );
     }
     if (data.containsKey('local_no')) {
       context.handle(
@@ -6510,6 +6779,10 @@ class $SalesTable extends Sales with TableInfo<$SalesTable, Sale> {
         DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
+      locationId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}location_id'],
+      ),
       localNo: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}local_no'],
@@ -6561,6 +6834,9 @@ class $SalesTable extends Sales with TableInfo<$SalesTable, Sale> {
 
 class Sale extends DataClass implements Insertable<Sale> {
   final String id;
+
+  /// The store of the sale (schema v13, F-01); null = not known yet (an old row on a device with several stores).
+  final String? locationId;
   final String localNo;
   final String status;
   final int subtotal;
@@ -6573,6 +6849,7 @@ class Sale extends DataClass implements Insertable<Sale> {
   final String? voidReason;
   const Sale({
     required this.id,
+    this.locationId,
     required this.localNo,
     required this.status,
     required this.subtotal,
@@ -6588,6 +6865,9 @@ class Sale extends DataClass implements Insertable<Sale> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
+    if (!nullToAbsent || locationId != null) {
+      map['location_id'] = Variable<String>(locationId);
+    }
     map['local_no'] = Variable<String>(localNo);
     map['status'] = Variable<String>(status);
     map['subtotal'] = Variable<int>(subtotal);
@@ -6610,6 +6890,9 @@ class Sale extends DataClass implements Insertable<Sale> {
   SalesCompanion toCompanion(bool nullToAbsent) {
     return SalesCompanion(
       id: Value(id),
+      locationId: locationId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(locationId),
       localNo: Value(localNo),
       status: Value(status),
       subtotal: Value(subtotal),
@@ -6636,6 +6919,7 @@ class Sale extends DataClass implements Insertable<Sale> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return Sale(
       id: serializer.fromJson<String>(json['id']),
+      locationId: serializer.fromJson<String?>(json['locationId']),
       localNo: serializer.fromJson<String>(json['localNo']),
       status: serializer.fromJson<String>(json['status']),
       subtotal: serializer.fromJson<int>(json['subtotal']),
@@ -6653,6 +6937,7 @@ class Sale extends DataClass implements Insertable<Sale> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
+      'locationId': serializer.toJson<String?>(locationId),
       'localNo': serializer.toJson<String>(localNo),
       'status': serializer.toJson<String>(status),
       'subtotal': serializer.toJson<int>(subtotal),
@@ -6668,6 +6953,7 @@ class Sale extends DataClass implements Insertable<Sale> {
 
   Sale copyWith({
     String? id,
+    Value<String?> locationId = const Value.absent(),
     String? localNo,
     String? status,
     int? subtotal,
@@ -6680,6 +6966,7 @@ class Sale extends DataClass implements Insertable<Sale> {
     Value<String?> voidReason = const Value.absent(),
   }) => Sale(
     id: id ?? this.id,
+    locationId: locationId.present ? locationId.value : this.locationId,
     localNo: localNo ?? this.localNo,
     status: status ?? this.status,
     subtotal: subtotal ?? this.subtotal,
@@ -6694,6 +6981,9 @@ class Sale extends DataClass implements Insertable<Sale> {
   Sale copyWithCompanion(SalesCompanion data) {
     return Sale(
       id: data.id.present ? data.id.value : this.id,
+      locationId: data.locationId.present
+          ? data.locationId.value
+          : this.locationId,
       localNo: data.localNo.present ? data.localNo.value : this.localNo,
       status: data.status.present ? data.status.value : this.status,
       subtotal: data.subtotal.present ? data.subtotal.value : this.subtotal,
@@ -6715,6 +7005,7 @@ class Sale extends DataClass implements Insertable<Sale> {
   String toString() {
     return (StringBuffer('Sale(')
           ..write('id: $id, ')
+          ..write('locationId: $locationId, ')
           ..write('localNo: $localNo, ')
           ..write('status: $status, ')
           ..write('subtotal: $subtotal, ')
@@ -6732,6 +7023,7 @@ class Sale extends DataClass implements Insertable<Sale> {
   @override
   int get hashCode => Object.hash(
     id,
+    locationId,
     localNo,
     status,
     subtotal,
@@ -6748,6 +7040,7 @@ class Sale extends DataClass implements Insertable<Sale> {
       identical(this, other) ||
       (other is Sale &&
           other.id == this.id &&
+          other.locationId == this.locationId &&
           other.localNo == this.localNo &&
           other.status == this.status &&
           other.subtotal == this.subtotal &&
@@ -6762,6 +7055,7 @@ class Sale extends DataClass implements Insertable<Sale> {
 
 class SalesCompanion extends UpdateCompanion<Sale> {
   final Value<String> id;
+  final Value<String?> locationId;
   final Value<String> localNo;
   final Value<String> status;
   final Value<int> subtotal;
@@ -6775,6 +7069,7 @@ class SalesCompanion extends UpdateCompanion<Sale> {
   final Value<int> rowid;
   const SalesCompanion({
     this.id = const Value.absent(),
+    this.locationId = const Value.absent(),
     this.localNo = const Value.absent(),
     this.status = const Value.absent(),
     this.subtotal = const Value.absent(),
@@ -6789,6 +7084,7 @@ class SalesCompanion extends UpdateCompanion<Sale> {
   });
   SalesCompanion.insert({
     required String id,
+    this.locationId = const Value.absent(),
     required String localNo,
     this.status = const Value.absent(),
     required int subtotal,
@@ -6807,6 +7103,7 @@ class SalesCompanion extends UpdateCompanion<Sale> {
        soldAt = Value(soldAt);
   static Insertable<Sale> custom({
     Expression<String>? id,
+    Expression<String>? locationId,
     Expression<String>? localNo,
     Expression<String>? status,
     Expression<int>? subtotal,
@@ -6821,6 +7118,7 @@ class SalesCompanion extends UpdateCompanion<Sale> {
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
+      if (locationId != null) 'location_id': locationId,
       if (localNo != null) 'local_no': localNo,
       if (status != null) 'status': status,
       if (subtotal != null) 'subtotal': subtotal,
@@ -6837,6 +7135,7 @@ class SalesCompanion extends UpdateCompanion<Sale> {
 
   SalesCompanion copyWith({
     Value<String>? id,
+    Value<String?>? locationId,
     Value<String>? localNo,
     Value<String>? status,
     Value<int>? subtotal,
@@ -6851,6 +7150,7 @@ class SalesCompanion extends UpdateCompanion<Sale> {
   }) {
     return SalesCompanion(
       id: id ?? this.id,
+      locationId: locationId ?? this.locationId,
       localNo: localNo ?? this.localNo,
       status: status ?? this.status,
       subtotal: subtotal ?? this.subtotal,
@@ -6870,6 +7170,9 @@ class SalesCompanion extends UpdateCompanion<Sale> {
     final map = <String, Expression>{};
     if (id.present) {
       map['id'] = Variable<String>(id.value);
+    }
+    if (locationId.present) {
+      map['location_id'] = Variable<String>(locationId.value);
     }
     if (localNo.present) {
       map['local_no'] = Variable<String>(localNo.value);
@@ -6911,6 +7214,7 @@ class SalesCompanion extends UpdateCompanion<Sale> {
   String toString() {
     return (StringBuffer('SalesCompanion(')
           ..write('id: $id, ')
+          ..write('locationId: $locationId, ')
           ..write('localNo: $localNo, ')
           ..write('status: $status, ')
           ..write('subtotal: $subtotal, ')
@@ -11089,6 +11393,17 @@ class $LocalFloatEffectsTable extends LocalFloatEffects
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _locationIdMeta = const VerificationMeta(
+    'locationId',
+  );
+  @override
+  late final GeneratedColumn<String> locationId = GeneratedColumn<String>(
+    'location_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -11097,6 +11412,7 @@ class $LocalFloatEffectsTable extends LocalFloatEffects
     wallet,
     amount,
     confirmedAfter,
+    locationId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -11154,6 +11470,12 @@ class $LocalFloatEffectsTable extends LocalFloatEffects
         ),
       );
     }
+    if (data.containsKey('location_id')) {
+      context.handle(
+        _locationIdMeta,
+        locationId.isAcceptableOrUnknown(data['location_id']!, _locationIdMeta),
+      );
+    }
     return context;
   }
 
@@ -11187,6 +11509,10 @@ class $LocalFloatEffectsTable extends LocalFloatEffects
         DriftSqlType.string,
         data['${effectivePrefix}confirmed_after'],
       ),
+      locationId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}location_id'],
+      ),
     );
   }
 
@@ -11204,6 +11530,9 @@ class LocalFloatEffect extends DataClass
   final String wallet;
   final int amount;
   final String? confirmedAfter;
+
+  /// The store whose wallet this moves (schema v13, F-01); matched against `wallet_float.location_id`.
+  final String? locationId;
   const LocalFloatEffect({
     required this.id,
     required this.opId,
@@ -11211,6 +11540,7 @@ class LocalFloatEffect extends DataClass
     required this.wallet,
     required this.amount,
     this.confirmedAfter,
+    this.locationId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -11222,6 +11552,9 @@ class LocalFloatEffect extends DataClass
     map['amount'] = Variable<int>(amount);
     if (!nullToAbsent || confirmedAfter != null) {
       map['confirmed_after'] = Variable<String>(confirmedAfter);
+    }
+    if (!nullToAbsent || locationId != null) {
+      map['location_id'] = Variable<String>(locationId);
     }
     return map;
   }
@@ -11236,6 +11569,9 @@ class LocalFloatEffect extends DataClass
       confirmedAfter: confirmedAfter == null && nullToAbsent
           ? const Value.absent()
           : Value(confirmedAfter),
+      locationId: locationId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(locationId),
     );
   }
 
@@ -11251,6 +11587,7 @@ class LocalFloatEffect extends DataClass
       wallet: serializer.fromJson<String>(json['wallet']),
       amount: serializer.fromJson<int>(json['amount']),
       confirmedAfter: serializer.fromJson<String?>(json['confirmedAfter']),
+      locationId: serializer.fromJson<String?>(json['locationId']),
     );
   }
   @override
@@ -11263,6 +11600,7 @@ class LocalFloatEffect extends DataClass
       'wallet': serializer.toJson<String>(wallet),
       'amount': serializer.toJson<int>(amount),
       'confirmedAfter': serializer.toJson<String?>(confirmedAfter),
+      'locationId': serializer.toJson<String?>(locationId),
     };
   }
 
@@ -11273,6 +11611,7 @@ class LocalFloatEffect extends DataClass
     String? wallet,
     int? amount,
     Value<String?> confirmedAfter = const Value.absent(),
+    Value<String?> locationId = const Value.absent(),
   }) => LocalFloatEffect(
     id: id ?? this.id,
     opId: opId ?? this.opId,
@@ -11282,6 +11621,7 @@ class LocalFloatEffect extends DataClass
     confirmedAfter: confirmedAfter.present
         ? confirmedAfter.value
         : this.confirmedAfter,
+    locationId: locationId.present ? locationId.value : this.locationId,
   );
   LocalFloatEffect copyWithCompanion(LocalFloatEffectsCompanion data) {
     return LocalFloatEffect(
@@ -11293,6 +11633,9 @@ class LocalFloatEffect extends DataClass
       confirmedAfter: data.confirmedAfter.present
           ? data.confirmedAfter.value
           : this.confirmedAfter,
+      locationId: data.locationId.present
+          ? data.locationId.value
+          : this.locationId,
     );
   }
 
@@ -11304,14 +11647,15 @@ class LocalFloatEffect extends DataClass
           ..write('txnId: $txnId, ')
           ..write('wallet: $wallet, ')
           ..write('amount: $amount, ')
-          ..write('confirmedAfter: $confirmedAfter')
+          ..write('confirmedAfter: $confirmedAfter, ')
+          ..write('locationId: $locationId')
           ..write(')'))
         .toString();
   }
 
   @override
   int get hashCode =>
-      Object.hash(id, opId, txnId, wallet, amount, confirmedAfter);
+      Object.hash(id, opId, txnId, wallet, amount, confirmedAfter, locationId);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -11321,7 +11665,8 @@ class LocalFloatEffect extends DataClass
           other.txnId == this.txnId &&
           other.wallet == this.wallet &&
           other.amount == this.amount &&
-          other.confirmedAfter == this.confirmedAfter);
+          other.confirmedAfter == this.confirmedAfter &&
+          other.locationId == this.locationId);
 }
 
 class LocalFloatEffectsCompanion extends UpdateCompanion<LocalFloatEffect> {
@@ -11331,6 +11676,7 @@ class LocalFloatEffectsCompanion extends UpdateCompanion<LocalFloatEffect> {
   final Value<String> wallet;
   final Value<int> amount;
   final Value<String?> confirmedAfter;
+  final Value<String?> locationId;
   const LocalFloatEffectsCompanion({
     this.id = const Value.absent(),
     this.opId = const Value.absent(),
@@ -11338,6 +11684,7 @@ class LocalFloatEffectsCompanion extends UpdateCompanion<LocalFloatEffect> {
     this.wallet = const Value.absent(),
     this.amount = const Value.absent(),
     this.confirmedAfter = const Value.absent(),
+    this.locationId = const Value.absent(),
   });
   LocalFloatEffectsCompanion.insert({
     this.id = const Value.absent(),
@@ -11346,6 +11693,7 @@ class LocalFloatEffectsCompanion extends UpdateCompanion<LocalFloatEffect> {
     required String wallet,
     required int amount,
     this.confirmedAfter = const Value.absent(),
+    this.locationId = const Value.absent(),
   }) : opId = Value(opId),
        txnId = Value(txnId),
        wallet = Value(wallet),
@@ -11357,6 +11705,7 @@ class LocalFloatEffectsCompanion extends UpdateCompanion<LocalFloatEffect> {
     Expression<String>? wallet,
     Expression<int>? amount,
     Expression<String>? confirmedAfter,
+    Expression<String>? locationId,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -11365,6 +11714,7 @@ class LocalFloatEffectsCompanion extends UpdateCompanion<LocalFloatEffect> {
       if (wallet != null) 'wallet': wallet,
       if (amount != null) 'amount': amount,
       if (confirmedAfter != null) 'confirmed_after': confirmedAfter,
+      if (locationId != null) 'location_id': locationId,
     });
   }
 
@@ -11375,6 +11725,7 @@ class LocalFloatEffectsCompanion extends UpdateCompanion<LocalFloatEffect> {
     Value<String>? wallet,
     Value<int>? amount,
     Value<String?>? confirmedAfter,
+    Value<String?>? locationId,
   }) {
     return LocalFloatEffectsCompanion(
       id: id ?? this.id,
@@ -11383,6 +11734,7 @@ class LocalFloatEffectsCompanion extends UpdateCompanion<LocalFloatEffect> {
       wallet: wallet ?? this.wallet,
       amount: amount ?? this.amount,
       confirmedAfter: confirmedAfter ?? this.confirmedAfter,
+      locationId: locationId ?? this.locationId,
     );
   }
 
@@ -11407,6 +11759,9 @@ class LocalFloatEffectsCompanion extends UpdateCompanion<LocalFloatEffect> {
     if (confirmedAfter.present) {
       map['confirmed_after'] = Variable<String>(confirmedAfter.value);
     }
+    if (locationId.present) {
+      map['location_id'] = Variable<String>(locationId.value);
+    }
     return map;
   }
 
@@ -11418,7 +11773,8 @@ class LocalFloatEffectsCompanion extends UpdateCompanion<LocalFloatEffect> {
           ..write('txnId: $txnId, ')
           ..write('wallet: $wallet, ')
           ..write('amount: $amount, ')
-          ..write('confirmedAfter: $confirmedAfter')
+          ..write('confirmedAfter: $confirmedAfter, ')
+          ..write('locationId: $locationId')
           ..write(')'))
         .toString();
   }
@@ -12368,9 +12724,10 @@ class $StockExpiryTable extends StockExpiry
   late final GeneratedColumn<String> locationId = GeneratedColumn<String>(
     'location_id',
     aliasedName,
-    true,
+    false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    defaultValue: const Constant(''),
   );
   static const VerificationMeta _expiresOnMeta = const VerificationMeta(
     'expiresOn',
@@ -12443,7 +12800,7 @@ class $StockExpiryTable extends StockExpiry
   }
 
   @override
-  Set<GeneratedColumn> get $primaryKey => {variantId};
+  Set<GeneratedColumn> get $primaryKey => {locationId, variantId};
   @override
   StockExpiryData map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
@@ -12455,7 +12812,7 @@ class $StockExpiryTable extends StockExpiry
       locationId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}location_id'],
-      ),
+      )!,
       expiresOn: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}expires_on'],
@@ -12475,12 +12832,12 @@ class $StockExpiryTable extends StockExpiry
 
 class StockExpiryData extends DataClass implements Insertable<StockExpiryData> {
   final String variantId;
-  final String? locationId;
+  final String locationId;
   final String? expiresOn;
   final String? updatedAt;
   const StockExpiryData({
     required this.variantId,
-    this.locationId,
+    required this.locationId,
     this.expiresOn,
     this.updatedAt,
   });
@@ -12488,9 +12845,7 @@ class StockExpiryData extends DataClass implements Insertable<StockExpiryData> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['variant_id'] = Variable<String>(variantId);
-    if (!nullToAbsent || locationId != null) {
-      map['location_id'] = Variable<String>(locationId);
-    }
+    map['location_id'] = Variable<String>(locationId);
     if (!nullToAbsent || expiresOn != null) {
       map['expires_on'] = Variable<String>(expiresOn);
     }
@@ -12503,9 +12858,7 @@ class StockExpiryData extends DataClass implements Insertable<StockExpiryData> {
   StockExpiryCompanion toCompanion(bool nullToAbsent) {
     return StockExpiryCompanion(
       variantId: Value(variantId),
-      locationId: locationId == null && nullToAbsent
-          ? const Value.absent()
-          : Value(locationId),
+      locationId: Value(locationId),
       expiresOn: expiresOn == null && nullToAbsent
           ? const Value.absent()
           : Value(expiresOn),
@@ -12522,7 +12875,7 @@ class StockExpiryData extends DataClass implements Insertable<StockExpiryData> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return StockExpiryData(
       variantId: serializer.fromJson<String>(json['variantId']),
-      locationId: serializer.fromJson<String?>(json['locationId']),
+      locationId: serializer.fromJson<String>(json['locationId']),
       expiresOn: serializer.fromJson<String?>(json['expiresOn']),
       updatedAt: serializer.fromJson<String?>(json['updatedAt']),
     );
@@ -12532,7 +12885,7 @@ class StockExpiryData extends DataClass implements Insertable<StockExpiryData> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'variantId': serializer.toJson<String>(variantId),
-      'locationId': serializer.toJson<String?>(locationId),
+      'locationId': serializer.toJson<String>(locationId),
       'expiresOn': serializer.toJson<String?>(expiresOn),
       'updatedAt': serializer.toJson<String?>(updatedAt),
     };
@@ -12540,12 +12893,12 @@ class StockExpiryData extends DataClass implements Insertable<StockExpiryData> {
 
   StockExpiryData copyWith({
     String? variantId,
-    Value<String?> locationId = const Value.absent(),
+    String? locationId,
     Value<String?> expiresOn = const Value.absent(),
     Value<String?> updatedAt = const Value.absent(),
   }) => StockExpiryData(
     variantId: variantId ?? this.variantId,
-    locationId: locationId.present ? locationId.value : this.locationId,
+    locationId: locationId ?? this.locationId,
     expiresOn: expiresOn.present ? expiresOn.value : this.expiresOn,
     updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
   );
@@ -12585,7 +12938,7 @@ class StockExpiryData extends DataClass implements Insertable<StockExpiryData> {
 
 class StockExpiryCompanion extends UpdateCompanion<StockExpiryData> {
   final Value<String> variantId;
-  final Value<String?> locationId;
+  final Value<String> locationId;
   final Value<String?> expiresOn;
   final Value<String?> updatedAt;
   final Value<int> rowid;
@@ -12621,7 +12974,7 @@ class StockExpiryCompanion extends UpdateCompanion<StockExpiryData> {
 
   StockExpiryCompanion copyWith({
     Value<String>? variantId,
-    Value<String?>? locationId,
+    Value<String>? locationId,
     Value<String?>? expiresOn,
     Value<String?>? updatedAt,
     Value<int>? rowid,
@@ -12710,6 +13063,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'sales_sold_at',
     'CREATE INDEX sales_sold_at ON sales (sold_at)',
   );
+  late final Index salesLocationSoldAt = Index(
+    'sales_location_sold_at',
+    'CREATE INDEX sales_location_sold_at ON sales (location_id, sold_at)',
+  );
   late final Index saleItemsSale = Index(
     'sale_items_sale',
     'CREATE INDEX sale_items_sale ON sale_items (sale_id)',
@@ -12767,6 +13124,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     variantsBarcode,
     variantsProduct,
     salesSoldAt,
+    salesLocationSoldAt,
     saleItemsSale,
     salePaymentsSale,
     expensesSpentAt,
@@ -15056,6 +15414,8 @@ typedef $$ServerLedgerTableCreateCompanionBuilder =
       Value<String?> note,
       required String occurredAt,
       required String createdAt,
+      Value<String?> locationId,
+      Value<String> method,
       Value<int> rowid,
     });
 typedef $$ServerLedgerTableUpdateCompanionBuilder =
@@ -15068,6 +15428,8 @@ typedef $$ServerLedgerTableUpdateCompanionBuilder =
       Value<String?> note,
       Value<String> occurredAt,
       Value<String> createdAt,
+      Value<String?> locationId,
+      Value<String> method,
       Value<int> rowid,
     });
 
@@ -15117,6 +15479,16 @@ class $$ServerLedgerTableFilterComposer
 
   ColumnFilters<String> get createdAt => $composableBuilder(
     column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get locationId => $composableBuilder(
+    column: $table.locationId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get method => $composableBuilder(
+    column: $table.method,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -15169,6 +15541,16 @@ class $$ServerLedgerTableOrderingComposer
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get locationId => $composableBuilder(
+    column: $table.locationId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get method => $composableBuilder(
+    column: $table.method,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ServerLedgerTableAnnotationComposer
@@ -15207,6 +15589,14 @@ class $$ServerLedgerTableAnnotationComposer
 
   GeneratedColumn<String> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<String> get locationId => $composableBuilder(
+    column: $table.locationId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get method =>
+      $composableBuilder(column: $table.method, builder: (column) => column);
 }
 
 class $$ServerLedgerTableTableManager
@@ -15248,6 +15638,8 @@ class $$ServerLedgerTableTableManager
                 Value<String?> note = const Value.absent(),
                 Value<String> occurredAt = const Value.absent(),
                 Value<String> createdAt = const Value.absent(),
+                Value<String?> locationId = const Value.absent(),
+                Value<String> method = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ServerLedgerCompanion(
                 id: id,
@@ -15258,6 +15650,8 @@ class $$ServerLedgerTableTableManager
                 note: note,
                 occurredAt: occurredAt,
                 createdAt: createdAt,
+                locationId: locationId,
+                method: method,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -15270,6 +15664,8 @@ class $$ServerLedgerTableTableManager
                 Value<String?> note = const Value.absent(),
                 required String occurredAt,
                 required String createdAt,
+                Value<String?> locationId = const Value.absent(),
+                Value<String> method = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ServerLedgerCompanion.insert(
                 id: id,
@@ -15280,6 +15676,8 @@ class $$ServerLedgerTableTableManager
                 note: note,
                 occurredAt: occurredAt,
                 createdAt: createdAt,
+                locationId: locationId,
+                method: method,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -15318,6 +15716,8 @@ typedef $$LocalLedgerTableCreateCompanionBuilder =
       Value<String?> note,
       required String occurredAt,
       Value<String?> confirmedAfter,
+      Value<String?> locationId,
+      Value<String> method,
     });
 typedef $$LocalLedgerTableUpdateCompanionBuilder =
     LocalLedgerCompanion Function({
@@ -15330,6 +15730,8 @@ typedef $$LocalLedgerTableUpdateCompanionBuilder =
       Value<String?> note,
       Value<String> occurredAt,
       Value<String?> confirmedAfter,
+      Value<String?> locationId,
+      Value<String> method,
     });
 
 class $$LocalLedgerTableFilterComposer
@@ -15383,6 +15785,16 @@ class $$LocalLedgerTableFilterComposer
 
   ColumnFilters<String> get confirmedAfter => $composableBuilder(
     column: $table.confirmedAfter,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get locationId => $composableBuilder(
+    column: $table.locationId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get method => $composableBuilder(
+    column: $table.method,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -15440,6 +15852,16 @@ class $$LocalLedgerTableOrderingComposer
     column: $table.confirmedAfter,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get locationId => $composableBuilder(
+    column: $table.locationId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get method => $composableBuilder(
+    column: $table.method,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$LocalLedgerTableAnnotationComposer
@@ -15483,6 +15905,14 @@ class $$LocalLedgerTableAnnotationComposer
     column: $table.confirmedAfter,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get locationId => $composableBuilder(
+    column: $table.locationId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get method =>
+      $composableBuilder(column: $table.method, builder: (column) => column);
 }
 
 class $$LocalLedgerTableTableManager
@@ -15525,6 +15955,8 @@ class $$LocalLedgerTableTableManager
                 Value<String?> note = const Value.absent(),
                 Value<String> occurredAt = const Value.absent(),
                 Value<String?> confirmedAfter = const Value.absent(),
+                Value<String?> locationId = const Value.absent(),
+                Value<String> method = const Value.absent(),
               }) => LocalLedgerCompanion(
                 id: id,
                 opId: opId,
@@ -15535,6 +15967,8 @@ class $$LocalLedgerTableTableManager
                 note: note,
                 occurredAt: occurredAt,
                 confirmedAfter: confirmedAfter,
+                locationId: locationId,
+                method: method,
               ),
           createCompanionCallback:
               ({
@@ -15547,6 +15981,8 @@ class $$LocalLedgerTableTableManager
                 Value<String?> note = const Value.absent(),
                 required String occurredAt,
                 Value<String?> confirmedAfter = const Value.absent(),
+                Value<String?> locationId = const Value.absent(),
+                Value<String> method = const Value.absent(),
               }) => LocalLedgerCompanion.insert(
                 id: id,
                 opId: opId,
@@ -15557,6 +15993,8 @@ class $$LocalLedgerTableTableManager
                 note: note,
                 occurredAt: occurredAt,
                 confirmedAfter: confirmedAfter,
+                locationId: locationId,
+                method: method,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
@@ -15814,6 +16252,7 @@ typedef $$LocalMovementsTableCreateCompanionBuilder =
       Value<String?> confirmedAfter,
       Value<int?> unitCost,
       Value<int?> totalCost,
+      Value<String?> locationId,
     });
 typedef $$LocalMovementsTableUpdateCompanionBuilder =
     LocalMovementsCompanion Function({
@@ -15825,6 +16264,7 @@ typedef $$LocalMovementsTableUpdateCompanionBuilder =
       Value<String?> confirmedAfter,
       Value<int?> unitCost,
       Value<int?> totalCost,
+      Value<String?> locationId,
     });
 
 class $$LocalMovementsTableFilterComposer
@@ -15873,6 +16313,11 @@ class $$LocalMovementsTableFilterComposer
 
   ColumnFilters<int> get totalCost => $composableBuilder(
     column: $table.totalCost,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get locationId => $composableBuilder(
+    column: $table.locationId,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -15925,6 +16370,11 @@ class $$LocalMovementsTableOrderingComposer
     column: $table.totalCost,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get locationId => $composableBuilder(
+    column: $table.locationId,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$LocalMovementsTableAnnotationComposer
@@ -15961,6 +16411,11 @@ class $$LocalMovementsTableAnnotationComposer
 
   GeneratedColumn<int> get totalCost =>
       $composableBuilder(column: $table.totalCost, builder: (column) => column);
+
+  GeneratedColumn<String> get locationId => $composableBuilder(
+    column: $table.locationId,
+    builder: (column) => column,
+  );
 }
 
 class $$LocalMovementsTableTableManager
@@ -16004,6 +16459,7 @@ class $$LocalMovementsTableTableManager
                 Value<String?> confirmedAfter = const Value.absent(),
                 Value<int?> unitCost = const Value.absent(),
                 Value<int?> totalCost = const Value.absent(),
+                Value<String?> locationId = const Value.absent(),
               }) => LocalMovementsCompanion(
                 id: id,
                 opId: opId,
@@ -16013,6 +16469,7 @@ class $$LocalMovementsTableTableManager
                 confirmedAfter: confirmedAfter,
                 unitCost: unitCost,
                 totalCost: totalCost,
+                locationId: locationId,
               ),
           createCompanionCallback:
               ({
@@ -16024,6 +16481,7 @@ class $$LocalMovementsTableTableManager
                 Value<String?> confirmedAfter = const Value.absent(),
                 Value<int?> unitCost = const Value.absent(),
                 Value<int?> totalCost = const Value.absent(),
+                Value<String?> locationId = const Value.absent(),
               }) => LocalMovementsCompanion.insert(
                 id: id,
                 opId: opId,
@@ -16033,6 +16491,7 @@ class $$LocalMovementsTableTableManager
                 confirmedAfter: confirmedAfter,
                 unitCost: unitCost,
                 totalCost: totalCost,
+                locationId: locationId,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
@@ -16062,6 +16521,7 @@ typedef $$LocalMovementsTableProcessedTableManager =
 typedef $$SalesTableCreateCompanionBuilder =
     SalesCompanion Function({
       required String id,
+      Value<String?> locationId,
       required String localNo,
       Value<String> status,
       required int subtotal,
@@ -16077,6 +16537,7 @@ typedef $$SalesTableCreateCompanionBuilder =
 typedef $$SalesTableUpdateCompanionBuilder =
     SalesCompanion Function({
       Value<String> id,
+      Value<String?> locationId,
       Value<String> localNo,
       Value<String> status,
       Value<int> subtotal,
@@ -16100,6 +16561,11 @@ class $$SalesTableFilterComposer extends Composer<_$AppDatabase, $SalesTable> {
   });
   ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get locationId => $composableBuilder(
+    column: $table.locationId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -16168,6 +16634,11 @@ class $$SalesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get locationId => $composableBuilder(
+    column: $table.locationId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get localNo => $composableBuilder(
     column: $table.localNo,
     builder: (column) => ColumnOrderings(column),
@@ -16230,6 +16701,11 @@ class $$SalesTableAnnotationComposer
   });
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get locationId => $composableBuilder(
+    column: $table.locationId,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get localNo =>
       $composableBuilder(column: $table.localNo, builder: (column) => column);
@@ -16295,6 +16771,7 @@ class $$SalesTableTableManager
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
+                Value<String?> locationId = const Value.absent(),
                 Value<String> localNo = const Value.absent(),
                 Value<String> status = const Value.absent(),
                 Value<int> subtotal = const Value.absent(),
@@ -16308,6 +16785,7 @@ class $$SalesTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => SalesCompanion(
                 id: id,
+                locationId: locationId,
                 localNo: localNo,
                 status: status,
                 subtotal: subtotal,
@@ -16323,6 +16801,7 @@ class $$SalesTableTableManager
           createCompanionCallback:
               ({
                 required String id,
+                Value<String?> locationId = const Value.absent(),
                 required String localNo,
                 Value<String> status = const Value.absent(),
                 required int subtotal,
@@ -16336,6 +16815,7 @@ class $$SalesTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => SalesCompanion.insert(
                 id: id,
+                locationId: locationId,
                 localNo: localNo,
                 status: status,
                 subtotal: subtotal,
@@ -18321,6 +18801,7 @@ typedef $$LocalFloatEffectsTableCreateCompanionBuilder =
       required String wallet,
       required int amount,
       Value<String?> confirmedAfter,
+      Value<String?> locationId,
     });
 typedef $$LocalFloatEffectsTableUpdateCompanionBuilder =
     LocalFloatEffectsCompanion Function({
@@ -18330,6 +18811,7 @@ typedef $$LocalFloatEffectsTableUpdateCompanionBuilder =
       Value<String> wallet,
       Value<int> amount,
       Value<String?> confirmedAfter,
+      Value<String?> locationId,
     });
 
 class $$LocalFloatEffectsTableFilterComposer
@@ -18368,6 +18850,11 @@ class $$LocalFloatEffectsTableFilterComposer
 
   ColumnFilters<String> get confirmedAfter => $composableBuilder(
     column: $table.confirmedAfter,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get locationId => $composableBuilder(
+    column: $table.locationId,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -18410,6 +18897,11 @@ class $$LocalFloatEffectsTableOrderingComposer
     column: $table.confirmedAfter,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get locationId => $composableBuilder(
+    column: $table.locationId,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$LocalFloatEffectsTableAnnotationComposer
@@ -18438,6 +18930,11 @@ class $$LocalFloatEffectsTableAnnotationComposer
 
   GeneratedColumn<String> get confirmedAfter => $composableBuilder(
     column: $table.confirmedAfter,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get locationId => $composableBuilder(
+    column: $table.locationId,
     builder: (column) => column,
   );
 }
@@ -18488,6 +18985,7 @@ class $$LocalFloatEffectsTableTableManager
                 Value<String> wallet = const Value.absent(),
                 Value<int> amount = const Value.absent(),
                 Value<String?> confirmedAfter = const Value.absent(),
+                Value<String?> locationId = const Value.absent(),
               }) => LocalFloatEffectsCompanion(
                 id: id,
                 opId: opId,
@@ -18495,6 +18993,7 @@ class $$LocalFloatEffectsTableTableManager
                 wallet: wallet,
                 amount: amount,
                 confirmedAfter: confirmedAfter,
+                locationId: locationId,
               ),
           createCompanionCallback:
               ({
@@ -18504,6 +19003,7 @@ class $$LocalFloatEffectsTableTableManager
                 required String wallet,
                 required int amount,
                 Value<String?> confirmedAfter = const Value.absent(),
+                Value<String?> locationId = const Value.absent(),
               }) => LocalFloatEffectsCompanion.insert(
                 id: id,
                 opId: opId,
@@ -18511,6 +19011,7 @@ class $$LocalFloatEffectsTableTableManager
                 wallet: wallet,
                 amount: amount,
                 confirmedAfter: confirmedAfter,
+                locationId: locationId,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
@@ -18963,7 +19464,7 @@ typedef $$ConversionsTableProcessedTableManager =
 typedef $$StockExpiryTableCreateCompanionBuilder =
     StockExpiryCompanion Function({
       required String variantId,
-      Value<String?> locationId,
+      Value<String> locationId,
       Value<String?> expiresOn,
       Value<String?> updatedAt,
       Value<int> rowid,
@@ -18971,7 +19472,7 @@ typedef $$StockExpiryTableCreateCompanionBuilder =
 typedef $$StockExpiryTableUpdateCompanionBuilder =
     StockExpiryCompanion Function({
       Value<String> variantId,
-      Value<String?> locationId,
+      Value<String> locationId,
       Value<String?> expiresOn,
       Value<String?> updatedAt,
       Value<int> rowid,
@@ -19093,7 +19594,7 @@ class $$StockExpiryTableTableManager
           updateCompanionCallback:
               ({
                 Value<String> variantId = const Value.absent(),
-                Value<String?> locationId = const Value.absent(),
+                Value<String> locationId = const Value.absent(),
                 Value<String?> expiresOn = const Value.absent(),
                 Value<String?> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -19107,7 +19608,7 @@ class $$StockExpiryTableTableManager
           createCompanionCallback:
               ({
                 required String variantId,
-                Value<String?> locationId = const Value.absent(),
+                Value<String> locationId = const Value.absent(),
                 Value<String?> expiresOn = const Value.absent(),
                 Value<String?> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
