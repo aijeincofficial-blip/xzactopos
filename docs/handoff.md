@@ -3,6 +3,7 @@
 Updated at the end of every task. Read this first in a fresh session. New session or a different tool (Antigravity)? Start with `docs/START-HERE-antigravity.md`.
 
 ## Status
+- **Solo mode is wrapped up (2026-11-08).** Phases 0 to 8 plus the tabs revamp, keypad, opening cash, e-wallet float, import/export are done; acceptance and open findings: `docs/tasks/P8-13-acceptance.md`. Full mode is planned in `docs/tasks/F-00-overview-full-mode.md` (not started; waiting for the owner's decisions listed there). Branch `claude/phase3-sell-8261d3` holds all of it, not pushed, not merged to `main`.
 - Phase 0 (Foundation): done, committed (6d59c99).
 - **Phase 3 (solo Sell screen, utang, stock ledger): done** (cards P3-01..P3-08, report at the end of this file). Phase 2 (solo catalog) accepted before it. Next: Phase 4.
 - **Phase 6 (solo reports from rollups): done** (section at the end; gaps triaged in `docs/gaps-review.md`).
