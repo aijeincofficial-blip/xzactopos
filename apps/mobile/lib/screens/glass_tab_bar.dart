@@ -115,6 +115,7 @@ class GlassTabBar extends StatelessWidget {
               child: _PosButton(
                 size: button,
                 selected: index == centerIndex,
+                dark: dark,
                 onTap: () => onSelect(centerIndex),
               ),
             ),
@@ -337,21 +338,23 @@ class _CenterItem extends StatelessWidget {
   }
 }
 
-/// Floating circular POS button with brilliant neon electric cyan glow and scanner glyph.
+/// Floating circular POS button featuring the official XZACTO logo mark,
+/// with a crisp neutral rim and subtle drop shadow (no blue outer glow/ring).
 class _PosButton extends StatelessWidget {
   const _PosButton({
     required this.size,
     required this.selected,
+    required this.dark,
     required this.onTap,
   });
 
   final double size;
   final bool selected;
+  final bool dark;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final glow = selected ? 1.0 : 0.75;
     return Semantics(
       button: true,
       label: 'POS',
@@ -365,46 +368,42 @@ class _PosButton extends StatelessWidget {
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF00E5FF).withValues(alpha: 0.55 * glow),
-                blurRadius: 22,
-                spreadRadius: 2 * glow,
+                color: dark
+                    ? Colors.black.withValues(alpha: 0.50)
+                    : const Color(0xFF0F172A).withValues(alpha: 0.18),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
               ),
               BoxShadow(
-                color: const Color(0xFF1E3A8A).withValues(alpha: 0.40),
-                blurRadius: 16,
-                offset: const Offset(0, 6),
+                color: dark
+                    ? Colors.black.withValues(alpha: 0.25)
+                    : const Color(0xFF0F172A).withValues(alpha: 0.08),
+                blurRadius: 4,
+                offset: const Offset(0, 1),
               ),
             ],
-            gradient: const LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
+            border: Border.all(
+              color: dark
+                  ? Colors.white.withValues(alpha: 0.16)
+                  : Colors.white,
+              width: 2.2,
+            ),
+            gradient: const RadialGradient(
+              center: Alignment(0, -0.35),
+              radius: 0.85,
               colors: [
-                Color(0xFF00F2FE),
-                Color(0xFF2563EB),
+                Color(0xFF0B1E48),
+                Color(0xFF060B18),
               ],
             ),
           ),
-          padding: const EdgeInsets.all(2.6),
-          child: DecoratedBox(
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                center: Alignment(0, -0.35),
-                radius: 0.85,
-                colors: [
-                  Color(0xFF0B1E48),
-                  Color(0xFF060B18),
-                ],
-              ),
-            ),
-            child: Center(
-              child: Image.asset(
-                'assets/brand/logo_mark.png',
-                width: size * 0.58,
-                height: size * 0.58,
-                fit: BoxFit.contain,
-                filterQuality: FilterQuality.high,
-              ),
+          child: Center(
+            child: Image.asset(
+              'assets/brand/logo_mark.png',
+              width: size * 0.58,
+              height: size * 0.58,
+              fit: BoxFit.contain,
+              filterQuality: FilterQuality.high,
             ),
           ),
         ),

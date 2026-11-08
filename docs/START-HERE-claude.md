@@ -33,9 +33,11 @@ During this session, Antigravity executed the owner's design overhaul, color har
   * Replaced the previous circular notch cutout with a continuous cubic Bézier inflection curve that naturally cradles the circular POS button without sharp bites or edges.
 * **Raised POS Button with Official Logo (`_PosButton`)**:
   * Circular button (diameter 62) floating above the wave dip, with ~50% of the circle raised above the bar's top flat edge.
-  * Vibrant electric neon cyan glow halo (`BoxShadow(color: Color(0xFF00E5FF), blurRadius: 22)`).
-  * Cyan-to-blue gradient ring (`#00F2FE` to `#2563EB`) enclosing a deep midnight navy disc (`#0B1E48` to `#060B18`).
-  * Center asset: `Image.asset('assets/brand/logo_mark.png', width: size * 0.58, height: size * 0.58, fit: BoxFit.contain)`.
+  * Responded to owner's request (*"REMOVE THE BLUE OUTER COLOR OF THE POS CIRCLE ON BOTTOM TAB"*):
+    * Removed the blue/cyan glowing outer aura (`#00E5FF` / `#1E3A8A`).
+    * Removed the outer blue gradient ring (`#00F2FE` / `#2563EB`).
+    * Clean, crisp white/frosted rim with subtle, realistic neutral drop shadow (`Color(0x1F0F172A)` in Light, `Colors.black54` in Dark).
+    * Deep midnight navy disc (`#0B1E48` to `#060B18`) displaying the official XZACTO logo mark (`assets/brand/logo_mark.png`).
 * **Unified Baseline Alignment**:
   * All 5 tab labels ("Today" / "Ngayon", "Stock", "POS", "Utang", "More" / "Iba pa") are anchored at `Positioned(bottom: 8)` with `fontSize: 11.5`.
   * Guarantees 100% mathematical baseline consistency across all tabs.
