@@ -15,6 +15,7 @@ const NAV = [
   { to: "/app", key: "dashboard", perm: null, fullOnly: false },
   { to: "/app/sell", key: "sell", perm: "sale.create", fullOnly: false },
   { to: "/app/sales", key: "sales", perm: "sale.create", fullOnly: false },
+  { to: "/app/products", key: "products", perm: "catalog.manage", fullOnly: false },
   { to: "/app/locations", key: "locations", perm: "locations.manage", fullOnly: true },
   { to: "/app/users", key: "users", perm: "users.manage", fullOnly: true },
   { to: "/app/modules", key: "modules", perm: "tenant.modules", fullOnly: true },

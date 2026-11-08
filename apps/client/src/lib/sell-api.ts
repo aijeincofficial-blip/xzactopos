@@ -13,9 +13,9 @@ interface Page<T> {
   has_more: boolean;
 }
 
-interface CatalogPull {
+export interface CatalogPull {
   products: Page<{ id: string; name: string; unit: string; tax_rate: number; track_stock: boolean; active: boolean; deleted_at: string | null }>;
-  product_variants: Page<{ id: string; product_id: string; sku: string; barcode: string | null; is_default: boolean; cost: number; active: boolean; deleted_at: string | null }>;
+  product_variants: Page<{ id: string; product_id: string; sku: string; barcode: string | null; is_default: boolean; cost: number; reorder_point: number; active: boolean; deleted_at: string | null }>;
   variant_prices: Page<{ variant_id: string; currency: string; price: number; deleted_at: string | null }>;
 }
 
@@ -56,7 +56,8 @@ export function toSellables(pull: CatalogPull, currency: string): Sellable[] {
   return out.sort((a, b) => a.name.localeCompare(b.name));
 }
 
-export async function fetchSellables(currency: string): Promise<Sellable[]> {
+/** Every product, default variant and price the caller can see, paged until each table is complete. */
+export async function pullCatalog(): Promise<CatalogPull> {
   const acc: CatalogPull = {
     products: { rows: [], cursor: null, has_more: true },
     product_variants: { rows: [], cursor: null, has_more: true },
@@ -73,7 +74,11 @@ export async function fetchSellables(currency: string): Promise<Sellable[]> {
       acc[t].has_more = page[t].has_more;
     }
   }
-  return toSellables(acc, currency);
+  return acc;
+}
+
+export async function fetchSellables(currency: string): Promise<Sellable[]> {
+  return toSellables(await pullCatalog(), currency);
 }
 
 // ---------------------------------------------------------------------------
