@@ -527,6 +527,13 @@
     "receiptFooterHint": "Napi-print sa ibaba ng resibo (hal. pasasalamat, patakaran sa pagbabalik).",
     "offlineDuration": "Tagal ng Offline Session (Araw)",
     "offlineDurationHint": "Pinakamaraming araw (1–30) na maaaring magbenta offline ang kahera bago mag-online muli.",
+    "salesControlsSection": "Mga Kontrol sa Benta at Permiso",
+    "maxCashierDiscountPercent": "Pinakamataas na Diskwento ng Kahera (%)",
+    "maxCashierDiscountPercentHint": "Pinakamataas na diskwento na maaaring ibigay ng kahera nang walang pag-apruba ng PIN ng supervisor.",
+    "maxCashierVoidAmount": "Pinakamataas na Halaga ng Pag-void ng Kahera (₱)",
+    "maxCashierVoidAmountHint": "Pinakamataas na kabuuang halaga ng benta na maaaring kanselahin ng kahera nang walang pag-apruba ng PIN ng supervisor (kung pinahihintulutan).",
+    "cashierCanVoidOwn": "Pahintulutan ang mga Kahera na Mag-void ng Sariling Benta",
+    "cashierCanVoidOwnHint": "Kapag pinagana, maaaring i-void ng mga kahera ang sarili nilang benta sa araw na iyon hanggang sa limitasyon nang walang pag-apruba ng supervisor.",
     "limitsSection": "Kapasidad ng Plano at Limitasyon ng Resource",
     "limitsDesc": "Kasalukuyang nagamit kumpara sa itinalagang limitasyon ng iyong plano.",
     "limitLocations": "Mga Lokasyon / Tindahan",
@@ -647,5 +654,20 @@
     "transfersShipped": "Ipinadala",
     "transfersReceived": "Natanggap",
     "transfersDiscrepant": "May Pagkakaiba"
+  },
+  "supervisor": {
+    "dialogTitle": "Kailangan ng Pag-apruba ng Supervisor",
+    "dialogDesc": "Ang pagkilos na ito ay nangangailangan ng pahintulot mula sa supervisor o manager ng tindahan.",
+    "selectApprover": "Pumili ng Mag-aapruba",
+    "approver": "Supervisor / Manager",
+    "pin": "PIN ng Supervisor",
+    "pinHint": "4 hanggang 8 tambilang",
+    "authorize": "Pahintulutan",
+    "authorizing": "Sinusuri ang PIN...",
+    "noApprovers": "Walang aktibong supervisor o manager na natagpuan para sa tindahang ito.",
+    "discountTitle": "Aprubahan ang Diskwento sa Benta",
+    "discountDesc": "Ang hinihiling na diskwento ay lumampas sa limitasyon ng kahera. Dapat aprubahan ng supervisor ang diskwento na ito.",
+    "voidTitle": "Aprubahan ang Pag-void ng Benta",
+    "voidDesc": "Ang kabuuang benta ay lumampas sa limitasyon ng kahera o nangangailangan ng pahintulot. Dapat aprubahan ng supervisor ang pag-void na ito."
   }
 }

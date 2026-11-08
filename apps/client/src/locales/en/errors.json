@@ -63,7 +63,9 @@
     "positive_qty": "Quantity must be greater than zero.",
     "non_negative_qty": "Quantity cannot be negative.",
     "items_required": "At least one item is required.",
-    "different_locations": "Origin and destination must be different locations."
+    "different_locations": "Origin and destination must be different locations.",
+    "min0": "Cannot be negative.",
+    "max100": "At most 100."
   },
   "limit_users": "You reached the staff limit of your plan.",
   "pin_wrong": "Incorrect PIN.",

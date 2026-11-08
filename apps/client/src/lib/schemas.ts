@@ -116,6 +116,9 @@ export const tenantSettingsSchema = z
     offlineSessionDays: z.number().int().min(1, "validation.min1").max(30, "validation.max30"),
     receiptHeader: z.string().trim().max(500, "validation.max500").optional(),
     receiptFooter: z.string().trim().max(500, "validation.max500").optional(),
+    maxCashierDiscountPercent: z.coerce.number().int().min(0, "validation.min0").max(100, "validation.max100").default(10),
+    maxCashierVoidAmount: z.coerce.number().int().min(0, "validation.min0").default(50000),
+    cashierCanVoidOwn: z.boolean().default(false),
   })
   .refine((v) => v.locales.includes(v.defaultLocale), {
     path: ["defaultLocale"],

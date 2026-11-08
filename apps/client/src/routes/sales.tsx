@@ -6,7 +6,10 @@ import { Alert, Badge, Button, Card, Input } from "../components/ui.tsx";
 import { useSession } from "../lib/session.tsx";
 import { useActiveLocation } from "../lib/location-context.tsx";
 import { useErrorMessage } from "../lib/i18n-helpers.ts";
+import { ApiError } from "../lib/api.ts";
+import { supabase } from "../lib/supabase.ts";
 import { fetchRecentSales, fetchSaleDetail, voidSale } from "../lib/sell-api.ts";
+import { SupervisorPinDialog } from "../components/supervisor-pin-dialog.tsx";
 
 /** Sales (Solo web): the store's latest sales, each as a receipt, with cancel (void) for those allowed to. */
 export function SalesPage() {
@@ -25,6 +28,8 @@ export function SalesPage() {
   const [asking, setAsking] = useState(false);
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [showApprovalDialog, setShowApprovalDialog] = useState(false);
+  const [approvalId, setApprovalId] = useState<string | null>(null);
 
   const list = useQuery({
     queryKey: ["sales", store?.id],
@@ -34,20 +39,55 @@ export function SalesPage() {
   });
   const detail = useQuery({ queryKey: ["sale", openId], queryFn: () => fetchSaleDetail(openId ?? ""), enabled: openId !== null });
 
+  const settingsQuery = useQuery({
+    queryKey: ["tenant-settings-controls"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("tenant_settings")
+        .select("max_cashier_void_amount, cashier_can_void_own")
+        .single();
+      if (error) return null;
+      return data;
+    },
+    staleTime: 60_000,
+  });
+
+  const maxVoidAmt = settingsQuery.data?.max_cashier_void_amount ?? 50000;
+  const canVoidOwn = Boolean(settingsQuery.data?.cashier_can_void_own);
+  const isCashier = access.role === "cashier";
+  const needsSupervisor = isCashier && (!canVoidOwn || (detail.data?.sale.total ?? 0) > maxVoidAmt);
+
   const cancel = useMutation({
-    mutationFn: () => voidSale(openId ?? "", reason),
+    mutationFn: (overrideApprovalId?: string) =>
+      voidSale(openId ?? "", reason, overrideApprovalId || approvalId || undefined),
     onSuccess: async () => {
       setAsking(false);
       setReason("");
       setError(null);
+      setApprovalId(null);
+      setShowApprovalDialog(false);
       await Promise.all([
         qc.invalidateQueries({ queryKey: ["sales"] }),
         qc.invalidateQueries({ queryKey: ["sale", openId] }),
         qc.invalidateQueries({ queryKey: ["day-summary"] }),
       ]);
     },
-    onError: (e) => setError(msg(e)),
+    onError: (e) => {
+      if (e instanceof ApiError && e.key === "approval_required") {
+        setShowApprovalDialog(true);
+        return;
+      }
+      setError(msg(e));
+    },
   });
+
+  function handleConfirmVoid() {
+    if (needsSupervisor && !approvalId) {
+      setShowApprovalDialog(true);
+      return;
+    }
+    cancel.mutate();
+  }
 
   if (!store) {
     return (
@@ -128,7 +168,7 @@ export function SalesPage() {
                   <Input data-testid="void-reason" placeholder={t("sales.reason")} value={reason} maxLength={200} onChange={(e) => setReason(e.target.value)} />
                   {error ? <Alert>{error}</Alert> : null}
                   <div className="flex gap-2">
-                    <Button variant="danger" data-testid="void-confirm" disabled={cancel.isPending} onClick={() => cancel.mutate()}>
+                    <Button variant="danger" data-testid="void-confirm" disabled={cancel.isPending} onClick={handleConfirmVoid}>
                       {t("sales.confirmVoid")}
                     </Button>
                     <Button variant="ghost" onClick={() => setAsking(false)}>
@@ -144,6 +184,18 @@ export function SalesPage() {
             ) : null}
           </Card>
         ) : null}
+
+        <SupervisorPinDialog
+          open={showApprovalDialog}
+          onOpenChange={setShowApprovalDialog}
+          locationId={detail.data?.sale.location_id ?? store?.id ?? ""}
+          action="void_sale"
+          refId={openId ?? ""}
+          onApproved={(apprId) => {
+            setApprovalId(apprId);
+            cancel.mutate(apprId);
+          }}
+        />
       </div>
     );
   }

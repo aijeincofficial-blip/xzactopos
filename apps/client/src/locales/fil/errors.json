@@ -63,7 +63,9 @@
     "positive_qty": "Dapat higit sa zero ang dami.",
     "non_negative_qty": "Hindi puwedeng negatibo ang dami.",
     "items_required": "Kailangan ng kahit isang aytem.",
-    "different_locations": "Dapat magkaibang lokasyon ang pinagmulan at patutunguhan."
+    "different_locations": "Dapat magkaibang lokasyon ang pinagmulan at patutunguhan.",
+    "min0": "Hindi maaaring negatibo.",
+    "max100": "Hanggang 100 lamang."
   },
   "limit_users": "Naabot na ang limitasyon ng mga tauhan sa inyong plan.",
   "pin_wrong": "Mali ang PIN.",

@@ -527,6 +527,13 @@
     "receiptFooterHint": "Prints at the bottom of receipts (e.g. thank-you note, return policy).",
     "offlineDuration": "Offline Session Duration (Days)",
     "offlineDurationHint": "Maximum number of days (1–30) cashiers can operate offline before re-verifying online.",
+    "salesControlsSection": "Sales Controls & Permissions",
+    "maxCashierDiscountPercent": "Max Cashier Discount (%)",
+    "maxCashierDiscountPercentHint": "Maximum discount a cashier can give on a sale without supervisor PIN approval.",
+    "maxCashierVoidAmount": "Max Cashier Void Amount (₱)",
+    "maxCashierVoidAmountHint": "Maximum sale total a cashier can cancel without supervisor PIN approval (when permitted).",
+    "cashierCanVoidOwn": "Allow Cashiers to Void Own Sales",
+    "cashierCanVoidOwnHint": "When enabled, cashiers may void their own same-day sales up to the threshold without supervisor PIN approval.",
     "limitsSection": "Plan Capacity & Resource Limits",
     "limitsDesc": "Current usage against your plan's assigned infrastructure limits.",
     "limitLocations": "Locations / Stores",
@@ -647,5 +654,20 @@
     "transfersShipped": "In Transit",
     "transfersReceived": "Received",
     "transfersDiscrepant": "Discrepancies"
+  },
+  "supervisor": {
+    "dialogTitle": "Supervisor Approval Required",
+    "dialogDesc": "This action requires authorization by a store supervisor or manager.",
+    "selectApprover": "Select Approver",
+    "approver": "Supervisor / Manager",
+    "pin": "Supervisor PIN",
+    "pinHint": "4 to 8 digits",
+    "authorize": "Authorize",
+    "authorizing": "Verifying PIN...",
+    "noApprovers": "No active supervisors or managers found for this store.",
+    "discountTitle": "Approve Sale Discount",
+    "discountDesc": "The requested discount exceeds the cashier limit. A supervisor must authorize this discount.",
+    "voidTitle": "Approve Sale Void",
+    "voidDesc": "The sale total exceeds the cashier limit or requires authorization. A supervisor must authorize this void."
   }
 }

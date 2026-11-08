@@ -35,6 +35,9 @@ export function SettingsPage() {
   const [offlineSessionDays, setOfflineSessionDays] = useState(7);
   const [receiptHeader, setReceiptHeader] = useState("");
   const [receiptFooter, setReceiptFooter] = useState("");
+  const [maxCashierDiscountPercent, setMaxCashierDiscountPercent] = useState(10);
+  const [maxCashierVoidAmount, setMaxCashierVoidAmount] = useState(500);
+  const [cashierCanVoidOwn, setCashierCanVoidOwn] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [savedSuccess, setSavedSuccess] = useState(false);
 
@@ -48,6 +51,9 @@ export function SettingsPage() {
       setOfflineSessionDays(q.data.settings.offline_session_days);
       setReceiptHeader(q.data.settings.receipt_header ?? "");
       setReceiptFooter(q.data.settings.receipt_footer ?? "");
+      setMaxCashierDiscountPercent(q.data.settings.max_cashier_discount_percent ?? 10);
+      setMaxCashierVoidAmount((q.data.settings.max_cashier_void_amount ?? 50000) / 100);
+      setCashierCanVoidOwn(Boolean(q.data.settings.cashier_can_void_own));
     }
   }, [q.data]);
 
@@ -64,6 +70,9 @@ export function SettingsPage() {
         offline_session_days: offlineSessionDays,
         receipt_header: receiptHeader,
         receipt_footer: receiptFooter,
+        max_cashier_discount_percent: maxCashierDiscountPercent,
+        max_cashier_void_amount: Math.round(maxCashierVoidAmount * 100),
+        cashier_can_void_own: cashierCanVoidOwn,
       });
     },
     onSuccess: async () => {
@@ -85,6 +94,9 @@ export function SettingsPage() {
       offlineSessionDays,
       receiptHeader,
       receiptFooter,
+      maxCashierDiscountPercent,
+      maxCashierVoidAmount: Math.round(maxCashierVoidAmount * 100),
+      cashierCanVoidOwn,
     });
     if (!r.success) {
       setErrors(fieldErrors(r.error));
@@ -265,6 +277,55 @@ export function SettingsPage() {
                 className="max-w-xs"
               />
             </Field>
+          </div>
+        </Card>
+
+        {/* Sales Controls & Permissions */}
+        <Card className="grid gap-4">
+          <h2 className="text-lg font-semibold">{t("settings.salesControlsSection")}</h2>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field
+              label={t("settings.maxCashierDiscountPercent")}
+              hint={t("settings.maxCashierDiscountPercentHint")}
+              error={vm(errors["maxCashierDiscountPercent"])}
+            >
+              <Input
+                type="number"
+                min={0}
+                max={100}
+                value={maxCashierDiscountPercent}
+                onChange={(e) => setMaxCashierDiscountPercent(Number(e.target.value))}
+                className="max-w-xs"
+              />
+            </Field>
+
+            <Field
+              label={t("settings.maxCashierVoidAmount")}
+              hint={t("settings.maxCashierVoidAmountHint")}
+              error={vm(errors["maxCashierVoidAmount"])}
+            >
+              <Input
+                type="number"
+                min={0}
+                step="0.01"
+                value={maxCashierVoidAmount}
+                onChange={(e) => setMaxCashierVoidAmount(Number(e.target.value))}
+                className="max-w-xs"
+              />
+            </Field>
+
+            <div className="sm:col-span-2">
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={cashierCanVoidOwn}
+                  onChange={(e) => setCashierCanVoidOwn(e.target.checked)}
+                  className="h-4 w-4 rounded border-slate-300 text-slate-900"
+                />
+                <span className="font-medium text-slate-800">{t("settings.cashierCanVoidOwn")}</span>
+              </label>
+              <p className="text-xs text-slate-500 mt-1">{t("settings.cashierCanVoidOwnHint")}</p>
+            </div>
           </div>
         </Card>
 

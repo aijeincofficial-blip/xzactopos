@@ -64,6 +64,7 @@ export interface SaleDraft {
   deviceId?: string | undefined;
   customerId?: string | undefined;
   discount: number;
+  approvalId?: string | undefined;
   lines: readonly CartLine[];
   payments: readonly PaymentDraft[];
 }
@@ -99,6 +100,7 @@ export function salePayload(d: SaleDraft): Record<string, unknown> {
     local_no: d.localNo,
     location_id: d.locationId,
     ...(d.deviceId ? { device_id: d.deviceId } : {}),
+    ...(d.approvalId ? { approval_id: d.approvalId } : {}),
     sold_at: d.soldAt.toISOString(),
     subtotal: sub,
     discount: d.discount,

@@ -21,6 +21,8 @@ import {
   type Wallet,
 } from "../lib/sale-math.ts";
 import { createCustomer, fetchCustomers, fetchSellables, nextLocalNo, registerWebDevice, submitSale, webDevice, type Sellable, type SoldReceipt } from "../lib/sell-api.ts";
+import { supabase } from "../lib/supabase.ts";
+import { SupervisorPinDialog } from "../components/supervisor-pin-dialog.tsx";
 
 const WALLETS: Wallet[] = ["gcash", "maya", "other"];
 
@@ -57,16 +59,38 @@ export function SellPage() {
   const [tenderedText, setTenderedText] = useState("");
   const [problem, setProblem] = useState<string | null>(null);
   const [done, setDone] = useState<Done | null>(null);
+  const [approvalId, setApprovalId] = useState<string | null>(null);
+  const [showApprovalDialog, setShowApprovalDialog] = useState(false);
   const attempt = useRef<{ key: string; id: string; opId: string } | null>(null);
 
   useEffect(() => {
     void registerWebDevice();
   }, []);
 
+  const settingsQuery = useQuery({
+    queryKey: ["tenant-settings-controls"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("tenant_settings")
+        .select("max_cashier_discount_percent, max_cashier_void_amount, cashier_can_void_own")
+        .single();
+      if (error) return null;
+      return data;
+    },
+    staleTime: 60_000,
+  });
+
+  const maxDiscountPct = settingsQuery.data?.max_cashier_discount_percent ?? 10;
   const discount = parseAmount(discountText, currency);
   const tendered = parseAmount(tenderedText, currency);
   const subtotal = cartSubtotal(cart);
   const total = discount === null ? subtotal : cartTotal(cart, discount);
+
+  const isDiscountOverLimit =
+    access.role === "cashier" &&
+    subtotal > 0 &&
+    (discount ?? 0) * 100 > subtotal * maxDiscountPct;
+
   const paidNow = paidText.trim() === "" ? null : parseAmount(paidText, currency);
   const paidInvalid = paidText.trim() !== "" && paidNow === null;
   const payments = paidInvalid || discount === null ? null : buildPayments(total, { method, paidNow, tendered, wallet, reference: reference.trim() });
@@ -112,6 +136,8 @@ export function SellPage() {
     setPaidText("");
     setCustomerId("");
     setProblem(null);
+    setApprovalId(null);
+    setShowApprovalDialog(false);
     attempt.current = null;
   }
 
@@ -127,12 +153,14 @@ export function SellPage() {
     onError: (e) => setProblem(msg(e)),
   });
 
-  const charge = useMutation({    mutationFn: async (): Promise<Done> => {
+  const charge = useMutation({
+    mutationFn: async (overrideApprovalId?: string): Promise<Done> => {
       if (!store) throw new ApiError("not_allowed", "no store");
       if (discount === null || payments === null || (method === "cash" && tendered === null)) throw new ApiError("amount_invalid", "amount");
       const day = dayInTimezone(access.tenant.timezone);
       const key = JSON.stringify([cart, discount, payments, store.id, customerId]);
       if (attempt.current?.key !== key) attempt.current = { key, id: uuidv7(), opId: uuidv7() };
+      const currentApproval = overrideApprovalId || approvalId;
       const base = {
         id: attempt.current.id,
         soldAt: new Date(),
@@ -140,6 +168,7 @@ export function SellPage() {
         deviceId: webDevice().id,
         customerId: customerId || undefined,
         discount,
+        approvalId: currentApproval || undefined,
         lines: cart,
         payments,
       };
@@ -161,8 +190,25 @@ export function SellPage() {
       setDone(r);
       reset();
     },
-    onError: (e) => setProblem(e instanceof ApiError && i18n.exists(`admin:sell.problem.${e.key}`) ? t(`sell.problem.${e.key}` as never) : msg(e)),
+    onError: (e) => {
+      if (e instanceof ApiError && e.key === "approval_required") {
+        setShowApprovalDialog(true);
+        return;
+      }
+      setProblem(e instanceof ApiError && i18n.exists(`admin:sell.problem.${e.key}`) ? t(`sell.problem.${e.key}` as never) : msg(e));
+    },
   });
+
+  function handleCharge() {
+    if (!store) return;
+    if (isDiscountOverLimit && !approvalId) {
+      const key = JSON.stringify([cart, discount, payments, store.id, customerId]);
+      if (attempt.current?.key !== key) attempt.current = { key, id: uuidv7(), opId: uuidv7() };
+      setShowApprovalDialog(true);
+      return;
+    }
+    charge.mutate();
+  }
 
   if (!store) {
     return (
@@ -350,7 +396,7 @@ export function SellPage() {
           ) : null}
         </div>
         {problem ? <Alert>{problem}</Alert> : null}
-        <Button data-testid="charge" disabled={cart.length === 0 || charge.isPending} onClick={() => charge.mutate()}>
+        <Button data-testid="charge" disabled={cart.length === 0 || charge.isPending} onClick={handleCharge}>
           {charge.isPending ? t("sell.charging") : t("sell.charge", { total: fmt(total) })}
         </Button>
         {cart.length > 0 ? (
@@ -359,6 +405,18 @@ export function SellPage() {
           </Button>
         ) : null}
       </Card>
+
+      <SupervisorPinDialog
+        open={showApprovalDialog}
+        onOpenChange={setShowApprovalDialog}
+        locationId={store.id}
+        action="sale_discount"
+        refId={attempt.current?.id ?? ""}
+        onApproved={(apprId) => {
+          setApprovalId(apprId);
+          charge.mutate(apprId);
+        }}
+      />
     </div>
   );
 }

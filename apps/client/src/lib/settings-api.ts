@@ -18,6 +18,9 @@ export interface TenantSettingsData {
     offline_session_days: number;
     receipt_header: string | null;
     receipt_footer: string | null;
+    max_cashier_discount_percent: number;
+    max_cashier_void_amount: number;
+    cashier_can_void_own: boolean;
   };
   limits: {
     max_locations: number;
@@ -36,7 +39,7 @@ export interface TenantSettingsData {
 export async function fetchTenantSettings(): Promise<TenantSettingsData> {
   const [tRes, sRes, lRes, locCount, userCount, devCount, prodCount] = await Promise.all([
     supabase.from("tenants").select("id, name, slug, base_currency, timezone, tax_mode, plan, status").single(),
-    supabase.from("tenant_settings").select("default_locale, locales, offline_session_days, receipt_header, receipt_footer").single(),
+    supabase.from("tenant_settings").select("default_locale, locales, offline_session_days, receipt_header, receipt_footer, max_cashier_discount_percent, max_cashier_void_amount, cashier_can_void_own").single(),
     supabase.from("tenant_limits").select("max_locations, max_users, max_devices, max_products").maybeSingle(),
     supabase.from("locations").select("id", { count: "exact", head: true }).is("deleted_at", null),
     supabase.from("profiles").select("user_id", { count: "exact", head: true }).is("deleted_at", null),
@@ -75,6 +78,9 @@ export interface UpdateTenantSettingsInput {
   offline_session_days: number;
   receipt_header?: string | null;
   receipt_footer?: string | null;
+  max_cashier_discount_percent?: number;
+  max_cashier_void_amount?: number;
+  cashier_can_void_own?: boolean;
 }
 
 export async function updateTenantSettings(input: UpdateTenantSettingsInput): Promise<void> {
@@ -95,6 +101,9 @@ export async function updateTenantSettings(input: UpdateTenantSettingsInput): Pr
         offline_session_days: input.offline_session_days,
         receipt_header: input.receipt_header?.trim() || null,
         receipt_footer: input.receipt_footer?.trim() || null,
+        ...(input.max_cashier_discount_percent !== undefined ? { max_cashier_discount_percent: input.max_cashier_discount_percent } : {}),
+        ...(input.max_cashier_void_amount !== undefined ? { max_cashier_void_amount: input.max_cashier_void_amount } : {}),
+        ...(input.cashier_can_void_own !== undefined ? { cashier_can_void_own: input.cashier_can_void_own } : {}),
       })
       .eq("tenant_id", input.tenantId),
   ]);

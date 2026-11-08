@@ -229,5 +229,10 @@ export async function fetchSaleDetail(saleId: string): Promise<SaleDetail> {
 }
 
 /** Cancels a sale: stock goes back and any utang charge is reversed. The server checks the caller may do it. */
-export const voidSale = (saleId: string, reason: string) => pushOp("void_sale", { sale_id: saleId, ...(reason.trim() ? { reason: reason.trim() } : {}) });
+export const voidSale = (saleId: string, reason: string, approvalId?: string) =>
+  pushOp("void_sale", {
+    sale_id: saleId,
+    ...(reason.trim() ? { reason: reason.trim() } : {}),
+    ...(approvalId ? { approval_id: approvalId } : {}),
+  });
 
