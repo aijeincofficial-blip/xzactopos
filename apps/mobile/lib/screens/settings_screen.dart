@@ -328,6 +328,53 @@ class SettingsScreen extends StatelessWidget {
               ),
             ),
 
+            const SizedBox(height: Gap.l),
+
+            // Upgrade to Full Mode Card
+            _SectionHeader(title: t.upgradeFullSection.toUpperCase()),
+            AppCard(
+              padding: const EdgeInsets.all(Gap.l),
+              child: Row(
+                children: [
+                  CoinBadge(
+                    icon: Icons.rocket_launch_rounded,
+                    color: scheme.primary,
+                    size: 36,
+                  ),
+                  const SizedBox(width: Gap.m),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          t.upgradeFullTitle,
+                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+                        ),
+                        Text(
+                          t.upgradeFullSubtitle,
+                          style: TextStyle(fontSize: 12, color: scheme.outline),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: Gap.s),
+                  FilledButton.tonal(
+                    key: const Key('settings-upgrade-full'),
+                    style: FilledButton.styleFrom(
+                      shape: const StadiumBorder(),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      minimumSize: const Size(0, 36),
+                    ),
+                    onPressed: () => _showUpgradeDialog(context, t),
+                    child: Text(
+                      t.upgradeFullAction,
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
             const SizedBox(height: Gap.xl),
 
             // App Version & Offline Telemetry Footer
@@ -364,6 +411,28 @@ class SettingsScreen extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showUpgradeDialog(BuildContext context, AppLocalizations t) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.rocket_launch_rounded, color: Theme.of(ctx).colorScheme.primary),
+            const SizedBox(width: Gap.s),
+            Expanded(child: Text(t.upgradeFullDialogTitle)),
+          ],
+        ),
+        content: Text(t.upgradeFullDialogBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(t.upgradeFullClose),
+          ),
+        ],
       ),
     );
   }

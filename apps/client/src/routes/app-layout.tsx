@@ -19,10 +19,11 @@ const NAV = [
   { to: "/app/utang", key: "utang", perm: "sale.create", fullOnly: false },
   { to: "/app/expenses", key: "expenses", perm: "shift.manage", fullOnly: false },
   { to: "/app/day-close", key: "dayClose", perm: "shift.manage", fullOnly: false },
+  { to: "/app/upgrade", key: "upgrade", perm: "tenant.modules", fullOnly: false, soloOnly: true },
   { to: "/app/locations", key: "locations", perm: "locations.manage", fullOnly: true },
   { to: "/app/users", key: "users", perm: "users.manage", fullOnly: true },
   { to: "/app/modules", key: "modules", perm: "tenant.modules", fullOnly: true },
-] as const satisfies ReadonlyArray<{ to: string; key: string; perm: PermissionKey | null; fullOnly: boolean }>;
+] as const satisfies ReadonlyArray<{ to: string; key: string; perm: PermissionKey | null; fullOnly: boolean; soloOnly?: boolean }>;
 
 export function AppLayout() {
   const { t, i18n } = useTranslation(["common", "admin"]);
@@ -71,7 +72,7 @@ export function AppLayout() {
         </div>
         {access.tenant.setup_completed ? (
           <nav aria-label={t("admin:nav.label")} className="mx-auto flex max-w-5xl gap-1 px-4">
-            {NAV.filter((n) => (n.perm === null || can(n.perm)) && (!n.fullOnly || mode === "full")).map((n) => (
+            {NAV.filter((n) => (n.perm === null || can(n.perm)) && (!n.fullOnly || mode === "full") && (!("soloOnly" in n && n.soloOnly) || mode === "solo")).map((n) => (
               <Link
                 key={n.to}
                 to={n.to}

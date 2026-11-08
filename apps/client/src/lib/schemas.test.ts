@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createUserSchema, fieldErrors, locationSchema, setupLanguagesSchema, slugSchema } from "./schemas.ts";
+import { createUserSchema, fieldErrors, locationSchema, setupLanguagesSchema, slugSchema, upgradeSchema } from "./schemas.ts";
 import { loginEmail } from "./api.ts";
 
 const user = { username: "ana", fullName: "", password: "longenough", role: "cashier", locationId: "x", position: "" };
@@ -36,9 +36,38 @@ describe("schemas", () => {
   });
 
   it("validates location codes", () => {
-    const base = { type: "store", name: "Main", address: "", binsEnabled: false };
+    const base = { type: "store" as const, name: "Main", address: "", binsEnabled: false };
     expect(locationSchema.safeParse({ ...base, code: "S01" }).success).toBe(true);
     expect(locationSchema.safeParse({ ...base, code: "has space" }).success).toBe(false);
+  });
+
+  it("validates upgrade schema with optional location", () => {
+    expect(upgradeSchema.safeParse({ warehouse: true, addLocation: false }).success).toBe(true);
+    expect(upgradeSchema.safeParse({ warehouse: false, addLocation: false }).success).toBe(true);
+
+    const withLoc = {
+      warehouse: true,
+      addLocation: true,
+      locationType: "warehouse" as const,
+      locationCode: "WH01",
+      locationName: "Central Warehouse",
+      locationAddress: "Logistics Hub",
+    };
+    expect(upgradeSchema.safeParse(withLoc).success).toBe(true);
+
+    const badCode = { ...withLoc, locationCode: "bad code with space" };
+    const resBadCode = upgradeSchema.safeParse(badCode);
+    expect(resBadCode.success).toBe(false);
+    if (!resBadCode.success) {
+      expect(fieldErrors(resBadCode.error)["locationCode"]).toBe("validation.location_code");
+    }
+
+    const missingName = { ...withLoc, locationName: "" };
+    const resMissingName = upgradeSchema.safeParse(missingName);
+    expect(resMissingName.success).toBe(false);
+    if (!resMissingName.success) {
+      expect(fieldErrors(resMissingName.error)["locationName"]).toBe("validation.required");
+    }
   });
 });
 

@@ -10,7 +10,8 @@
     "modules": "Modules",
     "utang": "Utang",
     "expenses": "Expenses",
-    "dayClose": "Day close"
+    "dayClose": "Day close",
+    "upgrade": "Upgrade to Full"
   },
   "roles": {
     "superadmin": "Owner",
@@ -381,5 +382,52 @@
     "noHistory": "No previous day closes found.",
     "opening": "Opening",
     "expected": "Expected"
+  },
+  "upgrade": {
+    "badge": "Full Mode",
+    "badgeActive": "Active",
+    "soloBannerTitle": "Ready to expand? Upgrade to Full Mode",
+    "soloBannerText": "Unlock multiple stores, central warehouse inventory, and multi-user staff roles (cashiers, managers, supervisors). Your solo data is 100% preserved in place.",
+    "soloBannerAction": "Upgrade to Full",
+    "title": "Upgrade to Full Mode",
+    "subtitle": "Grow your business with multiple locations, warehouse logistics, and team staff.",
+    "alreadyFullTitle": "Full Mode is Active",
+    "alreadyFullText": "Your business is already running in Full Mode. You can manage your locations, team users, and module settings below.",
+    "goToDashboard": "Go to Dashboard",
+    "whyUpgrade": "Why Upgrade to Full Mode?",
+    "features": {
+      "multiStoreTitle": "Multiple Stores & Branches",
+      "multiStoreDesc": "Run several branches from one unified system with individual store drawer counts and sales tracking.",
+      "warehouseTitle": "Central Warehouse & Transfers",
+      "warehouseDesc": "Manage bulk stock, warehouse replenishment, and track inventory movements between locations.",
+      "staffTitle": "Team Roles & Permissions",
+      "staffDesc": "Add Cashiers, Managers, and Supervisors with PIN approvals and tailored access levels.",
+      "shiftsTitle": "Shift Reconciliation",
+      "shiftsDesc": "Per-cashier drawer shifts with opening cash, counted cash, and discrepancy auditing."
+    },
+    "dataSafetyTitle": "100% In-Place Upgrade — Zero Data Loss",
+    "dataSafetyNote": "All your existing products, variant barcodes, pricing, stock levels, past sales receipts, customer utang ledger records, and expense entries stay completely untouched on the same account. No data is moved or copied.",
+    "proceedToConfig": "Next: Configure Upgrade",
+    "configTitle": "Configure Full Mode Settings",
+    "moduleOptions": "Modules to Activate",
+    "enableWarehouse": "Enable Central Warehouse Module",
+    "enableWarehouseDesc": "Allows creating warehouse locations and managing inventory transfers between facilities.",
+    "addLocationPrompt": "Add an additional location right now?",
+    "addLocationHint": "You can add a central warehouse or second branch now, or do it later in Locations.",
+    "reviewConfirm": "Next: Review & Confirm",
+    "confirmTitle": "Review & Confirm Upgrade",
+    "business": "Business",
+    "currentMode": "Current Mode",
+    "targetMode": "Target Mode",
+    "modeSolo": "Solo Mode",
+    "modeFull": "Full Mode",
+    "modulesEnabled": "Modules to Enable",
+    "newLocation": "New Location",
+    "dataRetention": "Data Preservation",
+    "allDataRetained": "100% Preserved In-Place",
+    "confirmAction": "Confirm & Upgrade to Full",
+    "upgrading": "Upgrading business...",
+    "successTitle": "Full Mode Successfully Activated!",
+    "successText": "Your business has been upgraded to Full Mode. You now have access to multi-location and team staff management."
   }
 }

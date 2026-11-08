@@ -1,8 +1,10 @@
 import { useTranslation } from "react-i18next";
+import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { formatMoney, money } from "@pos/core";
-import { Alert, Card } from "../components/ui.tsx";
+import { Alert, Button, Card } from "../components/ui.tsx";
 import { useSession } from "../lib/session.tsx";
+import { tenantMode } from "../lib/mode.ts";
 import { dayInTimezone, getDaySummary } from "../lib/today.ts";
 
 function Stat({ label, value, id }: { label: string; value: string; id: string }) {
@@ -17,7 +19,8 @@ function Stat({ label, value, id }: { label: string; value: string; id: string }
 /** Solo home: today's sales, how they were paid, expenses and what customers still owe (read-only). */
 export function TodayPage() {
   const { t, i18n } = useTranslation("admin");
-  const { access } = useSession();
+  const { access, can } = useSession();
+  const mode = tenantMode(access);
   const day = dayInTimezone(access.tenant.timezone);
   const q = useQuery({ queryKey: ["day-summary", day], queryFn: () => getDaySummary(day), refetchInterval: 120_000 });
   const fmt = (n: number) => formatMoney(money(n, access.tenant.base_currency), i18n.language);
@@ -29,6 +32,26 @@ export function TodayPage() {
   const cashLeft = s.totals.cash - s.expenses.cash;
   return (
     <>
+      {can("tenant.modules") && mode === "solo" ? (
+        <Card className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-indigo-100 bg-gradient-to-r from-indigo-50/60 to-purple-50/40 p-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="rounded bg-indigo-600 px-1.5 py-0.5 text-xs font-semibold text-white uppercase tracking-wider">
+                {t("upgrade.badge")}
+              </span>
+              <h3 className="font-semibold text-slate-900">{t("upgrade.soloBannerTitle")}</h3>
+            </div>
+            <p className="text-sm text-slate-600 max-w-2xl">
+              {t("upgrade.soloBannerText")}
+            </p>
+          </div>
+          <Link to="/app/upgrade" className="inline-flex shrink-0">
+            <Button variant="primary" size="sm">
+              {t("upgrade.soloBannerAction")}
+            </Button>
+          </Link>
+        </Card>
+      ) : null}
       <h2 className="text-lg font-semibold">{t("today.title")}</h2>
       <p className="-mt-2 text-sm text-slate-500">{day}</p>
       <div className="grid gap-3 sm:grid-cols-3">

@@ -60,6 +60,26 @@ export const createUserSchema = z
     }
   });
 
+export const upgradeSchema = z
+  .object({
+    warehouse: z.boolean(),
+    addLocation: z.boolean(),
+    locationType: z.enum(["store", "warehouse"]).optional(),
+    locationCode: z.string().trim().optional(),
+    locationName: z.string().trim().optional(),
+    locationAddress: z.string().trim().max(300, "validation.max300").optional(),
+  })
+  .superRefine((v, ctx) => {
+    if (v.addLocation) {
+      if (!v.locationCode || !LOCATION_CODE_RE.test(v.locationCode)) {
+        ctx.addIssue({ code: "custom", path: ["locationCode"], message: "validation.location_code" });
+      }
+      if (!v.locationName || v.locationName.length > 120) {
+        ctx.addIssue({ code: "custom", path: ["locationName"], message: "validation.required" });
+      }
+    }
+  });
+
 /** First error message per field path, ready to show next to inputs. */
 export function fieldErrors(error: z.ZodError): Record<string, string> {
   const out: Record<string, string> = {};

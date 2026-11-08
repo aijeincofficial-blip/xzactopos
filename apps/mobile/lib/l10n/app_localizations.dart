@@ -2599,6 +2599,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'A sale is in progress ({count, plural, =1{{count} item} other{{count} items}}). If you keep it, it will be paid at {store} and the stock comes off there.'**
   String storeSwitchBody(int count, String store);
+
+  /// No description provided for @upgradeFullSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Full Mode'**
+  String get upgradeFullSection;
+
+  /// No description provided for @upgradeFullTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Upgrade to Full Mode'**
+  String get upgradeFullTitle;
+
+  /// No description provided for @upgradeFullSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add more stores, warehouse, and cashier staff. Your solo data stays 100% intact.'**
+  String get upgradeFullSubtitle;
+
+  /// No description provided for @upgradeFullAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Learn More'**
+  String get upgradeFullAction;
+
+  /// No description provided for @upgradeFullDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Full Mode Upgrade'**
+  String get upgradeFullDialogTitle;
+
+  /// No description provided for @upgradeFullDialogBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Full Mode unlocks multiple branches, a central warehouse, and role-based staff accounts (Cashier, Manager, Supervisor). All your current sales, products, stock, and utang records are safely retained in place.\n\nTo upgrade, open the XZACTO POS web app in any browser and use the Upgrade Wizard.'**
+  String get upgradeFullDialogBody;
+
+  /// No description provided for @upgradeFullClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Got it'**
+  String get upgradeFullClose;
 }
 
 class _AppLocalizationsDelegate

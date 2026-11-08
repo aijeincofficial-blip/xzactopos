@@ -927,5 +927,12 @@
         "type": "String"
       }
     }
-  }
+  },
+  "upgradeFullSection": "Full Mode",
+  "upgradeFullTitle": "Mag-upgrade sa Full Mode",
+  "upgradeFullSubtitle": "Magdagdag ng mga sangay, bodega, at kahera. Mananatili ang lahat ng iyong solo data.",
+  "upgradeFullAction": "Alamin Pa",
+  "upgradeFullDialogTitle": "Full Mode Upgrade",
+  "upgradeFullDialogBody": "Binubuksan ng Full Mode ang maraming tindahan, gitnang bodega, at mga account ng kawani (Kahera, Manager, Supervisor). Ang lahat ng iyong kasalukuyang benta, produkto, stock, at utang ay ligtas na mananatili.\n\nUpang mag-upgrade, buksan ang XZACTO POS web app sa anumang browser at gamitin ang Upgrade Wizard.",
+  "upgradeFullClose": "Naintindihan"
 }

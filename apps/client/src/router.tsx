@@ -19,6 +19,7 @@ import { ProductsPage } from "./routes/products.tsx";
 import { UtangPage } from "./routes/utang.tsx";
 import { ExpensesPage } from "./routes/expenses.tsx";
 import { DayClosePage } from "./routes/day-close.tsx";
+import { UpgradePage } from "./routes/upgrade.tsx";
 import { tenantMode } from "./lib/mode.ts";
 import { useSession } from "./lib/session.tsx";
 import { SetupPage } from "./routes/setup.tsx";
@@ -97,12 +98,13 @@ const products = createRoute({ getParentRoute: () => app, path: "/products", bef
 const utang = createRoute({ getParentRoute: () => app, path: "/utang", beforeLoad: requires("sale.create"), component: UtangPage });
 const expenses = createRoute({ getParentRoute: () => app, path: "/expenses", beforeLoad: requires("shift.manage"), component: ExpensesPage });
 const dayClose = createRoute({ getParentRoute: () => app, path: "/day-close", beforeLoad: requires("shift.manage"), component: DayClosePage });
+const upgrade = createRoute({ getParentRoute: () => app, path: "/upgrade", beforeLoad: requires("tenant.modules"), component: UpgradePage });
 const forbidden = createRoute({ getParentRoute: () => app, path: "/forbidden", component: ForbiddenPage });
 
 const routeTree = root.addChildren([
   home,
   login,
-  app.addChildren([dashboard, setup, sell, sales, products, utang, expenses, dayClose, locations, users, modules, forbidden]),
+  app.addChildren([dashboard, setup, sell, sales, products, utang, expenses, dayClose, upgrade, locations, users, modules, forbidden]),
 ]);
 
 export function makeRouter(queryClient: QueryClient) {

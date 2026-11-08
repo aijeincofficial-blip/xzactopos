@@ -927,5 +927,12 @@
         "type": "String"
       }
     }
-  }
+  },
+  "upgradeFullSection": "Full Mode",
+  "upgradeFullTitle": "Upgrade to Full Mode",
+  "upgradeFullSubtitle": "Add more stores, warehouse, and cashier staff. Your solo data stays 100% intact.",
+  "upgradeFullAction": "Learn More",
+  "upgradeFullDialogTitle": "Full Mode Upgrade",
+  "upgradeFullDialogBody": "Full Mode unlocks multiple branches, a central warehouse, and role-based staff accounts (Cashier, Manager, Supervisor). All your current sales, products, stock, and utang records are safely retained in place.\n\nTo upgrade, open the XZACTO POS web app in any browser and use the Upgrade Wizard.",
+  "upgradeFullClose": "Got it"
 }

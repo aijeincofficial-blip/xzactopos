@@ -1557,4 +1557,27 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return 'A sale is in progress ($_temp0). If you keep it, it will be paid at $store and the stock comes off there.';
   }
+
+  @override
+  String get upgradeFullSection => 'Full Mode';
+
+  @override
+  String get upgradeFullTitle => 'Upgrade to Full Mode';
+
+  @override
+  String get upgradeFullSubtitle =>
+      'Add more stores, warehouse, and cashier staff. Your solo data stays 100% intact.';
+
+  @override
+  String get upgradeFullAction => 'Learn More';
+
+  @override
+  String get upgradeFullDialogTitle => 'Full Mode Upgrade';
+
+  @override
+  String get upgradeFullDialogBody =>
+      'Full Mode unlocks multiple branches, a central warehouse, and role-based staff accounts (Cashier, Manager, Supervisor). All your current sales, products, stock, and utang records are safely retained in place.\n\nTo upgrade, open the XZACTO POS web app in any browser and use the Upgrade Wizard.';
+
+  @override
+  String get upgradeFullClose => 'Got it';
 }

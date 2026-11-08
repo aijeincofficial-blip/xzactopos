@@ -1560,4 +1560,27 @@ class AppLocalizationsFil extends AppLocalizations {
     );
     return 'May benta na isinasagawa ($_temp0). Kapag itinuloy, babayaran ito sa $store at doon ibabawas ang stock.';
   }
+
+  @override
+  String get upgradeFullSection => 'Full Mode';
+
+  @override
+  String get upgradeFullTitle => 'Mag-upgrade sa Full Mode';
+
+  @override
+  String get upgradeFullSubtitle =>
+      'Magdagdag ng mga sangay, bodega, at kahera. Mananatili ang lahat ng iyong solo data.';
+
+  @override
+  String get upgradeFullAction => 'Alamin Pa';
+
+  @override
+  String get upgradeFullDialogTitle => 'Full Mode Upgrade';
+
+  @override
+  String get upgradeFullDialogBody =>
+      'Binubuksan ng Full Mode ang maraming tindahan, gitnang bodega, at mga account ng kawani (Kahera, Manager, Supervisor). Ang lahat ng iyong kasalukuyang benta, produkto, stock, at utang ay ligtas na mananatili.\n\nUpang mag-upgrade, buksan ang XZACTO POS web app sa anumang browser at gamitin ang Upgrade Wizard.';
+
+  @override
+  String get upgradeFullClose => 'Naintindihan';
 }

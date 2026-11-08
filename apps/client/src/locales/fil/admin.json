@@ -10,7 +10,8 @@
     "modules": "Mga module",
     "utang": "Utang",
     "expenses": "Mga gastos",
-    "dayClose": "Pagsara ng araw"
+    "dayClose": "Pagsara ng araw",
+    "upgrade": "Mag-upgrade sa Full"
   },
   "roles": {
     "superadmin": "May-ari",
@@ -381,5 +382,52 @@
     "noHistory": "Walang nakitang nakaraang pagsara ng araw.",
     "opening": "Panimula",
     "expected": "Inaasahan"
+  },
+  "upgrade": {
+    "badge": "Full Mode",
+    "badgeActive": "Aktibo",
+    "soloBannerTitle": "Handa na bang magpalawak? Mag-upgrade sa Full Mode",
+    "soloBannerText": "Buksan ang maraming tindahan, imbentaryo sa bodega, at mga account ng tauhan (kahera, manager, supervisor). Mananatili nang 100% ang iyong solo data.",
+    "soloBannerAction": "Mag-upgrade sa Full",
+    "title": "Mag-upgrade sa Full Mode",
+    "subtitle": "Palaguin ang iyong negosyo gamit ang maraming lokasyon, bodega, at mga tauhan.",
+    "alreadyFullTitle": "Aktibo na ang Full Mode",
+    "alreadyFullText": "Kasalukuyan nang gumagana ang iyong negosyo sa Full Mode. Maaari mong pamahalaan ang mga lokasyon, tauhan, at module sa ibaba.",
+    "goToDashboard": "Pumunta sa Dashboard",
+    "whyUpgrade": "Bakit Mag-uupgrade sa Full Mode?",
+    "features": {
+      "multiStoreTitle": "Maraming Tindahan at Sangay",
+      "multiStoreDesc": "Magpatakbo ng ilang sangay mula sa isang sistema na may hiwalay na drawer count at pagsubaybay sa benta.",
+      "warehouseTitle": "Gitnang Bodega at Paglilipat",
+      "warehouseDesc": "Pamahalaan ang maramihang stock at subaybayan ang paglilipat ng imbentaryo sa pagitan ng mga lokasyon.",
+      "staffTitle": "Mga Tungkulin at Pahintulot ng Tauhan",
+      "staffDesc": "Magdagdag ng mga Kahera, Manager, at Supervisor na may pag-apruba gamit ang PIN at tamang antas ng access.",
+      "shiftsTitle": "Pamamahala ng Shift",
+      "shiftsDesc": "Pang-bawat kaherang shift na may panimulang pera, binilang na pera, at pagsusuri ng diperensya."
+    },
+    "dataSafetyTitle": "100% In-Place Upgrade — Walang Mawawalang Data",
+    "dataSafetyNote": "Lahat ng iyong kasalukuyang produkto, barcode, presyo, antas ng stock, resibo ng benta, utang ledger ng suki, at talaan ng gastos ay mananatiling buo sa parehong account nang walang pagbabago.",
+    "proceedToConfig": "Susunod: I-configure ang Upgrade",
+    "configTitle": "I-configure ang Full Mode Settings",
+    "moduleOptions": "Mga Module na Bubuksan",
+    "enableWarehouse": "Buksan ang Central Warehouse Module",
+    "enableWarehouseDesc": "Nagbibigay-daan sa paglikha ng mga bodega at paglilipat ng imbentaryo.",
+    "addLocationPrompt": "Magdagdag ng karagdagang lokasyon ngayon?",
+    "addLocationHint": "Maaari kang magdagdag ng bodega o pangalawang sangay ngayon, o gawin ito mamaya sa Mga Lokasyon.",
+    "reviewConfirm": "Susunod: Suriin at Kumpirmahin",
+    "confirmTitle": "Suriin at Kumpirmahin ang Upgrade",
+    "business": "Negosyo",
+    "currentMode": "Kasalukuyang Mode",
+    "targetMode": "Bagong Mode",
+    "modeSolo": "Solo Mode",
+    "modeFull": "Full Mode",
+    "modulesEnabled": "Mga Module na Aktibo",
+    "newLocation": "Bagong Lokasyon",
+    "dataRetention": "Pag-iingat ng Data",
+    "allDataRetained": "100% Napanatili Nang Buo",
+    "confirmAction": "Kumpirmahin at Mag-upgrade sa Full",
+    "upgrading": "Ina-upgrade ang negosyo...",
+    "successTitle": "Matagumpay na Na-activate ang Full Mode!",
+    "successText": "Na-upgrade na ang iyong negosyo sa Full Mode. May access ka na ngayon sa pamamahala ng maraming lokasyon at mga tauhan."
   }
 }
