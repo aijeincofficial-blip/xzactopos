@@ -23,13 +23,52 @@ class DayCloseScreen extends StatefulWidget {
 
 class _DayCloseScreenState extends State<DayCloseScreen> {
   final _counted = TextEditingController();
+  final _opening = TextEditingController();
   final _note = TextEditingController();
   bool _recount = false;
+  bool _openingLoaded = false;
   String? _error;
+  Stream<int>? _expectedStream;
+  int _expectedFor = -1;
+
+  /// The expected-cash stream for this opening amount; made again only when the amount changes.
+  Stream<int> _expected(CatalogScope scope, DateTime day, int opening) {
+    if (_expectedStream == null || _expectedFor != opening) {
+      _expectedFor = opening;
+      _expectedStream = scope.store.watchExpectedCash(day, openingCash: opening);
+    }
+    return _expectedStream!;
+  }
+
+  int _openingCents(String ccy) {
+    try {
+      final c = Money.parse(_opening.text.trim().isEmpty ? '0' : _opening.text, ccy).amount;
+      return c < 0 ? 0 : c;
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_openingLoaded) {
+      _openingLoaded = true;
+      final store = CatalogScope.of(context).store;
+      final now = DateTime.now();
+      // start from what was counted at the last close: that cash stayed in the drawer overnight
+      store.defaultOpeningCash(DateTime(now.year, now.month, now.day)).then((c) {
+        if (mounted && _opening.text.isEmpty && c > 0) {
+          setState(() => _opening.text = Money(c, store.baseCurrency).toDecimalString());
+        }
+      });
+    }
+  }
 
   @override
   void dispose() {
     _counted.dispose();
+    _opening.dispose();
     _note.dispose();
     super.dispose();
   }
@@ -58,6 +97,7 @@ class _DayCloseScreenState extends State<DayCloseScreen> {
       id: const Uuid().v7(),
       day: day,
       countedCash: counted,
+      openingCash: _openingCents(scope.store.baseCurrency),
       note: _note.text.trim().isEmpty ? null : _note.text.trim(),
       opId: const Uuid().v7(),
     );
@@ -87,7 +127,7 @@ class _DayCloseScreenState extends State<DayCloseScreen> {
         builder: (context, closeSnap) {
           final last = closeSnap.data;
           return StreamBuilder<int>(
-            stream: scope.store.watchExpectedCash(day),
+            stream: _expected(scope, day, _openingCents(ccy)),
             builder: (context, expSnap) {
               final expected = expSnap.data ?? 0;
               final counted = _parse(ccy);
@@ -110,6 +150,14 @@ class _DayCloseScreenState extends State<DayCloseScreen> {
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: Gap.xl, vertical: Gap.s),
                     child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                      TextField(
+                        key: const Key('close-opening'),
+                        controller: _opening,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        onChanged: (_) => setState(() {}),
+                        decoration: InputDecoration(labelText: t.dayCloseOpening),
+                      ),
+                      const SizedBox(height: Gap.m),
                       TextField(
                         key: const Key('close-counted'),
                         controller: _counted,
@@ -143,6 +191,9 @@ class _DayCloseScreenState extends State<DayCloseScreen> {
                             key: const Key('close-saved-diff'),
                             style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: diffColor(last.difference))),
                         const SizedBox(height: Gap.xs),
+                        if (last.openingCash > 0)
+                          Text(t.dayCloseOpeningLine(money(last.openingCash)),
+                              key: const Key('close-saved-opening'), style: TextStyle(color: scheme.outline, fontSize: 13)),
                         Text(t.dayCloseLast(money(last.countedCash), DateFormat.jm(locale).format(last.closedAt.toLocal())),
                             style: TextStyle(color: scheme.outline, fontSize: 13)),
                         if (last.note != null && last.note!.isNotEmpty)

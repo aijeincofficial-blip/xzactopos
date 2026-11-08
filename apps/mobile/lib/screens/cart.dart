@@ -46,6 +46,17 @@ class Cart extends ChangeNotifier {
     _changed();
   }
 
+  /// A typed amount from the keypad: amounts for the same open-amount product add up on one line (price, quantity 1).
+  void addOpenAmount(ProductView base, int cents) {
+    final i = lines.indexWhere((l) => l.product.variantId == base.variantId);
+    if (i >= 0) {
+      lines[i] = CartLine(lines[i].product.withPrice((lines[i].product.price ?? 0) + cents), 1);
+    } else {
+      lines.add(CartLine(base.withPrice(cents), 1));
+    }
+    _changed();
+  }
+
   void setQty(int index, double qty) {
     if (qty <= 0) {
       lines.removeAt(index);

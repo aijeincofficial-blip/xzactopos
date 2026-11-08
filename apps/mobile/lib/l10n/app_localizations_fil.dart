@@ -1044,7 +1044,8 @@ class AppLocalizationsFil extends AppLocalizations {
   String get dayCloseExpected => 'Dapat nasa kaha';
 
   @override
-  String get dayCloseHelp => 'Cash na benta + bayad sa utang - gastos na cash';
+  String get dayCloseHelp =>
+      'Panimulang cash + cash na benta + bayad sa utang - gastos na cash';
 
   @override
   String get dayCloseCounted => 'Binilang mong cash';
@@ -1499,4 +1500,24 @@ class AppLocalizationsFil extends AppLocalizations {
   String dataSkipped(int count) {
     return '$count ang nilaktawan: gamit na ang barcode';
   }
+
+  @override
+  String get dayCloseOpening => 'Panimulang cash (sukli)';
+
+  @override
+  String dayCloseOpeningLine(String amount) {
+    return 'Nagsimula sa $amount';
+  }
+
+  @override
+  String get keypadAdd => 'Idagdag sa benta';
+
+  @override
+  String get sellModeItems => 'Mga item';
+
+  @override
+  String get sellModeKeypad => 'Keypad';
+
+  @override
+  String get openAmountName => 'Iba pang item';
 }

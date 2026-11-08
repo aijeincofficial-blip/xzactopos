@@ -741,7 +741,7 @@ mixin DriftSales implements SalesStore {
         where s.status = 'completed' and s.sold_at >= ?2
         group by i.variant_id
       ) t on t.variant_id = v.id
-      where p.deleted_at is null and p.active = 1 and pr.price is not null
+      where p.deleted_at is null and p.active = 1 and pr.price is not null and v.sku <> '$openAmountSku'
       order by $pinnedSql desc, coalesce(t.sold, 0) desc, coalesce(p.updated_at, '9999') desc, p.search_name
       limit ?3
       ''',

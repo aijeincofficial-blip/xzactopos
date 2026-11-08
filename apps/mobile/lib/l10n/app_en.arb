@@ -562,7 +562,7 @@
   "approvalRefused": "This approval was refused.",
   "dayCloseTitle": "Close the day",
   "dayCloseExpected": "Cash that should be in the drawer",
-  "dayCloseHelp": "Cash sales + utang payments - cash expenses",
+  "dayCloseHelp": "Opening cash + cash sales + utang payments - cash expenses",
   "dayCloseCounted": "Cash you counted",
   "dayCloseNote": "Note (optional)",
   "dayCloseExact": "Exact. Nothing short or over.",
@@ -887,5 +887,18 @@
         "type": "int"
       }
     }
-  }
+  },
+  "dayCloseOpening": "Cash you started with (sukli)",
+  "dayCloseOpeningLine": "Started with {amount}",
+  "@dayCloseOpeningLine": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "keypadAdd": "Add to sale",
+  "sellModeItems": "Items",
+  "sellModeKeypad": "Keypad",
+  "openAmountName": "Other item"
 }

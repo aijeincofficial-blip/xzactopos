@@ -562,7 +562,7 @@
   "approvalRefused": "Hindi pinayagan ang approval.",
   "dayCloseTitle": "Isara ang araw",
   "dayCloseExpected": "Dapat nasa kaha",
-  "dayCloseHelp": "Cash na benta + bayad sa utang - gastos na cash",
+  "dayCloseHelp": "Panimulang cash + cash na benta + bayad sa utang - gastos na cash",
   "dayCloseCounted": "Binilang mong cash",
   "dayCloseNote": "Paalala (opsyonal)",
   "dayCloseExact": "Tama. Walang kulang o sobra.",
@@ -887,5 +887,18 @@
         "type": "int"
       }
     }
-  }
+  },
+  "dayCloseOpening": "Panimulang cash (sukli)",
+  "dayCloseOpeningLine": "Nagsimula sa {amount}",
+  "@dayCloseOpeningLine": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "keypadAdd": "Idagdag sa benta",
+  "sellModeItems": "Mga item",
+  "sellModeKeypad": "Keypad",
+  "openAmountName": "Iba pang item"
 }

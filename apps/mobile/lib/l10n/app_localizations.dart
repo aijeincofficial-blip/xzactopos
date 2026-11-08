@@ -1817,7 +1817,7 @@ abstract class AppLocalizations {
   /// No description provided for @dayCloseHelp.
   ///
   /// In en, this message translates to:
-  /// **'Cash sales + utang payments - cash expenses'**
+  /// **'Opening cash + cash sales + utang payments - cash expenses'**
   String get dayCloseHelp;
 
   /// No description provided for @dayCloseCounted.
@@ -2503,6 +2503,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count} skipped: barcode already used'**
   String dataSkipped(int count);
+
+  /// No description provided for @dayCloseOpening.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash you started with (sukli)'**
+  String get dayCloseOpening;
+
+  /// No description provided for @dayCloseOpeningLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Started with {amount}'**
+  String dayCloseOpeningLine(String amount);
+
+  /// No description provided for @keypadAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to sale'**
+  String get keypadAdd;
+
+  /// No description provided for @sellModeItems.
+  ///
+  /// In en, this message translates to:
+  /// **'Items'**
+  String get sellModeItems;
+
+  /// No description provided for @sellModeKeypad.
+  ///
+  /// In en, this message translates to:
+  /// **'Keypad'**
+  String get sellModeKeypad;
+
+  /// No description provided for @openAmountName.
+  ///
+  /// In en, this message translates to:
+  /// **'Other item'**
+  String get openAmountName;
 }
 
 class _AppLocalizationsDelegate

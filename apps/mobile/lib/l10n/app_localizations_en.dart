@@ -1036,7 +1036,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dayCloseExpected => 'Cash that should be in the drawer';
 
   @override
-  String get dayCloseHelp => 'Cash sales + utang payments - cash expenses';
+  String get dayCloseHelp =>
+      'Opening cash + cash sales + utang payments - cash expenses';
 
   @override
   String get dayCloseCounted => 'Cash you counted';
@@ -1495,4 +1496,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String dataSkipped(int count) {
     return '$count skipped: barcode already used';
   }
+
+  @override
+  String get dayCloseOpening => 'Cash you started with (sukli)';
+
+  @override
+  String dayCloseOpeningLine(String amount) {
+    return 'Started with $amount';
+  }
+
+  @override
+  String get keypadAdd => 'Add to sale';
+
+  @override
+  String get sellModeItems => 'Items';
+
+  @override
+  String get sellModeKeypad => 'Keypad';
+
+  @override
+  String get openAmountName => 'Other item';
 }

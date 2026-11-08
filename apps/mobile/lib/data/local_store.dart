@@ -15,6 +15,10 @@ abstract class LocalStore implements SalesStore {
   // ---- reads (work offline) ----
   Stream<List<ProductView>> watchProducts({String query = ''});
   Future<ProductView?> findByBarcode(String barcode);
+
+  /// The hidden "open amount" product behind the Sell keypad (a typed amount, no stock count). Made on first use,
+  /// named [name] (in the current language); the same product afterwards.
+  Future<ProductView> openAmountProduct({required String name});
   Future<int> productCount();
 
   // ---- local writes: applied at once, queued for the server in the same transaction ----
@@ -60,6 +64,9 @@ class UnsentChangesException implements Exception {
   @override
   String toString() => 'UnsentChangesException($count)';
 }
+
+/// SKU of the hidden open-amount product (see [LocalStore.openAmountProduct]); left out of quick tiles and search.
+const openAmountSku = 'OPEN-AMOUNT';
 
 class ProductView {
   const ProductView({
@@ -119,6 +126,28 @@ class ProductView {
 
   /// A pack that can be opened into pieces ([SalesStore.openPack]).
   bool get sellsByPiece => breaksIntoVariantId != null && piecesPerPack != null;
+
+  /// The same product at another price (the keypad adds typed amounts onto one line).
+  ProductView withPrice(int newPrice) => ProductView(
+        id: id,
+        variantId: variantId,
+        name: name,
+        unit: unit,
+        sku: sku,
+        barcode: barcode,
+        price: newPrice,
+        currency: currency,
+        photoPath: photoPath,
+        active: active,
+        pending: pending,
+        trackStock: trackStock,
+        taxRate: taxRate,
+        cost: cost,
+        reorderPoint: reorderPoint,
+        breaksIntoVariantId: breaksIntoVariantId,
+        piecesPerPack: piecesPerPack,
+        pieceName: pieceName,
+      );
 }
 
 class ProductDraft {
@@ -133,6 +162,7 @@ class ProductDraft {
     this.cost,
     this.openingQty,
     this.reorderPoint,
+    this.trackStock,
   });
 
   final String id;
@@ -150,6 +180,9 @@ class ProductDraft {
   /// Warn when stock is at or below this; null keeps the current value.
   final double? reorderPoint;
 
+  /// false = no stock count for this product; null keeps the current value (new products count stock).
+  final bool? trackStock;
+
   /// Payload for the upsert_product RPC.
   Map<String, dynamic> toPayload() => {
         'id': id,
@@ -163,6 +196,7 @@ class ProductDraft {
           if (cost != null) 'cost': cost,
           'reorder_point': ?reorderPoint,
         },
+        'track_stock': ?trackStock,
       };
 }
 

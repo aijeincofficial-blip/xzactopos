@@ -12,6 +12,7 @@ import '../sync/store_session.dart';
 import '../sync/sync_badge.dart';
 import '../core/camera_scanner.dart';
 import 'cart.dart';
+import 'keypad_panel.dart';
 import '../data/sales_models.dart';
 import 'pay_screen.dart';
 import 'today_screen.dart';
@@ -37,6 +38,7 @@ class _SellScreenState extends State<SellScreen> {
   Future<List<ProductView>>? _quick;
   Set<String> _pinned = const {};
   String _query = '';
+  bool _keypad = false;
   StreamSubscription<List<ProductView>>? _catalogSub;
 
   @override
@@ -73,6 +75,15 @@ class _SellScreenState extends State<SellScreen> {
         }
       });
     }
+  }
+
+  /// Keypad: a typed amount goes onto the hidden open-amount product (no stock count).
+  Future<void> _addOpenAmount(int cents) async {
+    final t = AppLocalizations.of(context);
+    final scope = CatalogScope.of(context);
+    final base = await scope.store.openAmountProduct(name: t.openAmountName);
+    _cart!.addOpenAmount(base, cents);
+    scope.engine.poke();
   }
 
   /// Long-press on a tile: pin it to the top of the quick items, or unpin it.
@@ -253,14 +264,37 @@ class _SellScreenState extends State<SellScreen> {
                 ),
               ),
             ),
-            Expanded(
-              child: StreamBuilder<Map<String, double>>(
-                stream: scope.store.watchStock(),
-                builder: (context, stockSnap) {
-                  final stock = stockSnap.data ?? const <String, double>{};
-                  return _query.trim().isEmpty ? _tiles(stock) : _results(stock);
-                },
+            if (_query.trim().isEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(Gap.xl, 0, Gap.xl, Gap.xs),
+                child: SegmentedButton<bool>(
+                  key: const Key('sell-mode'),
+                  showSelectedIcon: false,
+                  style: SegmentedButton.styleFrom(visualDensity: VisualDensity.compact),
+                  segments: [
+                    ButtonSegment(value: false, icon: const Icon(Icons.grid_view_rounded, size: 18), label: Text(t.sellModeItems)),
+                    ButtonSegment(value: true, icon: const Icon(Icons.dialpad_rounded, size: 18), label: Text(t.sellModeKeypad)),
+                  ],
+                  selected: {_keypad},
+                  onSelectionChanged: (s) => setState(() => _keypad = s.first),
+                ),
               ),
+            Expanded(
+              child: (_keypad && _query.trim().isEmpty)
+                  ? SingleChildScrollView(
+                      child: KeypadPanel(
+                        currency: scope.store.baseCurrency,
+                        locale: Localizations.localeOf(context).languageCode,
+                        onAdd: _addOpenAmount,
+                      ),
+                    )
+                  : StreamBuilder<Map<String, double>>(
+                      stream: scope.store.watchStock(),
+                      builder: (context, stockSnap) {
+                        final stock = stockSnap.data ?? const <String, double>{};
+                        return _query.trim().isEmpty ? _tiles(stock) : _results(stock);
+                      },
+                    ),
             ),
             ListenableBuilder(
               listenable: cart,
@@ -362,7 +396,7 @@ class _SellScreenState extends State<SellScreen> {
     return StreamBuilder<List<ProductView>>(
       stream: scope.store.watchProducts(query: _query),
       builder: (context, snap) {
-        final items = snap.data;
+        final items = snap.data?.where((p) => p.sku != openAmountSku).toList();
         if (items == null) return const Center(child: CircularProgressIndicator());
         if (items.isEmpty) return Center(child: Text(t.noMatches));
         return ListView.separated(

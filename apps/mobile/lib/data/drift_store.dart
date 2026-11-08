@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
+import 'package:uuid/uuid.dart';
 
 import '../core/search.dart';
 import 'db.dart';
@@ -111,6 +112,26 @@ class DriftStore with DriftSales implements LocalStore {
   }
 
   @override
+  Future<ProductView> openAmountProduct({required String name}) async {
+    final saved = await meta('open_amount_variant');
+    if (saved != null) {
+      final rows = await db.customSelect('$_productSql and v.id = ?2 limit 1',
+          variables: [Variable.withString(_base), Variable.withString(saved)]).get();
+      if (rows.isNotEmpty) return _view(rows.first);
+    }
+    final productId = const Uuid().v7();
+    final variantId = const Uuid().v7();
+    await saveProduct(
+      ProductDraft(id: productId, variantId: variantId, name: name, price: 0, sku: openAmountSku, trackStock: false),
+      opId: const Uuid().v7(),
+    );
+    await setMeta('open_amount_variant', variantId);
+    final rows = await db.customSelect('$_productSql and v.id = ?2 limit 1',
+        variables: [Variable.withString(_base), Variable.withString(variantId)]).get();
+    return _view(rows.first);
+  }
+
+  @override
   Future<int> productCount() async {
     final c = db.products.id.count();
     final q = db.selectOnly(db.products)
@@ -134,6 +155,7 @@ class DriftStore with DriftSales implements LocalStore {
             name: Value(d.name.trim()),
             searchName: Value(searchKey(d.name)),
             unit: Value(d.unit),
+            trackStock: d.trackStock == null ? const Value.absent() : Value(d.trackStock!),
             deletedAt: const Value(null),
           ));
       await db.into(db.variants).insertOnConflictUpdate(VariantsCompanion(
