@@ -1,3 +1,5 @@
+> **ROUTE CHANGED 2026-11-08 (owner): read `docs/START-HERE-full-mode.md` first.** Solo on the phone is done; next is Solo on the web (React, cards W-01 to W-04 in `docs/tasks/W-00-solo-web-and-upgrade.md`), then an in-place "Upgrade to Full" (W-05), then Full in React. The old "Next: F-03 in Flutter" and the Flutter F-03/F-04 items below are **parked**. The numbers, rules and gotchas below are still correct.
+
 # Start here (for Antigravity or any new session)
 
 Rewritten 2026-11-08 when Claude's usage limit was close. Read this first, then `CLAUDE.md` (the rules), then `docs/tasks/F-00-overview-full-mode.md` (the plan). The older notes about Phases 0 to 7 are history; everything below is current.
