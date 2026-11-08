@@ -822,5 +822,70 @@
         "type": "int"
       }
     }
+  },
+  "dataTitle": "Import & export",
+  "dataExportSection": "Export",
+  "dataImportSection": "Import products",
+  "dataImportHint": "Copy rows from a spreadsheet and paste them here. Columns: name, price, barcode, cost, stock.",
+  "dataImportOpen": "Paste products",
+  "dataImportTemplate": "Copy the column names",
+  "dataTemplateCopied": "Column names copied. Paste them into a spreadsheet.",
+  "dataImportPaste": "Paste the rows here",
+  "dataTooMany": "Only the first 500 rows are read at a time. Import the rest in another batch.",
+  "dataProbName": "name is missing",
+  "dataProbPrice": "price is not a number",
+  "dataProbCost": "cost is not a number",
+  "dataProbStock": "stock is not a number",
+  "exportProducts": "Products",
+  "dataImportReady": "{count, plural, =1{{count} product ready} other{{count} products ready}}",
+  "@dataImportReady": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dataImportProblems": "{count, plural, =1{{count} row has a problem and is left out} other{{count} rows have a problem and are left out}}",
+  "@dataImportProblems": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dataImportLine": "Row {line}: {problem}",
+  "@dataImportLine": {
+    "placeholders": {
+      "line": {
+        "type": "int"
+      },
+      "problem": {
+        "type": "String"
+      }
+    }
+  },
+  "dataImportGo": "Import {count}",
+  "@dataImportGo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dataImported": "{count, plural, =1{{count} product added} other{{count} products added}}",
+  "@dataImported": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dataSkipped": "{count} skipped: barcode already used",
+  "@dataSkipped": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   }
 }

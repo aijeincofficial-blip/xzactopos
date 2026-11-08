@@ -822,5 +822,70 @@
         "type": "int"
       }
     }
+  },
+  "dataTitle": "I-import at i-export",
+  "dataExportSection": "I-export",
+  "dataImportSection": "Mag-import ng produkto",
+  "dataImportHint": "Kopyahin ang mga row mula sa spreadsheet at i-paste dito. Mga column: name, price, barcode, cost, stock.",
+  "dataImportOpen": "I-paste ang produkto",
+  "dataImportTemplate": "Kopyahin ang mga column",
+  "dataTemplateCopied": "Nakopya ang mga column. I-paste sa spreadsheet.",
+  "dataImportPaste": "I-paste dito ang mga row",
+  "dataTooMany": "Unang 500 row lang ang binabasa kada batch. I-import ang iba sa susunod.",
+  "dataProbName": "walang pangalan",
+  "dataProbPrice": "hindi numero ang presyo",
+  "dataProbCost": "hindi numero ang puhunan",
+  "dataProbStock": "hindi numero ang stock",
+  "exportProducts": "Mga produkto",
+  "dataImportReady": "{count, plural, other{{count} produkto ang handa}}",
+  "@dataImportReady": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dataImportProblems": "{count, plural, other{{count} row ang may problema at hindi isasama}}",
+  "@dataImportProblems": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dataImportLine": "Row {line}: {problem}",
+  "@dataImportLine": {
+    "placeholders": {
+      "line": {
+        "type": "int"
+      },
+      "problem": {
+        "type": "String"
+      }
+    }
+  },
+  "dataImportGo": "I-import ang {count}",
+  "@dataImportGo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dataImported": "{count, plural, other{Nadagdag ang {count} produkto}}",
+  "@dataImported": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dataSkipped": "{count} ang nilaktawan: gamit na ang barcode",
+  "@dataSkipped": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   }
 }

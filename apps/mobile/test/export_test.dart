@@ -58,23 +58,23 @@ void main() {
     });
   });
 
-  testWidgets('Settings exports sales, utang and stock through the sharer', (tester) async {
+  testWidgets('Import & export sends products, sales, utang and stock through the sharer', (tester) async {
     final fake = FakeSharer();
     csvSharer = fake;
     addTearDown(() => csvSharer = const SystemCsvSharer());
     await openHome(tester);
     await tester.tap(find.byKey(const Key('tab-more')));
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.byKey(const Key('tile-settings')));
+    await tester.ensureVisible(find.byKey(const Key('tile-data')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('tile-settings')));
+    await tester.tap(find.byKey(const Key('tile-data')));
     await tester.pumpAndSettle();
-    for (final k in ['export-sales', 'export-utang', 'export-stock']) {
+    for (final k in ['export-products', 'export-sales', 'export-utang', 'export-stock']) {
       await tester.ensureVisible(find.byKey(Key(k)));
       await tester.tap(find.byKey(Key(k)));
       await tester.pumpAndSettle();
     }
-    expect(fake.files.keys.map((f) => f.split('-').first).toSet(), {'sales', 'utang', 'stock'});
+    expect(fake.files.keys.map((f) => f.split('-').first).toSet(), {'products', 'sales', 'utang', 'stock'});
     expect(fake.files.keys.every((f) => f.endsWith('.csv')), isTrue);
     expect(fake.files.values.every((c) => c.contains(',')), isTrue);
     await leave(tester);

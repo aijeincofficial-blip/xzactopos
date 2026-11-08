@@ -52,7 +52,7 @@ void main() {
     await openHome(tester);
     await tester.tap(find.byKey(const Key('tab-more')));
     await tester.pumpAndSettle();
-    for (final k in ['tile-products', 'tile-restock', 'more-today', 'more-expenses', 'more-services', 'more-close-day', 'tile-settings']) {
+    for (final k in ['tile-products', 'tile-restock', 'more-today', 'more-expenses', 'more-services', 'more-close-day', 'tile-data', 'tile-settings']) {
       await tester.ensureVisible(find.byKey(Key(k)));
       expect(find.byKey(Key(k)), findsOneWidget, reason: k);
     }

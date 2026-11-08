@@ -52,6 +52,23 @@ String stockCsv(List<StockRow> rows) => [
         ]),
     ].join('\r\n');
 
+/// The column line of the product import and export (paste it into a spreadsheet to start a list).
+const productsCsvHeader = 'name,price,barcode,cost,stock,unit';
+
+/// Products in the same columns the import reads, so an export can be edited and pasted back.
+String productsCsv(List<StockRow> rows, String currency) => [
+      productsCsvHeader,
+      for (final r in rows)
+        csvRow([
+          r.product.name,
+          r.product.price == null ? '' : _plain(r.product.price!, currency),
+          r.product.barcode ?? '',
+          r.product.cost > 0 ? _plain(r.product.cost, currency) : '',
+          r.qty == null ? '' : _qty(r.qty!),
+          r.product.unit,
+        ]),
+    ].join('\r\n');
+
 String _qty(double q) => q == q.roundToDouble() ? q.toInt().toString() : q.toString();
 
 /// Where an exported file goes. The default opens the system share sheet; tests replace it.

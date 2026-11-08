@@ -1402,4 +1402,97 @@ class AppLocalizationsEn extends AppLocalizations {
   String tileStockExpiring(int count) {
     return '$count expiring';
   }
+
+  @override
+  String get dataTitle => 'Import & export';
+
+  @override
+  String get dataExportSection => 'Export';
+
+  @override
+  String get dataImportSection => 'Import products';
+
+  @override
+  String get dataImportHint =>
+      'Copy rows from a spreadsheet and paste them here. Columns: name, price, barcode, cost, stock.';
+
+  @override
+  String get dataImportOpen => 'Paste products';
+
+  @override
+  String get dataImportTemplate => 'Copy the column names';
+
+  @override
+  String get dataTemplateCopied =>
+      'Column names copied. Paste them into a spreadsheet.';
+
+  @override
+  String get dataImportPaste => 'Paste the rows here';
+
+  @override
+  String get dataTooMany =>
+      'Only the first 500 rows are read at a time. Import the rest in another batch.';
+
+  @override
+  String get dataProbName => 'name is missing';
+
+  @override
+  String get dataProbPrice => 'price is not a number';
+
+  @override
+  String get dataProbCost => 'cost is not a number';
+
+  @override
+  String get dataProbStock => 'stock is not a number';
+
+  @override
+  String get exportProducts => 'Products';
+
+  @override
+  String dataImportReady(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count products ready',
+      one: '$count product ready',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dataImportProblems(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count rows have a problem and are left out',
+      one: '$count row has a problem and is left out',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dataImportLine(int line, String problem) {
+    return 'Row $line: $problem';
+  }
+
+  @override
+  String dataImportGo(int count) {
+    return 'Import $count';
+  }
+
+  @override
+  String dataImported(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count products added',
+      one: '$count product added',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dataSkipped(int count) {
+    return '$count skipped: barcode already used';
+  }
 }

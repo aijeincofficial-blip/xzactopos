@@ -8,6 +8,7 @@ import '../data/sales_models.dart';
 import '../l10n/app_localizations.dart';
 import '../sync/store_session.dart';
 import '../sync/sync_badge.dart';
+import 'data_screen.dart';
 import 'day_close_screen.dart';
 import 'expenses_screen.dart';
 import 'products_screen.dart';
@@ -201,6 +202,8 @@ class MoreScreen extends StatelessWidget {
           row('more-services', Icons.swap_horiz_rounded, scheme.secondary, t.servicesTitle, page: () => ServicesScreen(backend: backend)),
           if (scope.canManageStock)
             row('more-close-day', Icons.lock_clock_rounded, scheme.primary, t.dayCloseTitle, page: () => DayCloseScreen(backend: backend)),
+          if (scope.canManageStock)
+            row('tile-data', Icons.import_export_rounded, scheme.secondary, t.dataTitle, page: () => const DataScreen()),
           row('tile-settings', Icons.settings_rounded, scheme.outline, t.settingsTitle,
               page: () => SettingsScreen(backend: backend, storeName: storeName)),
         ]),

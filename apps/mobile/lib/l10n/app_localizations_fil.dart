@@ -1409,4 +1409,94 @@ class AppLocalizationsFil extends AppLocalizations {
   String tileStockExpiring(int count) {
     return '$count malapit mag-expire';
   }
+
+  @override
+  String get dataTitle => 'I-import at i-export';
+
+  @override
+  String get dataExportSection => 'I-export';
+
+  @override
+  String get dataImportSection => 'Mag-import ng produkto';
+
+  @override
+  String get dataImportHint =>
+      'Kopyahin ang mga row mula sa spreadsheet at i-paste dito. Mga column: name, price, barcode, cost, stock.';
+
+  @override
+  String get dataImportOpen => 'I-paste ang produkto';
+
+  @override
+  String get dataImportTemplate => 'Kopyahin ang mga column';
+
+  @override
+  String get dataTemplateCopied =>
+      'Nakopya ang mga column. I-paste sa spreadsheet.';
+
+  @override
+  String get dataImportPaste => 'I-paste dito ang mga row';
+
+  @override
+  String get dataTooMany =>
+      'Unang 500 row lang ang binabasa kada batch. I-import ang iba sa susunod.';
+
+  @override
+  String get dataProbName => 'walang pangalan';
+
+  @override
+  String get dataProbPrice => 'hindi numero ang presyo';
+
+  @override
+  String get dataProbCost => 'hindi numero ang puhunan';
+
+  @override
+  String get dataProbStock => 'hindi numero ang stock';
+
+  @override
+  String get exportProducts => 'Mga produkto';
+
+  @override
+  String dataImportReady(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count produkto ang handa',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dataImportProblems(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count row ang may problema at hindi isasama',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dataImportLine(int line, String problem) {
+    return 'Row $line: $problem';
+  }
+
+  @override
+  String dataImportGo(int count) {
+    return 'I-import ang $count';
+  }
+
+  @override
+  String dataImported(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Nadagdag ang $count produkto',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dataSkipped(int count) {
+    return '$count ang nilaktawan: gamit na ang barcode';
+  }
 }

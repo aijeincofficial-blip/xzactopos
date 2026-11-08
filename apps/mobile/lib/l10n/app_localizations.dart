@@ -2383,6 +2383,126 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count} expiring'**
   String tileStockExpiring(int count);
+
+  /// No description provided for @dataTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Import & export'**
+  String get dataTitle;
+
+  /// No description provided for @dataExportSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Export'**
+  String get dataExportSection;
+
+  /// No description provided for @dataImportSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Import products'**
+  String get dataImportSection;
+
+  /// No description provided for @dataImportHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy rows from a spreadsheet and paste them here. Columns: name, price, barcode, cost, stock.'**
+  String get dataImportHint;
+
+  /// No description provided for @dataImportOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste products'**
+  String get dataImportOpen;
+
+  /// No description provided for @dataImportTemplate.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy the column names'**
+  String get dataImportTemplate;
+
+  /// No description provided for @dataTemplateCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Column names copied. Paste them into a spreadsheet.'**
+  String get dataTemplateCopied;
+
+  /// No description provided for @dataImportPaste.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste the rows here'**
+  String get dataImportPaste;
+
+  /// No description provided for @dataTooMany.
+  ///
+  /// In en, this message translates to:
+  /// **'Only the first 500 rows are read at a time. Import the rest in another batch.'**
+  String get dataTooMany;
+
+  /// No description provided for @dataProbName.
+  ///
+  /// In en, this message translates to:
+  /// **'name is missing'**
+  String get dataProbName;
+
+  /// No description provided for @dataProbPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'price is not a number'**
+  String get dataProbPrice;
+
+  /// No description provided for @dataProbCost.
+  ///
+  /// In en, this message translates to:
+  /// **'cost is not a number'**
+  String get dataProbCost;
+
+  /// No description provided for @dataProbStock.
+  ///
+  /// In en, this message translates to:
+  /// **'stock is not a number'**
+  String get dataProbStock;
+
+  /// No description provided for @exportProducts.
+  ///
+  /// In en, this message translates to:
+  /// **'Products'**
+  String get exportProducts;
+
+  /// No description provided for @dataImportReady.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{{count} product ready} other{{count} products ready}}'**
+  String dataImportReady(int count);
+
+  /// No description provided for @dataImportProblems.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{{count} row has a problem and is left out} other{{count} rows have a problem and are left out}}'**
+  String dataImportProblems(int count);
+
+  /// No description provided for @dataImportLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Row {line}: {problem}'**
+  String dataImportLine(int line, String problem);
+
+  /// No description provided for @dataImportGo.
+  ///
+  /// In en, this message translates to:
+  /// **'Import {count}'**
+  String dataImportGo(int count);
+
+  /// No description provided for @dataImported.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{{count} product added} other{{count} products added}}'**
+  String dataImported(int count);
+
+  /// No description provided for @dataSkipped.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} skipped: barcode already used'**
+  String dataSkipped(int count);
 }
 
 class _AppLocalizationsDelegate
