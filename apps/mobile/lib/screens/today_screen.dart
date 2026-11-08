@@ -12,6 +12,7 @@ import '../sync/sync_badge.dart';
 import 'day_close_screen.dart';
 import 'expenses_screen.dart';
 import 'receipt_screen.dart';
+import 'store_picker.dart';
 import 'services_screen.dart';
 
 enum SalesPeriodFilter {
@@ -97,7 +98,7 @@ class _TodayScreenState extends State<TodayScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(t.todayTitle),
-        actions: const [SyncBadge()],
+        actions: const [StoreChip(), SyncBadge()],
       ),
       body: StreamBuilder<List<SaleSummary>>(
         stream: scope.store.watchSales(limit: 500),

@@ -1,4 +1,4 @@
-# F-01 Store scoping (data layer DONE; picker UI open)
+# F-01 Store scoping (data layer DONE; picker UI DONE)
 
 First Full-mode card (`F-00-overview-full-mode.md`, solo limitations 1, 2 and the store half of 7; gap B3). A tenant may
 now have several stores. This card is the SERVER + Flutter DATA LAYER only (Opus). No screen, no ARB string was changed.
@@ -142,3 +142,10 @@ Changed expectations: `utang_due_test` v8 upgrade and `stock_ops_test` v4 upgrad
 4. Utang payment sheet: a cash / e-wallet choice that passes `method:` to `recordUtangPayment` (default cash).
 5. ARB keys (en + fil) for the picker title, store names come from the server.
 6. Optional: show the store on receipts / ledger rows when the user has several stores.
+
+## Picker step: done (Sonnet)
+`lib/screens/store_picker.dart`: `StoreChip` (shows the active store's name, only when the user has more than one store; in the
+Sell and Today app bars and under the store name in More) and `showStorePicker` (bottom sheet, snackbar "Now selling at X").
+Sell re-reads its top sellers when the store changes. `askSupervisorApproval` takes `locationId`; `retryWithApproval` passes the
+refused op's `location_id`. The utang payment dialog has a Cash / GCash-Maya choice that goes to `recordUtangPayment(method:)`.
+Tests: `test/store_picker_test.dart` (6). Not done: store name on receipts and ledger rows (optional, item 6).

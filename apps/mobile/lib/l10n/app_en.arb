@@ -904,5 +904,14 @@
   "sellModeKeypad": "Keypad",
   "openAmountName": "Other item",
   "payWalletTitle": "Which wallet?",
-  "noProductsHere": "You have no products yet. Add one, or import a list under More > Import & export."
+  "noProductsHere": "You have no products yet. Add one, or import a list under More > Import & export.",
+  "storePickerTitle": "Switch store",
+  "storeSwitched": "Now selling at {name}",
+  "@storeSwitched": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  }
 }

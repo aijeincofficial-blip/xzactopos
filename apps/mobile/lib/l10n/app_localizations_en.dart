@@ -1529,4 +1529,12 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get noProductsHere =>
       'You have no products yet. Add one, or import a list under More > Import & export.';
+
+  @override
+  String get storePickerTitle => 'Switch store';
+
+  @override
+  String storeSwitched(String name) {
+    return 'Now selling at $name';
+  }
 }

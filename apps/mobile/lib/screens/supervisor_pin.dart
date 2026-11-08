@@ -21,6 +21,7 @@ Future<String?> askSupervisorApproval(
   Backend backend, {
   required String action,
   required String refId,
+  String? locationId,
 }) {
   final t = AppLocalizations.of(context);
   final pin = TextEditingController();
@@ -55,7 +56,7 @@ Future<String?> askSupervisorApproval(
                       error = null;
                     });
                     try {
-                      final r = await backend.approveSupervisorAction(action: action, refId: refId, pin: pin.text.trim());
+                      final r = await backend.approveSupervisorAction(action: action, refId: refId, pin: pin.text.trim(), locationId: locationId);
                       if (r.ok) {
                         if (ctx.mounted) Navigator.pop(ctx, r.approvalId);
                         return;
@@ -91,7 +92,9 @@ Future<void> retryWithApproval(BuildContext context, Backend backend, String ent
   final failed = (await scope.store.failedOps()).where((o) => o.entityId == entityId && needsApproval(o.lastError));
   if (failed.isEmpty || !context.mounted) return;
   final op = failed.first;
-  final approval = await askSupervisorApproval(context, backend, action: op.kind, refId: entityId);
+  // the refused op knows its store; a supervisor with several stores needs it named
+  final approval = await askSupervisorApproval(context, backend,
+      action: op.kind, refId: entityId, locationId: op.payload['location_id'] as String?);
   if (approval == null) return;
   await scope.store.requeueWithApproval(opId: op.opId, approvalId: approval);
   scope.engine.poke();

@@ -212,12 +212,24 @@ class CustomerScreen extends StatelessWidget {
     final amount = TextEditingController(text: c.balance > 0 ? Money(c.balance, ccy).toDecimalString() : '');
     final note = TextEditingController();
     String? error;
+    var method = 'cash'; // how she paid: cash goes in the drawer, e-wallet does not
     final result = await showDialog<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setState) => AlertDialog(
           title: Text(t.utangPayTitle(c.name)),
           content: Column(mainAxisSize: MainAxisSize.min, children: [
+            SegmentedButton<String>(
+              key: const Key('utang-method'),
+              showSelectedIcon: false,
+              segments: [
+                ButtonSegment(value: 'cash', label: Text(t.payCash)),
+                ButtonSegment(value: 'ewallet', label: Text(t.payEwallet)),
+              ],
+              selected: {method},
+              onSelectionChanged: (s) => setState(() => method = s.first),
+            ),
+            const SizedBox(height: 8),
             TextField(
               key: const Key('utang-amount'),
               controller: amount,
@@ -260,6 +272,7 @@ class CustomerScreen extends StatelessWidget {
       customerId: c.id,
       amount: Money.parse(amount.text, ccy).amount,
       note: note.text.trim().isEmpty ? null : note.text.trim(),
+      method: method,
       opId: const Uuid().v7(),
     );
     scope.engine.poke();

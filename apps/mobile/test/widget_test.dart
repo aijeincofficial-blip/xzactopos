@@ -86,6 +86,7 @@ class FakeBackend implements Backend {
   String? pinSet;
   bool offline = false;
   final approvalCalls = <(String action, String refId)>[];
+  final approvalLocations = <String?>[]; // the store each approval was asked for
   var _approvals = 0;
   @override
   Future<PinResult> setMyPin(String newPin, {String? currentPin}) async {
@@ -107,6 +108,7 @@ class FakeBackend implements Backend {
   }) async {
     if (offline) throw Exception('no signal');
     approvalCalls.add((action, refId));
+    approvalLocations.add(locationId);
     if (pinSet == null) return const ApprovalResult.refused('pin_not_set');
     if (pin != pinSet) return const ApprovalResult.refused('pin_wrong');
     _approvals++;

@@ -12,6 +12,7 @@ import '../sync/store_session.dart';
 import '../sync/sync_badge.dart';
 import '../core/camera_scanner.dart';
 import 'cart.dart';
+import 'store_picker.dart';
 import '../data/sales_models.dart';
 import 'pay_screen.dart';
 import 'today_screen.dart';
@@ -38,10 +39,12 @@ class _SellScreenState extends State<SellScreen> {
   Set<String> _pinned = const {};
   String _query = '';
   StreamSubscription<List<ProductView>>? _catalogSub;
+  StreamSubscription<String?>? _storeSub;
 
   @override
   void dispose() {
     _catalogSub?.cancel();
+    _storeSub?.cancel();
     _search.dispose();
     _searchFocus.dispose();
     _cart?.dispose();
@@ -57,6 +60,20 @@ class _SellScreenState extends State<SellScreen> {
       _quick = store.quickItems();
       store.pinnedVariants().then((p) {
         if (mounted) setState(() => _pinned = p);
+      });
+      // top sellers are per store: read them again when the store is switched
+      var firstStore = true;
+      _storeSub = store.watchActiveStore().listen((_) {
+        if (firstStore) {
+          firstStore = false;
+          return;
+        }
+        if (mounted) {
+          final next = store.quickItems();
+          setState(() {
+            _quick = next;
+          });
+        }
       });
       // Sell stays alive in its tab: products that arrive later (the first sync, an edit) must show up here
       var first = true;
@@ -220,6 +237,7 @@ class _SellScreenState extends State<SellScreen> {
                     onPressed: _confirmClear,
                   ),
           ),
+          const StoreChip(),
           const SyncBadge(),
         ],
       ),

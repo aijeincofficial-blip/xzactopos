@@ -904,5 +904,14 @@
   "sellModeKeypad": "Keypad",
   "openAmountName": "Iba pang item",
   "payWalletTitle": "Anong wallet?",
-  "noProductsHere": "Wala ka pang produkto. Magdagdag ng isa, o mag-import ng listahan sa Iba pa > I-import at i-export."
+  "noProductsHere": "Wala ka pang produkto. Magdagdag ng isa, o mag-import ng listahan sa Iba pa > I-import at i-export.",
+  "storePickerTitle": "Palitan ang tindahan",
+  "storeSwitched": "Nagbebenta na sa {name}",
+  "@storeSwitched": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  }
 }

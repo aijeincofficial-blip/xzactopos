@@ -1533,4 +1533,12 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String get noProductsHere =>
       'Wala ka pang produkto. Magdagdag ng isa, o mag-import ng listahan sa Iba pa > I-import at i-export.';
+
+  @override
+  String get storePickerTitle => 'Palitan ang tindahan';
+
+  @override
+  String storeSwitched(String name) {
+    return 'Nagbebenta na sa $name';
+  }
 }

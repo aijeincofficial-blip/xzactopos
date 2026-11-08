@@ -2563,6 +2563,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You have no products yet. Add one, or import a list under More > Import & export.'**
   String get noProductsHere;
+
+  /// No description provided for @storePickerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch store'**
+  String get storePickerTitle;
+
+  /// No description provided for @storeSwitched.
+  ///
+  /// In en, this message translates to:
+  /// **'Now selling at {name}'**
+  String storeSwitched(String name);
 }
 
 class _AppLocalizationsDelegate

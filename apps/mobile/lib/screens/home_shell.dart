@@ -18,6 +18,7 @@ import 'sell_screen.dart';
 import 'services_screen.dart';
 import 'settings_screen.dart';
 import 'stock_screen.dart';
+import 'store_picker.dart';
 import 'today_screen.dart';
 import 'utang_screen.dart';
 
@@ -237,6 +238,7 @@ class MoreScreen extends StatelessWidget {
                   ),
                 ],
               ),
+              const Align(alignment: Alignment.centerLeft, child: StoreChip()),
               const SizedBox(height: Gap.l),
               GridView.count(
                 crossAxisCount: 2,
