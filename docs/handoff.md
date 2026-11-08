@@ -3,6 +3,13 @@
 Updated at the end of every task. Read this first in a fresh session. New session or a different tool (Antigravity)? Start with `docs/START-HERE-antigravity.md`.
 
 ## Status
+- **Solo on the Web & Upgrade to Full (W-01 to W-05) DONE (2026-11-08):**
+  - **W-01 (`259cdd9`):** Web shell & Today screen from rollups.
+  - **W-02 (`2cf8f20`, `34bf57b`):** Sell on web (cart, discounts, cash/e-wallet/utang, split pay, sales list, receipt, void).
+  - **W-03 (`8112fb4`):** Products & stock (catalog, prices, stock-in, count corrections, opening stock).
+  - **W-04 (`8542b2c`):** Utang payments, pay-by dates, expenses list/record/void with approvals, daily drawer reconciliation & close history.
+  - **W-05 (`6dc19be`):** Upgrade to Full mode wizard (`/app/upgrade`), Today screen banner, mobile Settings entry, 100% data preservation verified in PostgreSQL.
+  - Next: Full mode React cards (`F-04`+ / `W-06`+).
 - **Full mode started (2026-11-08):** F-01 store scoping and F-02 server sale number + devices are done; F-03 (tenant settings + mode switch) is next. Handoff for a new session or tool: `docs/START-HERE-antigravity.md` (rewritten today).
 - **Solo mode is wrapped up (2026-11-08).** Phases 0 to 8 plus the tabs revamp, keypad, opening cash, e-wallet float, import/export are done; acceptance and open findings: `docs/tasks/P8-13-acceptance.md`. Full mode is planned in `docs/tasks/F-00-overview-full-mode.md`; **F-01 store scoping: data layer done** (section near the end), picker UI done; **F-02 server sale number and devices: data layer done**, receipt/Today display next. Branch `claude/phase3-sell-8261d3` holds all of it, not pushed, not merged to `main`.
 - Phase 0 (Foundation): done, committed (6d59c99).
