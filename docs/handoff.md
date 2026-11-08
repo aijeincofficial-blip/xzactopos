@@ -535,3 +535,10 @@ Read `docs/START-HERE-claude.md` for the complete handoff from Antigravity.
 - No server change. client typecheck, lint and vitest (24 tests) pass; full pnpm check not run (no SQL touched). Not yet checked in a browser against the local stack.
 - Known gap: an owner with staff but nothing else still derives as Solo (access has no staff count). A stored mode flag can replace tenantMode() later.
 - Next: W-02 Sell.
+
+## W-02 (part 1): Sell on the web (2026-11-08)
+- apps/client: Sell screen (src/routes/sell.tsx, route /app/sell, nav entry for anyone with sale.create): catalog search (name/SKU/barcode, Enter adds an exact barcode/SKU), cart with fractional qty, discount, cash (with change) or e-wallet (gcash/maya/other + reference), receipt confirmation showing the server sale number.
+- src/lib/sale-math.ts ports the phone's SaleLine math (qty in thousandths, half-up line total, tax-inclusive line tax) and builds the ecord_sale payload; src/lib/sell-api.ts loads the catalog via sync_pull_catalog, keeps a stable web device id + receipt counter in localStorage, egister_device, and sends the sale with sync_push (same op id on retry; retries a clashing provisional number up to 3 times).
+- Verified: client typecheck, lint, vitest 38 tests (5000 seeded random lines vs a BigInt reference, 500 seeded random payloads; mutation-checked by breaking the rounding and the tax half-up, both caught). Checked against the local server in a rolled-back transaction: both payload kinds accepted, sale_no issued, totals and tax equal, replay recognised, stock and GCash float moved. Not yet clicked through in a browser.
+- NOT done yet in W-02: utang (needs customers: pick/create via upsert_customer), void/refund, split payments, a receipt reprint view. Tax mode: lines carry tax-inclusive tax from the product tax_rate like the phone; no tenant tax_mode logic yet.
+- Stock can go negative: the server does not block selling below zero (existing behaviour, unchanged).

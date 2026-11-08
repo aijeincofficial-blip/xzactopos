@@ -30,6 +30,10 @@ Solo and Full are one app and one backend, not two products. The mode (`tenant_m
 - `apps/client` today: React 19, TanStack Router + Query, supabase-js, i18next (en + fil), zod, Tailwind; online only; routes `/app`, `/app/setup`, `/app/locations`, `/app/users`, `/app/modules`; no selling, stock, utang or reports screens.
 - Worktree: always work in `C:\Users\USER\xzactopos\.claude\worktrees\phase3-sell-8261d3` (branch `claude/phase3-sell-8261d3`). The repo root folder is on an old branch.
 
+## Known gaps to revisit later (owner agreed to defer)
+- **Mode derivation (W-01):** `tenantMode()` in `apps/client/src/lib/mode.ts` derives Solo/Full from the access payload. An owner who added staff but nothing else still reads as Solo because the payload has no staff count. Fix later with a stored mode flag (migration + pgTAP + set by the W-05 upgrade) or by adding a staff count to `get_my_access`.
+- **Web Solo is online-first** (see decisions log); offline on web is not planned.
+
 ## Status of work
 - Done: Solo (phone), F-01 store scoping, F-02 server sale number + devices, plans W-00 and F-00 updated.
 - Next: W-01.
