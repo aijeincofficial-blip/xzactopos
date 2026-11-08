@@ -9,14 +9,18 @@ Updated at the end of every task. Read this first in a fresh session. New sessio
   - **W-03 (`8112fb4`):** Products & stock (catalog, prices, stock-in, count corrections, opening stock).
   - **W-04 (`8542b2c`):** Utang payments, pay-by dates, expenses list/record/void with approvals, daily drawer reconciliation & close history.
   - **W-05 (`6dc19be`):** Upgrade to Full mode wizard (`/app/upgrade`), Today screen banner, mobile Settings entry, 100% data preservation verified in PostgreSQL.
-- **Full mode (React-first) In Progress (2026-11-08):**
+- **Full mode (React-first) Foundation Completed (2026-11-08):**
   - **F-01 (`70b6d2e`):** Store scoping & multi-store data foundation (done).
   - **F-02 (`fa36fc0`):** Server sale number & device registry (done).
   - **F-03 (`6eaa150`):** Tenant business settings, quotas, and receipt styling (done).
   - **F-04 (`f2ef69d`):** Staff management in React: email invites, cashier creation, multi-store positions, supervisor PIN management (done).
   - **F-01w (`57bda42`):** Store scoping & active store switcher in React web across all operational screens (done).
-  - **F-05:** Shifts and drawer reconciliation with X-Report (interim reading) & Z-Report (final shift close), cashier mapping, and discrepancy filtering (done).
-  - Next: F-08 / F-09 (Warehouse & Inter-Store Transfers) or F-10 (Multi-store reporting).
+  - **F-05 (`598572d`):** Shifts and drawer reconciliation with X-Report (interim reading) & Z-Report (final shift close), cashier mapping, and discrepancy filtering (done).
+  - **F-08 (`34dac48`):** Warehouse and inter-store stock transfers in React (draft, send, receive with discrepancy detection, in-transit aging) (done).
+  - **F-10 (`7f597f0`):** Multi-store reports & analytics in React: store comparison, payment tenders, top products, daily trends, transfers summary (done).
+  - **F-07 (`39c3ffd`):** Sales controls, role-based discounts & void thresholds, supervisor overrides (done).
+  - **F-06 (`dce0a2c`):** Offline PIN delivery (`pull_offline_pins`), offline approval verification on sync, refused op auditing (`op.refused`) (done).
+  - **F-09 (`744d326`):** Warehouse bins, zones, put-away, walking-route pick lists, bin stock = warehouse stock invariant validation (done).
 - **Full mode started (2026-11-08):** F-01 store scoping and F-02 server sale number + devices are done; F-03 (tenant settings + mode switch) is next. Handoff for a new session or tool: `docs/START-HERE-antigravity.md` (rewritten today).
 - **Solo mode is wrapped up (2026-11-08).** Phases 0 to 8 plus the tabs revamp, keypad, opening cash, e-wallet float, import/export are done; acceptance and open findings: `docs/tasks/P8-13-acceptance.md`. Full mode is planned in `docs/tasks/F-00-overview-full-mode.md`; **F-01 store scoping: data layer done** (section near the end), picker UI done; **F-02 server sale number and devices: data layer done**, receipt/Today display next. Branch `claude/phase3-sell-8261d3` holds all of it, not pushed, not merged to `main`.
 - Phase 0 (Foundation): done, committed (6d59c99).
