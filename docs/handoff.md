@@ -3,6 +3,9 @@
 Updated at the end of every task. Read this first in a fresh session. New session or a different tool (Antigravity)? Start with `docs/START-HERE-antigravity.md`.
 
 ## Status
+- **Track 1 Mobile Adaptation Completed (2026-11-09):**
+  - **F-06 mobile (`7b24cca`):** Offline supervisor PIN verification utility (`apps/mobile/lib/core/pin.dart`), PBKDF2 hash checking matching Supabase/`@pos/core`, local store offline PIN caching per location, seamless online-to-offline PIN fallback, and outbox op requeue with offline approval payload for sync replay. Tests in `pin_test.dart` and `supervisor_pin_test.dart` all passing.
+  - **F-04 mobile (`631a0e2`):** Role-based navigation and staff permission guards in Flutter: `CatalogScope` role context (`role`, `isCashier`, `isWarehouse`, `isAdminOrSuperadmin`), warehouse role stock management permissions, cashier restriction guards (hiding expenses and day close on TodayScreen, hiding upgrade card in Settings). Tests in `role_permissions_test.dart`, `reports_test.dart`, and `stock_screen_test.dart` all passing.
 - **Solo on the Web & Upgrade to Full (W-01 to W-05) DONE (2026-11-08):**
   - **W-01 (`259cdd9`):** Web shell & Today screen from rollups.
   - **W-02 (`2cf8f20`, `34bf57b`):** Sell on web (cart, discounts, cash/e-wallet/utang, split pay, sales list, receipt, void).
