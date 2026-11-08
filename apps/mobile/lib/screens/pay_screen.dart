@@ -150,7 +150,14 @@ class _PayScreenState extends State<PayScreen> {
                     foregroundColor: Colors.white,
                     disabledBackgroundColor: scheme.outlineVariant,
                     disabledForegroundColor: scheme.outline,
-                    shape: const StadiumBorder(),
+                    shape: StadiumBorder(
+                      side: BorderSide(
+                        color: (_valid && !_saving)
+                            ? scheme.glow.withValues(alpha: 0.85)
+                            : Colors.transparent,
+                        width: 1.6,
+                      ),
+                    ),
                     textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: 0.5),
                   ),
                   icon: Icon(Icons.check_circle_rounded, color: scheme.glow, size: 22),

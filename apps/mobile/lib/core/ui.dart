@@ -38,19 +38,19 @@ class AppCard extends StatelessWidget {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: dark
-                    ? [scheme.surface.withValues(alpha: 0.92), Color.lerp(scheme.surface, Colors.black, 0.18)!.withValues(alpha: 0.92)]
-                    : [scheme.surface, Color.lerp(scheme.surface, const Color(0xFFE9ECF8), 0.45)!],
+                    ? [scheme.surface.withValues(alpha: 0.95), Color.lerp(scheme.surface, Colors.black, 0.15)!.withValues(alpha: 0.95)]
+                    : [scheme.surface, Color.lerp(scheme.surface, const Color(0xFFF1F5F9), 0.50)!],
               ),
         borderRadius: r,
         border: Border.all(
-          color: dark ? Colors.white.withValues(alpha: 0.08) : Colors.white,
-          width: 1.2,
+          color: dark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFE2E8F0),
+          width: 1.0,
         ),
         boxShadow: [
           BoxShadow(
-            color: dark ? Colors.black.withValues(alpha: 0.28) : const Color(0x146366F1),
-            blurRadius: 18,
-            offset: const Offset(0, 6),
+            color: dark ? Colors.black.withValues(alpha: 0.25) : const Color(0x0C0F172A),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
           ),
         ],
       ),

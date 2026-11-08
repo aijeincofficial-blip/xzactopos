@@ -633,7 +633,7 @@ class _CartPanel extends StatelessWidget {
                           ? null
                           : [
                               BoxShadow(
-                                color: const Color(0xFF22D3EE).withValues(alpha: 0.35),
+                                color: scheme.glow.withValues(alpha: 0.35),
                                 blurRadius: 16,
                                 offset: const Offset(0, 4),
                               ),
@@ -643,18 +643,18 @@ class _CartPanel extends StatelessWidget {
                       key: const Key('pay-button'),
                       style: FilledButton.styleFrom(
                         minimumSize: const Size(140, 56),
-                        backgroundColor: const Color(0xFF0F1B3D),
-                        foregroundColor: Colors.white,
+                        backgroundColor: scheme.obsidian,
+                        foregroundColor: scheme.onObsidian,
                         shape: StadiumBorder(
                           side: BorderSide(
-                            color: const Color(0xFF22D3EE).withValues(alpha: onPay == null ? 0 : 0.9),
+                            color: scheme.glow.withValues(alpha: onPay == null ? 0 : 0.9),
                             width: 1.6,
                           ),
                         ),
                         textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: 0.3),
                       ),
                       onPressed: onPay,
-                      icon: const Icon(Icons.payments_rounded, color: Color(0xFF67E8F9), size: 22),
+                      icon: Icon(Icons.payments_rounded, color: scheme.glow, size: 22),
                       label: Text(t.sellPay),
                     ),
                   ),

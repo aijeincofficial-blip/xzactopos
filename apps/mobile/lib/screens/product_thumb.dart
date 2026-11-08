@@ -42,7 +42,7 @@ class _ProductThumbState extends State<ProductThumb> {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final dark = scheme.brightness == Brightness.dark;
-    // no photo: a soft lavender tile with a box glyph (the More-grid "Products" look)
+    // Branded ceramic product tile with ocean blue/cyan box glyph
     final placeholder = Container(
       width: widget.size,
       height: widget.size,
@@ -50,13 +50,17 @@ class _ProductThumbState extends State<ProductThumb> {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: dark ? const [Color(0xFF2B3466), Color(0xFF3A2C66)] : const [Color(0xFFEEF0FF), Color(0xFFF6ECFF)],
+          colors: dark
+              ? const [Color(0xFF1E293B), Color(0xFF131D33)]
+              : const [Color(0xFFF0F6FE), Color(0xFFE2EEFD)],
         ),
       ),
-      child: ShaderMask(
-        blendMode: BlendMode.srcIn,
-        shaderCallback: (b) => const LinearGradient(colors: [Color(0xFF8B5CF6), Color(0xFFD946EF)]).createShader(b),
-        child: Icon(Icons.inventory_2_rounded, color: Colors.white, size: widget.size * 0.52),
+      child: Center(
+        child: Icon(
+          Icons.inventory_2_rounded,
+          color: dark ? const Color(0xFF38BDF8) : const Color(0xFF1E6FF2),
+          size: widget.size * 0.52,
+        ),
       ),
     );
     return ClipRRect(

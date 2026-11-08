@@ -144,47 +144,47 @@ class MoreScreen extends StatelessWidget {
         key: const Key('tile-products'),
         featured: true,
         label: t.products,
-        glyph: const _Glyph(Icons.inventory_2_rounded, [Color(0xFF8B5CF6), Color(0xFFD946EF)]),
+        glyph: const _Glyph(Icons.inventory_2_rounded, [Color(0xFF1E6FF2), Color(0xFF38BDF8)]),
         onTap: () => open(const ProductsScreen()),
       ),
       _GlassTile(
         key: const Key('tile-restock'),
         label: t.restockTitle,
-        glyph: const _Glyph(Icons.format_list_bulleted_rounded, [Color(0xFF2DD4BF), Color(0xFF3B82F6)], boxed: true),
+        glyph: const _Glyph(Icons.format_list_bulleted_rounded, [Color(0xFF0284C7), Color(0xFF10B981)], boxed: true),
         onTap: () => open(const RestockScreen()),
       ),
       if (scope.canManageStock)
         _GlassTile(
           key: const Key('tile-reports'),
           label: t.reportsTitle,
-          glyph: const _Glyph(Icons.insert_chart_rounded, [Color(0xFF38BDF8), Color(0xFF6366F1)]),
+          glyph: const _Glyph(Icons.insert_chart_rounded, [Color(0xFF2563EB), Color(0xFF38BDF8)]),
           onTap: () => open(ReportsScreen(backend: backend)),
         ),
       if (scope.canManageStock)
         _GlassTile(
           key: const Key('more-expenses'),
           label: t.expensesTitle,
-          glyph: const _Glyph(Icons.receipt_long_rounded, [Color(0xFFFB923C), Color(0xFFEC4899)]),
+          glyph: const _Glyph(Icons.receipt_long_rounded, [Color(0xFFFB7185), Color(0xFFE11D48)]),
           onTap: () => open(ExpensesScreen(backend: backend)),
         ),
       _GlassTile(
         key: const Key('more-services'),
         label: t.servicesTitle,
-        glyph: const _Glyph(Icons.phone_iphone_rounded, [Color(0xFF6366F1), Color(0xFFA855F7)], coin: true),
+        glyph: const _Glyph(Icons.phone_iphone_rounded, [Color(0xFF4F46E5), Color(0xFF6366F1)], coin: true),
         onTap: () => open(ServicesScreen(backend: backend)),
       ),
       if (scope.canManageStock)
         _GlassTile(
           key: const Key('more-close-day'),
           label: t.dayCloseTitle,
-          glyph: const _Glyph(Icons.power_settings_new_rounded, [Color(0xFFF472B6), Color(0xFFEF4444)], round: true),
+          glyph: const _Glyph(Icons.power_settings_new_rounded, [Color(0xFFF43F5E), Color(0xFFBE123C)], round: true),
           onTap: () => open(DayCloseScreen(backend: backend)),
         ),
       if (scope.canManageStock)
         _GlassTile(
           key: const Key('tile-data'),
           label: t.dataTitle,
-          glyph: const _Glyph(Icons.upload_rounded, [Color(0xFF38BDF8), Color(0xFF2563EB)]),
+          glyph: const _Glyph(Icons.upload_rounded, [Color(0xFF0EA5E9), Color(0xFF2563EB)]),
           onTap: () => open(const DataScreen()),
         ),
       _GlassTile(
@@ -270,21 +270,21 @@ class _GlassTile extends StatelessWidget {
 
     final List<Color> bg = switch ((dark, featured)) {
       (false, false) => const [Colors.white, Color(0xFFF7F8FD)],
-      (false, true) => const [Color(0xFFEEF0FF), Color(0xFFF7EEFF)],
-      (true, false) => [const Color(0xFF2A3250).withValues(alpha: 0.75), const Color(0xFF1C2340).withValues(alpha: 0.75)],
-      (true, true) => const [Color(0xFF22407A), Color(0xFF2A2F66)],
+      (false, true) => const [Color(0xFFF0F6FE), Color(0xFFE5F0FD)],
+      (true, false) => [const Color(0xFF1E293B).withValues(alpha: 0.85), const Color(0xFF162032).withValues(alpha: 0.85)],
+      (true, true) => [const Color(0xFF1E3A8A).withValues(alpha: 0.70), const Color(0xFF172554).withValues(alpha: 0.70)],
     };
 
     return DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: r,
         gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: bg),
-        border: Border.all(color: dark ? Colors.white.withValues(alpha: 0.08) : Colors.white, width: 1.2),
+        border: Border.all(color: dark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFE2E8F0), width: 1.0),
         boxShadow: [
           BoxShadow(
-            color: dark ? Colors.black.withValues(alpha: 0.30) : const Color(0x146366F1),
-            blurRadius: 18,
-            offset: const Offset(0, 6),
+            color: dark ? Colors.black.withValues(alpha: 0.25) : const Color(0x0C0F172A),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
           ),
         ],
       ),

@@ -40,31 +40,31 @@ const _freshLight = _P(
   primary: Color(0xFF1E6FF2),
   primaryContainer: Color(0xFFEDF4FF),
   onPrimaryContainer: Color(0xFF0F3980),
-  secondary: Color(0xFF0A8268), // mint / emerald
+  secondary: Color(0xFF10B981), // mint / emerald aligned with brand
   onSecondary: Colors.white,
-  secondaryContainer: Color(0xFFE4F7F2),
-  onSecondaryContainer: Color(0xFF064839),
-  tertiary: Color(0xFFF59E0B), // amber
-  background: Color(0xFFF1F2F9), // soft lavender mist
+  secondaryContainer: Color(0xFFE6F8F3),
+  onSecondaryContainer: Color(0xFF064E3B),
+  tertiary: Color(0xFFF59E0B), // solar amber
+  background: Color(0xFFF6F8FC), // cool crisp porcelain
   surface: Colors.white,
-  cardBorder: Color(0xFFE3E6F2),
+  cardBorder: Color(0xFFE2E8F0),
   text: Color(0xFF0F172A),
   textMuted: Color(0xFF64748B),
 );
 
 const _freshDark = _P(
-  primary: Color(0xFF5B9BFF),
-  primaryContainer: Color(0xFF152A4A),
-  onPrimaryContainer: Color(0xFFD6E5FF),
-  secondary: Color(0xFF2FD9B2),
+  primary: Color(0xFF38BDF8),
+  primaryContainer: Color(0xFF0C2444),
+  onPrimaryContainer: Color(0xFFBAE6FD),
+  secondary: Color(0xFF2DD4BF),
   onSecondary: Color(0xFF04241C),
   secondaryContainer: Color(0xFF0F3B32),
-  onSecondaryContainer: Color(0xFFC6F5EA),
-  tertiary: Color(0xFFFFB84D),
-  background: Color(0xFF121830),
-  surface: Color(0xFF1F2742),
-  cardBorder: Color(0xFF2C3554),
-  text: Color(0xFFF1F5F9),
+  onSecondaryContainer: Color(0xFFCCFBF1),
+  tertiary: Color(0xFFFBBF24),
+  background: Color(0xFF0F172A), // deep obsidian matching brand logo
+  surface: Color(0xFF1E293B),
+  cardBorder: Color(0xFF334155),
+  text: Color(0xFFF8FAFC),
   textMuted: Color(0xFF94A3B8),
 );
 
@@ -107,11 +107,14 @@ extension AppColors on ColorScheme {
   /// Positive state (online, healthy, paid).
   Color get success => secondary;
 
-  /// The solid surface of the main action buttons (the palette's primary; kept under its old name).
-  Color get obsidian => primary;
+  /// The solid surface of the signature brand action buttons (obsidian navy).
+  Color get obsidian => isDark ? const Color(0xFF1E293B) : const Color(0xFF0F172A);
 
   /// Text/icons on [obsidian].
-  Color get onObsidian => onPrimary;
+  Color get onObsidian => Colors.white;
+
+  /// Signature glowing cyan border for action buttons and accents.
+  Color get glow => const Color(0xFF22D3EE);
 
   /// Quiet fill for small circular chips (arrows, counters).
   Color get chipFill => isDark ? surface : primaryContainer;
@@ -119,13 +122,11 @@ extension AppColors on ColorScheme {
   /// Accent used for the language/reports badges (follows the palette).
   Color get accent => tertiary;
 
-  /// Bright accent that stays readable on [obsidian].
-  Color get glow => onPrimary;
-
-  /// Payment-type colors for reports: cash, e-wallet, utang.
-  Color get payCash => success;
-  Color get payEwallet => primary;
-  Color get payUtang => tertiary;
+  /// Payment-type colors for reports: cash, e-wallet, utang, expenses.
+  Color get payCash => const Color(0xFF10B981);
+  Color get payEwallet => const Color(0xFF1E6FF2);
+  Color get payUtang => const Color(0xFFF59E0B);
+  Color get payExpense => const Color(0xFFF43F5E);
 }
 
 ThemeData buildTheme(AppPalette palette, Brightness brightness) {
@@ -198,8 +199,8 @@ ThemeData buildTheme(AppPalette palette, Brightness brightness) {
     ),
     // the navy + cyan of the raised POS button, so every floating action matches it
     floatingActionButtonTheme: FloatingActionButtonThemeData(
-      backgroundColor: const Color(0xFF0F1B3D),
-      foregroundColor: const Color(0xFF67E8F9),
+      backgroundColor: dark ? const Color(0xFF1E293B) : const Color(0xFF0F172A),
+      foregroundColor: const Color(0xFF22D3EE),
       shape: const StadiumBorder(side: BorderSide(color: Color(0xFF22D3EE), width: 1.6)),
       elevation: 6,
       extendedTextStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white),

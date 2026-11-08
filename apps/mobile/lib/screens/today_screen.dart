@@ -140,7 +140,7 @@ class TodayScreen extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.swap_horiz_rounded, color: scheme.primary),
+                    Icon(Icons.phone_iphone_rounded, color: scheme.primary),
                     const SizedBox(width: Gap.m),
                     Expanded(
                       child: Text(
@@ -241,7 +241,7 @@ class TodayScreen extends StatelessWidget {
                             Icon(
                               Icons.lock_clock_rounded,
                               size: 22,
-                              color: scheme.primary,
+                              color: scheme.payExpense,
                             ),
                           ],
                         ),
