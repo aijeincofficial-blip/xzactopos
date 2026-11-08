@@ -2,92 +2,76 @@ import 'package:flutter/material.dart';
 
 import '../core/money.dart';
 import '../core/theme.dart';
-import '../l10n/app_localizations.dart';
 
-/// A number pad for an amount that is not in the catalog (a loose item, a service). It only builds the amount;
-/// the caller decides what an "add" means.
-class KeypadPanel extends StatefulWidget {
-  const KeypadPanel({super.key, required this.currency, required this.locale, required this.onAdd});
+/// A compact number pad that types into [controller] (the amount received on the Pay screen).
+/// Keys: 1-9, the decimal point (when the currency has decimals), 0, and backspace
+/// (long-press backspace clears). Whole part is capped at 7 digits, decimals at the currency's exponent.
+class AmountPad extends StatelessWidget {
+  const AmountPad({super.key, required this.controller, required this.currency, this.onChanged});
 
+  final TextEditingController controller;
   final String currency;
-  final String locale;
 
-  /// Called with the typed amount in centavos (> 0), then the pad clears.
-  final void Function(int amount) onAdd;
+  /// Called after every key, so the screen can recompute change / utang.
+  final VoidCallback? onChanged;
 
-  @override
-  State<KeypadPanel> createState() => _KeypadPanelState();
-}
-
-class _KeypadPanelState extends State<KeypadPanel> {
-  String _text = '';
-
-  /// Digits allowed after the point (PHP: 2).
-  int get _decimals => exponentOf(widget.currency);
+  int get _decimals => exponentOf(currency);
 
   void _press(String k) {
-    setState(() {
-      switch (k) {
-        case 'del':
-          if (_text.isNotEmpty) _text = _text.substring(0, _text.length - 1);
-        case '.':
-          if (_decimals > 0 && !_text.contains('.')) _text = _text.isEmpty ? '0.' : '$_text.';
-        default:
-          final next = _text == '0' ? k : _text + k; // no leading zeros
-          final dot = next.indexOf('.');
-          final fractionOk = dot < 0 || next.length - dot - 1 <= _decimals;
-          final wholeLen = dot < 0 ? next.length : dot;
-          if (fractionOk && wholeLen <= 7) _text = next;
-      }
-    });
-  }
-
-  int? get _amount {
-    if (_text.isEmpty) return null;
-    try {
-      final v = Money.parse(_text.endsWith('.') ? _text.substring(0, _text.length - 1) : _text, widget.currency).amount;
-      return v > 0 ? v : null;
-    } catch (_) {
-      return null;
+    var text = controller.text;
+    switch (k) {
+      case 'del':
+        if (text.isNotEmpty) text = text.substring(0, text.length - 1);
+      case 'clear':
+        text = '';
+      case '.':
+        if (_decimals > 0 && !text.contains('.')) text = text.isEmpty ? '0.' : '$text.';
+      default:
+        final next = text == '0' ? k : text + k; // no leading zeros
+        final dot = next.indexOf('.');
+        final fractionOk = dot < 0 || next.length - dot - 1 <= _decimals;
+        final wholeLen = dot < 0 ? next.length : dot;
+        if (fractionOk && wholeLen <= 7) text = next;
     }
+    controller.value = TextEditingValue(text: text, selection: TextSelection.collapsed(offset: text.length));
+    onChanged?.call();
   }
 
   @override
   Widget build(BuildContext context) {
-    final t = AppLocalizations.of(context);
     final scheme = Theme.of(context).colorScheme;
-    final amount = _amount;
-    final shown = _text.isEmpty ? Money(0, widget.currency).format(widget.locale) : _text;
+    final dark = scheme.brightness == Brightness.dark;
 
     Widget key(String k, {Widget? child}) => Expanded(
           child: Padding(
             padding: const EdgeInsets.all(4),
-            child: OutlinedButton(
-              key: Key('key-$k'),
-              style: OutlinedButton.styleFrom(minimumSize: const Size(0, 46), padding: EdgeInsets.zero),
-              onPressed: () => _press(k),
-              child: child ?? Text(k, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700)),
+            child: Material(
+              color: dark ? Colors.white.withValues(alpha: 0.06) : Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              elevation: 0,
+              child: InkWell(
+                key: Key('key-$k'),
+                borderRadius: BorderRadius.circular(16),
+                onTap: () => _press(k),
+                onLongPress: k == 'del' ? () => _press('clear') : null,
+                child: Container(
+                  height: 48,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: dark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFE6E8F3)),
+                  ),
+                  child: child ??
+                      Text(k, style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: scheme.onSurface)),
+                ),
+              ),
             ),
           ),
         );
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(Gap.xl, Gap.s, Gap.xl, Gap.s),
+      padding: const EdgeInsets.symmetric(horizontal: Gap.m),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Align(
-          alignment: Alignment.centerRight,
-          child: Text(
-            shown,
-            key: const Key('keypad-display'),
-            style: TextStyle(
-              fontSize: 34,
-              fontWeight: FontWeight.w900,
-              letterSpacing: -1,
-              color: _text.isEmpty ? scheme.outline : scheme.onSurface,
-            ),
-          ),
-        ),
-        const SizedBox(height: Gap.s),
         for (final row in const [
           ['1', '2', '3'],
           ['4', '5', '6'],
@@ -95,24 +79,10 @@ class _KeypadPanelState extends State<KeypadPanel> {
         ])
           Row(children: [for (final k in row) key(k)]),
         Row(children: [
-          key('.'),
+          _decimals > 0 ? key('.') : key('00'),
           key('0'),
-          key('del', child: const Icon(Icons.backspace_outlined)),
+          key('del', child: Icon(Icons.backspace_outlined, color: scheme.onSurface)),
         ]),
-        const SizedBox(height: Gap.s),
-        SizedBox(
-          width: double.infinity,
-          child: FilledButton(
-            key: const Key('keypad-add'),
-            onPressed: amount == null
-                ? null
-                : () {
-                    widget.onAdd(amount);
-                    setState(() => _text = '');
-                  },
-            child: Text(t.keypadAdd),
-          ),
-        ),
       ]),
     );
   }

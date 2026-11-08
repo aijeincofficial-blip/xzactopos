@@ -11,6 +11,7 @@ import '../sync/store_session.dart';
 import 'cart.dart';
 import 'services_screen.dart' show walletLabel;
 import 'customer_picker.dart';
+import 'keypad_panel.dart';
 import 'receipt_screen.dart';
 
 /// Payment: cash with change, an e-wallet, or utang for whatever is not paid now.
@@ -46,10 +47,12 @@ class _PayScreenState extends State<PayScreen> {
 
   /// null = empty, -1 = not a valid amount
   int? _parse(String s) {
-    if (s.trim().isEmpty) return null;
+    var v = s.trim();
+    if (v.endsWith('.')) v = v.substring(0, v.length - 1); // half-typed on the pad, e.g. "100."
+    if (v.isEmpty) return null;
     try {
-      final v = Money.parse(s, _ccy).amount;
-      return v < 0 ? -1 : v;
+      final amount = Money.parse(v, _ccy).amount;
+      return amount < 0 ? -1 : amount;
     } catch (_) {
       return -1;
     }
@@ -89,8 +92,12 @@ class _PayScreenState extends State<PayScreen> {
         customerId: _utang > 0 ? _customer!.id : null,
         payments: [
           if (_applied > 0)
-            PaymentDraft(_method, _applied,
-                tendered: _method == 'cash' ? _receivedAmt : null, wallet: _method == 'ewallet' ? _wallet : null),
+            PaymentDraft(
+              _method,
+              _applied,
+              tendered: _method == 'cash' ? _receivedAmt : null,
+              wallet: _method == 'ewallet' ? _wallet : null,
+            ),
           if (_utang > 0) PaymentDraft('utang', _utang),
         ],
       );
@@ -98,9 +105,9 @@ class _PayScreenState extends State<PayScreen> {
       widget.cart.clear();
       scope.engine.poke();
       if (!mounted) return;
-      await Navigator.of(context).pushReplacement(MaterialPageRoute<void>(
-        builder: (_) => scope.wrap(ReceiptScreen(saleId: _saleId, justSold: true)),
-      ));
+      await Navigator.of(context).pushReplacement(
+        MaterialPageRoute<void>(builder: (_) => scope.wrap(ReceiptScreen(saleId: _saleId, justSold: true))),
+      );
     } catch (_) {
       if (!mounted) return;
       setState(() => _saving = false);
@@ -111,7 +118,10 @@ class _PayScreenState extends State<PayScreen> {
   /// A few useful cash amounts: the smallest bills that cover the total.
   List<int> get _quick {
     const bills = [2000, 5000, 10000, 20000, 50000, 100000];
-    final out = [for (final b in bills) if (b >= _total && b != _total) b];
+    final out = [
+      for (final b in bills)
+        if (b >= _total && b != _total) b,
+    ];
     return out.take(3).toList();
   }
 
@@ -123,21 +133,32 @@ class _PayScreenState extends State<PayScreen> {
       appBar: AppBar(title: Text(t.payTitle)),
       bottomNavigationBar: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(Gap.xl, Gap.s, Gap.xl, Gap.xl),
-          child: FilledButton.icon(
-            key: const Key('pay-done'),
-            style: FilledButton.styleFrom(
-              minimumSize: const Size.fromHeight(60),
-              backgroundColor: scheme.obsidian,
-              foregroundColor: Colors.white,
-              disabledBackgroundColor: scheme.outlineVariant,
-              disabledForegroundColor: scheme.outline,
-              shape: const StadiumBorder(),
-              textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: 0.5),
-            ),
-            icon: Icon(Icons.check_circle_rounded, color: scheme.glow, size: 22),
-            onPressed: _valid && !_saving ? _finish : null,
-            label: Text(t.payDone),
+          padding: const EdgeInsets.fromLTRB(0, Gap.xs, 0, Gap.l),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // the number pad types the amount received (cash or e-wallet); no phone keyboard needed
+              AmountPad(controller: _received, currency: _ccy, onChanged: () => setState(() {})),
+              const SizedBox(height: Gap.s),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: Gap.xl),
+                child: FilledButton.icon(
+                  key: const Key('pay-done'),
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(60),
+                    backgroundColor: scheme.obsidian,
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: scheme.outlineVariant,
+                    disabledForegroundColor: scheme.outline,
+                    shape: const StadiumBorder(),
+                    textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: 0.5),
+                  ),
+                  icon: Icon(Icons.check_circle_rounded, color: scheme.glow, size: 22),
+                  onPressed: _valid && !_saving ? _finish : null,
+                  label: Text(t.payDone),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -172,11 +193,7 @@ class _PayScreenState extends State<PayScreen> {
                       Text(
                         _money(_total),
                         key: const Key('pay-total'),
-                        style: const TextStyle(
-                          fontSize: 26,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: -1.0,
-                        ),
+                        style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w900, letterSpacing: -1.0),
                       ),
                     ],
                   ),
@@ -193,13 +210,14 @@ class _PayScreenState extends State<PayScreen> {
 
           // Payment Method Segmented Switcher
           SegmentedButton<String>(
-            style: SegmentedButton.styleFrom(
-              shape: const StadiumBorder(),
-              visualDensity: VisualDensity.compact,
-            ),
+            style: SegmentedButton.styleFrom(shape: const StadiumBorder(), visualDensity: VisualDensity.compact),
             segments: [
               ButtonSegment(value: 'cash', label: Text(t.payCash), icon: const Icon(Icons.payments_rounded, size: 18)),
-              ButtonSegment(value: 'ewallet', label: Text(t.payEwallet), icon: const Icon(Icons.phone_android_rounded, size: 18)),
+              ButtonSegment(
+                value: 'ewallet',
+                label: Text(t.payEwallet),
+                icon: const Icon(Icons.phone_android_rounded, size: 18),
+              ),
             ],
             selected: {_method},
             onSelectionChanged: (s) => setState(() => _method = s.first),
@@ -208,7 +226,9 @@ class _PayScreenState extends State<PayScreen> {
             const SizedBox(height: Gap.s),
             Text(t.payWalletTitle, style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.outline)),
             const SizedBox(height: 4),
-            Wrap(spacing: 8, children: [
+            Wrap(
+              spacing: 8,
+              children: [
                 for (final w in paymentWallets)
                   ChoiceChip(
                     key: Key('pay-wallet-$w'),
@@ -216,21 +236,25 @@ class _PayScreenState extends State<PayScreen> {
                     selected: _wallet == w,
                     onSelected: (_) => setState(() => _wallet = w),
                   ),
-              ]),
+              ],
+            ),
           ],
           const SizedBox(height: Gap.m),
 
-          // Amount Received Field
+          // Amount received: typed with the pad below (no system keyboard)
           TextField(
             key: const Key('received-field'),
             controller: _received,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+            keyboardType: TextInputType.none,
+            showCursor: true,
+            textAlign: TextAlign.end,
+            style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w900, letterSpacing: -0.5),
             decoration: InputDecoration(
               isDense: true,
               labelText: _method == 'cash' ? t.payReceivedCash : t.payReceivedEwallet,
               hintText: Money(_total, _ccy).toDecimalString(),
-              prefixText: '${NumberFormat.simpleCurrency(locale: Localizations.localeOf(context).languageCode, name: _ccy).currencySymbol} ',
+              prefixText:
+                  '${NumberFormat.simpleCurrency(locale: Localizations.localeOf(context).languageCode, name: _ccy).currencySymbol} ',
               prefixStyle: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
               errorText: _receivedRaw == -1 ? t.errBadAmount : null,
             ),
@@ -239,27 +263,31 @@ class _PayScreenState extends State<PayScreen> {
           const SizedBox(height: Gap.s),
 
           // Quick Bill Pill Chips
-          Wrap(spacing: Gap.s, runSpacing: Gap.s, children: [
-            ActionChip(
-              key: const Key('quick-exact'),
-              avatar: const Icon(Icons.check_rounded, size: 16),
-              label: Text(t.payExact),
-              onPressed: () => setState(_received.clear),
-            ),
-            if (_method == 'cash')
-              for (final b in _quick)
-                ActionChip(
-                  key: Key('quick-$b'),
-                  label: Text(_money(b)),
-                  onPressed: () => setState(() => _received.text = Money(b, _ccy).toDecimalString()),
-                ),
-            ActionChip(
-              key: const Key('all-utang'),
-              avatar: const Icon(Icons.menu_book_rounded, size: 16),
-              label: Text(t.payAllUtang),
-              onPressed: () => setState(() => _received.text = '0'),
-            ),
-          ]),
+          Wrap(
+            spacing: Gap.s,
+            runSpacing: Gap.s,
+            children: [
+              ActionChip(
+                key: const Key('quick-exact'),
+                avatar: const Icon(Icons.check_rounded, size: 16),
+                label: Text(t.payExact),
+                onPressed: () => setState(_received.clear),
+              ),
+              if (_method == 'cash')
+                for (final b in _quick)
+                  ActionChip(
+                    key: Key('quick-$b'),
+                    label: Text(_money(b)),
+                    onPressed: () => setState(() => _received.text = Money(b, _ccy).toDecimalString()),
+                  ),
+              ActionChip(
+                key: const Key('all-utang'),
+                avatar: const Icon(Icons.menu_book_rounded, size: 16),
+                label: Text(t.payAllUtang),
+                onPressed: () => setState(() => _received.text = '0'),
+              ),
+            ],
+          ),
           const SizedBox(height: Gap.m),
 
           // Sukli / Change Card
@@ -270,11 +298,7 @@ class _PayScreenState extends State<PayScreen> {
               radius: Gap.radiusM,
               child: Row(
                 children: [
-                  CoinBadge(
-                    icon: Icons.currency_exchange_rounded,
-                    color: scheme.success,
-                    size: 38,
-                  ),
+                  CoinBadge(icon: Icons.currency_exchange_rounded, color: scheme.success, size: 38),
                   const SizedBox(width: Gap.m),
                   Expanded(
                     child: Column(
@@ -282,12 +306,22 @@ class _PayScreenState extends State<PayScreen> {
                       children: [
                         Text(
                           t.payChange.toUpperCase(),
-                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: scheme.onSecondaryContainer, letterSpacing: 0.5),
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: scheme.onSecondaryContainer,
+                            letterSpacing: 0.5,
+                          ),
                         ),
                         Text(
                           _money(_change),
                           key: const Key('pay-change'),
-                          style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: scheme.onSecondaryContainer, letterSpacing: -0.8),
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w900,
+                            color: scheme.onSecondaryContainer,
+                            letterSpacing: -0.8,
+                          ),
                         ),
                       ],
                     ),
