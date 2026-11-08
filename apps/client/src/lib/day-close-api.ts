@@ -17,6 +17,7 @@ export interface DayCloseRow {
   note: string | null;
   closed_at: string;
   closed_by: string | null;
+  approved_by: string | null;
 }
 
 export async function fetchDayCloses(locationId: string): Promise<DayCloseRow[]> {
