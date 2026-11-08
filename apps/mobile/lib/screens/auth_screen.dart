@@ -118,10 +118,38 @@ class _AuthScreenState extends State<AuthScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Center(
-                      child: CoinBadge(
-                        icon: Icons.storefront_rounded,
-                        color: scheme.primary,
-                        size: 52,
+                      child: ClipRRect(
+                        key: const Key('app-logo'),
+                        borderRadius: BorderRadius.circular(22),
+                        child: Image.asset(
+                          'assets/brand/logo_squircle.png',
+                          width: 84,
+                          height: 84,
+                          semanticLabel: 'XZACTO POS',
+                          errorBuilder: (_, _, _) =>
+                              CoinBadge(icon: Icons.storefront_rounded, color: scheme.primary, size: 52),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: Gap.s),
+                    Text(
+                      'XZACTO',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.2,
+                        color: scheme.onSurface,
+                      ),
+                    ),
+                    Text(
+                      'POS APP',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 2.0,
+                        color: scheme.secondary,
                       ),
                     ),
                     const SizedBox(height: Gap.l),

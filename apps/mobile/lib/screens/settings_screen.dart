@@ -334,8 +334,16 @@ class SettingsScreen extends StatelessWidget {
             Center(
               child: Column(
                 children: [
+                  Image.asset(
+                    'assets/brand/logo_round.png',
+                    key: const Key('settings-logo'),
+                    width: 44,
+                    height: 44,
+                    errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                  ),
+                  const SizedBox(height: Gap.s),
                   Text(
-                    'XZACTOPOS SOLO • v1.0.0',
+                    'XZACTO POS • v1.0.0',
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
