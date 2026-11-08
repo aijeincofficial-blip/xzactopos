@@ -169,6 +169,11 @@ select w.who, t.tbl,
 from (values ('superadmin'), ('admin'), ('cashier'), ('warehouse'), ('inactive')) w(who)
 cross join (values ('transfers'), ('transfer_items')) t(tbl);
 
+-- F-10 stock_snapshots_daily: superadmin and admin read their stores' rows (2 each); everyone else none; no client writes
+insert into expected (who, tbl, own_rows, own_updated)
+select w.who, 'stock_snapshots_daily', case when w.who in ('superadmin', 'admin') then 2 else 0 end, -1
+from (values ('superadmin'), ('admin'), ('cashier'), ('warehouse'), ('inactive')) w(who);
+
 -- 2 tenants x (who, table) pairs x 5 metrics, plus 8 targeted checks
 select plan((select count(*)::int * 2 * 5 from expected) + 8);
 
@@ -263,6 +268,10 @@ begin
     insert into public.daily_item_sales (tenant_id, location_id, day, variant_id, product_name, qty, revenue) values
       (pg_temp.tid(t.label), pg_temp.lid(t.label, 'S01'), '2026-11-08', md5('var:' || t.label || ':1')::uuid, 'Cola', 1, 2500),
       (pg_temp.tid(t.label), pg_temp.lid(t.label, 'S02'), '2026-11-08', md5('var:' || t.label || ':1')::uuid, 'Cola', 1, 2500);
+    insert into public.stock_snapshots_daily (tenant_id, location_id, day, variant_id, qty_on_hand, unit_cost, total_value) values
+      (pg_temp.tid(t.label), pg_temp.lid(t.label, 'S01'), '2026-11-08', md5('var:' || t.label || ':1')::uuid, 10, 2500, 25000),
+      (pg_temp.tid(t.label), pg_temp.lid(t.label, 'S02'), '2026-11-08', md5('var:' || t.label || ':1')::uuid, 4, 2500, 10000)
+    on conflict (location_id, day, variant_id) do nothing;
     -- expenses: one at each store with colliding client op ids across tenants; the trigger writes one rollup row per store
     insert into public.expenses (id, tenant_id, location_id, client_op_id, amount, currency, category, paid_from, spent_at) values
       (md5('exp:' || t.label || ':1')::uuid, pg_temp.tid(t.label), pg_temp.lid(t.label, 'S01'), md5('expop:1')::uuid, 15000, t.ccy, 'utilities', 'cash', '2026-11-08T02:00:00Z'),
@@ -375,7 +384,8 @@ begin
     ('devices',           'tenant_id', 'name = name'),
     ('sale_counters',     'tenant_id', 'last_no = last_no'),
     ('transfers',         'tenant_id', 'notes = notes'),
-    ('transfer_items',    'tenant_id', 'qty_shipped = qty_shipped')
+    ('transfer_items',    'tenant_id', 'qty_shipped = qty_shipped'),
+    ('stock_snapshots_daily', 'tenant_id', 'total_value = total_value')
   ) v(tbl, tcol, upd) loop
     begin
       execute format(
