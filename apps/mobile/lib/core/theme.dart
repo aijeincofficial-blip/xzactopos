@@ -45,9 +45,9 @@ const _freshLight = _P(
   secondaryContainer: Color(0xFFE4F7F2),
   onSecondaryContainer: Color(0xFF064839),
   tertiary: Color(0xFFF59E0B), // amber
-  background: Color(0xFFF1F4F9), // cool porcelain mist
+  background: Color(0xFFF1F2F9), // soft lavender mist
   surface: Colors.white,
-  cardBorder: Color(0xFFE4E9F2),
+  cardBorder: Color(0xFFE3E6F2),
   text: Color(0xFF0F172A),
   textMuted: Color(0xFF64748B),
 );
@@ -61,9 +61,9 @@ const _freshDark = _P(
   secondaryContainer: Color(0xFF0F3B32),
   onSecondaryContainer: Color(0xFFC6F5EA),
   tertiary: Color(0xFFFFB84D),
-  background: Color(0xFF0B101D),
-  surface: Color(0xFF131B2E),
-  cardBorder: Color(0xFF1E2B45),
+  background: Color(0xFF121830),
+  surface: Color(0xFF1F2742),
+  cardBorder: Color(0xFF2C3554),
   text: Color(0xFFF1F5F9),
   textMuted: Color(0xFF94A3B8),
 );
@@ -77,7 +77,7 @@ const _goldLight = _P(
   secondaryContainer: Color(0xFFFEF3C7),
   onSecondaryContainer: Color(0xFF78350F),
   tertiary: Color(0xFFEA580C),
-  background: Color(0xFFF2F4FA),
+  background: Color(0xFFF2F2FA),
   surface: Colors.white,
   cardBorder: Color(0xFFE5E8F3),
   text: Color(0xFF0F172A),
@@ -93,8 +93,8 @@ const _goldDark = _P(
   secondaryContainer: Color(0xFF4D3800),
   onSecondaryContainer: Color(0xFFFFEFC2),
   tertiary: Color(0xFFFF9D5C),
-  background: Color(0xFF0C1021),
-  surface: Color(0xFF151C36),
+  background: Color(0xFF131833),
+  surface: Color(0xFF212844),
   cardBorder: Color(0xFF222D52),
   text: Color(0xFFF1F5F9),
   textMuted: Color(0xFF94A3B8),
@@ -170,7 +170,7 @@ ThemeData buildTheme(AppPalette palette, Brightness brightness) {
       elevation: 0,
       scrolledUnderElevation: 0,
       centerTitle: false,
-      titleTextStyle: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: p.text),
+      titleTextStyle: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, letterSpacing: -0.3, color: p.text),
     ),
     cardTheme: CardThemeData(color: p.surface, elevation: 0, surfaceTintColor: Colors.transparent, shape: cardShape),
     filledButtonTheme: FilledButtonThemeData(
@@ -196,11 +196,13 @@ ThemeData buildTheme(AppPalette palette, Brightness brightness) {
         textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
       ),
     ),
+    // the navy + cyan of the raised POS button, so every floating action matches it
     floatingActionButtonTheme: FloatingActionButtonThemeData(
-      backgroundColor: p.secondary,
-      foregroundColor: p.onSecondary,
-      shape: const StadiumBorder(),
-      elevation: 4,
+      backgroundColor: const Color(0xFF0F1B3D),
+      foregroundColor: const Color(0xFF67E8F9),
+      shape: const StadiumBorder(side: BorderSide(color: Color(0xFF22D3EE), width: 1.6)),
+      elevation: 6,
+      extendedTextStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white),
     ),
     inputDecorationTheme: InputDecorationTheme(
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),

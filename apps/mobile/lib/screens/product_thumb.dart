@@ -41,14 +41,26 @@ class _ProductThumbState extends State<ProductThumb> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final dark = scheme.brightness == Brightness.dark;
+    // no photo: a soft lavender tile with a box glyph (the More-grid "Products" look)
     final placeholder = Container(
       width: widget.size,
       height: widget.size,
-      color: scheme.surfaceContainerHighest,
-      child: Icon(Icons.image_outlined, color: scheme.outline, size: widget.size * 0.5),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: dark ? const [Color(0xFF2B3466), Color(0xFF3A2C66)] : const [Color(0xFFEEF0FF), Color(0xFFF6ECFF)],
+        ),
+      ),
+      child: ShaderMask(
+        blendMode: BlendMode.srcIn,
+        shaderCallback: (b) => const LinearGradient(colors: [Color(0xFF8B5CF6), Color(0xFFD946EF)]).createShader(b),
+        child: Icon(Icons.inventory_2_rounded, color: Colors.white, size: widget.size * 0.52),
+      ),
     );
     return ClipRRect(
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(widget.size * 0.30),
       child: _bytes == null
           ? placeholder
           : FutureBuilder<Uint8List?>(

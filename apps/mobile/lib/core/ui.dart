@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 
 import 'theme.dart';
 
-/// Sculptural white card with soft diffuse dual shadow and subtle hairline border.
-/// Exactly captures the floating, tactile ceramic aesthetic from the reference.
+/// Soft glass card (the More-grid look): faint white-to-lavender gradient, white hairline,
+/// one lavender drop shadow. Dark: translucent navy with a faint white edge.
+/// A custom [color] keeps the same shape and shadow but paints flat.
 class AppCard extends StatelessWidget {
   const AppCard({
     super.key,
@@ -26,25 +27,32 @@ class AppCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final dark = scheme.brightness == Brightness.dark;
-    final r = BorderRadius.circular(radius ?? Gap.radiusXL);
+    final r = BorderRadius.circular(radius ?? Gap.radiusL);
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: color ?? scheme.surface,
+        color: color,
+        gradient: color != null
+            ? null
+            : LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: dark
+                    ? [scheme.surface.withValues(alpha: 0.92), Color.lerp(scheme.surface, Colors.black, 0.18)!.withValues(alpha: 0.92)]
+                    : [scheme.surface, Color.lerp(scheme.surface, const Color(0xFFE9ECF8), 0.45)!],
+              ),
         borderRadius: r,
         border: Border.all(
-          color: dark ? scheme.outlineVariant.withValues(alpha: 0.5) : scheme.outlineVariant,
-          width: 1.0,
+          color: dark ? Colors.white.withValues(alpha: 0.08) : Colors.white,
+          width: 1.2,
         ),
-        boxShadow: dark
-            ? null
-            : const [
-                BoxShadow(
-                  color: Color(0x08101E33),
-                  blurRadius: 12,
-                  offset: Offset(0, 3),
-                ),
-              ],
+        boxShadow: [
+          BoxShadow(
+            color: dark ? Colors.black.withValues(alpha: 0.28) : const Color(0x146366F1),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Material(
         type: MaterialType.transparency,
@@ -89,7 +97,9 @@ class SummaryCard extends StatelessWidget {
   }
 }
 
-/// A flat icon in a lightly tinted circle (the old glowing "coin" is gone: no glow, no white-on-solid).
+/// Glossy app-icon badge (the More-grid look): a rounded square filled with a light-to-deep
+/// gradient of [color], a white icon, and a soft coloured shadow underneath.
+/// [iconColor] overrides the white icon.
 class CoinBadge extends StatelessWidget {
   const CoinBadge({
     super.key,
@@ -101,18 +111,23 @@ class CoinBadge extends StatelessWidget {
 
   final IconData icon;
   final Color color;
-
-  /// Defaults to [color].
   final Color? iconColor;
   final double size;
 
   @override
   Widget build(BuildContext context) {
+    final hsl = HSLColor.fromColor(color);
+    final light = hsl.withLightness((hsl.lightness + 0.14).clamp(0.0, 0.85)).withHue((hsl.hue + 12) % 360).toColor();
+    final deep = hsl.withLightness((hsl.lightness - 0.06).clamp(0.12, 1.0)).toColor();
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(color: color.withValues(alpha: 0.14), shape: BoxShape.circle),
-      child: Center(child: Icon(icon, size: size * 0.5, color: iconColor ?? color)),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(size * 0.30),
+        gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [light, deep]),
+        boxShadow: [BoxShadow(color: deep.withValues(alpha: 0.30), blurRadius: size * 0.26, offset: Offset(0, size * 0.10))],
+      ),
+      child: Center(child: Icon(icon, size: size * 0.52, color: iconColor ?? Colors.white)),
     );
   }
 }
@@ -201,16 +216,7 @@ class EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 76,
-              height: 76,
-              decoration: BoxDecoration(
-                color: scheme.surface,
-                shape: BoxShape.circle,
-                border: Border.all(color: scheme.outlineVariant),
-              ),
-              child: Icon(icon, size: 36, color: scheme.outline),
-            ),
+            CoinBadge(icon: icon, color: scheme.primary, size: 72),
             const SizedBox(height: Gap.l),
             Text(
               text,

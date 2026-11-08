@@ -450,7 +450,7 @@ class _StockText extends StatelessWidget {
       out ? t.sellOutOfStock : (low ? t.sellStockLow(n) : t.sellStockLeft(n)),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
-      style: TextStyle(color: (out || low) ? Theme.of(context).colorScheme.error : null, fontSize: 13),
+      style: TextStyle(color: (out || low) ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.outline, fontSize: 12),
     );
   }
 }
@@ -478,55 +478,41 @@ class _Tile extends StatelessWidget {
       key: Key('tile-${product.id}'),
       onTap: onTap,
       onLongPress: onLongPress,
-      padding: const EdgeInsets.all(Gap.m + 2),
-      radius: Gap.radiusL,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      padding: const EdgeInsets.fromLTRB(Gap.s, Gap.m, Gap.s, Gap.s),
+      radius: 22,
+      child: Stack(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Positioned.fill(
+            child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              product.photoPath != null
-                  ? ProductThumb(productId: product.id, path: product.photoPath, size: 36)
-                  : CoinBadge(
-                      icon: Icons.inventory_2_rounded,
-                      color: scheme.primary,
-                      size: 36,
-                    ),
-              if (left != null)
-                Flexible(
-                  child: Align(
-                    alignment: Alignment.centerRight,
-                    child: _StockText(left: left!, reorderPoint: product.reorderPoint),
-                  ),
-                ),
-            ],
-          ),
-          const Spacer(),
-          Row(children: [
-            if (pinned) ...[
-              Icon(Icons.push_pin_rounded, key: Key('pin-${product.id}'), size: 14, color: scheme.primary),
-              const SizedBox(width: 4),
-            ],
-            Expanded(
-              child: Text(
+              ProductThumb(productId: product.id, path: product.photoPath, size: 42),
+              const Spacer(),
+              Text(
                 product.name,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
               ),
-            ),
-          ]),
-          const SizedBox(height: 2),
-          Text(
-            product.price == null ? '—' : money(product.price!),
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-              letterSpacing: -0.6,
-              color: scheme.onSurface,
+              Text(
+                product.price == null ? '—' : money(product.price!),
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, letterSpacing: -0.4, color: scheme.onSurface),
+              ),
+              if (left != null)
+                DefaultTextStyle.merge(
+                  style: const TextStyle(fontSize: 11),
+                  child: _StockText(left: left!, reorderPoint: product.reorderPoint),
+                ),
+            ],
             ),
           ),
+          if (pinned)
+            Positioned(
+              top: 0,
+              right: 2,
+              child: Icon(Icons.push_pin_rounded, key: Key('pin-${product.id}'), size: 15, color: scheme.primary),
+            ),
         ],
       ),
     );
@@ -544,13 +530,12 @@ class _CartPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
     final scheme = Theme.of(context).colorScheme;
-    return Material(
-      elevation: 10,
-      shadowColor: scheme.primary.withValues(alpha: 0.35),
-      color: scheme.surface,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(Gap.radiusXL))),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(Gap.m, Gap.xs, Gap.m, Gap.xs),
+      child: AppCard(
+        padding: EdgeInsets.zero,
+        radius: 26,
+        child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (cart.isEmpty)
@@ -602,7 +587,7 @@ class _CartPanel extends StatelessWidget {
               ),
             ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(Gap.xl, Gap.s, Gap.xl, Gap.xl),
+            padding: const EdgeInsets.fromLTRB(Gap.l, Gap.s, Gap.m, Gap.m),
             child: Row(children: [
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -613,22 +598,31 @@ class _CartPanel extends StatelessWidget {
                       style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w900, letterSpacing: -0.8)),
                 ]),
               ),
-              FilledButton.icon(
-                key: const Key('pay-button'),
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size(150, 58),
-                  backgroundColor: scheme.obsidian,
-                  foregroundColor: Colors.white,
-                  shape: const StadiumBorder(),
-                  textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: 0.3),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(30),
+                  boxShadow: onPay == null
+                      ? null
+                      : [BoxShadow(color: const Color(0xFF22D3EE).withValues(alpha: 0.35), blurRadius: 16, offset: const Offset(0, 4))],
                 ),
-                onPressed: onPay,
-                icon: Icon(Icons.payments_rounded, color: scheme.glow, size: 22),
-                label: Text(t.sellPay),
+                child: FilledButton.icon(
+                  key: const Key('pay-button'),
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size(140, 56),
+                    backgroundColor: const Color(0xFF0F1B3D),
+                    foregroundColor: Colors.white,
+                    shape: StadiumBorder(side: BorderSide(color: const Color(0xFF22D3EE).withValues(alpha: onPay == null ? 0 : 0.9), width: 1.6)),
+                    textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: 0.3),
+                  ),
+                  onPressed: onPay,
+                  icon: const Icon(Icons.payments_rounded, color: Color(0xFF67E8F9), size: 22),
+                  label: Text(t.sellPay),
+                ),
               ),
             ]),
           ),
         ],
+        ),
       ),
     );
   }

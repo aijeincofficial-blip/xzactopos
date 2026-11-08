@@ -254,11 +254,16 @@ class _TabItem extends StatelessWidget {
               child: IconTheme.merge(data: IconThemeData(color: fg), child: icon),
             ),
             const SizedBox(height: 2),
-            Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 11, fontWeight: selected ? FontWeight.w800 : FontWeight.w600, color: fg),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 2),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  style: TextStyle(fontSize: 11, fontWeight: selected ? FontWeight.w800 : FontWeight.w600, color: fg),
+                ),
+              ),
             ),
           ],
         ),
@@ -417,9 +422,10 @@ class MoreScreen extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
+          // ends on the scaffold colour so there is no seam above the floating bar
           colors: dark
-              ? const [Color(0xFF151B33), Color(0xFF0E1324)]
-              : const [Color(0xFFF6F7FC), Color(0xFFE9ECF7)],
+              ? [const Color(0xFF1A2140), Theme.of(context).scaffoldBackgroundColor]
+              : [const Color(0xFFF8F9FD), Theme.of(context).scaffoldBackgroundColor],
         ),
       ),
       child: Scaffold(
