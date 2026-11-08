@@ -174,6 +174,12 @@ insert into expected (who, tbl, own_rows, own_updated)
 select w.who, 'stock_snapshots_daily', case when w.who in ('superadmin', 'admin') then 2 else 0 end, -1
 from (values ('superadmin'), ('admin'), ('cashier'), ('warehouse'), ('inactive')) w(who);
 
+-- F-09 warehouse bins (warehouse_zones, bins, bin_stock_levels, pick_lists, pick_list_items)
+insert into expected (who, tbl, own_rows, own_updated)
+select w.who, t.tbl, 0, -1
+from (values ('superadmin'), ('admin'), ('cashier'), ('warehouse'), ('inactive')) w(who)
+cross join (values ('warehouse_zones'), ('bins'), ('bin_stock_levels'), ('pick_lists'), ('pick_list_items')) t(tbl);
+
 -- 2 tenants x (who, table) pairs x 5 metrics, plus 8 targeted checks
 select plan((select count(*)::int * 2 * 5 from expected) + 8);
 
@@ -385,7 +391,12 @@ begin
     ('sale_counters',     'tenant_id', 'last_no = last_no'),
     ('transfers',         'tenant_id', 'notes = notes'),
     ('transfer_items',    'tenant_id', 'qty_shipped = qty_shipped'),
-    ('stock_snapshots_daily', 'tenant_id', 'total_value = total_value')
+    ('stock_snapshots_daily', 'tenant_id', 'total_value = total_value'),
+    ('warehouse_zones',   'tenant_id', 'name = name'),
+    ('bins',              'tenant_id', 'code = code'),
+    ('bin_stock_levels',  'tenant_id', 'qty_on_hand = qty_on_hand'),
+    ('pick_lists',        'tenant_id', 'status = status'),
+    ('pick_list_items',   'tenant_id', 'qty_picked = qty_picked')
   ) v(tbl, tcol, upd) loop
     begin
       execute format(

@@ -23,6 +23,7 @@ import { DayClosePage } from "./routes/day-close.tsx";
 import { UpgradePage } from "./routes/upgrade.tsx";
 import { SettingsPage } from "./routes/settings.tsx";
 import { TransfersPage } from "./routes/transfers.tsx";
+import { BinsPage } from "./routes/bins.tsx";
 import { ReportsPage } from "./routes/reports.tsx";
 import { tenantMode } from "./lib/mode.ts";
 import { useSession } from "./lib/session.tsx";
@@ -114,13 +115,14 @@ const dayClose = createRoute({ getParentRoute: () => app, path: "/day-close", be
 const upgrade = createRoute({ getParentRoute: () => app, path: "/upgrade", beforeLoad: requires("tenant.modules"), component: UpgradePage });
 const settings = createRoute({ getParentRoute: () => app, path: "/settings", beforeLoad: requires("tenant.settings"), component: SettingsPage });
 const transfers = createRoute({ getParentRoute: () => app, path: "/transfers", beforeLoad: requiresAny("transfer.manage", "stock.adjust_store"), component: TransfersPage });
+const bins = createRoute({ getParentRoute: () => app, path: "/bins", beforeLoad: requiresAny("transfer.manage", "stock.adjust_store", "locations.manage"), component: BinsPage });
 const reports = createRoute({ getParentRoute: () => app, path: "/reports", beforeLoad: requiresAny("reports.store", "reports.warehouse"), component: ReportsPage });
 const forbidden = createRoute({ getParentRoute: () => app, path: "/forbidden", component: ForbiddenPage });
 
 const routeTree = root.addChildren([
   home,
   login,
-  app.addChildren([dashboard, setup, sell, sales, products, utang, expenses, dayClose, upgrade, settings, transfers, reports, locations, users, modules, forbidden]),
+  app.addChildren([dashboard, setup, sell, sales, products, utang, expenses, dayClose, upgrade, settings, transfers, bins, reports, locations, users, modules, forbidden]),
 ]);
 
 export function makeRouter(queryClient: QueryClient) {

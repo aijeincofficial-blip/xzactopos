@@ -18,6 +18,7 @@ const NAV = [
   { to: "/app/sales", key: "sales", perm: "sale.create", fullOnly: false },
   { to: "/app/products", key: "products", perm: "catalog.manage", fullOnly: false },
   { to: "/app/transfers", key: "transfers", perm: null, perms: ["transfer.manage", "stock.adjust_store"] as const, fullOnly: true },
+  { to: "/app/bins", key: "bins", perm: null, perms: ["transfer.manage", "stock.adjust_store", "locations.manage"] as const, fullOnly: true },
   { to: "/app/utang", key: "utang", perm: "sale.create", fullOnly: false },
   { to: "/app/expenses", key: "expenses", perm: "shift.manage", fullOnly: false },
   { to: "/app/day-close", key: "dayClose", perm: "shift.manage", fullOnly: false },
