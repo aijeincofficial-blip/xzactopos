@@ -400,8 +400,8 @@ class _PosButton extends StatelessWidget {
           child: Center(
             child: Image.asset(
               'assets/brand/logo_mark.png',
-              width: size * 0.58,
-              height: size * 0.58,
+              width: size * 0.64,
+              height: size * 0.64,
               fit: BoxFit.contain,
               filterQuality: FilterQuality.high,
             ),
@@ -445,7 +445,7 @@ class TodayGlyph extends StatelessWidget {
                 width: 14,
                 height: 14,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF22C55E),
+                  color: const Color(0xFF10B981),
                   shape: BoxShape.circle,
                   border: Border.all(color: Colors.white, width: 1.5),
                 ),

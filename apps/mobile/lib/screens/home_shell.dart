@@ -164,20 +164,20 @@ class MoreScreen extends StatelessWidget {
         _GlassTile(
           key: const Key('more-expenses'),
           label: t.expensesTitle,
-          glyph: const _Glyph(Icons.receipt_long_rounded, [Color(0xFFFB7185), Color(0xFFE11D48)]),
+          glyph: const _Glyph(Icons.receipt_long_rounded, [Color(0xFFFF8A00), Color(0xFFF59E0B)]),
           onTap: () => open(ExpensesScreen(backend: backend)),
         ),
       _GlassTile(
         key: const Key('more-services'),
         label: t.servicesTitle,
-        glyph: const _Glyph(Icons.phone_iphone_rounded, [Color(0xFF4F46E5), Color(0xFF6366F1)], coin: true),
+        glyph: const _Glyph(Icons.phone_iphone_rounded, [Color(0xFF0D9488), Color(0xFF2FD9B2)], coin: true),
         onTap: () => open(ServicesScreen(backend: backend)),
       ),
       if (scope.canManageStock)
         _GlassTile(
           key: const Key('more-close-day'),
           label: t.dayCloseTitle,
-          glyph: const _Glyph(Icons.power_settings_new_rounded, [Color(0xFFF43F5E), Color(0xFFBE123C)], round: true),
+          glyph: const _Glyph(Icons.power_settings_new_rounded, [Color(0xFFFF7A00), Color(0xFFEA580C)], round: true),
           onTap: () => open(DayCloseScreen(backend: backend)),
         ),
       if (scope.canManageStock)
@@ -190,7 +190,7 @@ class MoreScreen extends StatelessWidget {
       _GlassTile(
         key: const Key('tile-settings'),
         label: t.settingsTitle,
-        glyph: const _Glyph(Icons.settings_rounded, [Color(0xFF94A3B8), Color(0xFF475569)]),
+        glyph: const _Glyph(Icons.settings_rounded, [Color(0xFF1E3A8A), Color(0xFF1E6FF2)]),
         onTap: () => open(SettingsScreen(backend: backend, storeName: storeName)),
       ),
     ];

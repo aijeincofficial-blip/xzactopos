@@ -476,7 +476,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                 fontSize: 9.5,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 2.0,
-                color: Color(0xFF0284C7),
+                color: Color(0xFF2EBCA4),
                 height: 1.0,
               ),
             ),
@@ -647,8 +647,8 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
       fg = const Color(0xFF2563EB);
       icon = Icons.local_cafe_outlined;
     } else if (lower.contains('sardinas') || lower.contains('fish') || lower.contains('can')) {
-      bg = const Color(0xFFFFF1F2);
-      fg = const Color(0xFFE11D48);
+      bg = const Color(0xFFE6F8F3);
+      fg = const Color(0xFF10B981);
       icon = Icons.lunch_dining_outlined;
     } else if (lower.contains('asukal') || lower.contains('sugar') || lower.contains('bigas')) {
       bg = const Color(0xFFFEF3C7);

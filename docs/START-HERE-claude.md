@@ -103,6 +103,31 @@ During this session, Antigravity executed the owner's design overhaul, color har
      * Verified `SellScreen` utilizes `GridView.builder` with windowed viewport recycling.
      * Verified `ReceiptScreen` ticket wraps inside a `ListView`, allowing infinite itemized products per ticket without render overflow.
 
+### G. Strict Brand Palette Unification: 3 Official Logo Colors Only
+* Responded to owner's request (*"LOOK AT THE LOGO COLORS OF THE MUST RESEMLBLE ON THE COLORS OF LOGO ONLY THAT 3 COLORS"*):
+  * Extracted and sampled dominant hex values directly from the official logo asset (`logo_mark.png`):
+    1. **Color 1: Electric / Royal Blue** (`#1E6FF2`, `#2563EB`, `#1E3A8A`) — from the main `X` stroke and outlines.
+    2. **Color 2: Teal / Mint Green** (`#2EBCA4`, `#10B981`, `#2FD9B2`, `#0D9488`) — from the verified checkmark, radar waves, and "POS APP" typography.
+    3. **Color 3: Vibrant Orange / Amber** (`#FF7A00`, `#FF8A00`, `#F59E0B`, `#EA580C`) — from the contactless credit card, barcode stripes, and target crosshairs.
+    * Base neutrals: Porcelain `#F6F8FC` / Crisp White `#FFFFFF`, and Midnight Obsidian Navy `#081326` / `#0F172A`.
+  * **Purged all foreign accent colors** (random pinks `#FB7185`, purples `#4F46E5`/`#6366F1`, crimsons `#F43F5E`, dull greys) across all screens:
+    * **`MoreScreen` 8-Tile Glass Grid**:
+      - `Products`: Brand Blue (`#1E6FF2` / `#38BDF8`)
+      - `Restock list`: Brand Blue-Mint (`#0284C7` / `#10B981`)
+      - `Reports`: Brand Blue (`#2563EB` / `#38BDF8`)
+      - `Expenses`: Replaced pink with **Brand Orange/Amber** (`#FF8A00` / `#F59E0B`)
+      - `Load & e-wallet`: Replaced purple with **Brand Teal/Mint** (`#0D9488` / `#2FD9B2`) with gold coin
+      - `Close the day`: Replaced crimson with **Brand Vibrant Orange** (`#FF7A00` / `#EA580C`)
+      - `Import & export`: Brand Cyan-Blue (`#0EA5E9` / `#2563EB`)
+      - `Settings`: Replaced dull grey with **Obsidian Navy to Electric Blue** (`#1E3A8A` / `#1E6FF2`)
+    * **`ReceiptScreen`**:
+      - Updated "POS APP" subtitle lockup from sky blue to official logo **Teal/Mint** (`#2EBCA4`).
+      - Harmonized fallback category badges to the 3 logo colors: Kape = Brand Blue (`#1E6FF2`), Sardinas = Brand Mint (`#10B981` replacing previous pink/red), Asukal = Brand Amber (`#F59E0B`).
+    * **`theme.dart` & `TodayScreen`**:
+      - Standardized `payExpense` to Brand Vibrant Orange (`#FF7A00`).
+      - Harmonized Today tab calendar badge to Brand Mint (`#10B981`).
+      - Enlarged the official logo mark inside the circular POS button (`size * 0.64`) for maximum vibrancy.
+
 ---
 
 ## 3. Verified Screenshots on Android Emulator (`emulator-5554`)

@@ -123,10 +123,11 @@ extension AppColors on ColorScheme {
   Color get accent => tertiary;
 
   /// Payment-type colors for reports: cash, e-wallet, utang, expenses.
-  Color get payCash => const Color(0xFF10B981);
-  Color get payEwallet => const Color(0xFF1E6FF2);
-  Color get payUtang => const Color(0xFFF59E0B);
-  Color get payExpense => const Color(0xFFF43F5E);
+  /// Strictly unified to the official 3 brand logo colors (Blue, Mint/Teal, Orange/Amber).
+  Color get payCash => const Color(0xFF10B981); // Brand Mint/Teal (Logo Checkmark)
+  Color get payEwallet => const Color(0xFF1E6FF2); // Brand Electric Blue (Logo X)
+  Color get payUtang => const Color(0xFFF59E0B); // Brand Amber/Orange (Logo Card & Barcode)
+  Color get payExpense => const Color(0xFFFF7A00); // Brand Vibrant Orange (Logo Accents)
 }
 
 ThemeData buildTheme(AppPalette palette, Brightness brightness) {
