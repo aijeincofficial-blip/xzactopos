@@ -9,7 +9,7 @@ Read `CLAUDE.md` (rules) first, then `docs/tasks/F-00-overview-full-mode.md` (pl
 - Work lives on branch `claude/phase3-sell-8261d3` (worktree `.claude/worktrees/phase3-sell-8261d3`). Nothing is pushed; `main` is untouched.
 
 ## Direction (owner, 2026-11-08)
-Full mode is React-first (`apps/client`). Solo (Flutter) stays as is. A solo tenant upgrades in place (same tenant, no copy) through an "Upgrade to Full" wizard in React. Flutter settings/staff cards (old F-03/F-04) are parked until Full works in React; Flutter is only prepared for the change. Details: "Direction change" in `docs/tasks/F-00-overview-full-mode.md`.
+Full mode is React-first (`apps/client`). Solo on the phone (Flutter) stays as is, and **Solo also gets a web version in React**; both Solo apps show an "Upgrade to Full" entry. A solo tenant upgrades in place (same tenant, no copy) through an "Upgrade to Full" wizard in React. Flutter settings/staff cards (old F-03/F-04) are parked until Full works in React; Flutter is only prepared for the change. Details: "Direction change" in `docs/tasks/F-00-overview-full-mode.md`.
 
 ## Owner-only items (do not do these without the owner)
 - Merge the branch to `main` and push.
