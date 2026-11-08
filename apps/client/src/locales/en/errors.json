@@ -56,5 +56,10 @@
     "password": "8 to 72 characters.",
     "position_required": "Choose a position for this store.",
     "location_required": "Choose a location."
-  }
+  },
+  "approval_required": "Supervisor PIN approval is required.",
+  "approval_invalid": "Supervisor approval does not match.",
+  "approval_used": "Supervisor approval has already been used.",
+  "approval_expired": "Supervisor approval has expired.",
+  "expense_not_found": "Expense was not found."
 }

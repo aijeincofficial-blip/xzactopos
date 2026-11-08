@@ -18,7 +18,7 @@ Owner decision 2026-11-08: Solo is the foundation. The React app `apps/client` g
 | W-01 Shell and Solo home | Mode-aware nav, Today (sales, cash, wallet float) from the existing rollups, en + fil strings, tests | Sonnet |
 | W-02 Sell | Product search, cart, cash / e-wallet / utang payment through the sale RPC, receipt view, void. **DONE 2026-11-08: search, cart, discount, cash, e-wallet, utang with customers, split payment, server sale number, Sales list/receipt, void.** | Opus (money) then Sonnet |
 | W-03 Stock and products | Products with variants, stock levels, receive, adjust, count, tingi (through `stock_movements` RPCs). **DONE 2026-11-08 for products, stock levels, stock in and counts; tingi, expiry, categories, photos and import/export are not built yet.** | Opus (stock math) then Sonnet |
-| W-04 Utang, expenses, day close | Customer ledger and payments, expenses, opening cash, day close | Sonnet (Opus if a new RPC is needed) |
+| W-04 Utang, expenses, day close | Customer ledger and payments, expenses, opening cash, day close. **DONE 2026-11-08: customer balances & ledger, utang cash/ewallet payments, due dates, expenses list/record/void with approval rules, daily drawer reconciliation & close history.** | Sonnet (Opus if a new RPC is needed) |
 | W-05 Upgrade to Full | Wizard (explain, confirm, `complete_setup` / `set_modules` / `upsert_location`), same tenant, nothing copied; "Upgrade to Full" entry on the web Solo home and in the Flutter Solo app (opens or links to the web wizard); test that a solo tenant's data is unchanged after the upgrade | Opus (data safety) then Sonnet |
 | W-06 and later | Full screens: staff, stores, warehouse, shifts, reports (cards F-04 to F-10, rewritten for React) | per card |
 

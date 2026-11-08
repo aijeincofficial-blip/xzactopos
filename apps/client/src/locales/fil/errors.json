@@ -56,5 +56,10 @@
     "password": "8 hanggang 72 character.",
     "position_required": "Pumili ng posisyon para sa tindahang ito.",
     "location_required": "Pumili ng lokasyon."
-  }
+  },
+  "approval_required": "Kailangan ng pag-apruba ng PIN ng supervisor.",
+  "approval_invalid": "Hindi tugma ang pag-apruba ng supervisor.",
+  "approval_used": "Nagamit na ang pag-apruba ng supervisor.",
+  "approval_expired": "Paso na ang pag-apruba ng supervisor.",
+  "expense_not_found": "Hindi nakita ang gastos."
 }

@@ -1,8 +1,32 @@
 {
-  "nav": { "label": "Main", "dashboard": "Home", "sell": "Sell", "sales": "Sales", "products": "Products", "locations": "Locations", "users": "Users", "modules": "Modules" },
-  "roles": { "superadmin": "Owner", "admin": "Admin", "warehouse": "Warehouse", "cashier": "Cashier" },
-  "positions": { "manager": "Manager", "supervisor": "Supervisor" },
-  "modules": { "inventory": "Inventory", "pos": "POS", "warehouse": "Warehouse" },
+  "nav": {
+    "label": "Main",
+    "dashboard": "Home",
+    "sell": "Sell",
+    "sales": "Sales",
+    "products": "Products",
+    "locations": "Locations",
+    "users": "Users",
+    "modules": "Modules",
+    "utang": "Utang",
+    "expenses": "Expenses",
+    "dayClose": "Day close"
+  },
+  "roles": {
+    "superadmin": "Owner",
+    "admin": "Admin",
+    "warehouse": "Warehouse",
+    "cashier": "Cashier"
+  },
+  "positions": {
+    "manager": "Manager",
+    "supervisor": "Supervisor"
+  },
+  "modules": {
+    "inventory": "Inventory",
+    "pos": "POS",
+    "warehouse": "Warehouse"
+  },
   "suspended": "This business is suspended. You can view data but not change it.",
   "forbidden": "You do not have access to this page.",
   "sell": {
@@ -34,7 +58,11 @@
     "paidNow": "Paid now",
     "onUtang": "On utang",
     "wallet": "Wallet",
-    "wallets": { "gcash": "GCash", "maya": "Maya", "other": "Other" },
+    "wallets": {
+      "gcash": "GCash",
+      "maya": "Maya",
+      "other": "Other"
+    },
     "reference": "Reference (optional)",
     "tendered": "Cash received",
     "change": "Change",
@@ -61,7 +89,10 @@
     "error": "Could not load the sales. Check your connection and try again.",
     "empty": "No sales yet.",
     "back": "Back to sales",
-    "status": { "completed": "Completed", "voided": "Cancelled" },
+    "status": {
+      "completed": "Completed",
+      "voided": "Cancelled"
+    },
     "voidSale": "Cancel this sale",
     "voidWarning": "The items go back to stock and any utang from this sale is taken off the customer. This cannot be undone.",
     "reason": "Reason (optional)",
@@ -101,7 +132,11 @@
     "received": "Stock added.",
     "countedQty": "Counted now",
     "reason": "Reason",
-    "reasons": { "counted": "Counted", "damage": "Damaged or lost", "other": "Other" },
+    "reasons": {
+      "counted": "Counted",
+      "damage": "Damaged or lost",
+      "other": "Other"
+    },
     "setCount": "Set count",
     "counted": "Count saved. Change: {{delta}}",
     "archive": "Archive this product",
@@ -139,18 +174,47 @@
     "noActions": "No actions available here."
   },
   "perm": {
-    "tenant": { "settings": "Business settings", "modules": "Modules" },
-    "locations": { "manage": "Manage locations" },
-    "users": { "manage": "Manage users" },
-    "catalog": { "manage": "Products and prices" },
-    "sale": { "create": "Sell", "void": "Void or refund" },
-    "discount": { "override": "Discount override" },
-    "shift": { "manage": "Shifts" },
-    "stock": { "adjust_store": "Adjust store stock", "adjust_warehouse": "Adjust warehouse stock", "count": "Stock count" },
-    "purchasing": { "manage": "Purchasing and receiving" },
-    "transfer": { "manage": "Transfers" },
-    "reports": { "store": "Store reports", "warehouse": "Warehouse reports" },
-    "audit": { "read": "Audit log" }
+    "tenant": {
+      "settings": "Business settings",
+      "modules": "Modules"
+    },
+    "locations": {
+      "manage": "Manage locations"
+    },
+    "users": {
+      "manage": "Manage users"
+    },
+    "catalog": {
+      "manage": "Products and prices"
+    },
+    "sale": {
+      "create": "Sell",
+      "void": "Void or refund"
+    },
+    "discount": {
+      "override": "Discount override"
+    },
+    "shift": {
+      "manage": "Shifts"
+    },
+    "stock": {
+      "adjust_store": "Adjust store stock",
+      "adjust_warehouse": "Adjust warehouse stock",
+      "count": "Stock count"
+    },
+    "purchasing": {
+      "manage": "Purchasing and receiving"
+    },
+    "transfer": {
+      "manage": "Transfers"
+    },
+    "reports": {
+      "store": "Store reports",
+      "warehouse": "Warehouse reports"
+    },
+    "audit": {
+      "read": "Audit log"
+    }
   },
   "condition": {
     "with_pin": "needs PIN",
@@ -163,13 +227,21 @@
   "setup": {
     "title": "Set up your business",
     "step": "Step {{current}} of {{total}}",
-    "steps": { "business": "Business", "languages": "Languages", "modules": "Modules" },
+    "steps": {
+      "business": "Business",
+      "languages": "Languages",
+      "modules": "Modules"
+    },
     "name": "Business name",
     "currency": "Base currency",
     "currencyHint": "Cannot be changed after setup.",
     "timezone": "Time zone",
     "taxMode": "Prices and tax",
-    "tax": { "inclusive": "Prices include tax", "exclusive": "Tax added on top", "none": "No tax" },
+    "tax": {
+      "inclusive": "Prices include tax",
+      "exclusive": "Tax added on top",
+      "none": "No tax"
+    },
     "locales": "Languages used in your business",
     "defaultLocale": "Default language",
     "finish": "Finish setup"
@@ -193,7 +265,10 @@
     "address": "Address",
     "typeLabel": "Type",
     "typeLocked": "The type cannot change after creation.",
-    "type": { "store": "Store", "warehouse": "Warehouse" },
+    "type": {
+      "store": "Store",
+      "warehouse": "Warehouse"
+    },
     "bins": "Bins",
     "binsEnabled": "Use bins and shelves in this warehouse",
     "archive": "Archive",
@@ -227,5 +302,84 @@
     "itsYou": "This is you.",
     "deactivate": "Deactivate",
     "activate": "Activate"
+  },
+  "utang": {
+    "title": "Customer Utang",
+    "totalOwed": "Total utang owed",
+    "newCustomer": "New customer",
+    "searchPlaceholder": "Search by customer name or phone",
+    "onlyOwed": "Only show customers with unpaid balance",
+    "loading": "Loading customers...",
+    "error": "Could not load customers. Check your connection.",
+    "noCustomers": "No customers found.",
+    "due": "Due",
+    "noDueDate": "No due date set",
+    "overdue": "Overdue",
+    "pickCustomer": "Select a customer to view their statement and record payments.",
+    "balance": "Current balance",
+    "recordPayment": "Record payment",
+    "paymentAmount": "Payment amount",
+    "notePlaceholder": "Note / reference (optional)",
+    "amountInvalid": "Enter a valid payment amount.",
+    "submitPayment": "Save payment",
+    "promisedPayDate": "Promised payment date",
+    "history": "Statement history",
+    "noHistory": "No ledger entries yet.",
+    "kind": {
+      "charge": "Charge (Sale)",
+      "payment": "Payment",
+      "adjust": "Adjustment"
+    }
+  },
+  "expenses": {
+    "title": "Expenses",
+    "add": "Record expense",
+    "recordNew": "Record a new store expense",
+    "amount": "Amount",
+    "amountInvalid": "Enter a valid expense amount.",
+    "category": "Category",
+    "paidFrom": "Paid from",
+    "note": "Note",
+    "notePlaceholder": "What was this for? (optional)",
+    "loading": "Loading expenses...",
+    "error": "Could not load expenses.",
+    "empty": "No expenses recorded yet.",
+    "void": "Void",
+    "voided": "Voided",
+    "voidPrompt": "Provide a reason to void this expense:",
+    "categories": {
+      "stock_purchase": "Stock purchase",
+      "utilities": "Utilities",
+      "transport": "Transport",
+      "wages": "Wages / Staff",
+      "rent": "Rent",
+      "other": "Other"
+    }
+  },
+  "dayClose": {
+    "title": "Day Close",
+    "statusOpen": "Open (Not closed yet today)",
+    "statusClosed": "Closed today at {{time}}",
+    "drawerCalculation": "Drawer Cash Calculation",
+    "openingCash": "Opening cash (Float / Sukli)",
+    "cashSales": "Cash sales today",
+    "cashUtangCollected": "Cash utang collected",
+    "cashExpenses": "Cash expenses paid",
+    "expectedInDrawer": "Expected cash in drawer",
+    "countTitle": "Count Cash & Close Day",
+    "recountTitle": "Recount / Re-close Day",
+    "countedCash": "Counted cash in drawer",
+    "over": "Over (Sobra)",
+    "short": "Short (Kulang)",
+    "submitClose": "Close Day",
+    "recountSubmit": "Save Recount",
+    "submitting": "Closing day...",
+    "invalidOpening": "Enter a valid opening cash amount.",
+    "invalidCounted": "Enter a valid counted cash amount.",
+    "closedSuccess": "Day closed successfully. Cash difference: {{diff}}",
+    "historyTitle": "Past Day Closes",
+    "noHistory": "No previous day closes found.",
+    "opening": "Opening",
+    "expected": "Expected"
   }
 }

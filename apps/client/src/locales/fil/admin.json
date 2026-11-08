@@ -1,8 +1,32 @@
 {
-  "nav": { "label": "Pangunahin", "dashboard": "Home", "sell": "Magbenta", "sales": "Mga benta", "products": "Mga produkto", "locations": "Mga lokasyon", "users": "Mga user", "modules": "Mga module" },
-  "roles": { "superadmin": "May-ari", "admin": "Admin", "warehouse": "Bodega", "cashier": "Cashier" },
-  "positions": { "manager": "Manager", "supervisor": "Supervisor" },
-  "modules": { "inventory": "Imbentaryo", "pos": "POS", "warehouse": "Bodega" },
+  "nav": {
+    "label": "Pangunahin",
+    "dashboard": "Home",
+    "sell": "Magbenta",
+    "sales": "Mga benta",
+    "products": "Mga produkto",
+    "locations": "Mga lokasyon",
+    "users": "Mga user",
+    "modules": "Mga module",
+    "utang": "Utang",
+    "expenses": "Mga gastos",
+    "dayClose": "Pagsara ng araw"
+  },
+  "roles": {
+    "superadmin": "May-ari",
+    "admin": "Admin",
+    "warehouse": "Bodega",
+    "cashier": "Cashier"
+  },
+  "positions": {
+    "manager": "Manager",
+    "supervisor": "Supervisor"
+  },
+  "modules": {
+    "inventory": "Imbentaryo",
+    "pos": "POS",
+    "warehouse": "Bodega"
+  },
   "suspended": "Suspendido ang negosyong ito. Makikita mo ang datos pero hindi ito mababago.",
   "forbidden": "Wala kang access sa pahinang ito.",
   "sell": {
@@ -34,7 +58,11 @@
     "paidNow": "Bayad ngayon",
     "onUtang": "Sa utang",
     "wallet": "Wallet",
-    "wallets": { "gcash": "GCash", "maya": "Maya", "other": "Iba pa" },
+    "wallets": {
+      "gcash": "GCash",
+      "maya": "Maya",
+      "other": "Iba pa"
+    },
     "reference": "Reference (opsyonal)",
     "tendered": "Natanggap na cash",
     "change": "Sukli",
@@ -61,7 +89,10 @@
     "error": "Hindi makuha ang mga benta. Tingnan ang koneksyon at subukan ulit.",
     "empty": "Wala pang benta.",
     "back": "Bumalik sa mga benta",
-    "status": { "completed": "Tapos na", "voided": "Kinansela" },
+    "status": {
+      "completed": "Tapos na",
+      "voided": "Kinansela"
+    },
     "voidSale": "Kanselahin ang benta",
     "voidWarning": "Babalik sa stock ang mga item at aalisin sa customer ang utang mula sa benta na ito. Hindi na ito mababawi.",
     "reason": "Dahilan (opsyonal)",
@@ -101,7 +132,11 @@
     "received": "Naidagdag ang stock.",
     "countedQty": "Bilang ngayon",
     "reason": "Dahilan",
-    "reasons": { "counted": "Binilang", "damage": "Nasira o nawala", "other": "Iba pa" },
+    "reasons": {
+      "counted": "Binilang",
+      "damage": "Nasira o nawala",
+      "other": "Iba pa"
+    },
     "setCount": "Itakda ang bilang",
     "counted": "Na-save ang bilang. Pagbabago: {{delta}}",
     "archive": "I-archive ang produktong ito",
@@ -139,18 +174,47 @@
     "noActions": "Walang magagawa rito."
   },
   "perm": {
-    "tenant": { "settings": "Settings ng negosyo", "modules": "Mga module" },
-    "locations": { "manage": "Pamahalaan ang mga lokasyon" },
-    "users": { "manage": "Pamahalaan ang mga user" },
-    "catalog": { "manage": "Mga produkto at presyo" },
-    "sale": { "create": "Magbenta", "void": "Void o refund" },
-    "discount": { "override": "Override ng diskwento" },
-    "shift": { "manage": "Mga shift" },
-    "stock": { "adjust_store": "Ayusin ang stock ng tindahan", "adjust_warehouse": "Ayusin ang stock ng bodega", "count": "Bilang ng stock" },
-    "purchasing": { "manage": "Pagbili at pagtanggap" },
-    "transfer": { "manage": "Mga transfer" },
-    "reports": { "store": "Ulat ng tindahan", "warehouse": "Ulat ng bodega" },
-    "audit": { "read": "Audit log" }
+    "tenant": {
+      "settings": "Settings ng negosyo",
+      "modules": "Mga module"
+    },
+    "locations": {
+      "manage": "Pamahalaan ang mga lokasyon"
+    },
+    "users": {
+      "manage": "Pamahalaan ang mga user"
+    },
+    "catalog": {
+      "manage": "Mga produkto at presyo"
+    },
+    "sale": {
+      "create": "Magbenta",
+      "void": "Void o refund"
+    },
+    "discount": {
+      "override": "Override ng diskwento"
+    },
+    "shift": {
+      "manage": "Mga shift"
+    },
+    "stock": {
+      "adjust_store": "Ayusin ang stock ng tindahan",
+      "adjust_warehouse": "Ayusin ang stock ng bodega",
+      "count": "Bilang ng stock"
+    },
+    "purchasing": {
+      "manage": "Pagbili at pagtanggap"
+    },
+    "transfer": {
+      "manage": "Mga transfer"
+    },
+    "reports": {
+      "store": "Ulat ng tindahan",
+      "warehouse": "Ulat ng bodega"
+    },
+    "audit": {
+      "read": "Audit log"
+    }
   },
   "condition": {
     "with_pin": "kailangan ng PIN",
@@ -163,13 +227,21 @@
   "setup": {
     "title": "I-set up ang inyong negosyo",
     "step": "Hakbang {{current}} ng {{total}}",
-    "steps": { "business": "Negosyo", "languages": "Mga wika", "modules": "Mga module" },
+    "steps": {
+      "business": "Negosyo",
+      "languages": "Mga wika",
+      "modules": "Mga module"
+    },
     "name": "Pangalan ng negosyo",
     "currency": "Base currency",
     "currencyHint": "Hindi na mapapalitan pagkatapos ng setup.",
     "timezone": "Time zone",
     "taxMode": "Presyo at buwis",
-    "tax": { "inclusive": "Kasama na ang buwis sa presyo", "exclusive": "Idinadagdag ang buwis", "none": "Walang buwis" },
+    "tax": {
+      "inclusive": "Kasama na ang buwis sa presyo",
+      "exclusive": "Idinadagdag ang buwis",
+      "none": "Walang buwis"
+    },
     "locales": "Mga wikang gamit sa inyong negosyo",
     "defaultLocale": "Default na wika",
     "finish": "Tapusin ang setup"
@@ -193,7 +265,10 @@
     "address": "Address",
     "typeLabel": "Uri",
     "typeLocked": "Hindi na mapapalitan ang uri pagkatapos gawin.",
-    "type": { "store": "Tindahan", "warehouse": "Bodega" },
+    "type": {
+      "store": "Tindahan",
+      "warehouse": "Bodega"
+    },
     "bins": "Mga bin",
     "binsEnabled": "Gumamit ng mga bin at istante sa bodegang ito",
     "archive": "I-archive",
@@ -227,5 +302,84 @@
     "itsYou": "Ikaw ito.",
     "deactivate": "I-deactivate",
     "activate": "I-activate"
+  },
+  "utang": {
+    "title": "Utang ng Customer",
+    "totalOwed": "Kabuuang natitirang utang",
+    "newCustomer": "Bagong customer",
+    "searchPlaceholder": "Maghanap sa pangalan o telepono",
+    "onlyOwed": "Ipakita lang ang may utang pa",
+    "loading": "Kinukuha ang mga customer...",
+    "error": "Hindi makuha ang mga customer. Tingnan ang koneksyon.",
+    "noCustomers": "Walang nakitang customer.",
+    "due": "Dapat bayaran sa",
+    "noDueDate": "Walang petsa ng bayad",
+    "overdue": "Lampas na sa takdang araw",
+    "pickCustomer": "Pumili ng customer para makita ang statement at magtala ng bayad.",
+    "balance": "Kasalukuyang balanse",
+    "recordPayment": "Magtala ng bayad",
+    "paymentAmount": "Halaga ng bayad",
+    "notePlaceholder": "Tala / reference (opsyonal)",
+    "amountInvalid": "Maglagay ng wastong halaga ng bayad.",
+    "submitPayment": "I-save ang bayad",
+    "promisedPayDate": "Ipinangakong petsa ng bayad",
+    "history": "Kasaysayan ng statement",
+    "noHistory": "Wala pang tala ng transaksyon.",
+    "kind": {
+      "charge": "Pautang (Benta)",
+      "payment": "Bayad",
+      "adjust": "Pagsasaayos"
+    }
+  },
+  "expenses": {
+    "title": "Mga Gastos",
+    "add": "Magtala ng gastos",
+    "recordNew": "Magtala ng bagong gastos sa tindahan",
+    "amount": "Halaga",
+    "amountInvalid": "Maglagay ng wastong halaga ng gastos.",
+    "category": "Kategorya",
+    "paidFrom": "Binayaran mula sa",
+    "note": "Tala",
+    "notePlaceholder": "Para saan ito? (opsyonal)",
+    "loading": "Kinukuha ang mga gastos...",
+    "error": "Hindi makuha ang mga gastos.",
+    "empty": "Wala pang naitalang gastos.",
+    "void": "Kanselahin",
+    "voided": "Kinansela",
+    "voidPrompt": "Maglagay ng dahilan para kanselahin ang gastos:",
+    "categories": {
+      "stock_purchase": "Bili ng paninda",
+      "utilities": "Kuryente / Tubig",
+      "transport": "Pamasahe / Biyahe",
+      "wages": "Sahod / Tao",
+      "rent": "Upa",
+      "other": "Iba pa"
+    }
+  },
+  "dayClose": {
+    "title": "Pagsara ng Araw",
+    "statusOpen": "Bukas (Hindi pa sarado ngayong araw)",
+    "statusClosed": "Naisara na ngayong {{time}}",
+    "drawerCalculation": "Kalkulasyon ng Cash sa Kahon",
+    "openingCash": "Panimulang pera (Sukli / Float)",
+    "cashSales": "Benta sa cash ngayong araw",
+    "cashUtangCollected": "Nasingil na utang sa cash",
+    "cashExpenses": "Gastos sa cash na binayaran",
+    "expectedInDrawer": "Inaasahang cash sa kahon",
+    "countTitle": "Bilangin ang Cash at Isara ang Araw",
+    "recountTitle": "Muling Bilangin / Isara ang Araw",
+    "countedCash": "Nabilang na cash sa kahon",
+    "over": "Sobra",
+    "short": "Kulang",
+    "submitClose": "Isara ang Araw",
+    "recountSubmit": "I-save ang Pagbilang",
+    "submitting": "Isinasara ang araw...",
+    "invalidOpening": "Maglagay ng wastong panimulang pera.",
+    "invalidCounted": "Maglagay ng wastong nabilang na pera.",
+    "closedSuccess": "Matagumpay na naisara ang araw. Pagkakaiba ng cash: {{diff}}",
+    "historyTitle": "Mga Nakaraang Pagsara ng Araw",
+    "noHistory": "Walang nakitang nakaraang pagsara ng araw.",
+    "opening": "Panimula",
+    "expected": "Inaasahan"
   }
 }

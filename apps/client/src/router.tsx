@@ -16,6 +16,9 @@ import { TodayPage } from "./routes/today.tsx";
 import { SellPage } from "./routes/sell.tsx";
 import { SalesPage } from "./routes/sales.tsx";
 import { ProductsPage } from "./routes/products.tsx";
+import { UtangPage } from "./routes/utang.tsx";
+import { ExpensesPage } from "./routes/expenses.tsx";
+import { DayClosePage } from "./routes/day-close.tsx";
 import { tenantMode } from "./lib/mode.ts";
 import { useSession } from "./lib/session.tsx";
 import { SetupPage } from "./routes/setup.tsx";
@@ -91,12 +94,15 @@ const modules = createRoute({ getParentRoute: () => app, path: "/modules", befor
 const sell = createRoute({ getParentRoute: () => app, path: "/sell", beforeLoad: requires("sale.create"), component: SellPage });
 const sales = createRoute({ getParentRoute: () => app, path: "/sales", beforeLoad: requires("sale.create"), component: SalesPage });
 const products = createRoute({ getParentRoute: () => app, path: "/products", beforeLoad: requires("catalog.manage"), component: ProductsPage });
+const utang = createRoute({ getParentRoute: () => app, path: "/utang", beforeLoad: requires("sale.create"), component: UtangPage });
+const expenses = createRoute({ getParentRoute: () => app, path: "/expenses", beforeLoad: requires("shift.manage"), component: ExpensesPage });
+const dayClose = createRoute({ getParentRoute: () => app, path: "/day-close", beforeLoad: requires("shift.manage"), component: DayClosePage });
 const forbidden = createRoute({ getParentRoute: () => app, path: "/forbidden", component: ForbiddenPage });
 
 const routeTree = root.addChildren([
   home,
   login,
-  app.addChildren([dashboard, setup, sell, sales, products, locations, users, modules, forbidden]),
+  app.addChildren([dashboard, setup, sell, sales, products, utang, expenses, dayClose, locations, users, modules, forbidden]),
 ]);
 
 export function makeRouter(queryClient: QueryClient) {
