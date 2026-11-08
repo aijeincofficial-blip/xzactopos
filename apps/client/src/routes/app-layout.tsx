@@ -5,21 +5,23 @@ import { useQueryClient } from "@tanstack/react-query";
 import { accessQuery } from "../lib/session.tsx";
 import { PERMISSION_KEYS, type PermissionKey } from "@pos/core";
 import { saveMyLocale, signOut } from "../lib/api.ts";
+import { tenantMode } from "../lib/mode.ts";
 import { pickLocale, storeLocale } from "../i18n/index.ts";
 import { useSession } from "../lib/session.tsx";
 import { Badge, Button, Card } from "../components/ui.tsx";
 import { LanguageSelect } from "../components/LanguageSelect.tsx";
 
 const NAV = [
-  { to: "/app", key: "dashboard", perm: null },
-  { to: "/app/locations", key: "locations", perm: "locations.manage" },
-  { to: "/app/users", key: "users", perm: "users.manage" },
-  { to: "/app/modules", key: "modules", perm: "tenant.modules" },
-] as const satisfies ReadonlyArray<{ to: string; key: string; perm: PermissionKey | null }>;
+  { to: "/app", key: "dashboard", perm: null, fullOnly: false },
+  { to: "/app/locations", key: "locations", perm: "locations.manage", fullOnly: true },
+  { to: "/app/users", key: "users", perm: "users.manage", fullOnly: true },
+  { to: "/app/modules", key: "modules", perm: "tenant.modules", fullOnly: true },
+] as const satisfies ReadonlyArray<{ to: string; key: string; perm: PermissionKey | null; fullOnly: boolean }>;
 
 export function AppLayout() {
   const { t, i18n } = useTranslation(["common", "admin"]);
   const { access, can } = useSession();
+  const mode = tenantMode(access);
   const qc = useQueryClient();
   const navigate = useNavigate();
 
@@ -63,7 +65,7 @@ export function AppLayout() {
         </div>
         {access.tenant.setup_completed ? (
           <nav aria-label={t("admin:nav.label")} className="mx-auto flex max-w-5xl gap-1 px-4">
-            {NAV.filter((n) => n.perm === null || can(n.perm)).map((n) => (
+            {NAV.filter((n) => (n.perm === null || can(n.perm)) && (!n.fullOnly || mode === "full")).map((n) => (
               <Link
                 key={n.to}
                 to={n.to}

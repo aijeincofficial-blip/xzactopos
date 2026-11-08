@@ -12,6 +12,9 @@ import { hasSession, loadAccess, SessionProvider } from "./lib/session.tsx";
 import { signOut } from "./lib/api.ts";
 import { HomePage, LoginPage } from "./routes/public.tsx";
 import { AppLayout, DashboardPage, ForbiddenPage } from "./routes/app-layout.tsx";
+import { TodayPage } from "./routes/today.tsx";
+import { tenantMode } from "./lib/mode.ts";
+import { useSession } from "./lib/session.tsx";
 import { SetupPage } from "./routes/setup.tsx";
 import { LocationsPage } from "./routes/locations.tsx";
 import { UsersPage } from "./routes/users.tsx";
@@ -71,7 +74,13 @@ const requires =
     if (!can(contextFromAccess(context.access), perm)) throw redirect({ to: "/app" });
   };
 
-const dashboard = createRoute({ getParentRoute: () => app, path: "/", component: DashboardPage });
+/** Home: Solo owners see Today; every Full-mode user sees the dashboard of locations and permissions. */
+function HomeRoute() {
+  const { access } = useSession();
+  return tenantMode(access) === "solo" ? <TodayPage /> : <DashboardPage />;
+}
+
+const dashboard = createRoute({ getParentRoute: () => app, path: "/", component: HomeRoute });
 const setup = createRoute({ getParentRoute: () => app, path: "/setup", beforeLoad: requires("tenant.settings"), component: SetupPage });
 const locations = createRoute({ getParentRoute: () => app, path: "/locations", beforeLoad: requires("locations.manage"), component: LocationsPage });
 const users = createRoute({ getParentRoute: () => app, path: "/users", beforeLoad: requires("users.manage"), component: UsersPage });

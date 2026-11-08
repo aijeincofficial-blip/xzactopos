@@ -5,6 +5,20 @@
   "modules": { "inventory": "Imbentaryo", "pos": "POS", "warehouse": "Bodega" },
   "suspended": "Suspendido ang negosyong ito. Makikita mo ang datos pero hindi ito mababago.",
   "forbidden": "Wala kang access sa pahinang ito.",
+  "today": {
+    "title": "Ngayong araw",
+    "loading": "Kinukuha ang numero ngayong araw...",
+    "error": "Hindi makuha ang numero ngayong araw. Tingnan ang koneksyon at subukan ulit.",
+    "sales": "Benta",
+    "transactions": "Mga transaksyon",
+    "owed": "Utang ng mga customer",
+    "cash": "Bayad na cash",
+    "ewallet": "Bayad sa e-wallet",
+    "expenses": "Mga gastos",
+    "cashAfterExpenses": "Cash na benta bawas cash na gastos",
+    "topItems": "Pinakamabentang item ngayon",
+    "noSales": "Wala pang benta ngayong araw."
+  },
   "dashboard": {
     "setupPending": "Hindi pa natatapos ng may-ari ang setup ng negosyong ito.",
     "modules": "Mga module",

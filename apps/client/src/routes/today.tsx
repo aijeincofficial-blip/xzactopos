@@ -1,0 +1,65 @@
+import { useTranslation } from "react-i18next";
+import { useQuery } from "@tanstack/react-query";
+import { formatMoney, money } from "@pos/core";
+import { Alert, Card } from "../components/ui.tsx";
+import { useSession } from "../lib/session.tsx";
+import { dayInTimezone, getDaySummary } from "../lib/today.ts";
+
+function Stat({ label, value, id }: { label: string; value: string; id: string }) {
+  return (
+    <Card data-testid={id}>
+      <div className="text-xs text-slate-500">{label}</div>
+      <div className="mt-1 text-xl font-semibold">{value}</div>
+    </Card>
+  );
+}
+
+/** Solo home: today's sales, how they were paid, expenses and what customers still owe (read-only). */
+export function TodayPage() {
+  const { t, i18n } = useTranslation("admin");
+  const { access } = useSession();
+  const day = dayInTimezone(access.tenant.timezone);
+  const q = useQuery({ queryKey: ["day-summary", day], queryFn: () => getDaySummary(day), refetchInterval: 120_000 });
+  const fmt = (n: number) => formatMoney(money(n, access.tenant.base_currency), i18n.language);
+
+  if (q.isPending) return <Card>{t("today.loading")}</Card>;
+  if (q.isError) return <Alert>{t("today.error")}</Alert>;
+
+  const s = q.data;
+  const cashLeft = s.totals.cash - s.expenses.cash;
+  return (
+    <>
+      <h2 className="text-lg font-semibold">{t("today.title")}</h2>
+      <p className="-mt-2 text-sm text-slate-500">{day}</p>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Stat id="today-net" label={t("today.sales")} value={fmt(s.totals.net)} />
+        <Stat id="today-txns" label={t("today.transactions")} value={String(s.totals.txns)} />
+        <Stat id="today-owed" label={t("today.owed")} value={fmt(s.utang.owed)} />
+        <Stat id="today-cash" label={t("today.cash")} value={fmt(s.totals.cash)} />
+        <Stat id="today-ewallet" label={t("today.ewallet")} value={fmt(s.totals.ewallet)} />
+        <Stat id="today-expenses" label={t("today.expenses")} value={fmt(s.expenses.total)} />
+      </div>
+      <Card data-testid="today-cash-after-expenses">
+        <div className="text-xs text-slate-500">{t("today.cashAfterExpenses")}</div>
+        <div className="mt-1 text-xl font-semibold">{fmt(cashLeft)}</div>
+      </Card>
+      <Card>
+        <h3 className="mb-2 font-medium">{t("today.topItems")}</h3>
+        {s.top_items.length === 0 ? (
+          <p className="text-sm text-slate-500">{t("today.noSales")}</p>
+        ) : (
+          <ul className="grid gap-1 text-sm">
+            {s.top_items.slice(0, 5).map((i) => (
+              <li key={i.variant_id} className="flex justify-between gap-2">
+                <span>
+                  {i.name} × {i.qty}
+                </span>
+                <span>{fmt(i.revenue)}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
+    </>
+  );
+}

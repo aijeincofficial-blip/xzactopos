@@ -529,3 +529,9 @@ Read `docs/START-HERE-claude.md` for the complete handoff from Antigravity.
 - **Home Header & 360px Safety**: Streamlined AppBar with store capsule, store avatar with active indicator, and zero overflow on 360px devices.
 - **Enriched Reporting**: Added Average Order Value (AOV), Total Orders, multi-channel payment share bar, and live inventory health & reorder alert card.
 - **Tests**: All 25 suites and 173 automated tests passing green. Live verified on Android emulator (`emulator-5554`).
+
+## W-01: web shell and Solo home (2026-11-08)
+- apps/client: mode-aware nav (src/lib/mode.ts, Solo derived from access: owner + one store + no warehouse) and a read-only Today screen (src/routes/today.tsx, eport_summary for the business-timezone day). Solo hides Locations/Users/Modules; Full shows the existing dashboard. en + fil strings under dmin.today.
+- No server change. client typecheck, lint and vitest (24 tests) pass; full pnpm check not run (no SQL touched). Not yet checked in a browser against the local stack.
+- Known gap: an owner with staff but nothing else still derives as Solo (access has no staff count). A stored mode flag can replace tenantMode() later.
+- Next: W-02 Sell.

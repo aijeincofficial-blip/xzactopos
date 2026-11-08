@@ -5,6 +5,20 @@
   "modules": { "inventory": "Inventory", "pos": "POS", "warehouse": "Warehouse" },
   "suspended": "This business is suspended. You can view data but not change it.",
   "forbidden": "You do not have access to this page.",
+  "today": {
+    "title": "Today",
+    "loading": "Loading today's numbers...",
+    "error": "Could not load today's numbers. Check your connection and try again.",
+    "sales": "Sales",
+    "transactions": "Transactions",
+    "owed": "Owed by customers (utang)",
+    "cash": "Paid in cash",
+    "ewallet": "Paid by e-wallet",
+    "expenses": "Expenses",
+    "cashAfterExpenses": "Cash sales minus cash expenses",
+    "topItems": "Top items today",
+    "noSales": "No sales yet today."
+  },
   "dashboard": {
     "setupPending": "The owner has not finished setting up this business yet.",
     "modules": "Modules",
