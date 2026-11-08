@@ -3,19 +3,25 @@
 **Date:** 2026-11-08  
 **Branch:** `claude/phase3-sell-8261d3`  
 **Git Worktree:** `C:\Users\USER\xzactopos\.claude\worktrees\phase3-sell-8261d3`  
-**Latest Commit:** `f16e4a3` (`Smooth wave glass bottom bar and clean header matching reference mockup`)  
 **Flutter Analyze:** Clean (0 errors, 0 warnings).  
 
 ---
 
 ## 1. Executive Summary: What Antigravity Accomplished
 
-During this session, Antigravity executed the owner's design overhaul and UX feedback requests:
+During this session, Antigravity executed the owner's design overhaul, color harmony audit, and branding requests:
 1. **Official XZACTO Brand Identity Integration**: Extracted, cropped, and generated round, squircle, mark, and adaptive Android/web launcher icons from the official brand asset, matching app colors (`#1E6FF2`, `#2FD9B2`, `#F59E0B` on `#0F172A`).
-2. **Keypad Relocated to Pay Screen**: Responded to owner's feedback (*"KEYPAD IS KINDA USELES IT SHOULD BE N PAYMENT SCREEN"*). Removed open-amount keypad from SellScreen; turned it into `AmountPad` on `PayScreen` for fast cash tendered entry without opening the phone keyboard.
-3. **Pixel-Perfect Frosted Glass Bottom Bar**: Responded to owner's feedback (*"BOTTOM TAB IS VERY FAR FROM WHAT I SEND , I DONT LIKE IT"*). Rebuilt the bottom bar to match `media_1794103769682_1754aa2e.jpg` with a silky-smooth S-curve wave dip, raised glowing circular POS scanner button, razor-sharp outline glyphs, and active mint-glowing pill container.
-4. **Clean Header & 8-Tile More Screen**: Aligned `MoreScreen` with the reference mockup with a clean store header + settings gear and an 8-tile glass grid.
-5. **High-Contrast Dark Mode**: Formatted the dark mode glass bar as luminous frosted icy glass matching the reference mockup with crisp midnight-navy outline icons.
+2. **Official Logo Embedded in Circular POS Button**: Responded to owner's request (*"THE POS CIRCLIE PART HAS LOGO IN IT CAN WE MAKE IT"*). Directly embedded the official `assets/brand/logo_mark.png` inside the floating glowing circular button in `glass_tab_bar.dart`.
+3. **Comprehensive Color Synchronization Audit & Overhaul**: Responded to owner's feedback (*"COLORS ARE EVERYWHERE AND NOT IN SYNC FOR EVERY SCREEN AUDIT IT"*).
+   - Replaced purple/magenta product placeholders with branded ocean-blue ceramic boxes (`#1E6FF2` on `#F0F6FE`).
+   - Removed purple card shadows (`0x146366F1`) and lavender card fills across the entire app; unified with neutral diffused porcelain/obsidian shadows.
+   - Standardized primary action buttons ("Bayad" on SellScreen and "Done" on PayScreen) to obsidian navy `#0F172A` with electric cyan border `#22D3EE`.
+   - Harmonized More screen's 8 tiles to semantic palette hierarchy.
+   - Synchronized Today screen metrics and actions (Mint Cash, Royal Blue E-wallet, Amber Utang, Ruby Rose Close Day).
+4. **Keypad Relocated to Pay Screen**: Responded to owner's feedback (*"KEYPAD IS KINDA USELES IT SHOULD BE N PAYMENT SCREEN"*). Removed open-amount keypad from SellScreen; turned it into `AmountPad` on `PayScreen` for fast cash tendered entry without opening the phone keyboard.
+5. **Pixel-Perfect Frosted Glass Bottom Bar**: Responded to owner's feedback (*"BOTTOM TAB IS VERY FAR FROM WHAT I SEND , I DONT LIKE IT"*). Rebuilt the bottom bar to match `media_1794103769682_1754aa2e.jpg` with a silky-smooth S-curve wave dip, raised glowing circular POS scanner button, razor-sharp outline glyphs, and active mint-glowing pill container.
+6. **Clean Header & 8-Tile More Screen**: Aligned `MoreScreen` with the reference mockup with a clean store header + settings gear and an 8-tile glass grid.
+7. **High-Contrast Dark Mode**: Formatted the dark mode glass bar as luminous frosted icy glass matching the reference mockup with crisp midnight-navy outline icons.
 
 ---
 
@@ -25,11 +31,11 @@ During this session, Antigravity executed the owner's design overhaul and UX fee
 * **Wave Geometry (`_barPath`)**:
   * Continuous flowing S-curve dip: starts flat at `(0, r)`, spans `cx - 68` to `cx + 68`, and dips down smoothly to `depth = 26` at center.
   * Replaced the previous circular notch cutout with a continuous cubic Bézier inflection curve that naturally cradles the circular POS button without sharp bites or edges.
-* **Raised POS Button (`_PosButton`)**:
+* **Raised POS Button with Official Logo (`_PosButton`)**:
   * Circular button (diameter 62) floating above the wave dip, with ~50% of the circle raised above the bar's top flat edge.
   * Vibrant electric neon cyan glow halo (`BoxShadow(color: Color(0xFF00E5FF), blurRadius: 22)`).
   * Cyan-to-blue gradient ring (`#00F2FE` to `#2563EB`) enclosing a deep midnight navy disc (`#0B1E48` to `#060B18`).
-  * Scanner glyph (`_ScannerGlyphPainter`): 4 rounded corner brackets, cyan rounded card bar at top, and two rounded blocks (blue and cyan) at bottom.
+  * Center asset: `Image.asset('assets/brand/logo_mark.png', width: size * 0.58, height: size * 0.58, fit: BoxFit.contain)`.
 * **Unified Baseline Alignment**:
   * All 5 tab labels ("Today" / "Ngayon", "Stock", "POS", "Utang", "More" / "Iba pa") are anchored at `Positioned(bottom: 8)` with `fontSize: 11.5`.
   * Guarantees 100% mathematical baseline consistency across all tabs.
@@ -41,27 +47,30 @@ During this session, Antigravity executed the owner's design overhaul and UX fee
   * `NotebookGlyph`: Ring-bound notebook with 4 spiral coils and cover lines.
   * `MoreGlyph`: 3 solid round horizontal dots.
 
-### B. Keypad on Payment Screen (`apps/mobile/lib/screens/keypad_panel.dart` & `pay_screen.dart`)
-* Removed the keypad toggle and hidden no-stock product hacks from `SellScreen`. `SellScreen` is now 100% focused on product tiles and the floating cart card.
-* Converted `KeypadPanel` into `AmountPad` directly integrated into `PayScreen`.
-* Tapping digit keys updates the `_received` amount directly and handles trailing decimal states (e.g. `100.`) gracefully without opening the software on-screen keyboard.
+### B. Color Synchronization & System Palette (`theme.dart`, `ui.dart`, `product_thumb.dart`)
+* **Base Surfaces**: Porcelain `#F6F8FC` (Light) and Obsidian Navy `#0F172A` (Dark).
+* **Product Tiles**: Branded ocean-blue ceramic box (`#1E6FF2` on `#F0F6FE` in Light, `#38BDF8` on `#1E293B` in Dark).
+* **CTA Buttons**: Obsidian pill with Electric Cyan border (`#22D3EE`).
+* **Semantic Metrics**:
+  * Cash: Mint `#10B981`
+  * E-Wallet: Royal Blue `#2563EB`
+  * Utang: Solar Amber `#F59E0B`
+  * Expenses / Day Close: Ruby Rose `#F43F5E`
 
-### C. Clean Header & More Screen (`apps/mobile/lib/screens/home_shell.dart`)
-* Header simplified to match the mockup: Store Name (`fontSize: 26, fontWeight: FontWeight.w700`) + Settings Gear button (`Key('more-settings-gear')`).
-* Grid of 8 soft glass tiles: `Products`, `Restock list`, `Reports`, `Expenses`, `Load & e-wallet`, `Close the day`, `Import & export`, `Settings`.
-* Extended body behind the floating glass bar with `extendBody: true` on `Scaffold` and `100px` bottom padding.
+### C. Keypad on Payment Screen (`apps/mobile/lib/screens/keypad_panel.dart` & `pay_screen.dart`)
+* Converted `KeypadPanel` into `AmountPad` directly integrated into `PayScreen`.
+* Tapping digit keys updates the `_received` amount directly and handles trailing decimal states without opening the software keyboard.
 
 ---
 
 ## 3. Verified Screenshots on Android Emulator (`emulator-5554`)
 
 Artifacts captured directly from release x64 build running on Pixel 4:
-* `d_pos.png`: POS tab with product catalog, centered tiles, floating cart card, and waved bottom bar.
-* `d_more.png`: More tab with clean header, 8-tile glass grid, and waved bottom bar with active mint pill on "Iba pa".
-* `e_more_dark.png`: Dark mode More tab with luminous frosted icy glass bar and high-contrast outline icons.
-* `d_today.png`: Today tab with active mint pill on "Ngayon".
-* `d_stock.png`: Stock tab with active mint pill on "Stock".
-* `d_utang.png`: Utang tab with active mint pill on "Utang".
+* `logo_pos.png`: POS tab with product catalog, centered tiles, and bottom bar displaying the official XZACTO logo mark inside the circular glowing button.
+* `logo_more.png`: More tab in light mode with clean header, 8-tile glass grid, active mint pill on "Iba pa", and the logo mark.
+* `logo_more_dark.png`: Dark mode More tab with luminous frosted icy glass bar, high-contrast outline icons, and official logo mark.
+* `audit_today.png`: Today tab with unified semantic metrics (Mint, Indigo, Amber, Rose).
+* `audit_stock.png`: Stock tab with clean ocean-blue ceramic box placeholders.
 
 ---
 

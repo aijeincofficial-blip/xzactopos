@@ -398,9 +398,12 @@ class _PosButton extends StatelessWidget {
               ),
             ),
             child: Center(
-              child: CustomPaint(
-                size: Size.square(size * 0.44),
-                painter: _ScannerGlyphPainter(),
+              child: Image.asset(
+                'assets/brand/logo_mark.png',
+                width: size * 0.58,
+                height: size * 0.58,
+                fit: BoxFit.contain,
+                filterQuality: FilterQuality.high,
               ),
             ),
           ),
@@ -410,91 +413,6 @@ class _PosButton extends StatelessWidget {
   }
 }
 
-/// Scanner frame corners with top card and bottom chip segments.
-class _ScannerGlyphPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size s) {
-    final w = s.width;
-    final h = s.height;
-    const cyan = Color(0xFF38BDF8);
-    const blue = Color(0xFF0284C7);
-
-    final stroke = Paint()
-      ..color = cyan
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.0
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-
-    final arm = w * 0.28;
-    const cr = 2.5;
-
-    // 4 corner brackets
-    canvas.drawPath(
-      Path()
-        ..moveTo(0, arm)
-        ..lineTo(0, cr)
-        ..quadraticBezierTo(0, 0, cr, 0)
-        ..lineTo(arm, 0),
-      stroke,
-    );
-    canvas.drawPath(
-      Path()
-        ..moveTo(w - arm, 0)
-        ..lineTo(w - cr, 0)
-        ..quadraticBezierTo(w, 0, w, cr)
-        ..lineTo(w, arm),
-      stroke,
-    );
-    canvas.drawPath(
-      Path()
-        ..moveTo(w, h - arm)
-        ..lineTo(w, h - cr)
-        ..quadraticBezierTo(w, h, w - cr, h)
-        ..lineTo(w - arm, h),
-      stroke,
-    );
-    canvas.drawPath(
-      Path()
-        ..moveTo(arm, h)
-        ..lineTo(cr, h)
-        ..quadraticBezierTo(0, h, 0, h - cr)
-        ..lineTo(0, h - arm),
-      stroke,
-    );
-
-    final fillCyan = Paint()..color = cyan;
-    final fillBlue = Paint()..color = blue;
-
-    // Top horizontal bar
-    final barRect = RRect.fromRectAndRadius(
-      Rect.fromCenter(center: Offset(w * 0.5, h * 0.38), width: w * 0.56, height: h * 0.16),
-      Radius.circular(h * 0.05),
-    );
-    canvas.drawRRect(barRect, fillCyan);
-
-    // Bottom 2 blocks side-by-side
-    final blockW = w * 0.25;
-    final blockH = h * 0.17;
-    final blockY = h * 0.56;
-    final blockRadius = Radius.circular(h * 0.04);
-
-    final leftRect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(w * 0.22, blockY, blockW, blockH),
-      blockRadius,
-    );
-    canvas.drawRRect(leftRect, fillBlue);
-
-    final rightRect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(w * 0.53, blockY, blockW, blockH),
-      blockRadius,
-    );
-    canvas.drawRRect(rightRect, fillCyan);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
 
 // ---------- Outline icons drawn to match the owner's mockup ----------
 
