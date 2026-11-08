@@ -901,5 +901,6 @@
   "sellModeItems": "Mga item",
   "sellModeKeypad": "Keypad",
   "openAmountName": "Iba pang item",
-  "payWalletTitle": "Anong wallet?"
+  "payWalletTitle": "Anong wallet?",
+  "noProductsHere": "Wala ka pang produkto. Magdagdag ng isa, o mag-import ng listahan sa Iba pa > I-import at i-export."
 }

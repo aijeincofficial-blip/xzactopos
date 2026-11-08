@@ -327,6 +327,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
               // 3-Column Payment Breakdown
               Row(
+                crossAxisAlignment: CrossAxisAlignment.end, // amounts line up even when a label wraps
                 children: [
                   _Stat(t.todayCash, money(cashAmount), 'report-cash', Icons.payments_outlined, scheme.payCash),
                   _Stat(t.payEwallet, money(ewalletAmount), 'report-ewallet', Icons.account_balance_wallet_outlined, scheme.payEwallet),
@@ -642,7 +643,7 @@ class _Stat extends StatelessWidget {
               Expanded(
                 child: Text(
                   label,
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: scheme.onSurfaceVariant,

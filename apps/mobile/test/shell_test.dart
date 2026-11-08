@@ -74,4 +74,13 @@ void main() {
     expect(find.byKey(const Key('stock-search')), findsNothing);
     await leave(tester);
   });
+
+  testWidgets('with no products, Sell says so and offers an Add button that opens the product form', (tester) async {
+    await openHome(tester);
+    expect(find.textContaining('You have no products yet'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('sell-add-product')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('field-name')), findsOneWidget);
+    await leave(tester);
+  });
 }

@@ -365,7 +365,17 @@ class _SellScreenState extends State<SellScreen> {
           return Center(
             child: Padding(
               padding: const EdgeInsets.all(24),
-              child: Text(t.noProductsYet, textAlign: TextAlign.center),
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                Text(t.noProductsHere, textAlign: TextAlign.center),
+                const SizedBox(height: Gap.l),
+                FilledButton.icon(
+                  key: const Key('sell-add-product'),
+                  icon: const Icon(Icons.add_rounded),
+                  label: Text(t.addProduct),
+                  onPressed: () => Navigator.of(context)
+                      .push(MaterialPageRoute<void>(builder: (_) => CatalogScope.of(context).wrap(const ProductFormScreen()))),
+                ),
+              ]),
             ),
           );
         }

@@ -1519,4 +1519,8 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get payWalletTitle => 'Which wallet?';
+
+  @override
+  String get noProductsHere =>
+      'You have no products yet. Add one, or import a list under More > Import & export.';
 }

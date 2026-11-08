@@ -2545,6 +2545,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Which wallet?'**
   String get payWalletTitle;
+
+  /// No description provided for @noProductsHere.
+  ///
+  /// In en, this message translates to:
+  /// **'You have no products yet. Add one, or import a list under More > Import & export.'**
+  String get noProductsHere;
 }
 
 class _AppLocalizationsDelegate

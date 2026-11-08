@@ -1523,4 +1523,8 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get payWalletTitle => 'Anong wallet?';
+
+  @override
+  String get noProductsHere =>
+      'Wala ka pang produkto. Magdagdag ng isa, o mag-import ng listahan sa Iba pa > I-import at i-export.';
 }

@@ -138,7 +138,7 @@ class _StockScreenState extends State<StockScreen> {
                   ? Center(
                       child: Padding(
                         padding: const EdgeInsets.all(32),
-                        child: Text(_lowOnly ? t.stockNoneLow : (_expiringOnly ? t.stockNoneExpiring : (all.isEmpty ? t.noProductsYet : t.noMatches)),
+                        child: Text(_lowOnly ? t.stockNoneLow : (_expiringOnly ? t.stockNoneExpiring : (all.isEmpty ? t.noProductsHere : t.noMatches)),
                             textAlign: TextAlign.center),
                       ),
                     )

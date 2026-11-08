@@ -901,5 +901,6 @@
   "sellModeItems": "Items",
   "sellModeKeypad": "Keypad",
   "openAmountName": "Other item",
-  "payWalletTitle": "Which wallet?"
+  "payWalletTitle": "Which wallet?",
+  "noProductsHere": "You have no products yet. Add one, or import a list under More > Import & export."
 }
