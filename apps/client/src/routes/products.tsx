@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatMoney, money, toMajorNumber } from "@pos/core";
 import { Alert, Badge, Button, Card, Input, Select } from "../components/ui.tsx";
 import { useSession } from "../lib/session.tsx";
+import { useActiveLocation } from "../lib/location-context.tsx";
 import { useErrorMessage } from "../lib/i18n-helpers.ts";
 import { parseAmount } from "../lib/sale-math.ts";
 import { formatQty, parseQty, parseTaxPercent, stockStatus, taxPercentText } from "../lib/product-math.ts";
@@ -270,7 +271,8 @@ export function ProductsPage() {
   const qc = useQueryClient();
   const currency = access.tenant.base_currency;
   const fmt = (n: number) => formatMoney(money(n, currency), i18n.language);
-  const store = access.locations.find((l) => l.type === "store" && can("catalog.manage", l.id));
+  const { activeStore } = useActiveLocation();
+  const store = (activeStore && can("catalog.manage", activeStore.id)) ? activeStore : access.locations.find((l) => l.type === "store" && can("catalog.manage", l.id));
 
   const [search, setSearch] = useState("");
   const [onlyLow, setOnlyLow] = useState(false);

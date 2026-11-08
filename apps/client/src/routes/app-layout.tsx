@@ -8,6 +8,7 @@ import { saveMyLocale, signOut } from "../lib/api.ts";
 import { tenantMode } from "../lib/mode.ts";
 import { pickLocale, storeLocale } from "../i18n/index.ts";
 import { useSession } from "../lib/session.tsx";
+import { useActiveLocation } from "../lib/location-context.tsx";
 import { Badge, Button, Card } from "../components/ui.tsx";
 import { LanguageSelect } from "../components/LanguageSelect.tsx";
 
@@ -29,6 +30,7 @@ const NAV = [
 export function AppLayout() {
   const { t, i18n } = useTranslation(["common", "admin"]);
   const { access, can } = useSession();
+  const { activeStoreId, stores, setActiveStoreId } = useActiveLocation();
   const mode = tenantMode(access);
   const qc = useQueryClient();
   const navigate = useNavigate();
@@ -66,6 +68,23 @@ export function AppLayout() {
               {access.full_name || access.username} · {t(`admin:roles.${access.role}`)}
             </div>
           </div>
+          {stores.length > 1 ? (
+            <div className="flex items-center gap-1.5 rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs">
+              <span className="font-medium text-slate-500">🏪 {t("admin:users.store")}:</span>
+              <select
+                value={activeStoreId ?? ""}
+                onChange={(e) => setActiveStoreId(e.target.value)}
+                className="cursor-pointer bg-transparent font-semibold text-slate-800 focus:outline-none"
+                aria-label="Active store"
+              >
+                {stores.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.code} · {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : null}
           <LanguageSelect onChoose={(l) => void chooseLocale(l)} />
           <Button variant="outline" size="sm" onClick={() => void leave()}>
             {t("common:actions.signOut")}

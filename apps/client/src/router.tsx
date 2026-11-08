@@ -9,6 +9,7 @@ import type { QueryClient } from "@tanstack/react-query";
 import type { PermissionKey } from "@pos/core";
 import { can, contextFromAccess } from "@pos/core";
 import { hasSession, loadAccess, SessionProvider } from "./lib/session.tsx";
+import { LocationProvider } from "./lib/location-context.tsx";
 import { signOut } from "./lib/api.ts";
 import { HomePage, LoginPage } from "./routes/public.tsx";
 import { AppLayout, DashboardPage, ForbiddenPage } from "./routes/app-layout.tsx";
@@ -70,7 +71,9 @@ const app = createRoute({
   },
   component: () => (
     <SessionProvider>
-      <AppLayout />
+      <LocationProvider>
+        <AppLayout />
+      </LocationProvider>
     </SessionProvider>
   ),
 });

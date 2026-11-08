@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatMoney, money } from "@pos/core";
 import { Alert, Badge, Button, Card, Input, Select } from "../components/ui.tsx";
 import { useSession } from "../lib/session.tsx";
+import { useActiveLocation } from "../lib/location-context.tsx";
 import { useErrorMessage } from "../lib/i18n-helpers.ts";
 import { parseAmount } from "../lib/sale-math.ts";
 import type { Wallet } from "../lib/sale-math.ts";
@@ -25,7 +26,8 @@ export function ExpensesPage() {
   const qc = useQueryClient();
   const currency = access.tenant.base_currency;
   const fmt = (n: number) => formatMoney(money(n, currency), i18n.language);
-  const store = access.locations.find((l) => l.type === "store" && can("shift.manage", l.id));
+  const { activeStore } = useActiveLocation();
+  const store = (activeStore && can("shift.manage", activeStore.id)) ? activeStore : access.locations.find((l) => l.type === "store" && can("shift.manage", l.id));
 
   const [showAdd, setShowAdd] = useState(false);
   const [amountText, setAmountText] = useState("");

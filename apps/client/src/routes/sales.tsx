@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatMoney, money } from "@pos/core";
 import { Alert, Badge, Button, Card, Input } from "../components/ui.tsx";
 import { useSession } from "../lib/session.tsx";
+import { useActiveLocation } from "../lib/location-context.tsx";
 import { useErrorMessage } from "../lib/i18n-helpers.ts";
 import { fetchRecentSales, fetchSaleDetail, voidSale } from "../lib/sell-api.ts";
 
@@ -18,7 +19,8 @@ export function SalesPage() {
   const when = (iso: string) =>
     new Intl.DateTimeFormat(i18n.language, { dateStyle: "medium", timeStyle: "short", timeZone: access.tenant.timezone }).format(new Date(iso));
 
-  const store = access.locations.find((l) => l.type === "store" && can("sale.create", l.id));
+  const { activeStore } = useActiveLocation();
+  const store = (activeStore && can("sale.create", activeStore.id)) ? activeStore : access.locations.find((l) => l.type === "store" && can("sale.create", l.id));
   const [openId, setOpenId] = useState<string | null>(null);
   const [asking, setAsking] = useState(false);
   const [reason, setReason] = useState("");

@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatMoney, money, uuidv7 } from "@pos/core";
 import { Alert, Button, Card, Input, Select } from "../components/ui.tsx";
 import { useSession } from "../lib/session.tsx";
+import { useActiveLocation } from "../lib/location-context.tsx";
 import { useErrorMessage } from "../lib/i18n-helpers.ts";
 import { ApiError } from "../lib/api.ts";
 import { dayInTimezone } from "../lib/today.ts";
@@ -37,7 +38,8 @@ export function SellPage() {
   const currency = access.tenant.base_currency;
   const fmt = (n: number) => formatMoney(money(n, currency), i18n.language);
 
-  const store = access.locations.find((l) => l.type === "store" && can("sale.create", l.id));
+  const { activeStore } = useActiveLocation();
+  const store = (activeStore && can("sale.create", activeStore.id)) ? activeStore : access.locations.find((l) => l.type === "store" && can("sale.create", l.id));
   const catalog = useQuery({ queryKey: ["sellables", currency], queryFn: () => fetchSellables(currency), staleTime: 30_000 });
 
   const [search, setSearch] = useState("");

@@ -13,7 +13,8 @@ Updated at the end of every task. Read this first in a fresh session. New sessio
   - **F-01 (`70b6d2e`):** Store scoping & multi-store data foundation (done).
   - **F-02 (`fa36fc0`):** Server sale number & device registry (done).
   - **F-03 (`6eaa150`):** Tenant business settings, quotas, and receipt styling (done).
-  - **F-04:** Staff management in React: email invites, cashier creation, multi-store positions, supervisor PIN management (done).
+  - **F-04 (`f2ef69d`):** Staff management in React: email invites, cashier creation, multi-store positions, supervisor PIN management (done).
+  - **F-01w:** Store scoping & active store switcher in React web across all operational screens (done).
   - Next: F-08 / F-09 (Warehouse & Inter-Store Transfers) or F-05 / F-10 (Per-cashier shifts & multi-store reporting).
 - **Full mode started (2026-11-08):** F-01 store scoping and F-02 server sale number + devices are done; F-03 (tenant settings + mode switch) is next. Handoff for a new session or tool: `docs/START-HERE-antigravity.md` (rewritten today).
 - **Solo mode is wrapped up (2026-11-08).** Phases 0 to 8 plus the tabs revamp, keypad, opening cash, e-wallet float, import/export are done; acceptance and open findings: `docs/tasks/P8-13-acceptance.md`. Full mode is planned in `docs/tasks/F-00-overview-full-mode.md`; **F-01 store scoping: data layer done** (section near the end), picker UI done; **F-02 server sale number and devices: data layer done**, receipt/Today display next. Branch `claude/phase3-sell-8261d3` holds all of it, not pushed, not merged to `main`.
@@ -587,5 +588,13 @@ Read `docs/START-HERE-claude.md` for the complete handoff from Antigravity.
 - Logic & API: `src/lib/api.ts` (`inviteUser`, `clearUserPin`, `setMyPin`, `getTenantLimits`), `src/lib/schemas.ts` (`inviteUserSchema`, `setPinSchema` with test coverage in `schemas.test.ts`).
 - Parity: 100% key parity between English and Filipino in both `admin.json` and `errors.json`.
 - Verified: client vitest 61 tests passing, `tsc -p tsconfig.json` clean, `eslint` 0 errors.
+
+## F-01w: Store Scoping & Active Store Switcher in React Web (2026-11-08)
+- apps/client: Multi-store awareness and active store context across the entire web application:
+  - `src/lib/location-context.tsx`: `LocationProvider` and `useActiveLocation` hook managing `activeStoreId`, persistent active store selection in `localStorage`, and fallbacks.
+  - `src/routes/app-layout.tsx`: Store switcher dropdown in navigation header when the tenant has multiple stores.
+  - Operational screens updated: `sell.tsx` (cart, catalog, `record_sale`), `sales.tsx` (recent sales, void), `products.tsx` (on-hand stock, stock-in, count adjustments), `day-close.tsx` (reconciliation, close day), `expenses.tsx` (expenses ledger), and `utang.tsx` (payments recorded at active store).
+- Verified: client vitest 65 tests passing (`location-context.test.ts`), `tsc -p tsconfig.json` clean, `eslint` 0 errors.
+
 
 
