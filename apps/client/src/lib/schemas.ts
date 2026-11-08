@@ -122,6 +122,37 @@ export const tenantSettingsSchema = z
     message: "validation.default_locale_in_list",
   });
 
+export const createTransferSchema = z
+  .object({
+    fromLocationId: required,
+    toLocationId: required,
+    notes: z.string().trim().max(1000, "validation.max1000").optional(),
+    items: z
+      .array(
+        z.object({
+          variantId: required,
+          qty: z.coerce.number().positive("validation.positive_qty"),
+        }),
+      )
+      .min(1, "validation.items_required"),
+    shipNow: z.boolean().default(false),
+  })
+  .refine((v) => v.fromLocationId !== v.toLocationId, {
+    path: ["toLocationId"],
+    message: "validation.different_locations",
+  });
+
+export const receiveTransferSchema = z.object({
+  items: z
+    .array(
+      z.object({
+        variantId: required,
+        qtyReceived: z.coerce.number().min(0, "validation.non_negative_qty"),
+      }),
+    )
+    .min(1, "validation.items_required"),
+});
+
 /** First error message per field path, ready to show next to inputs. */
 export function fieldErrors(error: z.ZodError): Record<string, string> {
   const out: Record<string, string> = {};

@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  createTransferSchema,
   createUserSchema,
   fieldErrors,
   inviteUserSchema,
   locationSchema,
+  receiveTransferSchema,
   setPinSchema,
   setupLanguagesSchema,
   slugSchema,
@@ -139,6 +141,43 @@ describe("schemas", () => {
     expect(setPinSchema.safeParse({ newPin: "12", confirmPin: "12" }).success).toBe(false);
     expect(setPinSchema.safeParse({ newPin: "abcd", confirmPin: "abcd" }).success).toBe(false);
     expect(setPinSchema.safeParse({ newPin: "123456789", confirmPin: "123456789" }).success).toBe(false);
+  });
+
+  it("validates createTransferSchema and receiveTransferSchema", () => {
+    const valid = {
+      fromLocationId: "loc-1",
+      toLocationId: "loc-2",
+      notes: "Urgent store replenishment",
+      items: [{ variantId: "var-1", qty: 10 }],
+      shipNow: false,
+    };
+    expect(createTransferSchema.safeParse(valid).success).toBe(true);
+
+    // Same from and to location
+    const sameLoc = { ...valid, toLocationId: "loc-1" };
+    const resSame = createTransferSchema.safeParse(sameLoc);
+    expect(resSame.success).toBe(false);
+    if (!resSame.success) {
+      expect(fieldErrors(resSame.error)["toLocationId"]).toBe("validation.different_locations");
+    }
+
+    // Empty items
+    const emptyItems = { ...valid, items: [] };
+    const resEmpty = createTransferSchema.safeParse(emptyItems);
+    expect(resEmpty.success).toBe(false);
+    if (!resEmpty.success) {
+      expect(fieldErrors(resEmpty.error)["items"]).toBe("validation.items_required");
+    }
+
+    // Invalid item qty <= 0
+    const zeroQty = { ...valid, items: [{ variantId: "var-1", qty: 0 }] };
+    expect(createTransferSchema.safeParse(zeroQty).success).toBe(false);
+
+    // receiveTransferSchema
+    expect(receiveTransferSchema.safeParse({ items: [{ variantId: "var-1", qtyReceived: 8 }] }).success).toBe(true);
+    expect(receiveTransferSchema.safeParse({ items: [{ variantId: "var-1", qtyReceived: 0 }] }).success).toBe(true);
+    expect(receiveTransferSchema.safeParse({ items: [{ variantId: "var-1", qtyReceived: -1 }] }).success).toBe(false);
+    expect(receiveTransferSchema.safeParse({ items: [] }).success).toBe(false);
   });
 });
 

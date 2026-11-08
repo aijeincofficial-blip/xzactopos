@@ -17,6 +17,7 @@ const NAV = [
   { to: "/app/sell", key: "sell", perm: "sale.create", fullOnly: false },
   { to: "/app/sales", key: "sales", perm: "sale.create", fullOnly: false },
   { to: "/app/products", key: "products", perm: "catalog.manage", fullOnly: false },
+  { to: "/app/transfers", key: "transfers", perm: null, perms: ["transfer.manage", "stock.adjust_store"] as const, fullOnly: true },
   { to: "/app/utang", key: "utang", perm: "sale.create", fullOnly: false },
   { to: "/app/expenses", key: "expenses", perm: "shift.manage", fullOnly: false },
   { to: "/app/day-close", key: "dayClose", perm: "shift.manage", fullOnly: false },
@@ -25,7 +26,14 @@ const NAV = [
   { to: "/app/users", key: "users", perm: "users.manage", fullOnly: true },
   { to: "/app/modules", key: "modules", perm: "tenant.modules", fullOnly: true },
   { to: "/app/settings", key: "settings", perm: "tenant.settings", fullOnly: false },
-] as const satisfies ReadonlyArray<{ to: string; key: string; perm: PermissionKey | null; fullOnly: boolean; soloOnly?: boolean }>;
+] as const satisfies ReadonlyArray<{
+  to: string;
+  key: string;
+  perm: PermissionKey | null;
+  perms?: readonly PermissionKey[];
+  fullOnly: boolean;
+  soloOnly?: boolean;
+}>;
 
 export function AppLayout() {
   const { t, i18n } = useTranslation(["common", "admin"]);
@@ -92,7 +100,12 @@ export function AppLayout() {
         </div>
         {access.tenant.setup_completed ? (
           <nav aria-label={t("admin:nav.label")} className="mx-auto flex max-w-5xl gap-1 px-4">
-            {NAV.filter((n) => (n.perm === null || can(n.perm)) && (!n.fullOnly || mode === "full") && (!("soloOnly" in n && n.soloOnly) || mode === "solo")).map((n) => (
+            {NAV.filter((n) => {
+              const permOk = "perms" in n && n.perms
+                ? (n.perms as readonly PermissionKey[]).some((p) => can(p))
+                : n.perm === null || can(n.perm);
+              return permOk && (!n.fullOnly || mode === "full") && (!("soloOnly" in n && n.soloOnly) || mode === "solo");
+            }).map((n) => (
               <Link
                 key={n.to}
                 to={n.to}

@@ -58,7 +58,12 @@
     "location_required": "Choose a location.",
     "email": "Enter a valid email address.",
     "pin_format": "PIN must be 4 to 8 digits.",
-    "pin_match": "PINs do not match."
+    "pin_match": "PINs do not match.",
+    "max1000": "At most 1000 characters.",
+    "positive_qty": "Quantity must be greater than zero.",
+    "non_negative_qty": "Quantity cannot be negative.",
+    "items_required": "At least one item is required.",
+    "different_locations": "Origin and destination must be different locations."
   },
   "limit_users": "You reached the staff limit of your plan.",
   "pin_wrong": "Incorrect PIN.",
@@ -69,5 +74,7 @@
   "approval_invalid": "Supervisor approval does not match.",
   "approval_used": "Supervisor approval has already been used.",
   "approval_expired": "Supervisor approval has expired.",
-  "expense_not_found": "Expense was not found."
+  "expense_not_found": "Expense was not found.",
+  "transfer_not_found": "Transfer was not found.",
+  "not_found": "That was not found."
 }

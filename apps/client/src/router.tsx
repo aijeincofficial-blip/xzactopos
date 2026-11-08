@@ -22,6 +22,7 @@ import { ExpensesPage } from "./routes/expenses.tsx";
 import { DayClosePage } from "./routes/day-close.tsx";
 import { UpgradePage } from "./routes/upgrade.tsx";
 import { SettingsPage } from "./routes/settings.tsx";
+import { TransfersPage } from "./routes/transfers.tsx";
 import { tenantMode } from "./lib/mode.ts";
 import { useSession } from "./lib/session.tsx";
 import { SetupPage } from "./routes/setup.tsx";
@@ -85,6 +86,13 @@ const requires =
     if (!can(contextFromAccess(context.access), perm)) throw redirect({ to: "/app" });
   };
 
+const requiresAny =
+  (...perms: PermissionKey[]) =>
+  ({ context }: { context: { access: Parameters<typeof contextFromAccess>[0] } }) => {
+    const ctx = contextFromAccess(context.access);
+    if (!perms.some((p) => can(ctx, p))) throw redirect({ to: "/app" });
+  };
+
 /** Home: Solo owners see Today; every Full-mode user sees the dashboard of locations and permissions. */
 function HomeRoute() {
   const { access } = useSession();
@@ -104,12 +112,13 @@ const expenses = createRoute({ getParentRoute: () => app, path: "/expenses", bef
 const dayClose = createRoute({ getParentRoute: () => app, path: "/day-close", beforeLoad: requires("shift.manage"), component: DayClosePage });
 const upgrade = createRoute({ getParentRoute: () => app, path: "/upgrade", beforeLoad: requires("tenant.modules"), component: UpgradePage });
 const settings = createRoute({ getParentRoute: () => app, path: "/settings", beforeLoad: requires("tenant.settings"), component: SettingsPage });
+const transfers = createRoute({ getParentRoute: () => app, path: "/transfers", beforeLoad: requiresAny("transfer.manage", "stock.adjust_store"), component: TransfersPage });
 const forbidden = createRoute({ getParentRoute: () => app, path: "/forbidden", component: ForbiddenPage });
 
 const routeTree = root.addChildren([
   home,
   login,
-  app.addChildren([dashboard, setup, sell, sales, products, utang, expenses, dayClose, upgrade, settings, locations, users, modules, forbidden]),
+  app.addChildren([dashboard, setup, sell, sales, products, utang, expenses, dayClose, upgrade, settings, transfers, locations, users, modules, forbidden]),
 ]);
 
 export function makeRouter(queryClient: QueryClient) {

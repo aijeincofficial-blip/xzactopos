@@ -154,6 +154,21 @@ insert into expected (who, tbl, own_rows, own_updated)
 select w.who, 'sale_counters', -1, -1
 from (values ('superadmin'), ('admin'), ('cashier'), ('warehouse'), ('inactive')) w(who);
 
+-- F-08 transfers and transfer_items:
+-- Fixtures: 2 transfers per tenant (T1: W01 -> S01, T2: S01 -> S02) with 1 item each (2 items total).
+-- superadmin sees 2, admin (S01+S02) sees 2, warehouse pedro (W01) sees 1 (T1 only), cashier and inactive see 0.
+-- Nobody writes directly (-1).
+insert into expected (who, tbl, own_rows, own_updated)
+select w.who, t.tbl,
+       case w.who
+         when 'superadmin' then 2
+         when 'admin' then 2
+         when 'warehouse' then 1
+         else 0
+       end, -1
+from (values ('superadmin'), ('admin'), ('cashier'), ('warehouse'), ('inactive')) w(who)
+cross join (values ('transfers'), ('transfer_items')) t(tbl);
+
 -- 2 tenants x (who, table) pairs x 5 metrics, plus 8 targeted checks
 select plan((select count(*)::int * 2 * 5 from expected) + 8);
 
@@ -283,6 +298,13 @@ begin
     insert into public.sale_counters (tenant_id, location_id, day, last_no) values
       (pg_temp.tid(t.label), pg_temp.lid(t.label, 'S01'), '2026-11-08', 1),
       (pg_temp.tid(t.label), pg_temp.lid(t.label, 'S02'), '2026-11-08', 1);
+    -- F-08 transfers: T1 (W01 -> S01) and T2 (S01 -> S02), 1 item each
+    insert into public.transfers (id, tenant_id, transfer_no, from_location_id, to_location_id, status, shipped_at) values
+      (md5('trf:' || t.label || ':1')::uuid, pg_temp.tid(t.label), 'TRF-261108-0001', pg_temp.lid(t.label, 'W01'), pg_temp.lid(t.label, 'S01'), 'shipped', now()),
+      (md5('trf:' || t.label || ':2')::uuid, pg_temp.tid(t.label), 'TRF-261108-0002', pg_temp.lid(t.label, 'S01'), pg_temp.lid(t.label, 'S02'), 'shipped', now());
+    insert into public.transfer_items (id, tenant_id, transfer_id, variant_id, qty_shipped) values
+      (md5('trfi:' || t.label || ':1')::uuid, pg_temp.tid(t.label), md5('trf:' || t.label || ':1')::uuid, md5('var:' || t.label || ':1')::uuid, 10),
+      (md5('trfi:' || t.label || ':2')::uuid, pg_temp.tid(t.label), md5('trf:' || t.label || ':2')::uuid, md5('var:' || t.label || ':1')::uuid, 5);
   end loop;
 end;
 $$;
@@ -351,7 +373,9 @@ begin
     ('conversions',       'tenant_id', 'note = note'),
     ('stock_expiry',      'tenant_id', 'expires_on = expires_on'),
     ('devices',           'tenant_id', 'name = name'),
-    ('sale_counters',     'tenant_id', 'last_no = last_no')
+    ('sale_counters',     'tenant_id', 'last_no = last_no'),
+    ('transfers',         'tenant_id', 'notes = notes'),
+    ('transfer_items',    'tenant_id', 'qty_shipped = qty_shipped')
   ) v(tbl, tcol, upd) loop
     begin
       execute format(
