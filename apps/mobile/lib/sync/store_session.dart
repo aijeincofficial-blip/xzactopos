@@ -89,7 +89,7 @@ class _StoreSessionState extends State<StoreSession> {
 
   bool get _canManageStock {
     final role = widget.access['role'];
-    return role == null || role == 'superadmin' || role == 'admin';
+    return role == null || role == 'superadmin' || role == 'admin' || role == 'warehouse';
   }
 
   Future<void> _closeQuietly() async {
@@ -167,7 +167,12 @@ class _StoreSessionState extends State<StoreSession> {
           );
         }
         return CatalogScope(
-            store: _store, engine: _engine, photos: _photos, canManageStock: _canManageStock, child: widget.child);
+            store: _store,
+            engine: _engine,
+            photos: _photos,
+            canManageStock: _canManageStock,
+            role: widget.access['role'] as String?,
+            child: widget.child);
       },
     );
   }
@@ -180,6 +185,7 @@ class CatalogScope extends InheritedWidget {
     required this.engine,
     required this.photos,
     this.canManageStock = true,
+    this.role,
     required super.child,
   });
 
@@ -187,12 +193,27 @@ class CatalogScope extends InheritedWidget {
   final SyncEngine engine;
   final PhotoLoader photos;
 
-  /// Superadmin and admins may stock in and count; cashiers and warehouse staff only look.
+  /// Superadmin, admins, and warehouse may stock in and count; cashiers only look.
   final bool canManageStock;
 
+  /// Role of the signed-in user ('superadmin', 'admin', 'warehouse', 'cashier', or null for solo owner).
+  final String? role;
+
+  bool get isCashier => role == 'cashier';
+  bool get isWarehouse => role == 'warehouse';
+  bool get isAdminOrSuperadmin => role == null || role == 'superadmin' || role == 'admin';
+  bool get canAccessExpenses => isAdminOrSuperadmin;
+  bool get canCloseDay => isAdminOrSuperadmin;
+
   /// Same scope around [child]; for screens pushed on the navigator (they sit outside this widget).
-  CatalogScope wrap(Widget child) =>
-      CatalogScope(store: store, engine: engine, photos: photos, canManageStock: canManageStock, child: child);
+  CatalogScope wrap(Widget child) => CatalogScope(
+        store: store,
+        engine: engine,
+        photos: photos,
+        canManageStock: canManageStock,
+        role: role,
+        child: child,
+      );
 
   static CatalogScope of(BuildContext context) {
     final scope = context.dependOnInheritedWidgetOfExactType<CatalogScope>();
@@ -200,6 +221,11 @@ class CatalogScope extends InheritedWidget {
     return scope!;
   }
 
+  static CatalogScope? maybeOf(BuildContext context) {
+    return context.dependOnInheritedWidgetOfExactType<CatalogScope>();
+  }
+
   @override
-  bool updateShouldNotify(CatalogScope old) => store != old.store || engine != old.engine;
+  bool updateShouldNotify(CatalogScope old) =>
+      store != old.store || engine != old.engine || role != old.role || canManageStock != old.canManageStock;
 }

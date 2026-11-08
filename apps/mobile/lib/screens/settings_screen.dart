@@ -6,6 +6,7 @@ import '../core/theme.dart';
 import '../core/ui.dart';
 import '../core/theme_picker.dart';
 import '../l10n/app_localizations.dart';
+import '../sync/store_session.dart';
 import '../sync/sync_badge.dart';
 import 'password_screens.dart';
 
@@ -328,52 +329,54 @@ class SettingsScreen extends StatelessWidget {
               ),
             ),
 
-            const SizedBox(height: Gap.l),
+            if (CatalogScope.maybeOf(context)?.isAdminOrSuperadmin ?? true) ...[
+              const SizedBox(height: Gap.l),
 
-            // Upgrade to Full Mode Card
-            _SectionHeader(title: t.upgradeFullSection.toUpperCase()),
-            AppCard(
-              padding: const EdgeInsets.all(Gap.l),
-              child: Row(
-                children: [
-                  CoinBadge(
-                    icon: Icons.rocket_launch_rounded,
-                    color: scheme.primary,
-                    size: 36,
-                  ),
-                  const SizedBox(width: Gap.m),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          t.upgradeFullTitle,
-                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
-                        ),
-                        Text(
-                          t.upgradeFullSubtitle,
-                          style: TextStyle(fontSize: 12, color: scheme.outline),
-                        ),
-                      ],
+              // Upgrade to Full Mode Card
+              _SectionHeader(title: t.upgradeFullSection.toUpperCase()),
+              AppCard(
+                padding: const EdgeInsets.all(Gap.l),
+                child: Row(
+                  children: [
+                    CoinBadge(
+                      icon: Icons.rocket_launch_rounded,
+                      color: scheme.primary,
+                      size: 36,
                     ),
-                  ),
-                  const SizedBox(width: Gap.s),
-                  FilledButton.tonal(
-                    key: const Key('settings-upgrade-full'),
-                    style: FilledButton.styleFrom(
-                      shape: const StadiumBorder(),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                      minimumSize: const Size(0, 36),
+                    const SizedBox(width: Gap.m),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            t.upgradeFullTitle,
+                            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+                          ),
+                          Text(
+                            t.upgradeFullSubtitle,
+                            style: TextStyle(fontSize: 12, color: scheme.outline),
+                          ),
+                        ],
+                      ),
                     ),
-                    onPressed: () => _showUpgradeDialog(context, t),
-                    child: Text(
-                      t.upgradeFullAction,
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+                    const SizedBox(width: Gap.s),
+                    FilledButton.tonal(
+                      key: const Key('settings-upgrade-full'),
+                      style: FilledButton.styleFrom(
+                        shape: const StadiumBorder(),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        minimumSize: const Size(0, 36),
+                      ),
+                      onPressed: () => _showUpgradeDialog(context, t),
+                      child: Text(
+                        t.upgradeFullAction,
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
+            ],
 
             const SizedBox(height: Gap.xl),
 

@@ -252,90 +252,94 @@ class _TodayScreenState extends State<TodayScreen> {
 
                     // Expenses and Day Close tiles
                     if (scope.canManageStock)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: Gap.xl,
-                          vertical: Gap.xs,
-                        ),
-                        child: IntrinsicHeight(
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Expanded(
-                                child: StreamBuilder<ExpenseTotals>(
-                                  stream: scope.store.watchTodayExpenses(),
-                                  builder: (context, snap) => AppCard(
-                                    key: const Key('tile-expenses'),
-                                    padding: const EdgeInsets.all(Gap.m),
-                                    radius: Gap.radiusL,
-                                    onTap: () => Navigator.of(context).push(
-                                      MaterialPageRoute<void>(
-                                        builder: (_) => scope.wrap(ExpensesScreen(backend: widget.backend)),
-                                      ),
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          t.expensesTitle,
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: scheme.outline,
-                                            fontWeight: FontWeight.w700,
+                      if (scope.canAccessExpenses || scope.canCloseDay)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: Gap.xl,
+                            vertical: Gap.xs,
+                          ),
+                          child: IntrinsicHeight(
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                if (scope.canAccessExpenses)
+                                  Expanded(
+                                    child: StreamBuilder<ExpenseTotals>(
+                                      stream: scope.store.watchTodayExpenses(),
+                                      builder: (context, snap) => AppCard(
+                                        key: const Key('tile-expenses'),
+                                        padding: const EdgeInsets.all(Gap.m),
+                                        radius: Gap.radiusL,
+                                        onTap: () => Navigator.of(context).push(
+                                          MaterialPageRoute<void>(
+                                            builder: (_) => scope.wrap(ExpensesScreen(backend: widget.backend)),
                                           ),
                                         ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          money(
-                                            (snap.data ?? const ExpenseTotals()).total,
-                                          ),
-                                          key: const Key('today-expenses'),
-                                          style: const TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.w800,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: Gap.m),
-                              Expanded(
-                                child: AppCard(
-                                  key: const Key('tile-close-day'),
-                                  padding: const EdgeInsets.all(Gap.m),
-                                  radius: Gap.radiusL,
-                                  onTap: () => Navigator.of(context).push(
-                                    MaterialPageRoute<void>(
-                                      builder: (_) => scope.wrap(DayCloseScreen(backend: widget.backend)),
-                                    ),
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        t.dayCloseTitle,
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: scheme.outline,
-                                          fontWeight: FontWeight.w700,
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              t.expensesTitle,
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: scheme.outline,
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              money(
+                                                (snap.data ?? const ExpenseTotals()).total,
+                                              ),
+                                              key: const Key('today-expenses'),
+                                              style: const TextStyle(
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.w800,
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
-                                      const SizedBox(height: 2),
-                                      Icon(
-                                        Icons.lock_clock_rounded,
-                                        size: 22,
-                                        color: scheme.payExpense,
-                                      ),
-                                    ],
+                                    ),
                                   ),
-                                ),
-                              ),
-                            ],
+                                if (scope.canAccessExpenses && scope.canCloseDay)
+                                  const SizedBox(width: Gap.m),
+                                if (scope.canCloseDay)
+                                  Expanded(
+                                    child: AppCard(
+                                      key: const Key('tile-close-day'),
+                                      padding: const EdgeInsets.all(Gap.m),
+                                      radius: Gap.radiusL,
+                                      onTap: () => Navigator.of(context).push(
+                                        MaterialPageRoute<void>(
+                                          builder: (_) => scope.wrap(DayCloseScreen(backend: widget.backend)),
+                                        ),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            t.dayCloseTitle,
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: scheme.outline,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Icon(
+                                            Icons.lock_clock_rounded,
+                                            size: 22,
+                                            color: scheme.payExpense,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
 
                     // Receipts & Past Days Filter Header
                     Padding(
