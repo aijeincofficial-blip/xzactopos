@@ -149,3 +149,10 @@ Sell and Today app bars and under the store name in More) and `showStorePicker` 
 Sell re-reads its top sellers when the store changes. `askSupervisorApproval` takes `locationId`; `retryWithApproval` passes the
 refused op's `location_id`. The utang payment dialog has a Cash / GCash-Maya choice that goes to `recordUtangPayment(method:)`.
 Tests: `test/store_picker_test.dart` (6). Not done: store name on receipts and ledger rows (optional, item 6).
+
+## Emulator check of the picker (2026-11-08)
+Added a second store (S02 "Palengke Branch") to the local test tenant, rebuilt, relaunched. Screenshots `docs/p8-acceptance/50_store_chip.png`, `51_store_sheet.png`, `52_store_switched.png`.
+- The chip appears on Sell (and Today, More) only once there are two stores; the sheet lists both with a check on the active one.
+- After switching to Palengke: the chip and a snackbar name it, Today strip reads 0.00 / "No sales" (the first store had 171.50), the tiles lost their "N left" (nothing counted at Palengke).
+- **Finding:** the cart is per device and **stays when the store is switched** (it still held a Kape and a Sardinas). Stock for those lines will come off the new store when paid. Decide: keep, ask first, or clear on switch. Not changed.
+- Startup took about 25 s on this debug build right after install (first launch after a rebuild); not investigated.
