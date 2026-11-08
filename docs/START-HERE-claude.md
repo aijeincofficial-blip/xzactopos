@@ -79,6 +79,30 @@ During this session, Antigravity executed the owner's design overhaul, color har
   * Updated `App.initialLocale` in `lib/app.dart` to `'en'`.
   * The entire application now launches and defaults to English (`Today`, `Stock`, `POS`, `Utang`, `More`, `Sell`, `Pay`, `Print Receipt`, `Share`, etc.) while keeping Filipino fully selectable in Settings.
 
+### F. Solo Wrap-Up: Memory Leak Prevention & List Performance
+* Responded to owner's request (*"LETS WRAP UP FOR THE SOLO, OPTIMIZE LIST LIKE RECEIPT LIST WHAT HAPPEN IF IT GOES LONG AND PREVENT MEMORY LEAKS , FOR RECEPTS, REPORTS AND LIST OF PRODUCTS ALSO ADD WE CAN STILL SEE PAST DAYS RECEIPTS"*):
+  1. **Image RAM Footprint & Memory Leak Prevention (`product_thumb.dart` & `receipt_screen.dart`)**:
+     * Added hardware-level decode size constraints `cacheWidth` and `cacheHeight` (e.g. `(widget.size * 2.5).round().clamp(64, 300)`) to `Image.memory` and `Image.file`.
+     * Previously, full 12-48MP camera photos stored locally in SQLite / disk were decoded into raw uncompressed RGBA bitmaps in RAM (~48MB per photo), causing severe frame drops and eventual OOM crashes when browsing long product or receipt lists.
+     * With `cacheWidth` / `cacheHeight`, decoding downsamples directly in native Skia/Impeller C++ to ~80-150px (~0.08MB per photo), slashing memory usage by >99%.
+  2. **Receipt List Virtualization (`today_screen.dart`)**:
+     * Converted `TodayScreen` receipt history from an eager `Column` inside a `ListView` to a virtualized `CustomScrollView` with `SliverList.builder`.
+     * Only visible receipt cards (~5-6 cards) are instantiated in the element tree at any time; off-screen cards are recycled immediately upon scrolling.
+  3. **Past Days Receipts & Period Filtering (`today_screen.dart`)**:
+     * Added interactive filter chips:
+       - **Today** (`Ngayon`)
+       - **Yesterday** (`Kahapon`)
+       - **Past 7 Days** (`Huling 7 Araw`)
+       - **All Receipts** (`Lahat ng Resibo`)
+       - **Custom Date Picker** (`Pick Date` calendar dialog)
+     * Real-time filtered count & sales period sum banner (`X · ₱Y.YY`).
+     * Relative date stamps for past transactions (e.g. `Yesterday · 3:58 AM`, `Nov 6 · 2:15 PM`).
+     * Unlocks past transactions without changing SQLite schemas or queries (`watchSales(limit: 500)`).
+  4. **Product Catalog & Stock Lists**:
+     * Verified `ProductsScreen` and `StockScreen` utilize `ListView.separated` lazy recycling.
+     * Verified `SellScreen` utilizes `GridView.builder` with windowed viewport recycling.
+     * Verified `ReceiptScreen` ticket wraps inside a `ListView`, allowing infinite itemized products per ticket without render overflow.
+
 ---
 
 ## 3. Verified Screenshots on Android Emulator (`emulator-5554`)

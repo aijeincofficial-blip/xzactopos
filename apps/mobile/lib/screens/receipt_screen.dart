@@ -625,6 +625,8 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
             file,
             width: 34,
             height: 34,
+            cacheWidth: 80,
+            cacheHeight: 80,
             fit: BoxFit.cover,
             errorBuilder: (context, error, stackTrace) => _fallbackItemThumb(name),
           ),

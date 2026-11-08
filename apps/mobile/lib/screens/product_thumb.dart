@@ -71,12 +71,16 @@ class _ProductThumbState extends State<ProductThumb> {
               future: _bytes,
               builder: (context, snap) => snap.data == null
                   ? placeholder
-                  : Image.memory(snap.data!,
+                  : Image.memory(
+                      snap.data!,
                       key: const Key('product-photo'),
                       width: widget.size,
                       height: widget.size,
+                      cacheWidth: (widget.size * 2.5).round().clamp(64, 300),
+                      cacheHeight: (widget.size * 2.5).round().clamp(64, 300),
                       fit: BoxFit.cover,
-                      gaplessPlayback: true),
+                      gaplessPlayback: true,
+                    ),
             ),
     );
   }
