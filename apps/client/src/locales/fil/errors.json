@@ -97,5 +97,6 @@
   "bins_not_enabled": "Hindi gumagamit ng bin ang bodegang ito.",
   "bin_not_allowed": "Hindi gumagamit ng bin ang bodegang ito.",
   "pick_required": "I-pick muna ang mga aytem papunta sa staging bago ipadala.",
+  "insufficient_stock": "Kulang ang stock sa pinagmumulan para sa padalang ito. Suriin ang dami o bilangin muna ang stock.",
   "op_id_reused": "Nagamit na ang request na iyon sa ibang bagay."
 }

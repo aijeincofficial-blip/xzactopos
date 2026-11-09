@@ -174,6 +174,21 @@ void main() {
     await leave(tester);
   });
 
+  testWidgets('signing out closes a screen that was open over the old session', (tester) async {
+    final b = AccessBackend()..access = accessOf(role: 'warehouse');
+    await start(tester, b);
+    await tester.tap(find.byKey(const Key('tab-more')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('more-settings')));
+    await tester.pumpAndSettle();
+    expect(find.text('Settings'), findsWidgets);
+    await b.signOut();
+    await tester.pumpAndSettle();
+    expect(find.text('Settings'), findsNothing, reason: 'the old Settings screen must not stay on top of the sign-in screen');
+    expect(find.text('Create account'), findsWidgets);
+    await leave(tester);
+  });
+
   testWidgets('running on the saved copy, the app asks again and switches to what the server says', (tester) async {
     await accessCache.write('u1', accessOf(role: 'cashier'));
     final b = AccessBackend()
