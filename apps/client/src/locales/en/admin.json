@@ -1101,7 +1101,8 @@
     "tabs": {
       "reorder": "To reorder",
       "transit": "In transit",
-      "product": "Find a product"
+      "product": "Find a product",
+      "negative": "Below zero"
     },
     "filter": {
       "warehouse": "Warehouse",
@@ -1154,6 +1155,20 @@
       "value": "Value",
       "total": "All warehouses",
       "none": "No warehouse to show."
+    },
+    "negative": {
+      "summary": "Below zero. Lines: {{lines}} · Places: {{places}} · Units missing: {{units}} · About {{value}} at average cost.",
+      "none": "Nothing is below zero.",
+      "place": "Place",
+      "product": "Product",
+      "onHand": "On hand",
+      "value": "Value",
+      "lastMoved": "Last moved",
+      "legend": "Stock goes below zero when a sale or a pick happened before the stock was recorded. Add the missing stock (a receipt, a transfer in, or a count) and the line leaves this list by itself.",
+      "type": {
+        "store": "store",
+        "warehouse": "warehouse"
+      }
     }
   }
 }

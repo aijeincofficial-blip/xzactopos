@@ -93,6 +93,32 @@ export function nextReorderCursor(rows: Array<{ location_id: string; variant_id:
   return { location: last.location_id, variant: last.variant_id };
 }
 
+/** Keyset cursor for the next page of the negative stock list: only when this page was full. */
+export function nextNegativeCursor(rows: Array<{ location_id: string; variant_id: string }>, pageSize: number) {
+  if (rows.length === 0 || rows.length < pageSize) return null;
+  const last = rows[rows.length - 1]!;
+  return { location: last.location_id, variant: last.variant_id };
+}
+
+export interface NegativeSummary {
+  lines: number;
+  places: number;
+  /** Units missing, as a positive number. */
+  units: number;
+  /** Value of what is missing at average cost, as a positive number; lines without a cost are left out. */
+  value: number;
+}
+
+export function negativeSummary(rows: Array<{ location_id: string; qty_on_hand: number; stock_value: number | null }>): NegativeSummary {
+  let units = 0;
+  let value = 0;
+  for (const r of rows) {
+    units += Math.abs(r.qty_on_hand);
+    if (r.stock_value !== null) value += Math.abs(r.stock_value);
+  }
+  return { lines: rows.length, places: new Set(rows.map((r) => r.location_id)).size, units: round3(units), value };
+}
+
 /** Keyset cursor for the next page of shipments in transit: only when this page was full. */
 export function nextTransitCursor(rows: Array<{ transfer_id: string; shipped_at: string }>, pageSize: number) {
   if (rows.length === 0 || rows.length < pageSize) return null;

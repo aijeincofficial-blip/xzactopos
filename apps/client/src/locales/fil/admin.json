@@ -1101,7 +1101,8 @@
     "tabs": {
       "reorder": "Oorderin",
       "transit": "Nasa biyahe",
-      "product": "Maghanap ng produkto"
+      "product": "Maghanap ng produkto",
+      "negative": "Mas mababa sa zero"
     },
     "filter": {
       "warehouse": "Bodega",
@@ -1154,6 +1155,20 @@
       "value": "Halaga",
       "total": "Lahat ng bodega",
       "none": "Walang bodegang maipapakita."
+    },
+    "negative": {
+      "summary": "Mas mababa sa zero. Mga linya: {{lines}} · Mga lugar: {{places}} · Kulang na yunit: {{units}} · Humigit-kumulang {{value}} sa average na halaga.",
+      "none": "Walang mas mababa sa zero.",
+      "place": "Lugar",
+      "product": "Produkto",
+      "onHand": "Nasa kamay",
+      "value": "Halaga",
+      "lastMoved": "Huling gumalaw",
+      "legend": "Bumababa sa zero ang stock kapag may naibenta o na-pick bago naitala ang stock. Idagdag ang kulang (resibo, paglipat papasok, o bilang) at kusang mawawala ang linya sa listahang ito.",
+      "type": {
+        "store": "tindahan",
+        "warehouse": "bodega"
+      }
     }
   }
 }
