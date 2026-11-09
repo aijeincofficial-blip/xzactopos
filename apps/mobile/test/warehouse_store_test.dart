@@ -497,6 +497,81 @@ void main() {
     });
   });
 
+  group('a pull without a cursor is a snapshot of the open orders', () {
+    // the server's first pull sends only open orders, so an order that finished meanwhile is simply not mentioned
+    Future<void> resetCursors() => store.db.delete(store.db.syncCursors).go();
+
+    test('an order the snapshot no longer lists is forgotten', () async {
+      await loadBasics();
+      await resetCursors();
+      await store.applyPullWarehouse(_pull(pos: [_po(_po2, 'PO-2', _w2)]));
+      expect(await store.purchaseOrder(_po1), isNull, reason: 'finished elsewhere: gone');
+      expect((await _first(store.watchOpenPurchaseOrders(_w2))).map((p) => p.poNo), ['PO-2']);
+    });
+
+    test('a delta pull (with a cursor) never forgets an order just because it is not in it', () async {
+      await loadBasics();
+      await store.applyPullWarehouse(_pull(pos: [_po(_po2, 'PO-2', _w2, at: '2026-11-09T09:30:00Z')]));
+      expect(await store.purchaseOrder(_po1), isNotNull);
+    });
+
+    test('a snapshot over several pages forgets nothing until its last page', () async {
+      await loadBasics();
+      await resetCursors();
+      Map<String, dynamic> page(String id, String no, {required bool more}) {
+        final r = _pull(pos: [_po(id, no, _w1, at: '2026-11-09T09:10:00Z')]);
+        (r['purchase_orders'] as Map<String, dynamic>)['has_more'] = more;
+        return r;
+      }
+
+      await store.applyPullWarehouse(page('p3000000-0000-4000-8000-000000000003', 'PO-3', more: true));
+      expect(await store.purchaseOrder(_po1), isNotNull, reason: 'the snapshot is not complete yet');
+      await store.applyPullWarehouse(page(_po1, 'PO-1', more: false));
+      expect(await store.purchaseOrder(_po1), isNotNull, reason: 'it was on the second page');
+      expect(await store.purchaseOrder('p3000000-0000-4000-8000-000000000003'), isNotNull, reason: 'and the order from the first page is kept too');
+      expect(await store.purchaseOrder(_po2), isNull, reason: 'on neither page: gone');
+    });
+
+    test('once a snapshot is complete, later delta pulls are ordinary again and forget nothing', () async {
+      await loadBasics();
+      await resetCursors();
+      Map<String, dynamic> page(String id, String no, String at, {required bool more}) {
+        final r = _pull(pos: [_po(id, no, _w1, at: at)]);
+        (r['purchase_orders'] as Map<String, dynamic>)['has_more'] = more;
+        return r;
+      }
+
+      const p3 = 'p3000000-0000-4000-8000-000000000003';
+      const p4 = 'p4000000-0000-4000-8000-000000000004';
+      const p5 = 'p5000000-0000-4000-8000-000000000005';
+      await store.applyPullWarehouse(page(p3, 'PO-3', '2026-11-09T09:10:00Z', more: true));
+      await store.applyPullWarehouse(page(_po1, 'PO-1', '2026-11-09T09:11:00Z', more: false)); // the snapshot is complete
+      await store.applyPullWarehouse(page(p4, 'PO-4', '2026-11-09T09:20:00Z', more: false)); // a delta
+      await store.applyPullWarehouse(page(p5, 'PO-5', '2026-11-09T09:30:00Z', more: false)); // another delta
+      for (final id in [p3, _po1, p4, p5]) {
+        expect(await store.purchaseOrder(id), isNotNull, reason: '$id must still be here');
+      }
+    });
+
+    test('an order a receipt still depends on leaves the open list but is kept for the receipt', () async {
+      await loadBasics();
+      await store.receiveAgainstPo(poId: _po1, lines: const [ReceiptLine(variantId: _rice, qty: 60)], opId: 'op-1');
+      await store.warehouseOpApplied('op-1', '2026-11-09T10:00:00Z', result: {'grn_no': 'GRN-1'});
+      await store.opDone('op-1');
+      await resetCursors();
+      await store.applyPullWarehouse(_pull(serverTime: '2026-11-09T10:00:02Z', pos: [_po(_po2, 'PO-2', _w2)]));
+      expect(await _first(store.watchOpenPurchaseOrders(_w1)), isEmpty, reason: 'no longer open on the server');
+      expect(await store.purchaseOrder(_po1), isNotNull, reason: 'the unsettled receipt still needs it');
+    });
+
+    test('a pull with no order table (the module is off) forgets nothing', () async {
+      await loadBasics();
+      await resetCursors();
+      await store.applyPullWarehouse(<String, dynamic>{});
+      expect(await store.purchaseOrder(_po1), isNotNull);
+    });
+  });
+
   group('refused and parked receipts', () {
     test('a refused receipt that is discarded takes its effect away', () async {
       await loadBasics();

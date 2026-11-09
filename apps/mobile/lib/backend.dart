@@ -118,7 +118,7 @@ const pinRefusalHints = {
   'location_denied', 'module_disabled',
 };
 
-class SupabaseBackend implements Backend, DeviceApi {
+class SupabaseBackend implements Backend, DeviceApi, WarehouseApi {
   SupabaseClient get _c => Supabase.instance.client;
 
   @override
@@ -213,6 +213,18 @@ class SupabaseBackend implements Backend, DeviceApi {
   Future<Map<String, dynamic>> pullPos(Map<String, dynamic> cursors, {int limit = 500}) async {
     final res = await _auth(() => _c.rpc('sync_pull_pos', params: {'p_cursors': cursors, 'p_limit': limit}));
     return (res as Map).cast<String, dynamic>();
+  }
+
+  @override
+  Future<Map<String, dynamic>> pullWarehouse(Map<String, dynamic> cursors, {int limit = 500}) async {
+    try {
+      final res = await _auth(() => _c.rpc('sync_pull_warehouse', params: {'p_cursors': cursors, 'p_limit': limit}));
+      return (res as Map).cast<String, dynamic>();
+    } on PostgrestException catch (e) {
+      // the tenant switched the warehouse module off: nothing to pull, and not a reason to keep the phone in backoff
+      if (e.hint == 'module_disabled') return <String, dynamic>{};
+      rethrow;
+    }
   }
 
   @override

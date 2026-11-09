@@ -386,9 +386,20 @@ mixin DriftWarehouse implements WarehouseStore {
 
   static double _num(Object? v) => (v as num).toDouble();
 
+  /// Orders seen so far in a snapshot pull that is still running (meta key; JSON list of ids).
+  static const _snapshotKey = 'wh_po_seen';
+
   @override
   Future<void> applyPullWarehouse(Map<String, dynamic> response) {
     return db.transaction(() async {
+      // A pull WITHOUT a cursor (the first one, or after the cursors were dropped to start over) sends only the orders that
+      // are open on the server, so an order that finished meanwhile is simply not mentioned. Such a pull is therefore a
+      // snapshot: when it is complete (it may take several pages) the orders it did not list are forgotten.
+      final hadOrderCursor =
+          await (db.select(db.syncCursors)..where((c) => c.tableKey.equals('${_cursorPrefix}purchase_orders'))).getSingleOrNull() != null;
+      final snapshotRow = await (db.select(db.meta)..where((m) => m.key.equals(_snapshotKey))).getSingleOrNull();
+      final snapshot = (!hadOrderCursor || snapshotRow != null) && response['purchase_orders'] is Map;
+
       for (final r in _rows(response, 'warehouses')) {
         await db.into(db.warehouses).insertOnConflictUpdate(WarehousesCompanion.insert(
               id: r['id'] as String,
@@ -467,6 +478,7 @@ mixin DriftWarehouse implements WarehouseStore {
               ));
         }
       }
+      if (snapshot) await _reconcileSnapshot(response, snapshotRow?.value);
       for (final t in _pullTables) {
         final cursor = (response[t] as Map?)?['cursor'];
         if (cursor is Map) {
@@ -481,6 +493,34 @@ mixin DriftWarehouse implements WarehouseStore {
         await _settle(DateTime.parse(st));
       }
     });
+  }
+
+  /// Remembers the orders a snapshot pull listed; when its last page has arrived, forgets the local orders it did not list.
+  /// An order an unsettled receipt still needs (to judge "caught up") is not deleted but marked `closed`, which takes it off
+  /// the open list; the usual clean-up removes it once the receipt has settled.
+  Future<void> _reconcileSnapshot(Map<String, dynamic> response, String? seenJson) async {
+    final seen = <String>{
+      if (seenJson != null) ...(jsonDecode(seenJson) as List).cast<String>(),
+      for (final r in _rows(response, 'purchase_orders')) r['id'] as String,
+    };
+    final more = (response['purchase_orders'] as Map)['has_more'] == true;
+    if (more) {
+      await db.into(db.meta).insertOnConflictUpdate(MetaCompanion.insert(key: _snapshotKey, value: jsonEncode(seen.toList())));
+      return;
+    }
+    final needed = {
+      for (final r in await (db.select(db.whReceipts)..where((x) => x.settled.equals(false) & x.poId.isNotNull())).get()) r.poId!
+    };
+    for (final p in await db.select(db.purchaseOrders).get()) {
+      if (seen.contains(p.id)) continue;
+      if (needed.contains(p.id)) {
+        await (db.update(db.purchaseOrders)..where((x) => x.id.equals(p.id))).write(const PurchaseOrdersCompanion(status: Value('closed')));
+      } else {
+        await (db.delete(db.poItems)..where((i) => i.poId.equals(p.id))).go();
+        await (db.delete(db.purchaseOrders)..where((x) => x.id.equals(p.id))).go();
+      }
+    }
+    await (db.delete(db.meta)..where((m) => m.key.equals(_snapshotKey))).go();
   }
 
   /// Drops the effect of receipts the server's copy has caught up on, forgets old receipts and finished orders.

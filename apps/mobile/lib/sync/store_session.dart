@@ -17,6 +17,12 @@ List<StoreRef> storesOf(Map<String, dynamic> access) => [
           StoreRef(id: l['id'] as String, name: (l['name'] as String?) ?? (l['code'] as String?) ?? ''),
     ];
 
+/// What a phone pulls for a signed-in role (F-13h). A warehouse clerk works in a warehouse, not a store: warehouse data and
+/// none of the store pulls. Everyone else (owner, admin, cashier, a solo owner whose role is null) pulls the store data and
+/// never asks for warehouse data.
+({bool store, bool warehouse}) syncScopeForRole(String? role) =>
+    role == 'warehouse' ? (store: false, warehouse: true) : (store: true, warehouse: false);
+
 /// Opens the device store for the signed-in business and keeps sync running while it is on screen.
 class StoreSession extends StatefulWidget {
   const StoreSession({
@@ -74,7 +80,9 @@ class _StoreSessionState extends State<StoreSession> {
 
   Future<void> _start({required bool safeMode}) async {
     _store = widget.openStore(safeMode: safeMode);
-    _engine = SyncEngine(_store, widget.backend);
+    // a warehouse clerk works in a warehouse, not a store: warehouse data, and none of the store pulls
+    final scope = syncScopeForRole(widget.access['role'] as String?);
+    _engine = SyncEngine(_store, widget.backend, pullsStore: scope.store, pullsWarehouse: scope.warehouse);
     _photos = PhotoLoader(_store, widget.backend);
     _opened = true;
     final tenant = (widget.access['tenant'] as Map?) ?? const {};
