@@ -17,6 +17,7 @@ import 'restock_screen.dart';
 import 'sell_screen.dart';
 import 'services_screen.dart';
 import 'settings_screen.dart';
+import 'shift_screen.dart';
 import 'stock_screen.dart';
 import 'store_picker.dart';
 import 'today_screen.dart';
@@ -61,7 +62,7 @@ class _HomeShellState extends State<HomeShell> {
     final tabs = <_TabSpec>[
       _TabSpec('tab-today', t.tabToday, (c) => TodayGlyph(color: c), () => TodayScreen(backend: widget.backend)),
       _TabSpec('tile-stock', t.stockTitle, (c) => BoxGlyph(color: c), () => const StockScreen()),
-      _TabSpec('tile-sell', t.tabPos, (c) => const SizedBox.shrink(), () => SellScreen(backend: widget.backend)),
+      _TabSpec('tile-sell', t.tabPos, (c) => const SizedBox.shrink(), () => SellScreen(backend: widget.backend, storeName: widget.storeName)),
       _TabSpec('tile-utang', t.utangTitle, (c) => NotebookGlyph(color: c), () => UtangScreen(storeName: widget.storeName)),
       _TabSpec('tab-more', t.more, (c) => MoreGlyph(color: c),
           () => MoreScreen(backend: widget.backend, storeName: widget.storeName)),
@@ -168,6 +169,12 @@ class MoreScreen extends StatelessWidget {
           glyph: const _Glyph(Icons.receipt_long_rounded, [Color(0xFFFF8A00), Color(0xFFF59E0B)]),
           onTap: () => open(ExpensesScreen(backend: backend)),
         ),
+      _GlassTile(
+        key: const Key('more-shift'),
+        label: t.shiftTitle,
+        glyph: const _Glyph(Icons.lock_clock_rounded, [Color(0xFF7C3AED), Color(0xFF6366F1)]),
+        onTap: () => open(ShiftScreen(backend: backend, storeName: storeName)),
+      ),
       _GlassTile(
         key: const Key('more-services'),
         label: t.servicesTitle,

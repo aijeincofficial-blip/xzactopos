@@ -1854,4 +1854,117 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get activeWarehouse => 'Aktibong bodega';
+
+  @override
+  String get shiftTitle => 'Shift';
+
+  @override
+  String get shiftNoneOpen => 'Walang bukas na shift';
+
+  @override
+  String get shiftNoneHelp =>
+      'Magsimula ng shift kapag ikaw na ang hahawak ng kaha, at bilangin ang panimulang cash.';
+
+  @override
+  String get shiftOpeningField => 'Cash sa kaha sa pagsisimula mo';
+
+  @override
+  String get shiftStart => 'Simulan ang shift';
+
+  @override
+  String shiftOpenSince(String time) {
+    return 'Bukas mula $time';
+  }
+
+  @override
+  String get shiftOpeningLabel => 'Panimulang cash';
+
+  @override
+  String get shiftCashSales => 'Benta sa cash';
+
+  @override
+  String get shiftUtangTaken => 'Bayad sa utang (cash)';
+
+  @override
+  String get shiftPaidOut => 'Cash na nailabas (gastos)';
+
+  @override
+  String get shiftLoadCash => 'Load at e-wallet (cash)';
+
+  @override
+  String shiftSalesLine(int count, String total) {
+    return 'Mga benta: $count · Kabuuan: $total';
+  }
+
+  @override
+  String shiftOtherTenders(String ewallet, String utang) {
+    return 'E-wallet: $ewallet · Sa utang: $utang';
+  }
+
+  @override
+  String get shiftEstimateNote =>
+      'Ito ang bilang ng teleponong ito. Hindi kasama ang mga benta sa ibang telepono.';
+
+  @override
+  String get shiftShareX => 'Ibahagi ang bilang na ito';
+
+  @override
+  String get shiftClose => 'Isara ang shift';
+
+  @override
+  String get shiftCloseAsk => 'Bilangin ang kaha';
+
+  @override
+  String get shiftChecking => 'Tinitingnan sa server...';
+
+  @override
+  String get shiftServerFigure => 'Bilang mula sa server';
+
+  @override
+  String get shiftPhoneFigure => 'Bilang mula sa teleponong ito';
+
+  @override
+  String get shiftConfirmClose => 'Isara ang shift na ito';
+
+  @override
+  String get shiftClosed => 'Naisara na ang shift';
+
+  @override
+  String get shiftZTitle => 'Ulat ng shift';
+
+  @override
+  String shiftOpenedLine(String time) {
+    return 'Binuksan $time';
+  }
+
+  @override
+  String shiftClosedLine(String time) {
+    return 'Isinara $time';
+  }
+
+  @override
+  String shiftServerDiffers(String amount) {
+    return 'Ang nakuha ng server ay $amount para sa shift na ito. Maaaring gustong suriin ng supervisor.';
+  }
+
+  @override
+  String get shiftHistory => 'Mga huling shift';
+
+  @override
+  String get shiftNoHistory => 'Wala pang shift.';
+
+  @override
+  String get shiftStillOpen => 'Bukas';
+
+  @override
+  String get shiftErrAlreadyOpen => 'May bukas ka nang shift.';
+
+  @override
+  String get shiftErrAmount => 'Maglagay ng halaga.';
+
+  @override
+  String get shiftChipOpen => 'Bukas ang shift';
+
+  @override
+  String get shiftChipNone => 'Walang shift';
 }

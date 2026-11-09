@@ -3103,6 +3103,204 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Active warehouse'**
   String get activeWarehouse;
+
+  /// No description provided for @shiftTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Shift'**
+  String get shiftTitle;
+
+  /// No description provided for @shiftNoneOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'No shift open'**
+  String get shiftNoneOpen;
+
+  /// No description provided for @shiftNoneHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Start a shift when you take over the till, and count the cash you start with.'**
+  String get shiftNoneHelp;
+
+  /// No description provided for @shiftOpeningField.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash in the drawer when you start'**
+  String get shiftOpeningField;
+
+  /// No description provided for @shiftStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start shift'**
+  String get shiftStart;
+
+  /// No description provided for @shiftOpenSince.
+  ///
+  /// In en, this message translates to:
+  /// **'Open since {time}'**
+  String shiftOpenSince(String time);
+
+  /// No description provided for @shiftOpeningLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Opening cash'**
+  String get shiftOpeningLabel;
+
+  /// No description provided for @shiftCashSales.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash sales'**
+  String get shiftCashSales;
+
+  /// No description provided for @shiftUtangTaken.
+  ///
+  /// In en, this message translates to:
+  /// **'Utang paid in cash'**
+  String get shiftUtangTaken;
+
+  /// No description provided for @shiftPaidOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash paid out (expenses)'**
+  String get shiftPaidOut;
+
+  /// No description provided for @shiftLoadCash.
+  ///
+  /// In en, this message translates to:
+  /// **'Load and e-wallet (cash)'**
+  String get shiftLoadCash;
+
+  /// No description provided for @shiftSalesLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Sales: {count} · Total: {total}'**
+  String shiftSalesLine(int count, String total);
+
+  /// No description provided for @shiftOtherTenders.
+  ///
+  /// In en, this message translates to:
+  /// **'E-wallet: {ewallet} · On utang: {utang}'**
+  String shiftOtherTenders(String ewallet, String utang);
+
+  /// No description provided for @shiftEstimateNote.
+  ///
+  /// In en, this message translates to:
+  /// **'This is this phone\'s figure. Sales made on other phones are not included.'**
+  String get shiftEstimateNote;
+
+  /// No description provided for @shiftShareX.
+  ///
+  /// In en, this message translates to:
+  /// **'Share this reading'**
+  String get shiftShareX;
+
+  /// No description provided for @shiftClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close shift'**
+  String get shiftClose;
+
+  /// No description provided for @shiftCloseAsk.
+  ///
+  /// In en, this message translates to:
+  /// **'Count the drawer'**
+  String get shiftCloseAsk;
+
+  /// No description provided for @shiftChecking.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking with the server...'**
+  String get shiftChecking;
+
+  /// No description provided for @shiftServerFigure.
+  ///
+  /// In en, this message translates to:
+  /// **'Figure from the server'**
+  String get shiftServerFigure;
+
+  /// No description provided for @shiftPhoneFigure.
+  ///
+  /// In en, this message translates to:
+  /// **'Figure from this phone'**
+  String get shiftPhoneFigure;
+
+  /// No description provided for @shiftConfirmClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close this shift'**
+  String get shiftConfirmClose;
+
+  /// No description provided for @shiftClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'Shift closed'**
+  String get shiftClosed;
+
+  /// No description provided for @shiftZTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Shift report'**
+  String get shiftZTitle;
+
+  /// No description provided for @shiftOpenedLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Opened {time}'**
+  String shiftOpenedLine(String time);
+
+  /// No description provided for @shiftClosedLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed {time}'**
+  String shiftClosedLine(String time);
+
+  /// No description provided for @shiftServerDiffers.
+  ///
+  /// In en, this message translates to:
+  /// **'The server worked out {amount} for this shift. A supervisor may want to look.'**
+  String shiftServerDiffers(String amount);
+
+  /// No description provided for @shiftHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent shifts'**
+  String get shiftHistory;
+
+  /// No description provided for @shiftNoHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'No shifts yet.'**
+  String get shiftNoHistory;
+
+  /// No description provided for @shiftStillOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get shiftStillOpen;
+
+  /// No description provided for @shiftErrAlreadyOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'You already have a shift open.'**
+  String get shiftErrAlreadyOpen;
+
+  /// No description provided for @shiftErrAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter an amount.'**
+  String get shiftErrAmount;
+
+  /// No description provided for @shiftChipOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Shift open'**
+  String get shiftChipOpen;
+
+  /// No description provided for @shiftChipNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No shift'**
+  String get shiftChipNone;
 }
 
 class _AppLocalizationsDelegate

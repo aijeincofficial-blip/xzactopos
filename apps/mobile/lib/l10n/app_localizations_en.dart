@@ -1845,4 +1845,117 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get activeWarehouse => 'Active warehouse';
+
+  @override
+  String get shiftTitle => 'Shift';
+
+  @override
+  String get shiftNoneOpen => 'No shift open';
+
+  @override
+  String get shiftNoneHelp =>
+      'Start a shift when you take over the till, and count the cash you start with.';
+
+  @override
+  String get shiftOpeningField => 'Cash in the drawer when you start';
+
+  @override
+  String get shiftStart => 'Start shift';
+
+  @override
+  String shiftOpenSince(String time) {
+    return 'Open since $time';
+  }
+
+  @override
+  String get shiftOpeningLabel => 'Opening cash';
+
+  @override
+  String get shiftCashSales => 'Cash sales';
+
+  @override
+  String get shiftUtangTaken => 'Utang paid in cash';
+
+  @override
+  String get shiftPaidOut => 'Cash paid out (expenses)';
+
+  @override
+  String get shiftLoadCash => 'Load and e-wallet (cash)';
+
+  @override
+  String shiftSalesLine(int count, String total) {
+    return 'Sales: $count · Total: $total';
+  }
+
+  @override
+  String shiftOtherTenders(String ewallet, String utang) {
+    return 'E-wallet: $ewallet · On utang: $utang';
+  }
+
+  @override
+  String get shiftEstimateNote =>
+      'This is this phone\'s figure. Sales made on other phones are not included.';
+
+  @override
+  String get shiftShareX => 'Share this reading';
+
+  @override
+  String get shiftClose => 'Close shift';
+
+  @override
+  String get shiftCloseAsk => 'Count the drawer';
+
+  @override
+  String get shiftChecking => 'Checking with the server...';
+
+  @override
+  String get shiftServerFigure => 'Figure from the server';
+
+  @override
+  String get shiftPhoneFigure => 'Figure from this phone';
+
+  @override
+  String get shiftConfirmClose => 'Close this shift';
+
+  @override
+  String get shiftClosed => 'Shift closed';
+
+  @override
+  String get shiftZTitle => 'Shift report';
+
+  @override
+  String shiftOpenedLine(String time) {
+    return 'Opened $time';
+  }
+
+  @override
+  String shiftClosedLine(String time) {
+    return 'Closed $time';
+  }
+
+  @override
+  String shiftServerDiffers(String amount) {
+    return 'The server worked out $amount for this shift. A supervisor may want to look.';
+  }
+
+  @override
+  String get shiftHistory => 'Recent shifts';
+
+  @override
+  String get shiftNoHistory => 'No shifts yet.';
+
+  @override
+  String get shiftStillOpen => 'Open';
+
+  @override
+  String get shiftErrAlreadyOpen => 'You already have a shift open.';
+
+  @override
+  String get shiftErrAmount => 'Enter an amount.';
+
+  @override
+  String get shiftChipOpen => 'Shift open';
+
+  @override
+  String get shiftChipNone => 'No shift';
 }
