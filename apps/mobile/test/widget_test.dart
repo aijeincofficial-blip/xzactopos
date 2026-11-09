@@ -22,6 +22,8 @@ class FakeBackend implements Backend {
   @override
   bool get signedIn => signedInAtStart;
   @override
+  String? get userId => signedInAtStart ? ((access?['user_id'] as String?) ?? 'u1') : null;
+  @override
   Stream<bool> get signedInChanges => _ctrl.stream;
   @override
   Future<void> signIn(String email, String password) async => _ctrl.add(true);

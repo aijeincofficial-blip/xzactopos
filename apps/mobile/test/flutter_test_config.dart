@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/widgets.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:xzactopos_mobile/core/access_cache.dart';
 import 'package:xzactopos_mobile/core/camera_scanner.dart';
 import 'package:xzactopos_mobile/core/receipt_printer.dart';
 
@@ -19,5 +21,7 @@ class NoCamera implements CameraScanner {
 Future<void> testExecutable(FutureOr<void> Function() testMain) async {
   cameraScanner = const NoCamera();
   receiptPrinter = const NoPrinter();
+  // nothing saved on a device, and nothing carried from one test to the next
+  setUp(() => accessCache = MemoryAccessCache());
   await testMain();
 }

@@ -6,9 +6,16 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'data/count_models.dart';
 import 'sync/sync_engine.dart';
 
+/// True when the failure is an ANSWER from the server (it was reached and said no), false when it was not reached at all (no
+/// signal, timeout, DNS). Only the second kind may fall back to what is saved on the phone.
+bool serverAnswered(Object e) => e is PostgrestException || e is AuthException;
+
 /// What the app needs from the server. Screens depend on this, so tests can fake it.
 abstract class Backend implements SyncApi {
   bool get signedIn;
+
+  /// The signed-in user's id, or null when signed out.
+  String? get userId;
   Stream<bool> get signedInChanges;
   Future<void> signIn(String email, String password);
 
@@ -124,6 +131,9 @@ class SupabaseBackend implements Backend, DeviceApi, WarehouseApi, CountApi {
 
   @override
   bool get signedIn => _c.auth.currentSession != null;
+
+  @override
+  String? get userId => _c.auth.currentUser?.id;
 
   @override
   Stream<bool> get signedInChanges =>

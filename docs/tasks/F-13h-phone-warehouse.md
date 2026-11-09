@@ -134,3 +134,17 @@ Setup: Android 13 emulator (`Pixel_4_API_33`), debug build against the local Sup
 
 Next: F-13i (two-warehouse acceptance on web and server), the offline-start card above, then merge H1 to H8 to `main` after review.
 
+## Offline start result (2026-11-09)
+Closes the open item from H8: the app could not start with no signal because the home gate needs the server for the user's access (role, business, modules, locations).
+
+Files: `apps/mobile/lib/core/access_cache.dart` (new), `lib/app.dart` (`Gate`), `lib/backend.dart` (`Backend.userId`, `serverAnswered`), `pubspec.yaml` (`shared_preferences`, already in the dependency tree through `supabase_flutter`), tests `test/access_cache_test.dart` (13) plus a test-config reset.
+
+- **What is saved:** the last `get_my_access` answer, with the user id and the time, in the app's own preferences. It only decides what the screens show. Every server call still checks role, location and module itself, so an out-of-date copy cannot do more than the server allows.
+- **When it is used:** only when the server is not reached at all (no signal, timeout). If the server answers with an error, the copy is not used. A copy is used only for the same user, and only while it is at most **7 days** old (a copy dated in the future, because the clock was moved back, is not trusted either). The 7 days is my default; it is one constant (`AccessCache.maxAge`) if you want a different limit.
+- **When it is replaced or dropped:** every answer from the server replaces it; "no business" from the server drops it; signing out drops it.
+- **While running on the copy:** the gate asks the server again every 60 s; once it answers, it shows the server's version (a changed role rebuilds the session, for example cashier to warehouse clerk) and stops asking.
+- **A bug the new tests found in my first version:** `setState` was given a closure that returned a Future, which Flutter rejects, and a broad `catch` hid it, so the switch to the server's answer never happened. The catch now covers only the network call.
+- **Mutation checks:** 14 rules broken on purpose (server errors falling back, copy never used, never written, "no business" keeping the copy, sign-out keeping it, no retry, retry that never stops, server answer not shown, any user may use the copy, no expiry, future copies trusted, expiry too long); 13 caught. One survivor, a session key I had added, turned out to be redundant and was removed.
+- **Emulator:** signed in as the W1 clerk online, force-stopped the app, turned airplane mode on and started it cold: it opened straight on the warehouse home with its orders and receipt number and the offline badge. (Earlier the same start showed "Something went wrong".)
+- **Not covered:** the first start on a new phone still needs a connection (nothing is saved yet, and signing in needs the server). A token that has expired while the phone was offline for a long time is handled by the existing sync code, not changed here.
+
