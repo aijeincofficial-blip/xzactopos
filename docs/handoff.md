@@ -7,7 +7,7 @@ Updated at the end of every task. Read this first in a fresh session. New sessio
 ### Who is doing what (update when you start and finish a task)
 | Agent | Branch and worktree | Working on | Status |
 | --- | --- | --- | --- |
-| Claude | `claude/phase3-sell-8261d3`, `.claude/worktrees/phase3-sell-8261d3` | F-13h (warehouse phone). H1, H2, H3 are DONE and committed (newest migration `20261109000800`). Next: H4 warehouse home and picker (not started; will touch `apps/mobile/lib/screens/home_shell.dart`, `lib/app.dart`, `lib/sync/store_session.dart`, `lib/l10n/*.arb`). | waiting for the owner's go-ahead on H4; nothing uncommitted |
+| Claude | `claude/phase3-sell-8261d3`, `.claude/worktrees/phase3-sell-8261d3` | F-13h H4 (warehouse home and picker on the phone). Touches `apps/mobile/lib/app.dart`, `lib/screens/home_shell.dart` (routing only), new `lib/screens/warehouse_*.dart`, `lib/sync/store_session.dart`, `lib/data/drift_warehouse.dart`, `lib/l10n/*.arb`, their tests. H1 to H3 done. | in progress (commits as each step works) |
 | Antigravity | `ag/work`, `.claude/worktrees/ag-work` | not started: priority 1 (prove Mobile Solo on the emulator) | waiting |
 | Owner | merges branches into `main`; makes the git remote and the keystore | | |
 
