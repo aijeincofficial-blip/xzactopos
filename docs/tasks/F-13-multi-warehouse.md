@@ -35,7 +35,7 @@ Gaps found:
 | F-13b Receive into a warehouse (**DONE 2026-11-09**, see below) | RPC `op_receive_warehouse_stock` (idempotent, outbox-ready): warehouse role + warehouse assignment required, location must be a warehouse, lands in the default RECEIVING bin when `bins_enabled`, blends average cost. Stays inside the ledger (`stock_movements` only). | Opus |
 | F-13c Suppliers and purchase orders (**DONE 2026-11-09**, see below) | `suppliers`, `purchase_orders`, `po_items` (tenant-leading, RLS, isolation-matrix rows per role). RPCs: `upsert_supplier`, `create_po` (draft), `submit_po`, `cancel_po`. PO addressed to one warehouse; status draft, ordered, partly_received, received, cancelled. | Opus |
 | F-13d Goods receipts (**DONE 2026-11-09**, see below) | `goods_receipts`, `goods_receipt_items`; `receive_po(po_id, items)` supports partial and over/under receipt, writes `receipt` movements via F-13b, updates `qty_received`, flags discrepancies; receipt without a PO allowed and flagged. | Opus |
-| F-13e Warehouse stock counts | `stock_counts`, `stock_count_items`; `start_count`, `submit_count`, `close_count` writes `count_correction` movements for the differences only; works per bin when bins are on, and keeps the invariant. | Opus |
+| F-13e Warehouse stock counts (**DONE 2026-11-09**, see below) | `stock_counts`, `stock_count_items`; `start_count`, `submit_count`, `close_count` writes `count_correction` movements for the differences only; works per bin when bins are on, and keeps the invariant. | Opus |
 | F-13f Cross-warehouse views | RPCs for stock of one variant across all my warehouses, per-warehouse reorder list, in-transit between warehouses. Reads only; explicit columns, paginated. | Sonnet |
 | F-13g React screens | Suppliers, POs, receiving, counts, warehouse switcher; Full-only, guarded with `can()` keys (`purchasing.manage`, `stock.count` already exist in `permissions.ts`). | Sonnet |
 | F-13h Flutter warehouse role | Receive (scan), count, pick/put-away for warehouse users; outbox ops through `sync_push`; reuse the supervisor-PIN pattern for large adjustments. | Opus (sync) then Sonnet |
@@ -109,3 +109,18 @@ Migration `20261109000400_goods_receipts.sql`, pgTAP `038_goods_receipts.test.sq
 - Mutation checks: 21 rules broken on purpose (qty counted twice or never, status logic both ways, over-delivery flag, PO cost vs invoice cost, stock not written, status gate, access checks on all three RPCs, replay rules,
   off-PO products, duplicate lines, store acceptance, foreign supplier, close rules). All caught; one needed a new assertion (`qty_remaining_before` on a second delivery), added.
 - Not done here: editing a draft PO, returning goods to a supplier, receipts in other currencies, expiry dates on warehouse receipts, lot numbers, putting goods away from RECEIVING (existing `execute_putaway`), screens, the phone/outbox side.
+
+## F-13e result (2026-11-09)
+Migration `20261109000500_warehouse_counts.sql`, pgTAP `039_warehouse_counts.test.sql` (109 tests), isolation matrix `004` gained `stock_counts` and `stock_count_items`. `pnpm check` green (pgTAP 4251 in 39 files).
+
+- Tables `stock_counts` (`CNT-YYMMDD-NNNN`, status open / closed / cancelled, optional `bin_id` scope, one OPEN count per warehouse by partial unique index) and `stock_count_items`
+  (`qty_system`, `qty_counted >= 0`, `qty_variance`, `auto_zero`). Finished counts are history: update/delete refused by trigger. RLS: owner and warehouse staff, own warehouses only, no client writes.
+- RPCs (owner or the warehouse's own staff; both modules on): `start_count(id, warehouse, bin?, notes?)`, `record_count(count, items)` (1 to 500 lines, all-or-nothing, a product counted again replaces its line),
+  `close_count(count, zero_uncounted?)`, `cancel_count(count, reason?)`. Recording moves nothing; closing writes `count_correction` movements (`ref_type stock_count`) for lines that differ. Every action is idempotent or harmless when repeated and audited.
+- **Key rule:** each line stores the system quantity at the moment it was counted; the correction is `counted - that`, so a delivery or sale during the count survives (count 97 of 100, 10 arrive later: 107, not 97). Recounting refreshes the snapshot.
+  Corrections never change the average cost.
+- With bins every line names a bin of that warehouse and the correction lands in that bin, so sum of bins = warehouse stock still holds. A bin count touches only its bin. `zero_uncounted` treats stock in scope that has no line as counted zero (marked `auto_zero`);
+  with a bin scope it zeroes only inside that bin. Closing a count with no lines is refused (`nothing_counted`).
+- Mutation checks: 26 rules broken on purpose. 23 caught by assertions, including the stale-snapshot case; 3 gaps found and closed with new tests (recount snapshot, replay with another warehouse, cancel by another warehouse's user).
+  Two mutants (closing matching lines, zeroing already-counted spots) are caught only because the table constraints make the test crash; one (two open counts) is equivalent because the unique index gives the same hint.
+- Not done here: approval of large variances (supervisor PIN, planned with the phone work in F-13h), blind counts, count sheets/printing, counting stores with this flow (stores keep `adjust_stock`), screens, the phone side.
