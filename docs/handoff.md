@@ -3,6 +3,7 @@
 Updated at the end of every task. Read this first in a fresh session. New session or a different tool (Antigravity)? Start with `docs/START-HERE-antigravity.md`.
 
 ## Status
+- **F-13b receive into a warehouse: done (2026-11-09).** New `sync_push` kind `receive_warehouse_stock` (migration `20261109000200_warehouse_receiving.sql`, pgTAP `036_warehouse_receiving.test.sql`, 30 tests). Newest `sync_push` definition is now in that migration. pgTAP total 3629 in 36 files. Next: F-13c suppliers and purchase orders.
 - **F-13a multi-warehouse proof: done (2026-11-09).** `docs/tasks/F-13-multi-warehouse.md` plans the rest (receiving into a warehouse, suppliers/POs, goods receipts, counts, screens). Migration `20261109000100_multi_warehouse_hardening.sql` + pgTAP `035_multi_warehouse.test.sql` (48). Fixed: bin stock and pick list items leaked across warehouses; shipping without a pick made STAGING negative (now `pick_required`). pgTAP total 3599 in 35 files. `main` was merged from this branch on 2026-11-09 (`8b7da68`); this work is on the branch only.
 - **Track 1 Mobile Adaptation Completed (2026-11-09):**
   - **F-06 mobile (`7b24cca`):** Offline supervisor PIN verification utility (`apps/mobile/lib/core/pin.dart`), PBKDF2 hash checking matching Supabase/`@pos/core`, local store offline PIN caching per location, seamless online-to-offline PIN fallback, and outbox op requeue with offline approval payload for sync replay. Tests in `pin_test.dart` and `supervisor_pin_test.dart` all passing.

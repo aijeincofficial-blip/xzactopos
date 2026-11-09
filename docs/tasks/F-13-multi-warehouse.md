@@ -32,7 +32,7 @@ Gaps found:
 | Card | Work | Model |
 | --- | --- | --- |
 | F-13a Multi-warehouse proof (**DONE 2026-11-09**, see below) | pgTAP `035_multi_warehouse.test.sql`: 1 tenant, warehouses W1 (bins on) and W2 (bins off), 2 stores, a warehouse user per warehouse + one with both. Proves: each user sees only their warehouses' stock, movements, transfers, bins; cannot ship/receive/put-away/pick in the other; W1-to-W2 transfer ships, receives, blends cost and keeps W1's bin invariant; same bin code in both warehouses; user with both sees both. **Fix whatever it finds** in a new migration. | Opus |
-| F-13b Receive into a warehouse | RPC `op_receive_warehouse_stock` (idempotent, outbox-ready): warehouse role + warehouse assignment required, location must be a warehouse, lands in the default RECEIVING bin when `bins_enabled`, blends average cost. Stays inside the ledger (`stock_movements` only). | Opus |
+| F-13b Receive into a warehouse (**DONE 2026-11-09**, see below) | RPC `op_receive_warehouse_stock` (idempotent, outbox-ready): warehouse role + warehouse assignment required, location must be a warehouse, lands in the default RECEIVING bin when `bins_enabled`, blends average cost. Stays inside the ledger (`stock_movements` only). | Opus |
 | F-13c Suppliers and purchase orders | `suppliers`, `purchase_orders`, `po_items` (tenant-leading, RLS, isolation-matrix rows per role). RPCs: `upsert_supplier`, `create_po` (draft), `submit_po`, `cancel_po`. PO addressed to one warehouse; status draft, ordered, partly_received, received, cancelled. | Opus |
 | F-13d Goods receipts | `goods_receipts`, `goods_receipt_items`; `receive_po(po_id, items)` supports partial and over/under receipt, writes `receipt` movements via F-13b, updates `qty_received`, flags discrepancies; receipt without a PO allowed and flagged. | Opus |
 | F-13e Warehouse stock counts | `stock_counts`, `stock_count_items`; `start_count`, `submit_count`, `close_count` writes `count_correction` movements for the differences only; works per bin when bins are on, and keeps the invariant. | Opus |
@@ -67,3 +67,16 @@ Mutation evidence: before the migration the test failed exactly on the three bug
 Behaviour change to know about: on a bins-enabled warehouse a transfer can no longer be shipped (including "ship now" on create) until the items are picked into STAGING. Warehouses without bins are unaffected.
 Open question for F-13b onward: should shipping auto-pick from storage bins instead of refusing? (Simpler for small warehouses; more allocation logic.)
 Not yet covered by F-13a: stock counts, purchasing, per-warehouse limits, offline/sync, UI. Those are F-13b to F-13i.
+
+## F-13b result (2026-11-09)
+Migration `20261109000200_warehouse_receiving.sql`, pgTAP `036_warehouse_receiving.test.sql` (30 tests). `pnpm check` green (pgTAP 3629 in 36 files).
+
+- New op **`receive_warehouse_stock`** (`op_receive_warehouse_stock`), reached only through `sync_push` (idempotent via `claim_op`/`finish_op`, so the phone outbox can queue it).
+  `sync_push` is re-created from the 20261108002500 definition with one extra `when`; the newest definition now lives in 20261109000200.
+- Payload `{ location_id, variant_id, qty, unit_cost? }`. The warehouse MUST be named and MUST be a warehouse (no default: several warehouses exist). One `receipt` movement; the existing triggers do the rest:
+  RECEIVING bin when bins are on, bin invariant, weighted average cost (50 @ 1000 + 30 @ 1200 = 1075; a receipt without a cost leaves the average alone).
+- Who: owner anywhere; a warehouse user in their own warehouses (`purchasing.manage` in `permissions.ts`). Store admins and cashiers are refused; so is a warehouse user of another warehouse (`location_denied`). Needs both modules on.
+- Hints: not_allowed, location_required, location_not_found, location_denied, not_a_warehouse, qty_invalid, invalid_value, unknown_variant, op_id_reused. Refused ops write nothing and roll back their op claim.
+- Mutation checks (rule broken on purpose, test must fail): no location-access check, stores allowed, no replay guard, cost ignored: all caught. "Admin role allowed": not caught, and cannot be: `validate_location_access` only lets admins hold stores,
+  so an admin never has warehouse access; the role check is defense in depth behind that rule.
+- Not done here (by design): batching several lines, supplier or PO reference, a receipt document (F-13c/F-13d); expiry date on warehouse receipts; any screen; the Dart `sync_push` kinds list on the phone.
