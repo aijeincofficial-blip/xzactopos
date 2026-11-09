@@ -2,7 +2,7 @@ import { Fragment, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { uuidv7 } from "@pos/core";
-import { Alert, Badge, Button, Card, Dialog, Field, Input, Select } from "../components/ui.tsx";
+import { Alert, Badge, Button, Card, Dialog, Field, Input, Select, Table, PageHeader } from "../components/ui.tsx";
 import { useSession } from "../lib/session.tsx";
 import { useErrorMessage } from "../lib/i18n-helpers.ts";
 import { formatQty } from "../lib/product-math.ts";
@@ -53,10 +53,7 @@ export function CountsPage() {
 
   return (
     <div className="grid gap-4">
-      <div>
-        <h1 className="text-xl font-semibold">{t("counts.title")}</h1>
-        <p className="text-sm text-slate-600">{t("counts.subtitle")}</p>
-      </div>
+      <PageHeader title={t("counts.title")} subtitle={t("counts.subtitle")} />
 
       {warehousesQ.isError ? <Alert>{msg(warehousesQ.error)}</Alert> : null}
       {warehousesQ.isSuccess && warehouses.length === 0 ? <Alert tone="info">{t("counts.noWarehouses")}</Alert> : null}
@@ -288,7 +285,7 @@ function OpenCount({ count, warehouse, onNotice }: { count: StockCount; warehous
         </p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+          <Table bare>
             <thead>
               <tr className="border-b border-slate-200 text-slate-500">
                 <th className="px-2 py-2 font-medium">{t("counts.table.product")}</th>
@@ -344,7 +341,7 @@ function OpenCount({ count, warehouse, onNotice }: { count: StockCount; warehous
                 );
               })}
             </tbody>
-          </table>
+          </Table>
         </div>
       )}
 
@@ -468,7 +465,7 @@ function History({ counts }: { counts: StockCount[] }) {
       {counts.length === 0 ? (
         <p className="p-4 text-sm text-slate-500">{t("counts.history.none")}</p>
       ) : (
-        <table className="w-full text-left text-sm">
+        <Table bare>
           <thead>
             <tr className="border-b border-slate-200 text-slate-500">
               {(["no", "date", "scope", "status", "lines", "corrections"] as const).map((c) => (
@@ -517,7 +514,7 @@ function History({ counts }: { counts: StockCount[] }) {
               );
             })}
           </tbody>
-        </table>
+        </Table>
       )}
     </Card>
   );

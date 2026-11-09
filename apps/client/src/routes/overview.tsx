@@ -3,7 +3,7 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { formatMoney, money } from "@pos/core";
-import { Alert, Badge, Button, Card, Field, Select } from "../components/ui.tsx";
+import { Alert, Badge, Button, Card, Field, Select, Table, PageHeader, Tabs, TabPanel } from "../components/ui.tsx";
 import { useSession } from "../lib/session.tsx";
 import { useErrorMessage } from "../lib/i18n-helpers.ts";
 import { formatQty } from "../lib/product-math.ts";
@@ -42,27 +42,18 @@ export function OverviewPage() {
 
   return (
     <div className="grid gap-4">
-      <div>
-        <h1 className="text-xl font-semibold">{t("overview.title")}</h1>
-        <p className="text-sm text-slate-600">{t("overview.subtitle")}</p>
-      </div>
+      <PageHeader title={t("overview.title")} subtitle={t("overview.subtitle")} />
       {warehousesQ.isSuccess && warehouses.length === 0 ? <Alert tone="info">{t("overview.noWarehouses")}</Alert> : null}
-      <div role="tablist" className="flex gap-1 border-b border-slate-200">
-        {(["reorder", "transit", "product", "negative"] as const).map((k) => (
-          <button
-            key={k}
-            role="tab"
-            type="button"
-            aria-selected={tab === k}
-            data-testid={`ov-tab-${k}`}
-            onClick={() => setTab(k)}
-            className={`rounded-t-md border-b-2 px-3 py-2 text-sm ${tab === k ? "border-slate-900 font-medium text-slate-900" : "border-transparent text-slate-600 hover:text-slate-900"}`}
-          >
-            {t(`overview.tabs.${k}`)}
-          </button>
-        ))}
-      </div>
-      {tab === "reorder" ? <ReorderTab warehouses={warehouses} /> : tab === "transit" ? <TransitTab warehouses={warehouses} /> : tab === "negative" ? <NegativeTab /> : <ProductTab />}
+      <Tabs
+        value={tab}
+        onValueChange={(v) => setTab(v as Tab)}
+        label={t("overview.title")}
+        tabs={(["reorder", "transit", "product", "negative"] as const).map((k) => ({ value: k, label: t(`overview.tabs.${k}`), testId: `ov-tab-${k}` }))}
+      >
+        <TabPanel value={tab}>
+          {tab === "reorder" ? <ReorderTab warehouses={warehouses} /> : tab === "transit" ? <TransitTab warehouses={warehouses} /> : tab === "negative" ? <NegativeTab /> : <ProductTab />}
+        </TabPanel>
+      </Tabs>
     </div>
   );
 }
@@ -126,7 +117,7 @@ function ReorderTab({ warehouses }: { warehouses: Array<{ id: string; code: stri
             {t("overview.reorder.none")}
           </p>
         ) : (
-          <table className="w-full text-left text-sm">
+          <Table bare>
             <thead>
               <tr className="border-b border-slate-200 text-slate-500">
                 {(["warehouse", "product", "onHand", "point", "incoming", "onOrder", "status", "shortfall"] as const).map((c) => (
@@ -165,7 +156,7 @@ function ReorderTab({ warehouses }: { warehouses: Array<{ id: string; code: stri
                 );
               })}
             </tbody>
-          </table>
+          </Table>
         )}
       </Card>
       <p className="text-xs text-slate-500">{t("overview.reorder.legend")}</p>
@@ -213,7 +204,7 @@ function NegativeTab() {
             {t("overview.negative.none")}
           </p>
         ) : (
-          <table className="w-full text-left text-sm">
+          <Table bare>
             <thead>
               <tr className="border-b border-slate-200 text-slate-500">
                 {(["place", "product", "onHand", "value", "lastMoved"] as const).map((c) => (
@@ -238,7 +229,7 @@ function NegativeTab() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </Table>
         )}
       </Card>
       <p className="text-xs text-slate-500">{t("overview.negative.legend")}</p>
@@ -280,7 +271,7 @@ function TransitTab({ warehouses }: { warehouses: Array<{ id: string; code: stri
             {t("overview.transit.none")}
           </p>
         ) : (
-          <table className="w-full text-left text-sm">
+          <Table bare>
             <thead>
               <tr className="border-b border-slate-200 text-slate-500">
                 {(["no", "from", "to", "shipped", "age", "lines", "units"] as const).map((c) => (
@@ -314,7 +305,7 @@ function TransitTab({ warehouses }: { warehouses: Array<{ id: string; code: stri
                 );
               })}
             </tbody>
-          </table>
+          </Table>
         )}
       </Card>
       {q.hasNextPage ? (
@@ -369,7 +360,7 @@ function ProductTab() {
         <p className="text-sm text-slate-500">{t("overview.product.none")}</p>
       ) : (
         <Card className="overflow-x-auto p-0" data-testid="product-table">
-          <table className="w-full text-left text-sm">
+          <Table bare>
             <thead>
               <tr className="border-b border-slate-200 text-slate-500">
                 {(["warehouse", "onHand", "incoming", "onOrder", "cost", "value"] as const).map((c) => (
@@ -401,7 +392,7 @@ function ProductTab() {
                 <td className="px-3 py-2">{totals.value === null ? "—" : fmt(totals.value)}</td>
               </tr>
             </tbody>
-          </table>
+          </Table>
         </Card>
       )}
     </div>

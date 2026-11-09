@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatMoney, money } from "@pos/core";
-import { Alert, Badge, Button, Card, Dialog, Input, Select } from "../components/ui.tsx";
+import { Alert, Badge, Button, Card, Dialog, Input, Select, Table } from "../components/ui.tsx";
 import { useSession } from "../lib/session.tsx";
 import { useErrorMessage } from "../lib/i18n-helpers.ts";
 import {
@@ -425,7 +425,7 @@ export function PlatformPage() {
 
       {/* Tenants Table */}
       <Card className="overflow-x-auto p-0">
-        <table className="w-full text-left text-sm">
+        <Table bare>
           <thead className="bg-slate-50 text-slate-500 uppercase text-xs border-b border-slate-200">
             <tr>
               <th className="p-3">{t("platform.colBusiness")}</th>
@@ -487,7 +487,7 @@ export function PlatformPage() {
               </tr>
             ))}
           </tbody>
-        </table>
+        </Table>
       </Card>
 
       {/* Modals */}

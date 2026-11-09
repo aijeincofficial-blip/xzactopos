@@ -6,7 +6,7 @@ import { fetchTenantSettings, updateTenantSettings } from "../lib/settings-api.t
 import { fieldErrors, tenantSettingsSchema } from "../lib/schemas.ts";
 import { accessQuery } from "../lib/session.tsx";
 import { useErrorMessage, useValidationMessage } from "../lib/i18n-helpers.ts";
-import { Alert, Badge, Button, Card, Field, Input, Select } from "../components/ui.tsx";
+import { Alert, Badge, Button, Card, Field, Input, Select, Table } from "../components/ui.tsx";
 import {
   fetchStorageMetrics,
   runArchiveMaintenance,
@@ -492,7 +492,7 @@ export function SettingsPage() {
                 {t("settings.largestTables")}
               </div>
               <div className="max-h-48 overflow-y-auto rounded border border-slate-200 text-xs">
-                <table className="w-full text-left">
+                <Table bare>
                   <thead className="bg-slate-50 text-slate-500 uppercase">
                     <tr>
                       <th className="p-2">{t("settings.tableName")}</th>
@@ -511,7 +511,7 @@ export function SettingsPage() {
                       </tr>
                     ))}
                   </tbody>
-                </table>
+                </Table>
               </div>
             </div>
           </Card>
