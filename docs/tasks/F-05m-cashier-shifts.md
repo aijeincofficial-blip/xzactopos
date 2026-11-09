@@ -48,3 +48,22 @@ Files: `apps/mobile/lib/screens/shift_screen.dart` (new), `sell_screen.dart` (sh
 - **Entry points:** a small lock button next to Today on Sell (open or not) and Shift under More, for owner, admins and cashiers.
 - **Mutation checks:** 12 rules broken on purpose (unsent shift asked about, server figure ignored, confirm allowed while asking, note not sent, disagreement hidden, opening default ignored, bad opening accepted, wrong cashier's shift, share without the figure, history not listing closed shifts, no chip, no tile); all caught after two tests were added (the prefilled opening and the disabled confirm).
 
+## S4 result: emulator acceptance (2026-11-09)
+Android 13 emulator, debug build, local Supabase, the Solo test store (`solo-e423847bcdeb`) with its owner `tindera.p1@example.test` and a cashier `pia` made through the `create_user` function. English UI.
+
+| Check | Result |
+| --- | --- |
+| Upgrade of the phone's database from schema 15 to 16 with real data on it | **Pass.** The app opened with every sale, product, pin and stock figure intact (₱103 sales today, pinned item, stock) and the new lock button beside the Today strip |
+| Owner, airplane mode on: open a shift with ₱200, sell 2 Kape for cash (₱16), read the X, close with ₱214 counted | **Pass.** X showed ₱216.00 (opening 200 + cash sales 16; the ₱103 sold earlier that day is not in it), 1 sale; the close sheet said "Figure from this phone" and "Short by ₱2.00"; the Z report showed opened and closed times, 200 / 216 / 214 and the short amount, with the "not sent" icon; 3 changes waited |
+| Reconnect | **Pass.** The three ops went through in order; the server row has opening 20000, the phone's expected 21600, the server's own 21600, counted 21400, difference -200, cashier = the owner |
+| Cashier signs in on the same phone | **Pass.** No shift shown as open for her (the owner's was not hers) |
+| Cashier, online: start with ₱100, sell one Kape (₱8), read the X, close with ₱107 | **Pass.** X ₱108.00; the close sheet said "Figure from the server" (₱108.00); the server row: opening 10000, expected 10800, server 10800, counted 10700, difference -100 |
+| Who can read what on the server (over the API) | **Pass.** The cashier reads and pulls her own shift only (1); the owner reads and pulls both (2) |
+
+**Finding (fixed):** on a shared phone the cashier's "Recent shifts" also listed the owner's earlier shift (the phone made it, so it is in the local database). The history now shows a cashier only their own shifts; owner and admins see all of them on the phone. Test added; fails without the filter.
+
+**Not covered:** closing a shift while the server's figure differs from the phone's (covered by tests only), a shift left open overnight, an admin closing someone else's shift from the phone (the server allows it; there is no screen for it yet), the supervisor PIN (shifts need none by decision 4), and a real printer.
+
+## What is done and what is not (F-05m)
+Done: server (S1), phone data and sync (S2), screens (S3), acceptance (S4). **Not done:** printing an X or Z slip (sharing text only), closing someone else's shift from the phone, staff management on the phone (the other half of priority 3: creating cashiers and assigning stores still happens on the web).
+

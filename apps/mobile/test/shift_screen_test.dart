@@ -256,6 +256,20 @@ void main() {
     await leave(tester);
   });
 
+  testWidgets('a cashier sees only their own shifts in the history, an admin sees all of them on this phone', (tester) async {
+    for (final (role, sees) in [('cashier', false), ('admin', true)]) {
+      final store = await openApp(tester, role: role);
+      await store.startShift(id: 'theirs', cashierId: 'someone-else', openingCash: 100, opId: 'op-1', at: DateTime.now().subtract(const Duration(hours: 5)));
+      await store.closeShift(id: 'theirs', countedCash: 90, expectedCash: 100, opId: 'op-2', at: DateTime.now().subtract(const Duration(hours: 2)));
+      await store.startShift(id: 'mine', cashierId: 'u1', openingCash: 100, opId: 'op-3', at: DateTime.now().subtract(const Duration(hours: 1)));
+      await store.closeShift(id: 'mine', countedCash: 100, expectedCash: 100, opId: 'op-4', at: DateTime.now().subtract(const Duration(minutes: 10)));
+      await openShiftScreen(tester);
+      expect(find.byKey(const Key('shift-row-mine')), findsOneWidget, reason: role);
+      expect(find.byKey(const Key('shift-row-theirs')), sees ? findsOneWidget : findsNothing, reason: role);
+      await leave(tester);
+    }
+  });
+
   testWidgets('the shift screen fits a 360 px phone, in Filipino, open and not', (tester) async {
     final store = await openApp(tester, locale: 'fil', size: const Size(945, 2048));
     await openShiftScreen(tester);

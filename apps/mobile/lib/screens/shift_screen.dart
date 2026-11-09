@@ -253,7 +253,9 @@ class _ShiftScreenState extends State<ShiftScreen> {
             StreamBuilder<List<ShiftView>>(
               stream: scope.store.watchShifts(),
               builder: (context, hs) {
-                final list = [for (final s in hs.data ?? const <ShiftView>[]) if (!s.isOpen) s];
+                // a cashier sees their own shifts only (the phone may hold someone else's from a shared till); the owner and admins see all
+                final all = scope.isAdminOrSuperadmin;
+                final list = [for (final s in hs.data ?? const <ShiftView>[]) if (!s.isOpen && (all || s.cashierId == _user)) s];
                 if (list.isEmpty) {
                   return Padding(
                     padding: const EdgeInsets.symmetric(horizontal: Gap.xl),

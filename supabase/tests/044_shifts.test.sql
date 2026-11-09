@@ -213,7 +213,7 @@ set local role anon;
 select throws_ok($$ select public.shift_expected_now(pg_temp.id('sh:j3')) $$, '42501', null, 'and so is someone not signed in');
 reset role;
 
-select is((select count(*)::int from public.audit_log where action in ('shift.open', 'shift.close')), 6, 'every open and close is in the audit log');
+select is((select count(*)::int from public.audit_log where tenant_id = pg_temp.t('A') and action in ('shift.open', 'shift.close')), 6, 'every open and close is in the audit log');
 
 select * from finish();
 rollback;
