@@ -73,6 +73,12 @@ void main() {
     expect(po.remainingTotal, 60);
     expect(find.text('Receipt saved. It will sync when you are online.'), findsOneWidget);
     expect(find.byKey(const Key('receive-save')), findsNothing, reason: 'back on the order');
+    expect(find.text('60 of 100 received'), findsOneWidget, reason: 'the order screen followed the receipt without a reload');
+    await tester.pageBack();
+    await settle(tester);
+    expect(find.byKey(const Key('order-pending')), findsOneWidget, reason: 'the list shows the receipt is waiting to sync');
+    expect(find.textContaining('60 left to receive'), findsOneWidget);
+    expect(find.byKey(Key('receipt-${list.single.opId}')), findsOneWidget);
     await leave(tester);
   });
 

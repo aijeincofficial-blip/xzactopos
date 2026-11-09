@@ -175,6 +175,35 @@ void main() {
     });
   });
 
+  group('several watchers at once', () {
+    test('each one hears about writes to its own tables (Drift shares streams with the same SQL)', () async {
+      await loadBasics();
+      final orders = <double>[];
+      final receipts = <int>[];
+      final warehouses = <int>[];
+      // the one on the fewest tables first: with the old shared key it would own the table list for all of them
+      final s4 = store.watchActiveWarehouse().listen((_) {});
+      final s3 = store.watchWarehouses().listen((l) => warehouses.add(l.length));
+      final s2 = store.watchReceipts(_w1).listen((l) => receipts.add(l.length));
+      final s1 = store.watchOpenPurchaseOrders(_w1).listen((l) => orders.add(l.single.remainingTotal));
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      await store.receiveAgainstPo(poId: _po1, lines: [const ReceiptLine(variantId: _rice, qty: 60)], opId: 'live-1');
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+      for (final s in [s1, s2, s3, s4]) {
+        await s.cancel();
+      }
+      expect(orders.last, 60, reason: 'the order shows what is left after the receipt');
+      final one = <double?>[];
+      final s5 = store.watchPurchaseOrder(_po1).listen((o) => one.add(o?.remainingTotal));
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      await store.receiveAgainstPo(poId: _po1, lines: [const ReceiptLine(variantId: _rice, qty: 10)], opId: 'live-2');
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+      await s5.cancel();
+      expect(one, [60.0, 50.0], reason: 'the detail screen follows each receipt');
+      expect(receipts.last, 1, reason: 'the receipt list shows the receipt');
+    });
+  });
+
   group('the active warehouse', () {
     test('with no warehouse yet there is none', () async {
       expect(await store.activeWarehouse(), isNull);

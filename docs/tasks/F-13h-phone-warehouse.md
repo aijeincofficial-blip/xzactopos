@@ -107,3 +107,30 @@ Files: `apps/mobile/lib/data/count_models.dart` (new: `CountApi`, session, line,
 - **Test note:** a hidden tab showing a progress spinner stops `pumpAndSettle`, so the open helper can pump by time instead (`spinnerOk`).
 - Next: H8 (emulator acceptance); H7 (offline counting) stays later.
 
+## H8 result: emulator acceptance (2026-11-09)
+Setup: Android 13 emulator (`Pixel_4_API_33`), debug build against the local Supabase stack (`10.0.2.2:54321`). A throwaway tenant (slug `h8-mw91d2at`, preset "all") with two warehouses (W1 Main, W2 Overflow), two products, one supplier, an open purchase order in each warehouse, and one `warehouse`-role clerk per warehouse. Password for all: `H8-test-pass1`. The tenant stays in the local database (see "Cleanup").
+
+| Check | Result |
+| --- | --- |
+| Clerk of W1 signs in and lands on the warehouse home | **Pass.** Real `sync_pull_warehouse` through `SupabaseBackend`: W1 chip, one open order (120 left), product names from the catalog pull, no store tabs |
+| Server returns only the clerk's warehouse | **Pass.** Called as each clerk over the real API: each got exactly their own warehouse, their own order, and no other warehouse's rows |
+| Receive against an order with airplane mode on | **Pass.** The form opened prefilled, a receipt (rice 60, oil 20) saved with "It will sync when you are online", badge showed 1 waiting. The order list did not update on the first build: **bug 1 below, fixed** |
+| Reconnect: server and phone agree | **Pass.** The queued receipt went through `sync_push` (`receive_po`) on reconnect: receipt number GRN-261109-0001 shown on the phone; server holds receipt, W1 stock rice 60 / oil 20, PO `partly_received`, the other warehouse's order untouched. Phone showed "40 left" before and after the next pull (no dip, no double count) and the "waiting" marker cleared |
+| Count online | **Pass.** Count started on the server (CNT-261109-0001, whole warehouse), rice counted 58 shows "system had 60, -2", finish closed it; server: count closed, rice 60 to 58, oil untouched (zero-uncounted not ticked) |
+| Clerk of W2 sees nothing of W1's work | **Pass (API and row-level security, not the phone UI).** As clerk2: stock_counts, stock_count_items, goods_receipts, stock_movements, stock_levels all returned 0 rows; the warehouse pull held only W2's order; `start_count` in W1 was refused with `location_denied` |
+
+**Bugs the emulator found (all fixed, with tests):**
+1. **Screens did not update after a local write.** Drift shares one stream between queries with the same SQL text and keeps the table list of the first one. Every warehouse watcher used `select 1`, so the first (active warehouse: tables `warehouses`, `meta`) decided what all the others listened to. Result: the order list and "Receipts from this phone" stayed stale after saving a receipt while the sync badge moved. The widget tests had hidden it because they seeded data before the screen opened. Now each watcher's SQL carries its table names. Regression test `several watchers at once` (fails with the old key) plus live-update assertions in the receive widget test. The Sell screen's sales watcher had the same `select 1` and was given its own key too.
+2. **Order detail never refreshed** (it listened to the wrong tables): new `watchPurchaseOrder`.
+3. **Count: the quantity box did not take the keyboard** after picking a product (typing went into the search box), and the search box kept its text after saving a line. Fixed, test added.
+
+**Open (not fixed here):**
+- **Starting the app with no signal shows "Something went wrong. Please try again."** The home gate needs the server to read the user's access (`myAccess`) on every start. A clerk who opens the app inside a warehouse with no signal cannot get in, even though receiving works offline once in. This is in `Gate` and affects every role. Suggested card: keep the last access payload on the phone and use it when the server cannot be reached. Needs an owner decision (security: how long a cached role may be trusted).
+- The emulator has 2 GB of memory; with other apps running the app took over a minute to start. Close other apps first.
+
+**Not checked on the device:** camera scan in the count and walk-in forms, a delivery without an order, a warehouse with bins (count with bin, bin sheet on Stock), the two-warehouse picker, Filipino text, and the second clerk's phone UI. All are covered by widget tests; the server side of the second clerk is covered above.
+
+**Cleanup:** tenant `h8-mw91d2at` and its auth users (`owner.`, `clerk1.`, `clerk2.` plus the slug) remain in the local database. Delete the tenant row by slug and the users with the service role if a clean local database is wanted.
+
+Next: F-13i (two-warehouse acceptance on web and server), the offline-start card above, then merge H1 to H8 to `main` after review.
+

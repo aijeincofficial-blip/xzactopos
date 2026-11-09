@@ -174,6 +174,22 @@ void main() {
     await leave(tester);
   });
 
+  testWidgets('picking a product gives the keyboard to the quantity box, and saving clears the search', (tester) async {
+    await openCount(tester);
+    await startCount(tester);
+    await tester.enterText(find.byKey(const Key('count-search')), 'rice');
+    await settle(tester);
+    await tester.tap(find.byKey(const Key('count-pick-$_rice')));
+    await settle(tester);
+    final editable = find.descendant(of: find.byKey(const Key('count-qty')), matching: find.byType(EditableText));
+    expect(tester.widget<EditableText>(editable).focusNode.hasFocus, isTrue, reason: 'typing a quantity must not land in the search box');
+    await tester.enterText(find.byKey(const Key('count-qty')), '37');
+    await tester.tap(find.byKey(const Key('count-save')));
+    await settle(tester);
+    expect(tester.widget<TextField>(find.byKey(const Key('count-search'))).controller!.text, isEmpty);
+    await leave(tester);
+  });
+
   testWidgets('counting a product again replaces its line', (tester) async {
     await openCount(tester);
     await startCount(tester);

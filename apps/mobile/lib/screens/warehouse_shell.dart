@@ -225,7 +225,7 @@ class OrderDetailScreen extends StatelessWidget {
     final t = AppLocalizations.of(context);
     final store = CatalogScope.of(context).store;
     return StreamBuilder<PurchaseOrderView?>(
-      stream: _orderStream(store, orderId),
+      stream: store.watchPurchaseOrder(orderId),
       builder: (context, osnap) {
         final order = osnap.data;
         return Scaffold(
@@ -264,14 +264,6 @@ class OrderDetailScreen extends StatelessWidget {
         );
       },
     );
-  }
-}
-
-/// One order, re-read whenever warehouse data changes.
-Stream<PurchaseOrderView?> _orderStream(LocalStore store, String id) async* {
-  yield await store.purchaseOrder(id);
-  await for (final _ in store.watchWarehouses()) {
-    yield await store.purchaseOrder(id);
   }
 }
 

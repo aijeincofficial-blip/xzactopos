@@ -576,7 +576,7 @@ mixin DriftSales implements SalesStore {
 
   @override
   Stream<SaleDetail?> watchSale(String saleId) => db
-      .customSelect('select 1', readsFrom: {db.sales, db.saleItems, db.salePayments, db.outbox, db.customers})
+      .customSelect('select 1 as watch_sales_sale_items_sale_payments_outbox_customers', readsFrom: {db.sales, db.saleItems, db.salePayments, db.outbox, db.customers})
       .watch()
       .asyncMap((_) => getSale(saleId));
 

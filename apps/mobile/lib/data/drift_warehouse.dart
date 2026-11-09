@@ -31,8 +31,15 @@ mixin DriftWarehouse implements WarehouseStore {
   static const _pullTables = ['warehouses', 'bins', 'bin_stock_levels', 'stock_levels', 'suppliers', 'purchase_orders'];
   static const _cursorPrefix = 'wh:';
 
-  Stream<List<T>> _watch<T>(Set<TableInfo> reads, Future<List<T>> Function() load) =>
-      db.customSelect('select 1', readsFrom: reads).watch().asyncMap((_) => load());
+  /// A signal that fires when any of [reads] changes, then [load] runs. Drift shares one stream between queries with the same
+  /// SQL text, and keeps the table list of the FIRST one; so the SQL carries the table names, or a second watcher on other
+  /// tables would never hear about its own writes.
+  Stream<void> _signal(Set<TableInfo> reads) {
+    final key = (reads.map((t) => t.actualTableName).toList()..sort()).join('_');
+    return db.customSelect('select 1 as watch_$key', readsFrom: reads).watch();
+  }
+
+  Stream<List<T>> _watch<T>(Set<TableInfo> reads, Future<List<T>> Function() load) => _signal(reads).asyncMap((_) => load());
 
   // ---------------------------------------------------------------------------
   // The active warehouse
@@ -57,7 +64,7 @@ mixin DriftWarehouse implements WarehouseStore {
 
   @override
   Stream<WarehouseView?> watchActiveWarehouse() =>
-      db.customSelect('select 1', readsFrom: {db.warehouses, db.meta}).watch().asyncMap((_) => activeWarehouse()).distinct();
+      _signal({db.warehouses, db.meta}).asyncMap((_) => activeWarehouse()).distinct();
 
   @override
   Future<void> setActiveWarehouse(String warehouseId) async {
@@ -178,6 +185,10 @@ mixin DriftWarehouse implements WarehouseStore {
     if (p == null) return null;
     return (await _viewOrders([p])).single;
   }
+
+  @override
+  Stream<PurchaseOrderView?> watchPurchaseOrder(String id) =>
+      _signal({db.purchaseOrders, db.poItems, db.whReceipts, db.whReceiptItems, db.suppliers}).asyncMap((_) => purchaseOrder(id));
 
   @override
   Stream<List<WhStockRow>> watchWarehouseStock(String warehouseId) =>

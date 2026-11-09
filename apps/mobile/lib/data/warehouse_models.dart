@@ -204,6 +204,9 @@ abstract class WarehouseStore {
   /// left to receive. An order the device has received in full stays listed (remaining 0) until the server confirms it.
   Stream<List<PurchaseOrderView>> watchOpenPurchaseOrders(String warehouseId);
   Future<PurchaseOrderView?> purchaseOrder(String id);
+
+  /// One order, re-read whenever it or a receipt changes (null when it is not on the phone).
+  Stream<PurchaseOrderView?> watchPurchaseOrder(String id);
   Stream<List<WhStockRow>> watchWarehouseStock(String warehouseId);
 
   /// Per bin (warehouses that use bins). A receipt made here is added to the RECEIVING bin until the server's copy arrives.

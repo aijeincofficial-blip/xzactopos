@@ -78,6 +78,7 @@ class _CountBodyState extends State<_CountBody> {
   String _query = '';
   ProductView? _picked;
   final _qty = TextEditingController();
+  final _qtyFocus = FocusNode();
   String? _lineBin;
 
   @override
@@ -91,6 +92,7 @@ class _CountBodyState extends State<_CountBody> {
     _notes.dispose();
     _search.dispose();
     _qty.dispose();
+    _qtyFocus.dispose();
     super.dispose();
   }
 
@@ -177,6 +179,10 @@ class _CountBodyState extends State<_CountBody> {
       _error = null;
       _qty.text = existing == null ? '' : _n(existing.qtyCounted);
     });
+    // the box appears with this rebuild; hand it the keyboard (autofocus is ignored while the search box has focus)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _qtyFocus.requestFocus();
+    });
   }
 
   Future<void> _saveLine() async {
@@ -198,6 +204,8 @@ class _CountBodyState extends State<_CountBody> {
     setState(() {
       _picked = null;
       _qty.clear();
+      _query = '';
+      _search.clear();
     });
     await _refresh();
   }
@@ -352,7 +360,7 @@ class _CountBodyState extends State<_CountBody> {
               TextField(
                 key: const Key('count-qty'),
                 controller: _qty,
-                autofocus: true,
+                focusNode: _qtyFocus,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 decoration: InputDecoration(labelText: t.whCountQty),
               ),
