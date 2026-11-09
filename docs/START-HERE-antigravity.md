@@ -9,6 +9,15 @@
 - Estimates (judgment): Mobile Solo ~90% built / ~70% checked in use; Web Solo ~85% / ~65%; Web Full ~80% / ~55%; Mobile Full ~35% / ~25%. Table in `docs/handoff.md`, section "Completion estimate and priorities".
 - **Another Claude session may have uncommitted work on F-13h H2 in `apps/mobile/lib/data/` (db.dart, drift_store.dart, local_store.dart) and a new migration `20261109000800_...`.** Do not edit those files or start H2 to H8 until `git status` shows them committed.
 
+## Where you work (one worktree and branch per agent, owner decision 2026-11-09)
+- **Antigravity works ONLY in `C:\Users\USER\xzactopos\.claude\worktrees\ag-work` on branch `ag/work`.** Never edit files in `phase3-sell-8261d3` (Claude's) or in the original checkout `C:\Users\USER\xzactopos` (branch `flutter-solo`, old). Run `git branch --show-current` before you edit anything: it must print `ag/work`.
+- When `main` has moved, bring it in with `git merge main` on `ag/work` (ask the owner if it conflicts).
+- Commit small and often, explicit paths only (`git add <files>`, never `git add -A`). Do not merge into `main` and do not touch Claude's branch: **the owner merges `ag/work` into `main`**, one branch at a time, with `pnpm check` run after each merge.
+- First time in the worktree: `pnpm install`, then `cd apps/mobile && flutter pub get`. `apps/client/.env.local` is already copied (it is gitignored).
+- **Shared local database:** both worktrees use the same local Supabase. Never run `supabase db reset` without asking the owner. A migration you apply is seen by every agent, so give it a timestamp after the newest migration on `main` AND on Claude's branch (ask if unsure), and keep your tests to your own fixtures (scope counts by tenant).
+- Claude's branch may be ahead of `main` with unmerged work. Do not copy its files by hand; wait until the owner merges it.
+- Write what you are doing in the "Who is doing what" table in `docs/handoff.md` before you start a task, and update it when you finish.
+
 ## The order (do one, finish it, update `docs/handoff.md`, then the next)
 1. **Prove Mobile Solo on the emulator, then fix what breaks.** Emulator `Pixel_4_API_33`, commands in the sections below. Check by hand and note pass/fail in a new `docs/tasks/P9-device-check.md`: tingi (pack to piece), expiry dates, pay-by dates and the utang statement, supervisor PIN approval (needs a second user with a PIN), CSV and statement sharing, selling offline then reconnecting, day close, e-wallet float. Fix bugs one at a time with a test each. Done when every item has a result and the bugs found are fixed or listed.
 2. **CI and a signed release build.** CI needs a git remote: **ask the owner which remote to use, never create or push to one yourself.** Add `flutter analyze` and `flutter test` to `.github/workflows/ci.yml` (they are already in `pnpm check`). The keystore is made by the OWNER, never generate one; once they give the path (outside the repo, never committed), wire `android/key.properties` through `.gitignore` and build `flutter build apk --release`.

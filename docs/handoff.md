@@ -4,6 +4,13 @@ Updated at the end of every task. Read this first in a fresh session. New sessio
 
 ## Status
 
+### Who is doing what (update when you start and finish a task)
+| Agent | Branch and worktree | Working on | Status |
+| --- | --- | --- | --- |
+| Claude | `claude/phase3-sell-8261d3`, `.claude/worktrees/phase3-sell-8261d3` | F-13h H2 (warehouse local database on the phone), uncommitted in `apps/mobile/lib/data/` | in progress |
+| Antigravity | `ag/work`, `.claude/worktrees/ag-work` | not started: priority 1 (prove Mobile Solo on the emulator) | waiting |
+| Owner | merges branches into `main`; makes the git remote and the keystore | | |
+
 ### Completion estimate and priorities (2026-11-09, judgment, not measured)
 | Product | Built | Checked in use | Main gap |
 | --- | --- | --- | --- |
