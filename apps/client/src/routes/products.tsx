@@ -864,7 +864,7 @@ export function ProductsPage() {
     <div className="grid gap-4 lg:grid-cols-[1fr_440px]">
       <section className="grid content-start gap-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-lg font-semibold">{t("products.title")}</h2>
+          <h1 className="text-xl font-semibold tracking-tight">{t("products.title")}</h1>
           <div className="flex flex-wrap items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => setCategoryModal(true)}>
               📁 {t("products.categories")}

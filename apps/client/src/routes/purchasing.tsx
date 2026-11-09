@@ -2,7 +2,7 @@ import { Fragment, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { formatMoney, money, uuidv7 } from "@pos/core";
-import { Alert, Badge, Button, Card, Dialog, Field, Input, Select } from "../components/ui.tsx";
+import { Alert, Badge, Button, Card, Dialog, Field, Input, Select, Table, PageHeader, Tabs, TabPanel, EmptyState } from "../components/ui.tsx";
 import { useSession } from "../lib/session.tsx";
 import { useErrorMessage } from "../lib/i18n-helpers.ts";
 import { formatQty } from "../lib/product-math.ts";
@@ -46,26 +46,15 @@ export function PurchasingPage() {
   const [tab, setTab] = useState<Tab>("orders");
   return (
     <div className="grid gap-4">
-      <div>
-        <h1 className="text-xl font-semibold">{t("purchasing.title")}</h1>
-        <p className="text-sm text-slate-600">{t("purchasing.subtitle")}</p>
-      </div>
-      <div role="tablist" className="flex gap-1 border-b border-slate-200">
-        {(["orders", "suppliers", "receipts"] as const).map((k) => (
-          <button
-            key={k}
-            role="tab"
-            type="button"
-            aria-selected={tab === k}
-            data-testid={`tab-${k}`}
-            onClick={() => setTab(k)}
-            className={`rounded-t-md border-b-2 px-3 py-2 text-sm ${tab === k ? "border-slate-900 font-medium text-slate-900" : "border-transparent text-slate-600 hover:text-slate-900"}`}
-          >
-            {t(`purchasing.tabs.${k}`)}
-          </button>
-        ))}
-      </div>
-      {tab === "orders" ? <OrdersTab /> : tab === "suppliers" ? <SuppliersTab /> : <ReceiptsTab />}
+      <PageHeader title={t("purchasing.title")} subtitle={t("purchasing.subtitle")} />
+      <Tabs
+        value={tab}
+        onValueChange={(v) => setTab(v as Tab)}
+        label={t("purchasing.title")}
+        tabs={(["orders", "suppliers", "receipts"] as const).map((k) => ({ value: k, label: t(`purchasing.tabs.${k}`), testId: `tab-${k}` }))}
+      >
+        <TabPanel value={tab}>{tab === "orders" ? <OrdersTab /> : tab === "suppliers" ? <SuppliersTab /> : <ReceiptsTab />}</TabPanel>
+      </Tabs>
     </div>
   );
 }
@@ -143,11 +132,11 @@ function OrdersTab() {
         {orders.isLoading ? (
           <p className="p-4 text-sm text-slate-500">{t("purchasing.loading")}</p>
         ) : rows.length === 0 ? (
-          <p className="p-4 text-sm text-slate-500" data-testid="no-orders">
-            {t("purchasing.orders.none")}
-          </p>
+          <div data-testid="no-orders" className="p-4">
+            <EmptyState title={t("purchasing.orders.none")} />
+          </div>
         ) : (
-          <table className="w-full text-left text-sm">
+          <Table bare>
             <thead>
               <tr className="border-b border-slate-200 text-slate-500">
                 {(["poNo", "warehouse", "supplier", "expected", "status", "progress", "actions"] as const).map((c) => (
@@ -203,7 +192,7 @@ function OrdersTab() {
                 );
               })}
             </tbody>
-          </table>
+          </Table>
         )}
       </Card>
 
@@ -385,7 +374,7 @@ function DetailDialog({ po, onClose }: { po: PurchaseOrder; onClose: () => void 
         {po.po_items.length === 0 ? (
           <p className="text-slate-500">{t("purchasing.detail.noLines")}</p>
         ) : (
-          <table className="w-full text-left">
+          <Table bare>
             <thead>
               <tr className="border-b border-slate-200 text-slate-500">
                 <th className="py-1 font-medium">{t("purchasing.form.product")}</th>
@@ -406,7 +395,7 @@ function DetailDialog({ po, onClose }: { po: PurchaseOrder; onClose: () => void 
                 </tr>
               ))}
             </tbody>
-          </table>
+          </Table>
         )}
         <p className="text-right font-medium">
           {t("purchasing.detail.value")}: {fmt(total)}
@@ -692,7 +681,7 @@ function SuppliersTab() {
             {t("purchasing.suppliers.none")}
           </p>
         ) : (
-          <table className="w-full text-left text-sm">
+          <Table bare>
             <thead>
               <tr className="border-b border-slate-200 text-slate-500">
                 {(["name", "contact", "phone", "email", "actions"] as const).map((c) => (
@@ -729,7 +718,7 @@ function SuppliersTab() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </Table>
         )}
       </Card>
       {editing ? <SupplierDialog supplier={editing === "new" ? null : editing} onClose={() => setEditing(null)} /> : null}
@@ -800,7 +789,7 @@ function ReceiptsTab() {
           {t("purchasing.receipts.none")}
         </p>
       ) : (
-        <table className="w-full text-left text-sm">
+        <Table bare>
           <thead>
             <tr className="border-b border-slate-200 text-slate-500">
               {(["grnNo", "date", "warehouse", "supplier", "order", "deliveryRef", "lines"] as const).map((c) => (
@@ -846,7 +835,7 @@ function ReceiptsTab() {
               </Fragment>
             ))}
           </tbody>
-        </table>
+        </Table>
       )}
     </Card>
   );

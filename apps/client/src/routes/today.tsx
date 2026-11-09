@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { formatMoney, money } from "@pos/core";
-import { Alert, Button, Card } from "../components/ui.tsx";
+import { Alert, Button, Card, PageHeader } from "../components/ui.tsx";
 import { useSession } from "../lib/session.tsx";
 import { tenantMode } from "../lib/mode.ts";
 import { dayInTimezone, getDaySummary } from "../lib/today.ts";
@@ -52,8 +52,7 @@ export function TodayPage() {
           </Link>
         </Card>
       ) : null}
-      <h2 className="text-lg font-semibold">{t("today.title")}</h2>
-      <p className="-mt-2 text-sm text-slate-500">{day}</p>
+      <PageHeader title={t("today.title")} subtitle={day} />
       <div className="grid gap-3 sm:grid-cols-3">
         <Stat id="today-net" label={t("today.sales")} value={fmt(s.totals.net)} />
         <Stat id="today-txns" label={t("today.transactions")} value={String(s.totals.txns)} />

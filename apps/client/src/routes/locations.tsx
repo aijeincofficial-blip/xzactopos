@@ -6,7 +6,7 @@ import { listLocations, rpc, type LocationRow } from "../lib/api.ts";
 import { fieldErrors, locationSchema } from "../lib/schemas.ts";
 import { accessQuery, useSession } from "../lib/session.tsx";
 import { useErrorMessage, useValidationMessage } from "../lib/i18n-helpers.ts";
-import { Alert, Badge, Button, Card, Dialog, Field, Input, Select } from "../components/ui.tsx";
+import { Alert, Badge, Button, Card, Dialog, Field, Input, Select, Table } from "../components/ui.tsx";
 
 interface Draft {
   id: string;
@@ -83,7 +83,7 @@ export function LocationsPage() {
 
       {q.isError ? <Alert>{errMsg(q.error)}</Alert> : null}
       <Card className="overflow-x-auto p-0">
-        <table className="w-full text-left text-sm">
+        <Table bare>
           <thead className="border-b border-slate-200 text-xs text-slate-500 uppercase">
             <tr>
               <th className="p-3">{t("locations.code")}</th>
@@ -136,7 +136,7 @@ export function LocationsPage() {
               </tr>
             ) : null}
           </tbody>
-        </table>
+        </Table>
       </Card>
 
       <Dialog

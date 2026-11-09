@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Alert, Badge, Button, Card, Dialog, Field, Input, Select } from "../components/ui.tsx";
+import { Alert, Badge, Button, Card, Dialog, Field, Input, Select, Table } from "../components/ui.tsx";
 import { useSession } from "../lib/session.tsx";
 import { useErrorMessage } from "../lib/i18n-helpers.ts";
 import { supabase } from "../lib/supabase.ts";
@@ -332,7 +332,7 @@ export function BinsPage() {
 
           {/* Bins Table */}
           <Card className="overflow-x-auto p-0">
-            <table className="w-full text-left text-sm">
+            <Table bare>
               <thead className="border-b border-slate-200 text-xs text-slate-500 uppercase">
                 <tr>
                   <th className="p-3">{t("bins.colCode", "Bin Code")}</th>
@@ -390,7 +390,7 @@ export function BinsPage() {
                   </tr>
                 ) : null}
               </tbody>
-            </table>
+            </Table>
           </Card>
         </>
       )}
@@ -414,7 +414,7 @@ export function BinsPage() {
             <p className="p-4 text-center text-sm text-slate-500">{t("bins.binEmpty", "This bin is currently empty.")}</p>
           ) : (
             <div className="max-h-80 overflow-y-auto rounded-md border border-slate-200">
-              <table className="w-full text-left text-sm">
+              <Table bare>
                 <thead className="bg-slate-50 text-xs text-slate-500 uppercase">
                   <tr>
                     <th className="p-2.5">SKU</th>
@@ -431,7 +431,7 @@ export function BinsPage() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </Table>
             </div>
           )}
         </div>

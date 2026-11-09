@@ -174,13 +174,17 @@ export function ErrorState({ message, retryLabel, onRetry }: { message: string; 
   );
 }
 
-/** Table with a scrolling wrapper, a quiet header, row dividers and a hover row. Use Th and Td inside. */
-export function Table({ className, ...props }: ComponentProps<"table">) {
-  return (
-    <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
-      <table className={cn("w-full text-left text-sm [&_tbody_tr:hover]:bg-slate-50 [&_tbody_tr]:border-t [&_tbody_tr]:border-slate-100", className)} {...props} />
-    </div>
-  );
+const tableClass =
+  "w-full text-left text-sm [&_thead_th]:bg-slate-50 [&_thead_th]:px-3 [&_thead_th]:py-2 [&_thead_th]:text-xs [&_thead_th]:font-medium [&_thead_th]:tracking-wide [&_thead_th]:text-slate-500 [&_thead_th]:uppercase [&_tbody_tr]:border-t [&_tbody_tr]:border-slate-100 [&_tbody_tr:hover]:bg-slate-50";
+
+/**
+ * Data table: quiet uppercase header, row dividers, hover row. Header and row styling comes from the table itself,
+ * so plain th/td work. `bare` skips the bordered scroll wrapper, for a table that already sits in a Card.
+ */
+export function Table({ className, bare, ...props }: ComponentProps<"table"> & { bare?: boolean }) {
+  const table = <table className={cn(tableClass, className)} {...props} />;
+  if (bare) return table;
+  return <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">{table}</div>;
 }
 
 export function Th({ className, numeric, ...props }: ComponentProps<"th"> & { numeric?: boolean }) {

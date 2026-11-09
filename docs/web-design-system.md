@@ -15,8 +15,11 @@ Left sidebar (Daily, Stock, Business groups, icons from lucide) on `md` and up; 
 ## Components (`components/ui.tsx`)
 Button (primary is brand blue), Input, Select, Field, Card, Alert, Badge, Dialog, and new: **PageHeader**, **EmptyState**, **ErrorState**, **Table / Th / Td**, **Tabs / TabPanel** (Radix). Focus rings are brand blue on every control; animation is switched off for people who ask for reduced motion.
 
+## Slice 2 (2026-11-09)
+- Every plain data table (16, in Bins, Counts, Locations, Warehouses, Platform, Purchasing, Settings, Users) is now `<Table bare>`: the header and row look come from the component. `Table` without `bare` adds the bordered scroll wrapper.
+- Purchasing and Warehouses use `Tabs` (arrow keys, roles) with the same test ids. Purchasing, Counts, Warehouses, Sell and Today use `PageHeader`; Products has the same title style. The purchasing order list uses `EmptyState`.
+
 ## Not done yet
-- Moving the existing screens onto PageHeader, Table, Tabs, EmptyState and ErrorState (they still use their own markup and plain `<table>` and hand-made tab buttons). Order: Sell, Today, Products, Purchasing, Counts, Warehouses, then the rest.
-- Toasts (saved / failed messages are still inline).
-- A contrast check with a tool on every screen in dark mode; only Today, Products and the shell were looked at by eye.
-- Light and dark were checked in the browser pane at desktop and phone width on the Solo test store; Full mode screens were not.
+- Toasts (saved / failed messages are still inline), `ErrorState` on load failures, more `EmptyState` use.
+- Products still has its own header and list markup; Sell, Counts and Purchasing forms are unchanged inside.
+- A contrast check with a tool on every screen in dark mode. Only Today, Sell, Products, Settings and the shell were looked at by eye, on the Solo test store; the Full-mode screens (Purchasing, Counts, Warehouses and the tables) were not seen in a browser because no Full-mode test account was at hand.

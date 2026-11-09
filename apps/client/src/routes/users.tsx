@@ -24,7 +24,7 @@ import {
 } from "../lib/schemas.ts";
 import { useSession } from "../lib/session.tsx";
 import { useErrorMessage, useValidationMessage } from "../lib/i18n-helpers.ts";
-import { Alert, Badge, Button, Card, Dialog, Field, Input, Select } from "../components/ui.tsx";
+import { Alert, Badge, Button, Card, Dialog, Field, Input, Select, Table } from "../components/ui.tsx";
 
 const ROLES: Role[] = ["superadmin", "admin", "warehouse", "cashier"];
 
@@ -172,7 +172,7 @@ export function UsersPage() {
 
       {/* Staff Table */}
       <Card className="overflow-x-auto p-0">
-        <table className="w-full text-left text-sm">
+        <Table bare>
           <thead className="border-b border-slate-200 text-xs text-slate-500 uppercase bg-slate-50/50">
             <tr>
               <th className="p-3">{t("users.username")}</th>
@@ -227,7 +227,7 @@ export function UsersPage() {
               ))
             )}
           </tbody>
-        </table>
+        </Table>
       </Card>
 
       {/* Add / Invite Dialog */}

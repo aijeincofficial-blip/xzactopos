@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatMoney, money, uuidv7 } from "@pos/core";
-import { Alert, Button, Card, Input, Select } from "../components/ui.tsx";
+import { Alert, Button, Card, Input, Select, PageHeader } from "../components/ui.tsx";
 import { useSession } from "../lib/session.tsx";
 import { useActiveLocation } from "../lib/location-context.tsx";
 import { useErrorMessage } from "../lib/i18n-helpers.ts";
@@ -251,7 +251,7 @@ export function SellPage() {
   return (
     <div className="grid gap-4 lg:grid-cols-[1fr_380px]">
       <section className="grid content-start gap-3">
-        <h2 className="text-lg font-semibold">{t("sell.title")}</h2>
+        <PageHeader title={t("sell.title")} />
         <Input
           data-testid="sell-search"
           placeholder={t("sell.search")}
