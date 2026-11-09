@@ -43,6 +43,21 @@ export interface TransitRow {
   units: number;
 }
 
+export interface NegativeRow {
+  location_id: string;
+  location_code: string;
+  location_type: "store" | "warehouse";
+  variant_id: string;
+  sku: string;
+  product_name: string;
+  /** Below zero. */
+  qty_on_hand: number;
+  avg_cost: number | null;
+  /** Negative, in minor units; null when there is no average cost. */
+  stock_value: number | null;
+  last_movement_at: string | null;
+}
+
 export const PAGE_SIZE = 50;
 
 const num = (v: unknown) => Number(v);
@@ -111,5 +126,27 @@ export async function warehouseTransfersInTransit(args: {
     hours_in_transit: num(r.hours_in_transit),
     lines: num(r.lines),
     units: num(r.units),
+  }));
+}
+
+/** Places where stock is below zero (negative stock exceptions). Runs as the user, so only places they may see appear. */
+export async function negativeStockList(args: { afterLocation?: string; afterVariant?: string }): Promise<NegativeRow[]> {
+  const rows = await rpc<Array<Record<string, unknown>>>("negative_stock_list", {
+    p_location_id: null,
+    p_limit: PAGE_SIZE,
+    p_after_location: args.afterLocation ?? null,
+    p_after_variant: args.afterVariant ?? null,
+  });
+  return rows.map((r) => ({
+    location_id: r.location_id as string,
+    location_code: r.location_code as string,
+    location_type: r.location_type as "store" | "warehouse",
+    variant_id: r.variant_id as string,
+    sku: r.sku as string,
+    product_name: r.product_name as string,
+    qty_on_hand: num(r.qty_on_hand),
+    avg_cost: numOrNull(r.avg_cost),
+    stock_value: numOrNull(r.stock_value),
+    last_movement_at: (r.last_movement_at as string | null) ?? null,
   }));
 }

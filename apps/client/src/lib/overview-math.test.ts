@@ -3,6 +3,8 @@ import {
   nextReorderCursor,
   nextTransitCursor,
   reorderStatus,
+  negativeSummary,
+  nextNegativeCursor,
   reorderSummary,
   stockTotals,
   transitAge,
@@ -104,5 +106,31 @@ describe("paging cursors", () => {
     ];
     expect(nextTransitCursor(rows, 2)).toEqual({ shippedAt: "2026-11-09T01:00:00Z", id: "T2" });
     expect(nextTransitCursor(rows, 5)).toBeNull();
+  });
+});
+
+describe("negativeSummary", () => {
+  it("counts lines and places and adds up what is missing", () => {
+    const s = negativeSummary([
+      { location_id: "S1", qty_on_hand: -3, stock_value: -3000 },
+      { location_id: "S1", qty_on_hand: -0.5, stock_value: -250 },
+      { location_id: "W1", qty_on_hand: -2.1, stock_value: null },
+    ]);
+    expect(s).toEqual({ lines: 3, places: 2, units: 5.6, value: 3250 });
+  });
+  it("is all zeros when nothing is below zero", () => {
+    expect(negativeSummary([])).toEqual({ lines: 0, places: 0, units: 0, value: 0 });
+  });
+});
+
+describe("nextNegativeCursor", () => {
+  it("continues after the last row only when the page was full", () => {
+    const rows = [
+      { location_id: "a", variant_id: "1" },
+      { location_id: "b", variant_id: "2" },
+    ];
+    expect(nextNegativeCursor(rows, 2)).toEqual({ location: "b", variant: "2" });
+    expect(nextNegativeCursor(rows, 3)).toBeNull();
+    expect(nextNegativeCursor([], 2)).toBeNull();
   });
 });

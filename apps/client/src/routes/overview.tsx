@@ -8,6 +8,8 @@ import { useSession } from "../lib/session.tsx";
 import { useErrorMessage } from "../lib/i18n-helpers.ts";
 import { formatQty } from "../lib/product-math.ts";
 import {
+  negativeSummary,
+  nextNegativeCursor,
   nextReorderCursor,
   nextTransitCursor,
   reorderStatus,
@@ -18,16 +20,18 @@ import {
 } from "../lib/overview-math.ts";
 import {
   PAGE_SIZE,
+  negativeStockList,
   warehouseReorderList,
   warehouseStockByVariant,
   warehouseTransfersInTransit,
+  type NegativeRow,
   type ReorderRow,
   type TransitRow,
 } from "../lib/overview-api.ts";
 import { listCountWarehouses } from "../lib/counts-api.ts";
 import { listVariantOptions } from "../lib/purchasing-api.ts";
 
-type Tab = "reorder" | "transit" | "product";
+type Tab = "reorder" | "transit" | "product" | "negative";
 
 export function OverviewPage() {
   const { t } = useTranslation("admin");
@@ -44,7 +48,7 @@ export function OverviewPage() {
       </div>
       {warehousesQ.isSuccess && warehouses.length === 0 ? <Alert tone="info">{t("overview.noWarehouses")}</Alert> : null}
       <div role="tablist" className="flex gap-1 border-b border-slate-200">
-        {(["reorder", "transit", "product"] as const).map((k) => (
+        {(["reorder", "transit", "product", "negative"] as const).map((k) => (
           <button
             key={k}
             role="tab"
@@ -58,7 +62,7 @@ export function OverviewPage() {
           </button>
         ))}
       </div>
-      {tab === "reorder" ? <ReorderTab warehouses={warehouses} /> : tab === "transit" ? <TransitTab warehouses={warehouses} /> : <ProductTab />}
+      {tab === "reorder" ? <ReorderTab warehouses={warehouses} /> : tab === "transit" ? <TransitTab warehouses={warehouses} /> : tab === "negative" ? <NegativeTab /> : <ProductTab />}
     </div>
   );
 }
@@ -168,6 +172,79 @@ function ReorderTab({ warehouses }: { warehouses: Array<{ id: string; code: stri
       {q.hasNextPage ? (
         <div>
           <Button variant="outline" disabled={q.isFetchingNextPage} onClick={() => void q.fetchNextPage()} data-testid="reorder-more">
+            {q.isFetchingNextPage ? t("overview.loading") : t("overview.showMore")}
+          </Button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------------------------------------ below zero */
+
+function NegativeTab() {
+  const { t, i18n } = useTranslation("admin");
+  const msg = useErrorMessage();
+  const { access } = useSession();
+  const currency = access.tenant.base_currency;
+  const q = useInfiniteQuery({
+    queryKey: ["overview", "negative"],
+    initialPageParam: null as { location: string; variant: string } | null,
+    queryFn: ({ pageParam }) => negativeStockList({ afterLocation: pageParam?.location, afterVariant: pageParam?.variant }),
+    getNextPageParam: (last) => nextNegativeCursor(last, PAGE_SIZE),
+  });
+  const rows: NegativeRow[] = (q.data?.pages ?? []).flat();
+  const sum = negativeSummary(rows);
+  const fmt = (n: number) => formatMoney(money(n, currency), i18n.language);
+
+  return (
+    <div className="grid gap-4">
+      {q.isError ? <Alert>{msg(q.error)}</Alert> : null}
+      {rows.length > 0 ? (
+        <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900" data-testid="negative-summary">
+          {t("overview.negative.summary", { lines: sum.lines, places: sum.places, units: formatQty(sum.units), value: fmt(sum.value) })}
+        </p>
+      ) : null}
+      <Card className="overflow-x-auto p-0">
+        {q.isLoading ? (
+          <p className="p-4 text-sm text-slate-500">{t("overview.loading")}</p>
+        ) : rows.length === 0 ? (
+          <p className="p-4 text-sm text-slate-500" data-testid="negative-none">
+            {t("overview.negative.none")}
+          </p>
+        ) : (
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-slate-200 text-slate-500">
+                {(["place", "product", "onHand", "value", "lastMoved"] as const).map((c) => (
+                  <th key={c} className="px-3 py-2 font-medium">
+                    {t(`overview.negative.${c}`)}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={`${r.location_id}:${r.variant_id}`} className="border-b border-slate-100" data-testid={`negative-${r.location_code}-${r.sku}`}>
+                  <td className="px-3 py-2">
+                    {r.location_code} <span className="text-xs text-slate-500">({t(`overview.negative.type.${r.location_type}`)})</span>
+                  </td>
+                  <td className="px-3 py-2">
+                    {r.product_name} · {r.sku}
+                  </td>
+                  <td className="px-3 py-2 font-medium text-red-700">{formatQty(r.qty_on_hand)}</td>
+                  <td className="px-3 py-2">{r.stock_value === null ? "—" : fmt(r.stock_value)}</td>
+                  <td className="px-3 py-2">{r.last_movement_at ? new Date(r.last_movement_at).toLocaleDateString(i18n.language) : "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </Card>
+      <p className="text-xs text-slate-500">{t("overview.negative.legend")}</p>
+      {q.hasNextPage ? (
+        <div>
+          <Button variant="outline" disabled={q.isFetchingNextPage} onClick={() => void q.fetchNextPage()} data-testid="negative-more">
             {q.isFetchingNextPage ? t("overview.loading") : t("overview.showMore")}
           </Button>
         </div>

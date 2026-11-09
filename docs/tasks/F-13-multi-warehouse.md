@@ -199,3 +199,12 @@ Closes finding 1 of the F-13i result. Migration `20261109000900_transfer_stock_g
 - **Checks:** all 4,440 database tests pass (42 files); four deliberate breaks of the guard each fail the new test; `pnpm check` green; the F-13i scenario now passes 65 of 65, including "shipping more than W2 holds is refused" (before: W2 went to -481). The earlier five "FAIL" lines in a rerun were the script comparing JSON key order, now fixed.
 - **Not done:** the negative-stock exception report from the plan (for offline sales) is still not built.
 
+## Negative stock report (2026-11-09)
+Plan report 11, "negative stock exceptions". Migration `20261109001000_negative_stock_report.sql`, pgTAP `043_negative_stock_report.test.sql` (19 tests), web tab "Below zero" on the Warehouses screen (en + fil), 5 new vitest checks.
+
+- **`negative_stock_list(location?, limit, after_location, after_variant)`** runs as the caller (security invoker, writes nothing). It lists every stock level below zero, stores and warehouses alike: place, product, quantity, average cost, value of what is missing, and when the stock last moved. Row-level security scopes it like the stock screens: the owner sees everything, a warehouse clerk or a cashier only their own places. Archived products and inactive or deleted places are not listed. Keyset-paged like the other warehouse views (1 to 500 rows).
+- **Reconciling needs no state:** add the missing stock (a receipt, a transfer in, or a count) and the row leaves the list by itself; if the level drops again it comes back. Nothing is "marked as handled".
+- **Web:** a fourth tab "Below zero" on `/app/warehouses`: a one-line summary (lines, places, units missing, value at average cost), the table, and a note on how to clear a line. It shows what the signed-in user may see.
+- **Checks:** 6 deliberate breaks of the function (zero included, archived products shown, inactive places shown, no place filter, no paging, wrong value sign) all fail the new test; pgTAP suite, vitest (120) and `pnpm check` green. Seen in the browser against the F-13i tenant (W2 rice at -481, -₱4,810.00).
+- **Not done:** the phone does not show this report (it is a back-office view); no alert or count badge on the home screen; the report has no place filter in the web screen (the function supports one).
+
