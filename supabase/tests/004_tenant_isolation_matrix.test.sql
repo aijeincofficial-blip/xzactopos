@@ -187,6 +187,12 @@ select w.who, t.tbl, case when w.who in ('superadmin', 'warehouse') then 1 else 
 from (values ('superadmin'), ('admin'), ('cashier'), ('warehouse'), ('inactive')) w(who)
 cross join (values ('suppliers'), ('purchase_orders'), ('po_items')) t(tbl);
 
+-- F-13d goods_receipts, goods_receipt_items: same audience as purchase orders (owner and warehouse staff of W01); 1 receipt with 1 line per tenant
+insert into expected (who, tbl, own_rows, own_updated)
+select w.who, t.tbl, case when w.who in ('superadmin', 'warehouse') then 1 else 0 end, -1
+from (values ('superadmin'), ('admin'), ('cashier'), ('warehouse'), ('inactive')) w(who)
+cross join (values ('goods_receipts'), ('goods_receipt_items')) t(tbl);
+
 -- 2 tenants x (who, table) pairs x 5 metrics, plus 8 targeted checks
 select plan((select count(*)::int * 2 * 5 from expected) + 8);
 
@@ -336,6 +342,12 @@ begin
     insert into public.po_items (id, tenant_id, po_id, variant_id, qty_ordered) values
       (md5('poi:' || t.label || ':1')::uuid, pg_temp.tid(t.label), md5('po:' || t.label || ':1')::uuid,
        md5('var:' || t.label || ':1')::uuid, 12);
+    insert into public.goods_receipts (id, tenant_id, grn_no, warehouse_id, po_id, supplier_id, without_po) values
+      (md5('grn:' || t.label || ':1')::uuid, pg_temp.tid(t.label), 'GRN-261108-0001', pg_temp.lid(t.label, 'W01'),
+       md5('po:' || t.label || ':1')::uuid, md5('sup:' || t.label || ':1')::uuid, false);
+    insert into public.goods_receipt_items (id, tenant_id, grn_id, po_item_id, variant_id, qty) values
+      (md5('grni:' || t.label || ':1')::uuid, pg_temp.tid(t.label), md5('grn:' || t.label || ':1')::uuid,
+       md5('poi:' || t.label || ':1')::uuid, md5('var:' || t.label || ':1')::uuid, 4);
   end loop;
 end;
 $$;
@@ -415,7 +427,9 @@ begin
     ('pick_list_items',   'tenant_id', 'qty_picked = qty_picked'),
     ('suppliers',         'tenant_id', 'name = name'),
     ('purchase_orders',   'tenant_id', 'notes = notes'),
-    ('po_items',          'tenant_id', 'qty_ordered = qty_ordered')
+    ('po_items',          'tenant_id', 'qty_ordered = qty_ordered'),
+    ('goods_receipts',    'tenant_id', 'notes = notes'),
+    ('goods_receipt_items', 'tenant_id', 'qty = qty')
   ) v(tbl, tcol, upd) loop
     begin
       execute format(
