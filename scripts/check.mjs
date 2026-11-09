@@ -1,7 +1,7 @@
-// pnpm check = lint, types, tests, pgTAP. Stops at first failure.
+// pnpm check = lint, types, tests, pgTAP, Flutter analyze + tests. Stops at first failure.
 import { spawnSync } from "node:child_process";
 
-const steps = ["lint", "typecheck", "test", "test:functions", "test:db"];
+const steps = ["lint", "typecheck", "test", "test:functions", "test:db", "check:mobile"];
 for (const s of steps) {
   console.log(`\n== pnpm ${s} ==`);
   const r = spawnSync("pnpm", [s], { stdio: "inherit", shell: true });

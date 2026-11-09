@@ -5,21 +5,45 @@ import { useQueryClient } from "@tanstack/react-query";
 import { accessQuery } from "../lib/session.tsx";
 import { PERMISSION_KEYS, type PermissionKey } from "@pos/core";
 import { saveMyLocale, signOut } from "../lib/api.ts";
+import { tenantMode } from "../lib/mode.ts";
 import { pickLocale, storeLocale } from "../i18n/index.ts";
 import { useSession } from "../lib/session.tsx";
+import { useActiveLocation } from "../lib/location-context.tsx";
 import { Badge, Button, Card } from "../components/ui.tsx";
 import { LanguageSelect } from "../components/LanguageSelect.tsx";
 
 const NAV = [
-  { to: "/app", key: "dashboard", perm: null },
-  { to: "/app/locations", key: "locations", perm: "locations.manage" },
-  { to: "/app/users", key: "users", perm: "users.manage" },
-  { to: "/app/modules", key: "modules", perm: "tenant.modules" },
-] as const satisfies ReadonlyArray<{ to: string; key: string; perm: PermissionKey | null }>;
+  { to: "/app", key: "dashboard", perm: null, fullOnly: false },
+  { to: "/app/sell", key: "sell", perm: "sale.create", fullOnly: false },
+  { to: "/app/sales", key: "sales", perm: "sale.create", fullOnly: false },
+  { to: "/app/products", key: "products", perm: "catalog.manage", fullOnly: false },
+  { to: "/app/transfers", key: "transfers", perm: null, perms: ["transfer.manage", "stock.adjust_store"] as const, fullOnly: true },
+  { to: "/app/bins", key: "bins", perm: null, perms: ["transfer.manage", "stock.adjust_store", "locations.manage"] as const, fullOnly: true },
+  { to: "/app/utang", key: "utang", perm: "sale.create", fullOnly: false },
+  { to: "/app/expenses", key: "expenses", perm: "shift.manage", fullOnly: false },
+  { to: "/app/day-close", key: "dayClose", perm: "shift.manage", fullOnly: false },
+  { to: "/app/reports", key: "reports", perm: null, perms: ["reports.store", "reports.warehouse"] as const, fullOnly: true },
+  { to: "/app/upgrade", key: "upgrade", perm: "tenant.modules", fullOnly: false, soloOnly: true },
+  { to: "/app/locations", key: "locations", perm: "locations.manage", fullOnly: true },
+  { to: "/app/users", key: "users", perm: "users.manage", fullOnly: true },
+  { to: "/app/modules", key: "modules", perm: "tenant.modules", fullOnly: true },
+  { to: "/app/settings", key: "settings", perm: "tenant.settings", fullOnly: false },
+  { to: "/app/platform", key: "platform", perm: null, fullOnly: false, platformAdminOnly: true },
+] as const satisfies ReadonlyArray<{
+  to: string;
+  key: string;
+  perm: PermissionKey | null;
+  perms?: readonly PermissionKey[];
+  fullOnly: boolean;
+  soloOnly?: boolean;
+  platformAdminOnly?: boolean;
+}>;
 
 export function AppLayout() {
   const { t, i18n } = useTranslation(["common", "admin"]);
   const { access, can } = useSession();
+  const { activeStoreId, stores, setActiveStoreId } = useActiveLocation();
+  const mode = tenantMode(access);
   const qc = useQueryClient();
   const navigate = useNavigate();
 
@@ -56,6 +80,23 @@ export function AppLayout() {
               {access.full_name || access.username} · {t(`admin:roles.${access.role}`)}
             </div>
           </div>
+          {stores.length > 1 ? (
+            <div className="flex items-center gap-1.5 rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs">
+              <span className="font-medium text-slate-500">🏪 {t("admin:users.store")}:</span>
+              <select
+                value={activeStoreId ?? ""}
+                onChange={(e) => setActiveStoreId(e.target.value)}
+                className="cursor-pointer bg-transparent font-semibold text-slate-800 focus:outline-none"
+                aria-label="Active store"
+              >
+                {stores.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.code} · {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : null}
           <LanguageSelect onChoose={(l) => void chooseLocale(l)} />
           <Button variant="outline" size="sm" onClick={() => void leave()}>
             {t("common:actions.signOut")}
@@ -63,7 +104,13 @@ export function AppLayout() {
         </div>
         {access.tenant.setup_completed ? (
           <nav aria-label={t("admin:nav.label")} className="mx-auto flex max-w-5xl gap-1 px-4">
-            {NAV.filter((n) => n.perm === null || can(n.perm)).map((n) => (
+            {NAV.filter((n) => {
+              if ("platformAdminOnly" in n && n.platformAdminOnly && !access.is_platform_admin) return false;
+              const permOk = "perms" in n && n.perms
+                ? (n.perms as readonly PermissionKey[]).some((p) => can(p))
+                : n.perm === null || can(n.perm);
+              return permOk && (!n.fullOnly || mode === "full") && (!("soloOnly" in n && n.soloOnly) || mode === "solo");
+            }).map((n) => (
               <Link
                 key={n.to}
                 to={n.to}

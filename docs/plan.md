@@ -775,3 +775,5 @@ Done = commit made, docs/handoff.md updated, usage % logged
 Start with Phase 0 and Phase 1 in the first week: they are small, they prove tenant isolation early, and they give you real usage numbers to plan the rest.
 
 Phase 5b (bins, put-away, picking) adds about 7 cards, 2 of them on Opus (bin ledger invariants and pick allocation). Generate its CRUD screens from the table config like the other phases.
+
+> Recalibrated after Phase 1: solo-store focus and Flutter client. See docs/recalibration-solo-flutter.md (overrides Phase 2+ client choices).

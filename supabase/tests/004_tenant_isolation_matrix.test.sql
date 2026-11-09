@@ -72,7 +72,115 @@ insert into expected (who, tbl, own_rows, own_updated) values
   ('inactive', 'audit_log',            0, -1),
   ('inactive', 'platform_admins',     -1, -1);
 
--- 2 tenants x 50 (who, table) pairs x 5 metrics, plus 8 targeted checks
+-- P2-01 catalog: every active member reads all of it (1 category, 2 products, 2 variants, 2 prices); nobody writes directly
+insert into expected (who, tbl, own_rows, own_updated)
+select w.who, c.tbl, case when w.who = 'inactive' then 0 else c.n end, -1
+from (values ('superadmin'), ('admin'), ('cashier'), ('warehouse'), ('inactive')) w(who)
+cross join (values ('categories', 1), ('products', 2), ('product_variants', 2), ('variant_prices', 2)) c(tbl, n);
+
+-- P2-02 processed_ops: server-only, no client privilege at all
+insert into expected (who, tbl, own_rows, own_updated)
+select w.who, 'processed_ops', -1, -1
+from (values ('superadmin'), ('admin'), ('cashier'), ('warehouse'), ('inactive')) w(who);
+
+-- P3-01 sales and ledger. Fixtures: movements, levels, sales, items, payments at S01 and S02; 1 customer with 1 ledger row.
+-- Store-scoped tables: owner and maria see S01+S02 (2), juan only S01 (1), pedro (warehouse W01) none. No client writes anywhere.
+insert into expected (who, tbl, own_rows, own_updated)
+select w.who, t.tbl,
+       case w.who when 'superadmin' then t.n_all when 'admin' then t.n_all when 'cashier' then t.n_s01 else 0 end, -1
+from (values ('superadmin'), ('admin'), ('cashier'), ('warehouse'), ('inactive')) w(who)
+cross join (values ('stock_movements', 2, 1), ('stock_levels', 2, 1), ('sales', 2, 1),
+                   ('sale_items', 2, 1), ('payments', 2, 1)) t(tbl, n_all, n_s01);
+
+-- customers and utang: owner, admin, cashier see the tenant's rows (1 each); warehouse and inactive none
+insert into expected (who, tbl, own_rows, own_updated)
+select w.who, t.tbl, case when w.who in ('warehouse', 'inactive') then 0 else 1 end, -1
+from (values ('superadmin'), ('admin'), ('cashier'), ('warehouse'), ('inactive')) w(who)
+cross join (values ('customers'), ('customer_ledger')) t(tbl);
+
+-- P6-01 rollups: superadmin and admin read their stores' rows (2 each: S01 + S02); everyone else none; nobody writes
+insert into expected (who, tbl, own_rows, own_updated)
+select w.who, t.tbl, case when w.who in ('superadmin', 'admin') then 2 else 0 end, -1
+from (values ('superadmin'), ('admin'), ('cashier'), ('warehouse'), ('inactive')) w(who)
+cross join (values ('daily_sales_summary'), ('daily_item_sales')) t(tbl);
+
+-- P8-02 expenses and their rollup: superadmin and admin read their stores' rows (2 each: S01 + S02); everyone else none;
+-- nobody writes directly (the rollup rows come from the expense insert trigger)
+insert into expected (who, tbl, own_rows, own_updated)
+select w.who, t.tbl, case when w.who in ('superadmin', 'admin') then 2 else 0 end, -1
+from (values ('superadmin'), ('admin'), ('cashier'), ('warehouse'), ('inactive')) w(who)
+cross join (values ('expenses'), ('daily_expense_summary')) t(tbl);
+
+-- P8-02b supervisor_approvals: server-only, no client privilege at all
+insert into expected (who, tbl, own_rows, own_updated)
+select w.who, 'supervisor_approvals', -1, -1
+from (values ('superadmin'), ('admin'), ('cashier'), ('warehouse'), ('inactive')) w(who);
+
+-- P8-02c day_closes: superadmin and admin read their stores' closes (2 each: S01 + S02); everyone else none; no client writes
+insert into expected (who, tbl, own_rows, own_updated)
+select w.who, 'day_closes', case when w.who in ('superadmin', 'admin') then 2 else 0 end, -1
+from (values ('superadmin'), ('admin'), ('cashier'), ('warehouse'), ('inactive')) w(who);
+
+-- P8-06 service ledger: service_txns and wallet_float are front of store (owner, admin: S01 + S02 = 2; cashier juan: S01 = 1);
+-- the day rollup is owner and admin only (2); warehouse and inactive none; nobody writes (the triggers keep both derived tables)
+insert into expected (who, tbl, own_rows, own_updated)
+select w.who, t.tbl,
+       case w.who when 'superadmin' then 2 when 'admin' then 2 when 'cashier' then t.n_cashier else 0 end, -1
+from (values ('superadmin'), ('admin'), ('cashier'), ('warehouse'), ('inactive')) w(who)
+cross join (values ('service_txns', 1), ('wallet_float', 1), ('daily_service_summary', 0)) t(tbl, n_cashier);
+
+-- P8-08 conversions (opened packs): store-scoped like stock_movements (owner, admin: S01 + S02 = 2; cashier juan: S01 = 1;
+-- warehouse pedro (W01) and inactive none); nobody writes directly
+insert into expected (who, tbl, own_rows, own_updated)
+select w.who, 'conversions', case w.who when 'superadmin' then 2 when 'admin' then 2 when 'cashier' then 1 else 0 end, -1
+from (values ('superadmin'), ('admin'), ('cashier'), ('warehouse'), ('inactive')) w(who);
+
+-- P8-11 stock_expiry (one expiry date per store and variant): store-scoped like stock_levels (owner, admin: S01 + S02 = 2;
+-- cashier juan: S01 = 1; warehouse pedro (W01) and inactive none); nobody writes directly
+insert into expected (who, tbl, own_rows, own_updated)
+select w.who, 'stock_expiry', case w.who when 'superadmin' then 2 when 'admin' then 2 when 'cashier' then 1 else 0 end, -1
+from (values ('superadmin'), ('admin'), ('cashier'), ('warehouse'), ('inactive')) w(who);
+
+-- F-02 devices (one per owner, maria, juan, pedro, ana): superadmin and admin read the tenant's 5; everyone else only their
+-- own (1); inactive none. Each user updates their own row (name / platform / last seen / retire); the owner may update any.
+-- No hard delete.
+insert into expected (who, tbl, own_rows, own_updated)
+select w.who, 'devices', w.n_read, w.n_upd
+from (values ('superadmin', 5, 5), ('admin', 5, 1), ('cashier', 1, 1), ('warehouse', 1, 1), ('inactive', 0, 0))
+  w(who, n_read, n_upd);
+
+-- F-02 sale_counters: server-only, no client privilege at all
+insert into expected (who, tbl, own_rows, own_updated)
+select w.who, 'sale_counters', -1, -1
+from (values ('superadmin'), ('admin'), ('cashier'), ('warehouse'), ('inactive')) w(who);
+
+-- F-08 transfers and transfer_items:
+-- Fixtures: 2 transfers per tenant (T1: W01 -> S01, T2: S01 -> S02) with 1 item each (2 items total).
+-- superadmin sees 2, admin (S01+S02) sees 2, warehouse pedro (W01) sees 1 (T1 only), cashier and inactive see 0.
+-- Nobody writes directly (-1).
+insert into expected (who, tbl, own_rows, own_updated)
+select w.who, t.tbl,
+       case w.who
+         when 'superadmin' then 2
+         when 'admin' then 2
+         when 'warehouse' then 1
+         else 0
+       end, -1
+from (values ('superadmin'), ('admin'), ('cashier'), ('warehouse'), ('inactive')) w(who)
+cross join (values ('transfers'), ('transfer_items')) t(tbl);
+
+-- F-10 stock_snapshots_daily: superadmin and admin read their stores' rows (2 each); everyone else none; no client writes
+insert into expected (who, tbl, own_rows, own_updated)
+select w.who, 'stock_snapshots_daily', case when w.who in ('superadmin', 'admin') then 2 else 0 end, -1
+from (values ('superadmin'), ('admin'), ('cashier'), ('warehouse'), ('inactive')) w(who);
+
+-- F-09 warehouse bins (warehouse_zones, bins, bin_stock_levels, pick_lists, pick_list_items)
+insert into expected (who, tbl, own_rows, own_updated)
+select w.who, t.tbl, 0, -1
+from (values ('superadmin'), ('admin'), ('cashier'), ('warehouse'), ('inactive')) w(who)
+cross join (values ('warehouse_zones'), ('bins'), ('bin_stock_levels'), ('pick_lists'), ('pick_list_items')) t(tbl);
+
+-- 2 tenants x (who, table) pairs x 5 metrics, plus 8 targeted checks
 select plan((select count(*)::int * 2 * 5 from expected) + 8);
 
 -- ---------------------------------------------------------------------------
@@ -129,6 +237,89 @@ begin
       (pg_temp.tid(t.label), 'price.change', 'variant', pg_temp.lid(t.label, 'S01')),
       (pg_temp.tid(t.label), 'price.change', 'variant', pg_temp.lid(t.label, 'S02')),
       (pg_temp.tid(t.label), 'role.change', 'profile', null);
+
+    -- catalog with colliding SKUs and barcodes across tenants
+    insert into public.categories (id, tenant_id, name)
+      values (md5('cat:' || t.label)::uuid, pg_temp.tid(t.label), 'Drinks');
+    insert into public.products (id, tenant_id, category_id, name) values
+      (md5('prod:' || t.label || ':1')::uuid, pg_temp.tid(t.label), md5('cat:' || t.label)::uuid, 'Cola'),
+      (md5('prod:' || t.label || ':2')::uuid, pg_temp.tid(t.label), null, 'Rice');
+    insert into public.product_variants (id, tenant_id, product_id, sku, barcode, is_default) values
+      (md5('var:' || t.label || ':1')::uuid, pg_temp.tid(t.label), md5('prod:' || t.label || ':1')::uuid, 'COLA', '4800000000011', true),
+      (md5('var:' || t.label || ':2')::uuid, pg_temp.tid(t.label), md5('prod:' || t.label || ':2')::uuid, 'RICE', null, true);
+    insert into public.variant_prices (tenant_id, variant_id, currency, price) values
+      (pg_temp.tid(t.label), md5('var:' || t.label || ':1')::uuid, t.ccy, 2500),
+      (pg_temp.tid(t.label), md5('var:' || t.label || ':2')::uuid, t.ccy, 5200);
+
+    -- sales: one at each store, with a movement/level, item and payment; one customer with one ledger row
+    insert into public.stock_movements (tenant_id, location_id, variant_id, qty_delta, type) values
+      (pg_temp.tid(t.label), pg_temp.lid(t.label, 'S01'), md5('var:' || t.label || ':1')::uuid, 10, 'opening'),
+      (pg_temp.tid(t.label), pg_temp.lid(t.label, 'S02'), md5('var:' || t.label || ':1')::uuid, 4, 'opening');
+    insert into public.customers (id, tenant_id, name)
+      values (md5('cus:' || t.label)::uuid, pg_temp.tid(t.label), 'Aling Rosa');
+    insert into public.sales (id, tenant_id, location_id, local_no, subtotal, total, sold_at) values
+      (md5('sale:' || t.label || ':1')::uuid, pg_temp.tid(t.label), pg_temp.lid(t.label, 'S01'), 'D1-0001', 2500, 2500, now()),
+      (md5('sale:' || t.label || ':2')::uuid, pg_temp.tid(t.label), pg_temp.lid(t.label, 'S02'), 'D1-0002', 2500, 2500, now());
+    insert into public.sale_items (tenant_id, sale_id, location_id, variant_id, product_name, qty, unit_price, line_total) values
+      (pg_temp.tid(t.label), md5('sale:' || t.label || ':1')::uuid, pg_temp.lid(t.label, 'S01'), md5('var:' || t.label || ':1')::uuid, 'Cola', 1, 2500, 2500),
+      (pg_temp.tid(t.label), md5('sale:' || t.label || ':2')::uuid, pg_temp.lid(t.label, 'S02'), md5('var:' || t.label || ':1')::uuid, 'Cola', 1, 2500, 2500);
+    insert into public.payments (tenant_id, sale_id, location_id, method, amount) values
+      (pg_temp.tid(t.label), md5('sale:' || t.label || ':1')::uuid, pg_temp.lid(t.label, 'S01'), 'cash', 2500),
+      (pg_temp.tid(t.label), md5('sale:' || t.label || ':2')::uuid, pg_temp.lid(t.label, 'S02'), 'utang', 2500);
+    insert into public.customer_ledger (tenant_id, customer_id, kind, amount, sale_id)
+      values (pg_temp.tid(t.label), md5('cus:' || t.label)::uuid, 'charge', 2500, md5('sale:' || t.label || ':2')::uuid);
+    insert into public.daily_sales_summary (tenant_id, location_id, day, net, txn_count) values
+      (pg_temp.tid(t.label), pg_temp.lid(t.label, 'S01'), '2026-11-08', 2500, 1),
+      (pg_temp.tid(t.label), pg_temp.lid(t.label, 'S02'), '2026-11-08', 2500, 1);
+    insert into public.daily_item_sales (tenant_id, location_id, day, variant_id, product_name, qty, revenue) values
+      (pg_temp.tid(t.label), pg_temp.lid(t.label, 'S01'), '2026-11-08', md5('var:' || t.label || ':1')::uuid, 'Cola', 1, 2500),
+      (pg_temp.tid(t.label), pg_temp.lid(t.label, 'S02'), '2026-11-08', md5('var:' || t.label || ':1')::uuid, 'Cola', 1, 2500);
+    insert into public.stock_snapshots_daily (tenant_id, location_id, day, variant_id, qty_on_hand, unit_cost, total_value) values
+      (pg_temp.tid(t.label), pg_temp.lid(t.label, 'S01'), '2026-11-08', md5('var:' || t.label || ':1')::uuid, 10, 2500, 25000),
+      (pg_temp.tid(t.label), pg_temp.lid(t.label, 'S02'), '2026-11-08', md5('var:' || t.label || ':1')::uuid, 4, 2500, 10000)
+    on conflict (location_id, day, variant_id) do nothing;
+    -- expenses: one at each store with colliding client op ids across tenants; the trigger writes one rollup row per store
+    insert into public.expenses (id, tenant_id, location_id, client_op_id, amount, currency, category, paid_from, spent_at) values
+      (md5('exp:' || t.label || ':1')::uuid, pg_temp.tid(t.label), pg_temp.lid(t.label, 'S01'), md5('expop:1')::uuid, 15000, t.ccy, 'utilities', 'cash', '2026-11-08T02:00:00Z'),
+      (md5('exp:' || t.label || ':2')::uuid, pg_temp.tid(t.label), pg_temp.lid(t.label, 'S02'), md5('expop:2')::uuid, 4000, t.ccy, 'transport', 'ewallet', '2026-11-08T02:00:00Z');
+    insert into public.supervisor_approvals (tenant_id, location_id, action, ref_id, requested_by, approved_by, expires_at)
+      values (pg_temp.tid(t.label), pg_temp.lid(t.label, 'S02'), 'void_expense', md5('exp:' || t.label || ':2')::uuid,
+              pg_temp.uid(t.label, 'maria'), pg_temp.uid(t.label, 'maria'), now() + interval '1 hour');
+    -- day closes: one at each store, colliding client op ids across tenants
+    insert into public.day_closes (id, tenant_id, location_id, client_op_id, day, currency, expected_cash, counted_cash,
+                                   difference, server_expected_cash, closed_at) values
+      (md5('dc:' || t.label || ':1')::uuid, pg_temp.tid(t.label), pg_temp.lid(t.label, 'S01'), md5('dcop:1')::uuid, '2026-11-08', t.ccy, 2500, 2400, -100, 2500, now()),
+      (md5('dc:' || t.label || ':2')::uuid, pg_temp.tid(t.label), pg_temp.lid(t.label, 'S02'), md5('dcop:2')::uuid, '2026-11-08', t.ccy, 0, 0, 0, 0, now());
+    -- service ledger: one entry at each store, colliding client op ids across tenants; the triggers write one float row
+    -- and one day-summary row per store
+    insert into public.service_txns (id, tenant_id, location_id, client_op_id, kind, wallet, amount, fee, currency, ref, txn_at) values
+      (md5('svc:' || t.label || ':1')::uuid, pg_temp.tid(t.label), pg_temp.lid(t.label, 'S01'), md5('svcop:1')::uuid, 'cash_in', 'gcash', 50000, 1000, t.ccy, '0917', '2026-11-08T02:00:00Z'),
+      (md5('svc:' || t.label || ':2')::uuid, pg_temp.tid(t.label), pg_temp.lid(t.label, 'S02'), md5('svcop:2')::uuid, 'cash_out', 'maya', 20000, 400, t.ccy, null, '2026-11-08T02:00:00Z');
+    -- opened packs: one at each store (Cola breaks into Rice, just for the fixture), colliding client op ids across tenants
+    insert into public.conversions (id, tenant_id, location_id, client_op_id, pack_variant_id, piece_variant_id, packs, ratio,
+                                    pieces, converted_at) values
+      (md5('conv:' || t.label || ':1')::uuid, pg_temp.tid(t.label), pg_temp.lid(t.label, 'S01'), md5('convop:1')::uuid,
+       md5('var:' || t.label || ':1')::uuid, md5('var:' || t.label || ':2')::uuid, 1, 20, 20, '2026-11-08T02:00:00Z'),
+      (md5('conv:' || t.label || ':2')::uuid, pg_temp.tid(t.label), pg_temp.lid(t.label, 'S02'), md5('convop:2')::uuid,
+       md5('var:' || t.label || ':1')::uuid, md5('var:' || t.label || ':2')::uuid, 2, 20, 40, '2026-11-08T02:00:00Z');
+    -- expiry dates: Cola at each store
+    insert into public.stock_expiry (tenant_id, location_id, variant_id, expires_on) values
+      (pg_temp.tid(t.label), pg_temp.lid(t.label, 'S01'), md5('var:' || t.label || ':1')::uuid, '2026-12-01'),
+      (pg_temp.tid(t.label), pg_temp.lid(t.label, 'S02'), md5('var:' || t.label || ':1')::uuid, '2027-01-15');
+    -- devices: one per user except carla; a counter row per store
+    insert into public.devices (id, tenant_id, user_id, name)
+    select md5('dev:' || t.label || ':' || n)::uuid, pg_temp.tid(t.label), pg_temp.uid(t.label, n), n || ' phone'
+    from unnest(array['owner', 'maria', 'juan', 'pedro', 'ana']) n;
+    insert into public.sale_counters (tenant_id, location_id, day, last_no) values
+      (pg_temp.tid(t.label), pg_temp.lid(t.label, 'S01'), '2026-11-08', 1),
+      (pg_temp.tid(t.label), pg_temp.lid(t.label, 'S02'), '2026-11-08', 1);
+    -- F-08 transfers: T1 (W01 -> S01) and T2 (S01 -> S02), 1 item each
+    insert into public.transfers (id, tenant_id, transfer_no, from_location_id, to_location_id, status, shipped_at) values
+      (md5('trf:' || t.label || ':1')::uuid, pg_temp.tid(t.label), 'TRF-261108-0001', pg_temp.lid(t.label, 'W01'), pg_temp.lid(t.label, 'S01'), 'shipped', now()),
+      (md5('trf:' || t.label || ':2')::uuid, pg_temp.tid(t.label), 'TRF-261108-0002', pg_temp.lid(t.label, 'S01'), pg_temp.lid(t.label, 'S02'), 'shipped', now());
+    insert into public.transfer_items (id, tenant_id, transfer_id, variant_id, qty_shipped) values
+      (md5('trfi:' || t.label || ':1')::uuid, pg_temp.tid(t.label), md5('trf:' || t.label || ':1')::uuid, md5('var:' || t.label || ':1')::uuid, 10),
+      (md5('trfi:' || t.label || ':2')::uuid, pg_temp.tid(t.label), md5('trf:' || t.label || ':2')::uuid, md5('var:' || t.label || ':1')::uuid, 5);
   end loop;
 end;
 $$;
@@ -172,7 +363,40 @@ begin
     ('locations',         'tenant_id', 'name = name'),
     ('location_access',   'tenant_id', 'position = position'),
     ('audit_log',         'tenant_id', 'action = action'),
-    ('platform_admins',   'user_id',   'created_at = created_at')
+    ('platform_admins',   'user_id',   'created_at = created_at'),
+    ('categories',        'tenant_id', 'name = name'),
+    ('products',          'tenant_id', 'name = name'),
+    ('product_variants',  'tenant_id', 'sku = sku'),
+    ('variant_prices',    'tenant_id', 'price = price'),
+    ('processed_ops',     'tenant_id', 'kind = kind'),
+    ('stock_movements',   'tenant_id', 'qty_delta = qty_delta'),
+    ('stock_levels',      'tenant_id', 'qty_on_hand = qty_on_hand'),
+    ('sales',             'tenant_id', 'total = total'),
+    ('sale_items',        'tenant_id', 'qty = qty'),
+    ('payments',          'tenant_id', 'amount = amount'),
+    ('customers',         'tenant_id', 'name = name'),
+    ('customer_ledger',   'tenant_id', 'amount = amount'),
+    ('daily_sales_summary', 'tenant_id', 'net = net'),
+    ('daily_item_sales',  'tenant_id', 'qty = qty'),
+    ('expenses',          'tenant_id', 'note = note'),
+    ('daily_expense_summary', 'tenant_id', 'amount = amount'),
+    ('supervisor_approvals', 'tenant_id', 'used_at = used_at'),
+    ('day_closes',        'tenant_id', 'note = note'),
+    ('service_txns',      'tenant_id', 'note = note'),
+    ('wallet_float',      'tenant_id', 'balance = balance'),
+    ('daily_service_summary', 'tenant_id', 'fee = fee'),
+    ('conversions',       'tenant_id', 'note = note'),
+    ('stock_expiry',      'tenant_id', 'expires_on = expires_on'),
+    ('devices',           'tenant_id', 'name = name'),
+    ('sale_counters',     'tenant_id', 'last_no = last_no'),
+    ('transfers',         'tenant_id', 'notes = notes'),
+    ('transfer_items',    'tenant_id', 'qty_shipped = qty_shipped'),
+    ('stock_snapshots_daily', 'tenant_id', 'total_value = total_value'),
+    ('warehouse_zones',   'tenant_id', 'name = name'),
+    ('bins',              'tenant_id', 'code = code'),
+    ('bin_stock_levels',  'tenant_id', 'qty_on_hand = qty_on_hand'),
+    ('pick_lists',        'tenant_id', 'status = status'),
+    ('pick_list_items',   'tenant_id', 'qty_picked = qty_picked')
   ) v(tbl, tcol, upd) loop
     begin
       execute format(
@@ -235,7 +459,7 @@ end;
 $$;
 
 -- ---------------------------------------------------------------------------
--- The matrix: 500 assertions
+-- The matrix: 5 assertions per (tenant, who, table)
 -- ---------------------------------------------------------------------------
 select is(m.own_rows, e.own_rows,
           format('[%s] %s reads expected own-tenant rows of %s', m.tenant, m.who, m.tbl))

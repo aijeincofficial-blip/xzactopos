@@ -1,0 +1,279 @@
+import 'package:flutter/material.dart';
+
+/// The two colour sets the owner can pick from (light and dark exist for both).
+enum AppPalette { freshTide, goldenIndigo }
+
+/// Spacing and radius scale for the whole app.
+class Gap {
+  static const double xs = 4, s = 8, m = 12, l = 16, xl = 20, xxl = 28;
+  static const double radiusS = 12, radiusM = 18, radiusL = 24, radiusXL = 30;
+}
+
+class _P {
+  const _P({
+    required this.primary,
+    required this.primaryContainer,
+    required this.onPrimaryContainer,
+    required this.secondary,
+    required this.onSecondary,
+    required this.secondaryContainer,
+    required this.onSecondaryContainer,
+    required this.tertiary,
+    required this.background,
+    required this.surface,
+    required this.cardBorder,
+    required this.text,
+    required this.textMuted,
+  });
+  final Color primary, primaryContainer, onPrimaryContainer;
+  final Color secondary, onSecondary, secondaryContainer, onSecondaryContainer;
+  final Color tertiary; // warning (low stock)
+  final Color background, surface, cardBorder, text, textMuted;
+}
+
+// Utang owed, void, errors
+const _errorLight = Color(0xFFD6334A);
+const _errorDark = Color(0xFFFF8A94);
+
+// Fresh cool porcelain aesthetic inspired by modern fintech/Web3
+const _freshLight = _P(
+  primary: Color(0xFF1E6FF2),
+  primaryContainer: Color(0xFFEDF4FF),
+  onPrimaryContainer: Color(0xFF0F3980),
+  secondary: Color(0xFF10B981), // mint / emerald aligned with brand
+  onSecondary: Color(0xFF042F23), // dark text on mint: white was 2.5:1, this is above 4.5:1
+  secondaryContainer: Color(0xFFE6F8F3),
+  onSecondaryContainer: Color(0xFF064E3B),
+  tertiary: Color(0xFFF59E0B), // solar amber
+  background: Color(0xFFF6F8FC), // cool crisp porcelain
+  surface: Colors.white,
+  cardBorder: Color(0xFFE2E8F0),
+  text: Color(0xFF0F172A),
+  textMuted: Color(0xFF64748B),
+);
+
+const _freshDark = _P(
+  primary: Color(0xFF38BDF8),
+  primaryContainer: Color(0xFF0C2444),
+  onPrimaryContainer: Color(0xFFBAE6FD),
+  secondary: Color(0xFF2DD4BF),
+  onSecondary: Color(0xFF04241C),
+  secondaryContainer: Color(0xFF0F3B32),
+  onSecondaryContainer: Color(0xFFCCFBF1),
+  tertiary: Color(0xFFFBBF24),
+  background: Color(0xFF0F172A), // deep obsidian matching brand logo
+  surface: Color(0xFF1E293B),
+  cardBorder: Color(0xFF334155),
+  text: Color(0xFFF8FAFC),
+  textMuted: Color(0xFF94A3B8),
+);
+
+const _goldLight = _P(
+  primary: Color(0xFF3B52E8),
+  primaryContainer: Color(0xFFEEF1FF),
+  onPrimaryContainer: Color(0xFF1A277A),
+  secondary: Color(0xFFF59E0B),
+  onSecondary: Color(0xFF261900),
+  secondaryContainer: Color(0xFFFEF3C7),
+  onSecondaryContainer: Color(0xFF78350F),
+  tertiary: Color(0xFFEA580C),
+  background: Color(0xFFF2F2FA),
+  surface: Colors.white,
+  cardBorder: Color(0xFFE5E8F3),
+  text: Color(0xFF0F172A),
+  textMuted: Color(0xFF64748B),
+);
+
+const _goldDark = _P(
+  primary: Color(0xFF8197FF),
+  primaryContainer: Color(0xFF222B60),
+  onPrimaryContainer: Color(0xFFDDE2FF),
+  secondary: Color(0xFFFFD25E),
+  onSecondary: Color(0xFF2B2000),
+  secondaryContainer: Color(0xFF4D3800),
+  onSecondaryContainer: Color(0xFFFFEFC2),
+  tertiary: Color(0xFFFF9D5C),
+  background: Color(0xFF131833),
+  surface: Color(0xFF212844),
+  cardBorder: Color(0xFF222D52),
+  text: Color(0xFFF1F5F9),
+  textMuted: Color(0xFF94A3B8),
+);
+
+/// Semantic colors derived from the active palette, so screens never hard-code hex values.
+extension AppColors on ColorScheme {
+  bool get isDark => brightness == Brightness.dark;
+
+  /// Positive state (online, healthy, paid).
+  Color get success => secondary;
+
+  /// The solid surface of the signature brand action buttons (obsidian navy).
+  Color get obsidian => isDark ? const Color(0xFF1E293B) : const Color(0xFF0F172A);
+
+  /// Text/icons on [obsidian].
+  Color get onObsidian => Colors.white;
+
+  /// Signature glowing cyan border for action buttons and accents.
+  Color get glow => const Color(0xFF22D3EE);
+
+  /// Quiet fill for small circular chips (arrows, counters).
+  Color get chipFill => isDark ? surface : primaryContainer;
+
+  /// Accent used for the language/reports badges (follows the palette).
+  Color get accent => tertiary;
+
+  /// Payment-type colors for reports: cash, e-wallet, utang, expenses.
+  /// Strictly unified to the official 3 brand logo colors (Blue, Mint/Teal, Orange/Amber).
+  Color get payCash => const Color(0xFF10B981); // Brand Mint/Teal (Logo Checkmark)
+  Color get payEwallet => const Color(0xFF1E6FF2); // Brand Electric Blue (Logo X)
+  Color get payUtang => const Color(0xFFF59E0B); // Brand Amber/Orange (Logo Card & Barcode)
+  Color get payExpense => const Color(0xFFFF7A00); // Brand Vibrant Orange (Logo Accents)
+}
+
+ThemeData buildTheme(AppPalette palette, Brightness brightness) {
+  final dark = brightness == Brightness.dark;
+  final p = switch (palette) {
+    AppPalette.freshTide => dark ? _freshDark : _freshLight,
+    AppPalette.goldenIndigo => dark ? _goldDark : _goldLight,
+  };
+  final scheme = ColorScheme.fromSeed(seedColor: p.primary, brightness: brightness).copyWith(
+    primary: p.primary,
+    onPrimary: dark ? const Color(0xFF06122E) : Colors.white,
+    primaryContainer: p.primaryContainer,
+    onPrimaryContainer: p.onPrimaryContainer,
+    secondary: p.secondary,
+    onSecondary: p.onSecondary,
+    secondaryContainer: p.secondaryContainer,
+    onSecondaryContainer: p.onSecondaryContainer,
+    tertiary: p.tertiary,
+    onTertiary: const Color(0xFF2B1C00),
+    error: dark ? _errorDark : _errorLight,
+    onError: dark ? const Color(0xFF3B0008) : Colors.white,
+    surface: p.surface,
+    onSurface: p.text,
+    outline: p.textMuted,
+    outlineVariant: p.cardBorder,
+  );
+
+  const shape = StadiumBorder();
+  final cardShape = RoundedRectangleBorder(
+    borderRadius: BorderRadius.circular(Gap.radiusXL),
+    side: BorderSide(color: p.cardBorder, width: 1.0),
+  );
+
+  return ThemeData(
+    useMaterial3: true,
+    colorScheme: scheme,
+    scaffoldBackgroundColor: p.background,
+    appBarTheme: AppBarTheme(
+      backgroundColor: p.background,
+      surfaceTintColor: Colors.transparent,
+      foregroundColor: p.text,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      centerTitle: false,
+      titleTextStyle: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, letterSpacing: -0.3, color: p.text),
+    ),
+    cardTheme: CardThemeData(color: p.surface, elevation: 0, surfaceTintColor: Colors.transparent, shape: cardShape),
+    filledButtonTheme: FilledButtonThemeData(
+      style: FilledButton.styleFrom(
+        minimumSize: const Size(64, 56),
+        shape: shape,
+        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+      ),
+    ),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        minimumSize: const Size(64, 56),
+        shape: shape,
+        elevation: 0,
+        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+      ),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        minimumSize: const Size(64, 56),
+        shape: shape,
+        side: BorderSide(color: p.cardBorder, width: 1.5),
+        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+      ),
+    ),
+    // the navy + cyan of the raised POS button, so every floating action matches it
+    floatingActionButtonTheme: FloatingActionButtonThemeData(
+      backgroundColor: dark ? const Color(0xFF1E293B) : const Color(0xFF0F172A),
+      foregroundColor: const Color(0xFF22D3EE),
+      shape: const StadiumBorder(side: BorderSide(color: Color(0xFF22D3EE), width: 1.6)),
+      elevation: 6,
+      extendedTextStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white),
+    ),
+    inputDecorationTheme: InputDecorationTheme(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      filled: true,
+      fillColor: p.surface,
+      hintStyle: TextStyle(color: p.textMuted, fontSize: 15),
+      prefixIconColor: p.textMuted,
+      suffixIconColor: p.textMuted,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(Gap.radiusXL),
+        borderSide: BorderSide(color: p.cardBorder, width: 1.0),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(Gap.radiusXL),
+        borderSide: BorderSide(color: p.cardBorder, width: 1.0),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(Gap.radiusXL),
+        borderSide: BorderSide(color: p.primary, width: 2.0),
+      ),
+    ),
+    chipTheme: ChipThemeData(
+      selectedColor: p.primaryContainer,
+      labelStyle: TextStyle(color: p.text, fontWeight: FontWeight.w600, fontSize: 14),
+      shape: const StadiumBorder(),
+      side: BorderSide(color: p.cardBorder, width: 1.0),
+      backgroundColor: p.surface,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+    ),
+    navigationBarTheme: NavigationBarThemeData(
+      backgroundColor: p.surface,
+      surfaceTintColor: Colors.transparent,
+      indicatorColor: p.primaryContainer,
+      elevation: 0,
+      height: 68,
+      labelTextStyle: WidgetStateProperty.resolveWith(
+        (s) => TextStyle(
+          fontSize: 12,
+          fontWeight: s.contains(WidgetState.selected) ? FontWeight.w800 : FontWeight.w600,
+          color: s.contains(WidgetState.selected) ? p.text : p.textMuted,
+        ),
+      ),
+    ),
+    dialogTheme: DialogThemeData(backgroundColor: p.surface, surfaceTintColor: Colors.transparent, shape: cardShape),
+    bottomSheetTheme: BottomSheetThemeData(
+      backgroundColor: p.surface,
+      surfaceTintColor: Colors.transparent,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(Gap.radiusXL))),
+    ),
+  );
+}
+
+/// Chosen palette and brightness, with a way to change them.
+class ThemeScope extends InheritedWidget {
+  const ThemeScope({
+    super.key,
+    required this.palette,
+    required this.mode,
+    required this.setPalette,
+    required this.setMode,
+    required super.child,
+  });
+  final AppPalette palette;
+  final ThemeMode mode;
+  final void Function(AppPalette) setPalette;
+  final void Function(ThemeMode) setMode;
+
+  static ThemeScope? maybeOf(BuildContext context) => context.dependOnInheritedWidgetOfExactType<ThemeScope>();
+
+  @override
+  bool updateShouldNotify(ThemeScope old) => palette != old.palette || mode != old.mode;
+}

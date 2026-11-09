@@ -60,6 +60,102 @@ export const createUserSchema = z
     }
   });
 
+export const inviteUserSchema = z
+  .object({
+    email: z.string().trim().email("validation.email"),
+    username: z.string().trim().toLowerCase().regex(USERNAME_RE, "validation.username"),
+    fullName: z.string().trim().max(120, "validation.max120"),
+    role: z.enum(["superadmin", "admin", "warehouse"]),
+    locationId: z.string(),
+    position: z.enum(["", "manager", "supervisor"]),
+  })
+  .superRefine((v, ctx) => {
+    if (v.role === "admin" && v.locationId && !v.position) {
+      ctx.addIssue({ code: "custom", path: ["position"], message: "validation.position_required" });
+    }
+  });
+
+export const setPinSchema = z
+  .object({
+    currentPin: z.string().optional(),
+    newPin: z.string().regex(/^\d{4,8}$/, "validation.pin_format"),
+    confirmPin: z.string(),
+  })
+  .refine((v) => v.newPin === v.confirmPin, {
+    path: ["confirmPin"],
+    message: "validation.pin_match",
+  });
+
+export const upgradeSchema = z
+  .object({
+    warehouse: z.boolean(),
+    addLocation: z.boolean(),
+    locationType: z.enum(["store", "warehouse"]).optional(),
+    locationCode: z.string().trim().optional(),
+    locationName: z.string().trim().optional(),
+    locationAddress: z.string().trim().max(300, "validation.max300").optional(),
+  })
+  .superRefine((v, ctx) => {
+    if (v.addLocation) {
+      if (!v.locationCode || !LOCATION_CODE_RE.test(v.locationCode)) {
+        ctx.addIssue({ code: "custom", path: ["locationCode"], message: "validation.location_code" });
+      }
+      if (!v.locationName || v.locationName.length > 120) {
+        ctx.addIssue({ code: "custom", path: ["locationName"], message: "validation.required" });
+      }
+    }
+  });
+
+export const tenantSettingsSchema = z
+  .object({
+    name: required.max(120, "validation.max120"),
+    timezone: required.max(64, "validation.max64"),
+    taxMode: z.enum(["inclusive", "exclusive", "none"]),
+    defaultLocale: z.enum(["en", "fil"]),
+    locales: z.array(z.enum(["en", "fil"])).min(1, "validation.locales_min"),
+    offlineSessionDays: z.number().int().min(1, "validation.min1").max(30, "validation.max30"),
+    receiptHeader: z.string().trim().max(500, "validation.max500").optional(),
+    receiptFooter: z.string().trim().max(500, "validation.max500").optional(),
+    maxCashierDiscountPercent: z.coerce.number().int().min(0, "validation.min0").max(100, "validation.max100").default(10),
+    maxCashierVoidAmount: z.coerce.number().int().min(0, "validation.min0").default(50000),
+    cashierCanVoidOwn: z.boolean().default(false),
+  })
+  .refine((v) => v.locales.includes(v.defaultLocale), {
+    path: ["defaultLocale"],
+    message: "validation.default_locale_in_list",
+  });
+
+export const createTransferSchema = z
+  .object({
+    fromLocationId: required,
+    toLocationId: required,
+    notes: z.string().trim().max(1000, "validation.max1000").optional(),
+    items: z
+      .array(
+        z.object({
+          variantId: required,
+          qty: z.coerce.number().positive("validation.positive_qty"),
+        }),
+      )
+      .min(1, "validation.items_required"),
+    shipNow: z.boolean().default(false),
+  })
+  .refine((v) => v.fromLocationId !== v.toLocationId, {
+    path: ["toLocationId"],
+    message: "validation.different_locations",
+  });
+
+export const receiveTransferSchema = z.object({
+  items: z
+    .array(
+      z.object({
+        variantId: required,
+        qtyReceived: z.coerce.number().min(0, "validation.non_negative_qty"),
+      }),
+    )
+    .min(1, "validation.items_required"),
+});
+
 /** First error message per field path, ready to show next to inputs. */
 export function fieldErrors(error: z.ZodError): Record<string, string> {
   const out: Record<string, string> = {};

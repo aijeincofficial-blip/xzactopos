@@ -1,0 +1,938 @@
+{
+  "@@locale": "fil",
+  "appTitle": "Aking Tindahan",
+  "email": "Email",
+  "password": "Password",
+  "signIn": "Mag-sign in",
+  "signUp": "Gumawa ng account",
+  "haveAccount": "May account na ako",
+  "noAccount": "Bago ako dito",
+  "nameYourStore": "Ano ang pangalan ng tindahan mo?",
+  "storeNameHint": "hal. Tindahan ni Aling Nena",
+  "startSelling": "Simulan ang pagbebenta",
+  "welcome": "Maligayang pagdating, {store}!",
+  "@welcome": {
+    "placeholders": {
+      "store": {
+        "type": "String"
+      }
+    }
+  },
+  "homeReady": "Handa na ang tindahan mo. Susunod ang pagbebenta.",
+  "signOut": "Mag-sign out",
+  "errRequired": "Pakisulat po ito",
+  "errPasswordShort": "Hindi bababa sa 6 na letra",
+  "errGeneric": "May nangyaring mali. Subukan ulit.",
+  "errAlreadyHasStore": "May tindahan na ang account na ito.",
+  "errBadLogin": "Mali ang email o password.",
+  "errNotConfigured": "Hindi nakakonekta ang app. Simulan ito gamit ang Supabase settings.",
+  "checkEmail": "Tingnan ang email mo para kumpirmahin, tapos mag-sign in.",
+  "syncSynced": "Naka-sync",
+  "syncSyncing": "Nagsi-sync…",
+  "syncOffline": "Walang signal",
+  "syncPending": "{count, plural, =1{{count} naghihintay ipadala} other{{count} naghihintay ipadala}}",
+  "@syncPending": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncOfflinePending": "{count, plural, =1{Walang signal, {count} naka-save sa phone} other{Walang signal, {count} naka-save sa phone}}",
+  "@syncOfflinePending": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncNeedsAttention": "{count, plural, =1{{count} kailangang ayusin} other{{count} kailangang ayusin}}",
+  "@syncNeedsAttention": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "productsOnDevice": "{count, plural, =0{Wala pang produkto sa phone na ito} =1{{count} produkto sa phone na ito} other{{count} produkto sa phone na ito}}",
+  "@productsOnDevice": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "errStoreOpen": "Hindi mabuksan ang data sa phone na ito.",
+  "tryAgain": "Subukan ulit",
+  "products": "Mga Produkto",
+  "sell": "Magbenta",
+  "comingSoon": "Malapit na",
+  "addProduct": "Magdagdag",
+  "editProduct": "Ayusin ang produkto",
+  "searchProducts": "Hanapin ang pangalan o barcode",
+  "clear": "Burahin",
+  "noProductsYet": "Wala ka pang produkto. Pindutin ang \"Magdagdag\" para sa una mo.",
+  "noMatches": "Walang nahanap.",
+  "notSentYet": "Hindi pa naipadala",
+  "review": "Tingnan",
+  "needsAttentionTitle": "Mga pagbabagong hindi tinanggap ng server",
+  "nothingToFix": "Walang aayusin.",
+  "removedProduct": "Tinanggal na produkto",
+  "discardChange": "Itapon",
+  "close": "Isara",
+  "cancel": "Huwag na",
+  "save": "I-save",
+  "archive": "Tanggalin",
+  "archiveTitle": "Tanggalin ang {name}?",
+  "@archiveTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "archiveBody": "Mawawala ito sa listahan mo. Mananatili ito sa mga lumang benta.",
+  "productName": "Pangalan ng produkto",
+  "productNameHint": "hal. Kape 3-in-1",
+  "sellingPrice": "Presyo",
+  "barcodeOptional": "Barcode (kung meron)",
+  "barcodeUsedBy": "Ginagamit na ang barcode na ito ng {name}",
+  "@barcodeUsedBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "openingStockOptional": "Ilan ang meron ka ngayon? (kung gusto)",
+  "openingStockHelp": "Puwede mo itong ayusin mamaya.",
+  "tabToday": "Ngayon",
+  "tabPos": "POS",
+  "more": "Iba pa",
+  "unit": "Yunit",
+  "unitHelp": "piraso, pakete, kilo, bote…",
+  "costOptional": "Puhunan (kung gusto)",
+  "errBadAmount": "Maglagay ng numero, hal. 12.50",
+  "errDuplicateBarcode": "May ibang produkto na may ganitong barcode.",
+  "errLimitProducts": "Naabot mo na ang limit ng produkto sa plan mo.",
+  "errNotAllowed": "Hindi puwedeng magbago ng produkto ang account mo.",
+  "errProductArchived": "Tinanggal na ang produktong ito.",
+  "scanBarcode": "I-scan ang barcode",
+  "unknownBarcodeTitle": "Bagong barcode",
+  "unknownBarcodeBody": "Wala pang produkto na may barcode na {code}. Idagdag ngayon?",
+  "@unknownBarcodeBody": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "takePhoto": "Kumuha ng litrato",
+  "choosePhoto": "Pumili ng litrato",
+  "photoFailed": "Hindi magamit ang litratong iyan. Subukan ang iba.",
+  "errPhotoTooLarge": "Masyadong malaki ang litrato.",
+  "ok": "OK",
+  "sellSearchHint": "Hanapin o i-scan para idagdag",
+  "sellCartEmpty": "Pindutin ang produkto para idagdag",
+  "sellPay": "Bayad",
+  "sellNoPrice": "Lagyan muna ng presyo ang produktong ito",
+  "sellUnknownBarcode": "Walang produktong may barcode na {code}",
+  "@sellUnknownBarcode": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "sellQuantity": "Dami",
+  "sellClearTitle": "Burahin ang benta na ito?",
+  "sellClearBody": "Aalisin ang lahat sa listahan.",
+  "sellItems": "{count, plural, =1{{count} produkto} other{{count} produkto}}",
+  "@sellItems": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sellStockLeft": "{n} ang natira",
+  "@sellStockLeft": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "sellOutOfStock": "Ubos na (pwede pa ring ibenta)",
+  "payTitle": "Bayad",
+  "payTotal": "Kabuuan",
+  "payCash": "Cash",
+  "payEwallet": "GCash / Maya",
+  "payReceivedCash": "Perang tinanggap (iwanang walang laman kung eksakto)",
+  "payReceivedEwallet": "Halagang tinanggap",
+  "payExact": "Eksakto",
+  "payChange": "Sukli",
+  "payAllUtang": "Lahat utang",
+  "payOnUtang": "{amount} ang uutangin",
+  "@payOnUtang": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "payChooseCustomer": "Piliin kung sino ang may utang",
+  "payDiscount": "Bawas",
+  "payDiscountHint": "Pisong ibabawas sa kabuuan",
+  "payDone": "Tapusin ang benta",
+  "customerNew": "Bagong customer",
+  "customerName": "Pangalan ng customer",
+  "customerPhone": "Telepono (kung meron)",
+  "customerSearch": "Hanapin ang customer",
+  "receiptTitle": "Resibo",
+  "receiptNumber": "Resibo blg. {no}",
+  "@receiptNumber": {
+    "placeholders": {
+      "no": {
+        "type": "String"
+      }
+    }
+  },
+  "receiptSubtotal": "Subtotal",
+  "receiptDiscount": "Bawas",
+  "receiptCashReceived": "Cash na tinanggap",
+  "receiptOnUtang": "Utang",
+  "receiptBalance": "Utang ni {name}: {amount}",
+  "@receiptBalance": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "receiptNewSale": "Bagong benta",
+  "receiptCancelled": "KINANSELA",
+  "receiptThanks": "Salamat po!",
+  "utangTitle": "Utang",
+  "utangTotalOwed": "Kabuuang utang sa iyo",
+  "utangEmpty": "Wala pang may utang sa iyo. Lalabas dito ang mga customer kapag nag-utang sila.",
+  "utangSettled": "Bayad na",
+  "utangOwes": "May utang",
+  "utangPaid": "Nagbayad",
+  "utangPayTitle": "Nagbayad si {name}",
+  "@utangPayTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "utangAmountPaid": "Halagang binayad",
+  "utangNote": "Tala (kung meron)",
+  "utangTooMuch": "Sobra ito sa utang niya ({amount})",
+  "@utangTooMuch": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "ledgerCharge": "Umutang",
+  "ledgerPayment": "Nagbayad",
+  "ledgerAdjust": "Pagwawasto",
+  "ledgerVoid": "Kinansela ang benta",
+  "todayTitle": "Ngayong araw",
+  "todaySales": "Benta ngayon",
+  "todayCount": "{count, plural, =0{Walang benta} =1{{count} benta} other{{count} benta}}",
+  "@todayCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "todayCash": "Pumasok na cash",
+  "todayUtang": "Naging utang",
+  "todayNone": "Wala pang benta ngayon.",
+  "saleCancelButton": "Kanselahin ang benta",
+  "saleCancelTitle": "Kanselahin ang benta na ito?",
+  "saleCancelBody": "Ibabalik sa stock ang mga item at aalisin ang utang mula sa benta na ito.",
+  "saleCancelYes": "Oo, kanselahin",
+  "saleCancelNo": "Hindi, ituloy",
+  "stockTitle": "Stock",
+  "stockAll": "Lahat",
+  "stockLowCount": "{count, plural, =0{Paubos} =1{{count} paubos} other{{count} paubos}}",
+  "@stockLowCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "stockNoneLow": "Walang paubos na.",
+  "stockNotCounted": "Hindi pa nabibilang",
+  "stockRunningLow": "Paubos na",
+  "stockNow": "Ngayon: {n}",
+  "@stockNow": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "stockIn": "Dagdag stock",
+  "stockCount": "Bilangin",
+  "stockInTitle": "Dagdag stock: {name}",
+  "@stockInTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "stockInQty": "Ilan ang dumating?",
+  "stockInCost": "Puhunan bawat isa (kung meron)",
+  "stockCountTitle": "Bilang: {name}",
+  "@stockCountTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "stockCountQty": "Ilan ang meron ka ngayon?",
+  "reasonCounted": "Binilang",
+  "reasonDamage": "Sira / expired",
+  "reasonOther": "Iba pa",
+  "reorderPoint": "Pagsabihan ako kapag ang stock ay",
+  "reorderPointHelp": "Iwanang walang laman kung ayaw ng paalala",
+  "sellStockLow": "{n} na lang, paubos na",
+  "@sellStockLow": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "reportsTitle": "Ulat",
+  "reportsRefresh": "I-refresh",
+  "reportsDays": "{count, plural, =1{{count} araw} other{{count} araw}}",
+  "@reportsDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reportsSales": "Benta",
+  "reportsProfit": "Tinatayang kita: {amount}",
+  "@reportsProfit": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "reportsPerDay": "Bawat araw",
+  "reportsTopItems": "Pinakamabenta",
+  "reportsNothingYet": "Walang benta sa panahong ito.",
+  "reportsQty": "{n} ang nabenta",
+  "@reportsQty": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "reportsUtangOwed": "Utang sa iyo: {amount}",
+  "@reportsUtangOwed": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "reportsAsOf": "Walang signal. Ipinapakita ang huling ulat noong {when}.",
+  "@reportsAsOf": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "reportsNeedSignal": "Kailangan ng signal sa unang beses. Kumonekta at subukan ulit.",
+  "reportsNotSent": "{count, plural, =1{{count} benta o pagbabago ang hindi pa naipapadala kaya wala pa sa ulat.} other{{count} benta o pagbabago ang hindi pa naipapadala kaya wala pa sa ulat.}}",
+  "@reportsNotSent": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncSignIn": "Tapos na ang session. Mag-sign out at mag-sign in ulit; walang mawawala.",
+  "unsentTitle": "Hindi pa naipapadala",
+  "unsentBody": "{count, plural, =1{May {count} pagbabago pa sa phone na ito mula sa ibang negosyo na hindi naipadala.} other{May {count} pagbabago pa sa phone na ito mula sa ibang negosyo na hindi naipadala.}} Mag-sign in sa negosyong iyon para maipadala, o itapon ang mga ito at magpatuloy.",
+  "@unsentBody": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "unsentDiscard": "Itapon at magpatuloy",
+  "forgotPassword": "Nakalimutan ang password?",
+  "forgotTitle": "I-reset ang password",
+  "forgotSend": "Ipadala ang link",
+  "forgotSent": "Kung may account ang email na iyon, nagpadala kami ng link para i-reset ang password.",
+  "newPasswordTitle": "Pumili ng bagong password",
+  "newPassword": "Bagong password",
+  "confirmPassword": "Ulitin",
+  "passwordsDiffer": "Hindi magkapareho ang dalawang password",
+  "passwordSaved": "Napalitan na ang password",
+  "changePassword": "Palitan ang password",
+  "themeTitle": "Itsura ng app",
+  "themeColors": "Kulay",
+  "themeMode": "Liwanag",
+  "paletteFreshTide": "Fresh Tide (asul at mint)",
+  "paletteGoldenIndigo": "Golden Indigo (asul at ginto)",
+  "themeSystem": "Sundin ang phone",
+  "themeLight": "Maliwanag",
+  "themeDark": "Madilim",
+  "utangAdjust": "Ayusin ang utang",
+  "utangAdjustTitle": "Ayusin ang utang ni {name}",
+  "@utangAdjustTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "utangWriteOff": "Bawasan ang utang (burahin)",
+  "utangAddMore": "Dagdagan ang utang (pagwawasto)",
+  "utangAdjustAmount": "Magkano?",
+  "utangAdjusted": "Naayos na ang utang",
+  "scanTitle": "I-scan ang barcode",
+  "scanHint": "Itutok ang camera sa barcode",
+  "scanDone": "Tapos na",
+  "scanLight": "Ilaw",
+  "scanCameraDenied": "Hindi magamit ang camera. Payagan ito sa settings ng phone, tapos subukan ulit.",
+  "scanAdded": "Naidagdag: {name}",
+  "@scanAdded": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "scanWithCamera": "I-scan gamit ang camera",
+  "receiptPrint": "I-print",
+  "receiptShare": "Ipadala",
+  "receiptPrintFailed": "Hindi mabuksan ang printer. Subukan ang Ipadala.",
+  "settingsTitle": "Mga Setting",
+  "activeStore": "Aktibong tindahan",
+  "settingsAppearance": "Itsura at tema",
+  "change": "Baguhin",
+  "settingsLanguageRegion": "Wika at rehiyon",
+  "systemLanguage": "Wika ng sistema",
+  "languageCurrentName": "Filipino (Tagalog)",
+  "switchLanguage": "Switch to EN",
+  "settingsSecurity": "Seguridad at account",
+  "updatePasswordHint": "I-update ang login password",
+  "endSessionHint": "Tapusin ang sesyon sa phone na ito",
+  "localDbNote": "Lokal na database: naka-sync at protektado",
+  "storeSettings": "Mga setting ng tindahan",
+  "storeSettingsHint": "Tema, liwanag, wika, at account",
+  "startFirstSale": "Simulan ang unang benta",
+  "totalSalesToday": "Kabuuang benta ngayong araw",
+  "tileUtangSub": "Talaan ng pautang",
+  "tileStockSub": "Balanse ng gamit",
+  "tileProductsSub": "Katalogo at presyo",
+  "tileReportsSub": "Benta at kita",
+  "reportsRevenueSub": "Kabuuang benta ng tindahan",
+  "reportsAvgOrder": "Karaniwang benta",
+  "reportsTotalOrders": "Kabuuang transaksyon",
+  "reportsInventoryHealth": "Kalagayan ng imbentaryo",
+  "reportsAllHealthy": "Sapat ang lahat ng produkto",
+  "tileStockLow": "{count} paubos",
+  "@tileStockLow": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reportsNeedReorder": "{count, plural, other{{count} produkto ang dapat nang i-reorder}}",
+  "@reportsNeedReorder": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sellPinned": "Naka-pin sa taas ang {name}",
+  "@sellPinned": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sellUnpinned": "Tinanggal sa pin ang {name}",
+  "@sellUnpinned": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sellPinHint": "Pindutin nang matagal ang item para i-pin bilang paborito",
+  "restockTitle": "Pasuyo",
+  "restockEmpty": "Walang bibilhin. Walang paubos.",
+  "restockShareHeader": "Listahan ng bibilhin",
+  "restockCopy": "Kopyahin",
+  "restockCopied": "Nakopya na. I-paste sa mensahe.",
+  "restockNow": "Ngayon: {n}",
+  "@restockNow": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "restockBuy": "Bilhin: {count}",
+  "@restockBuy": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "restockItems": "{count, plural, other{{count} item}}",
+  "@restockItems": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "restockEstimate": "Mga {amount}",
+  "@restockEstimate": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "exportSection": "I-export at backup",
+  "exportHint": "Ipadala bilang spreadsheet (CSV) sa mensahe o email",
+  "exportSales": "Mga benta",
+  "exportUtang": "Utang",
+  "exportStock": "Stock",
+  "exportFailed": "Hindi naipadala ang file. Subukan ulit.",
+  "expensesTitle": "Mga gastos",
+  "expensesSpentToday": "Nagastos ngayon",
+  "expensesNone": "Wala pang gastos ngayon",
+  "expenseAdd": "Magdagdag ng gastos",
+  "expenseAmount": "Halaga",
+  "expenseNote": "Paalala (opsyonal)",
+  "expensePaidFrom": "Galing sa",
+  "expensePaidCash": "Cash",
+  "expensePaidEwallet": "E-wallet",
+  "expenseCategoryStockPurchase": "Pambili ng paninda",
+  "expenseCategoryUtilities": "Kuryente, tubig",
+  "expenseCategoryTransport": "Pamasahe",
+  "expenseCategoryWages": "Sahod",
+  "expenseCategoryRent": "Upa",
+  "expenseCategoryOther": "Iba pa",
+  "expenseVoidTitle": "Kanselahin ang gastos na ito?",
+  "expenseVoidBody": "Mananatili ito sa listahan, may guhit, at hindi na bibilangin.",
+  "expenseVoidReason": "Dahilan (opsyonal)",
+  "expenseVoidYes": "Kanselahin",
+  "expenseCancelled": "Kanselado",
+  "expenseNeedsPin": "Kailangan ng PIN ng supervisor",
+  "approvalTitle": "PIN ng supervisor",
+  "approvalBody": "Kailangang aprubahan ito ng supervisor. Ilagay ang PIN ng supervisor (kailangan ng signal).",
+  "approvalPin": "PIN",
+  "approvalApprove": "Aprubahan",
+  "approvalWrongPin": "Maling PIN. Subukan ulit.",
+  "approvalLocked": "Sobra ang maling subok. Maghintay ng ilang minuto.",
+  "approvalNoPin": "Wala pang PIN ang taong ito.",
+  "approvalNeedsSignal": "Walang signal. Online lang ma-check ang PIN.",
+  "approvalRefused": "Hindi pinayagan ang approval.",
+  "dayCloseTitle": "Isara ang araw",
+  "dayCloseExpected": "Dapat nasa kaha",
+  "dayCloseHelp": "Panimulang cash + cash na benta + bayad sa utang - gastos na cash",
+  "dayCloseCounted": "Binilang mong cash",
+  "dayCloseNote": "Paalala (opsyonal)",
+  "dayCloseExact": "Tama. Walang kulang o sobra.",
+  "dayCloseSave": "I-save ang bilang",
+  "dayCloseSaved": "Naisara na ang araw",
+  "dayCloseAgain": "Bilangin ulit",
+  "dayCloseNeedsPin": "Kailangan ng PIN ng supervisor",
+  "dayCloseShort": "Kulang ng {amount}",
+  "@dayCloseShort": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "dayCloseOver": "Sobra ng {amount}",
+  "@dayCloseOver": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "dayCloseLast": "Huling bilang: {amount} nang {time}",
+  "@dayCloseLast": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "expensesCount": "{count, plural, other{{count} gastos}}",
+  "@expensesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reportsExpensesNote": "Kasama na sa puhunan ang binili mong paninda, kaya hindi ito ibinabawas ulit.",
+  "reportsExpenses": "Gastos (di kasama ang paninda): {amount}",
+  "@reportsExpenses": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "reportsNetProfit": "Kita pagkatapos ng gastos: {amount}",
+  "@reportsNetProfit": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "reportsStockBought": "Pinambili ng paninda: {amount}",
+  "@reportsStockBought": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "servicesTitle": "Load at e-wallet",
+  "servicesFeesToday": "Kita ngayon (fee)",
+  "servicesFloat": "Laman ng wallet",
+  "servicesNeedsTopup": "Kailangan ng dagdag",
+  "servicesNone": "Wala pang load o e-wallet ngayon",
+  "serviceCashIn": "Cash in",
+  "serviceCashOut": "Cash out",
+  "serviceLoad": "Magbenta ng load",
+  "serviceMoveFloat": "Galawin ang float",
+  "serviceCashInHint": "Cash ang bigay ng customer, ikaw ang magpapadala",
+  "serviceCashOutHint": "E-wallet ang padala ng customer, ikaw ang magbibigay ng cash",
+  "serviceFloatTopup": "Dagdag mula sa kaha",
+  "serviceFloatWithdraw": "Kunin papunta sa kaha",
+  "serviceFloatAdjust": "Ayusin ang balanse",
+  "walletGcash": "GCash",
+  "walletMaya": "Maya",
+  "walletLoad": "Load",
+  "walletOther": "Iba pa",
+  "serviceWallet": "Wallet",
+  "serviceAmount": "Halaga",
+  "serviceLoadAmount": "Halaga ng load",
+  "serviceFee": "Singil mo (fee)",
+  "servicePrice": "Binayad ng customer (cash)",
+  "serviceRef": "Numero o reference (opsyonal)",
+  "serviceNote": "Paalala",
+  "serviceNoteRequired": "Kailangan ng paalala",
+  "servicePriceTooLow": "Hindi dapat mas mababa sa halaga ng load ang presyo",
+  "serviceAdjustHint": "Gamitin ang minus kung bawas, hal. -50",
+  "serviceVoidTitle": "Kanselahin ang entry na ito?",
+  "serviceVoidBody": "Mananatili ito sa listahan, may guhit, at ibabalik ang pera.",
+  "serviceVoidYes": "Kanselahin",
+  "serviceNeedsPin": "Kailangan ng PIN ng supervisor",
+  "serviceEarned": "Kita {amount}",
+  "@serviceEarned": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "tingiSection": "Ibinebenta rin nang tingi",
+  "tingiHelp": "Magbukas ng pack para madagdagan ang piraso sa stock",
+  "tingiPieces": "Ilang piraso sa isang pack",
+  "tingiPieceName": "Pangalan ng piraso",
+  "tingiPiecePrice": "Presyo bawat piraso",
+  "tingiFailed": "Hindi na-link ang piraso. Baka piraso na ito ng ibang pack.",
+  "tingiOpenPack": "Magbukas ng pack",
+  "tingiPacks": "Ilang pack?",
+  "tingiLowWarn": "Mas kaunti ang nabilang mong pack. Maaari pa ring ituloy.",
+  "tingiHistory": "Mga nabuksang pack",
+  "tingiHistoryNone": "Wala pang nabuksang pack",
+  "tingiVoidTitle": "Bawiin ang pagbukas na ito?",
+  "tingiVoidBody": "Aalis sa stock ang mga piraso at babalik ang pack.",
+  "tingiVoidYes": "Bawiin",
+  "tingiLinkChanged": "Nagbago ang piraso kada pack. Tingnan ang produkto.",
+  "tingiCancelled": "Binawi",
+  "tingiPieceSuffix": "{name} (piraso)",
+  "@tingiPieceSuffix": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tingiLinkedTo": "Ibinebenta ang piraso bilang {name}",
+  "@tingiLinkedTo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tingiOpenTitle": "Magbukas ng pack: {name}",
+  "@tingiOpenTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tingiPreview": "Magiging {count} × {name}",
+  "@tingiPreview": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tingiOpened": "{count, plural, other{Nadagdag ang {count} piraso sa stock}}",
+  "@tingiOpened": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tingiHistoryRow": "{packs} pack → {pieces} × {name}",
+  "@tingiHistoryRow": {
+    "placeholders": {
+      "packs": {
+        "type": "int"
+      },
+      "pieces": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "utangDueSet": "Maglagay ng petsa ng bayad",
+  "utangDueChange": "Palitan ang petsa",
+  "utangDueClear": "Alisin ang petsa",
+  "utangSendStatement": "Ipadala ang statement",
+  "utangOverdueNone": "Walang lampas na sa petsa",
+  "stmtTitle": "Statement ng utang",
+  "stmtBalance": "Balanse",
+  "stmtDueOn": "Magbabayad sa",
+  "stmtRecent": "Kamakailan",
+  "stmtCharge": "Utang",
+  "stmtPayment": "Bayad",
+  "stmtAdjust": "Ayos",
+  "stockExpirySet": "Ilagay ang expiry date",
+  "stockExpiryClear": "Alisin ang expiry date",
+  "stockInExpiry": "Expiry date (opsyonal)",
+  "stockNoneExpiring": "Walang malapit nang mag-expire.",
+  "utangDueOn": "Magbabayad sa {date}",
+  "@utangDueOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "utangOverdueDays": "{count, plural, other{{count} araw nang lampas}}",
+  "@utangOverdueDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "utangOverdueFilter": "Lampas na ({count})",
+  "@utangOverdueFilter": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tileUtangOverdue": "{count} lampas na",
+  "@tileUtangOverdue": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "stockExpiringFilter": "Malapit mag-expire ({count})",
+  "@stockExpiringFilter": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "stockExpiresIn": "{count, plural, =0{Mag-eexpire ngayon} =1{Mag-eexpire bukas} other{Mag-eexpire sa {count} araw}}",
+  "@stockExpiresIn": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "stockExpiredAgo": "{count, plural, =1{Nag-expire kahapon} other{Nag-expire {count} araw na ang nakaraan}}",
+  "@stockExpiredAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tileStockExpiring": "{count} malapit mag-expire",
+  "@tileStockExpiring": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dataTitle": "I-import at i-export",
+  "dataExportSection": "I-export",
+  "dataImportSection": "Mag-import ng produkto",
+  "dataImportHint": "Kopyahin ang mga row mula sa spreadsheet at i-paste dito. Mga column: name, price, barcode, cost, stock.",
+  "dataImportOpen": "I-paste ang produkto",
+  "dataImportTemplate": "Kopyahin ang mga column",
+  "dataTemplateCopied": "Nakopya ang mga column. I-paste sa spreadsheet.",
+  "dataImportPaste": "I-paste dito ang mga row",
+  "dataTooMany": "Unang 500 row lang ang binabasa kada batch. I-import ang iba sa susunod.",
+  "dataProbName": "walang pangalan",
+  "dataProbPrice": "hindi numero ang presyo",
+  "dataProbCost": "hindi numero ang puhunan",
+  "dataProbStock": "hindi numero ang stock",
+  "exportProducts": "Mga produkto",
+  "dataImportReady": "{count, plural, other{{count} produkto ang handa}}",
+  "@dataImportReady": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dataImportProblems": "{count, plural, other{{count} row ang may problema at hindi isasama}}",
+  "@dataImportProblems": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dataImportLine": "Row {line}: {problem}",
+  "@dataImportLine": {
+    "placeholders": {
+      "line": {
+        "type": "int"
+      },
+      "problem": {
+        "type": "String"
+      }
+    }
+  },
+  "dataImportGo": "I-import ang {count}",
+  "@dataImportGo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dataImported": "{count, plural, other{Nadagdag ang {count} produkto}}",
+  "@dataImported": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dataSkipped": "{count} ang nilaktawan: gamit na ang barcode",
+  "@dataSkipped": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dayCloseOpening": "Panimulang cash (sukli)",
+  "dayCloseOpeningLine": "Nagsimula sa {amount}",
+  "@dayCloseOpeningLine": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "keypadAdd": "Idagdag sa benta",
+  "sellModeItems": "Mga item",
+  "sellModeKeypad": "Keypad",
+  "openAmountName": "Iba pang item",
+  "payWalletTitle": "Anong wallet?",
+  "noProductsHere": "Wala ka pang produkto. Magdagdag ng isa, o mag-import ng listahan sa Iba pa > I-import at i-export.",
+  "storePickerTitle": "Palitan ang tindahan",
+  "storeSwitched": "Nagbebenta na sa {name}",
+  "@storeSwitched": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "storeSwitchAsk": "Palitan ang tindahan?",
+  "storeSwitchKeep": "Palitan at panatilihin ang benta",
+  "storeSwitchClear": "Palitan at burahin ang benta",
+  "storeSwitchBody": "May benta na isinasagawa ({count, plural, other{{count} item}}). Kapag itinuloy, babayaran ito sa {store} at doon ibabawas ang stock.",
+  "@storeSwitchBody": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "store": {
+        "type": "String"
+      }
+    }
+  },
+  "upgradeFullSection": "Full Mode",
+  "upgradeFullTitle": "Mag-upgrade sa Full Mode",
+  "upgradeFullSubtitle": "Magdagdag ng mga sangay, bodega, at kahera. Mananatili ang lahat ng iyong solo data.",
+  "upgradeFullAction": "Alamin Pa",
+  "upgradeFullDialogTitle": "Full Mode Upgrade",
+  "upgradeFullDialogBody": "Binubuksan ng Full Mode ang maraming tindahan, gitnang bodega, at mga account ng kawani (Kahera, Manager, Supervisor). Ang lahat ng iyong kasalukuyang benta, produkto, stock, at utang ay ligtas na mananatili.\n\nUpang mag-upgrade, buksan ang XZACTO POS web app sa anumang browser at gamitin ang Upgrade Wizard.",
+  "upgradeFullClose": "Naintindihan"
+}

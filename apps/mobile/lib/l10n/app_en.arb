@@ -1,0 +1,938 @@
+{
+  "@@locale": "en",
+  "appTitle": "My Store",
+  "email": "Email",
+  "password": "Password",
+  "signIn": "Sign in",
+  "signUp": "Create account",
+  "haveAccount": "I already have an account",
+  "noAccount": "I am new here",
+  "nameYourStore": "Name your store",
+  "storeNameHint": "e.g. Aling Nena's Store",
+  "startSelling": "Start selling",
+  "welcome": "Welcome, {store}!",
+  "@welcome": {
+    "placeholders": {
+      "store": {
+        "type": "String"
+      }
+    }
+  },
+  "homeReady": "Your store is ready. Selling is coming next.",
+  "signOut": "Sign out",
+  "errRequired": "Please fill this in",
+  "errPasswordShort": "At least 6 characters",
+  "errGeneric": "Something went wrong. Please try again.",
+  "errAlreadyHasStore": "This account already has a store.",
+  "errBadLogin": "Wrong email or password.",
+  "errNotConfigured": "App is not connected. Start it with the Supabase settings.",
+  "checkEmail": "Check your email to confirm, then sign in.",
+  "syncSynced": "Synced",
+  "syncSyncing": "Syncing…",
+  "syncOffline": "Offline",
+  "syncPending": "{count, plural, =1{{count} waiting to send} other{{count} waiting to send}}",
+  "@syncPending": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncOfflinePending": "{count, plural, =1{Offline, {count} saved on this phone} other{Offline, {count} saved on this phone}}",
+  "@syncOfflinePending": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncNeedsAttention": "{count, plural, =1{{count} needs attention} other{{count} need attention}}",
+  "@syncNeedsAttention": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "productsOnDevice": "{count, plural, =0{No products on this phone yet} =1{{count} product on this phone} other{{count} products on this phone}}",
+  "@productsOnDevice": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "errStoreOpen": "Could not open the data on this phone.",
+  "tryAgain": "Try again",
+  "products": "Products",
+  "sell": "Sell",
+  "comingSoon": "Coming soon",
+  "addProduct": "Add product",
+  "editProduct": "Edit product",
+  "searchProducts": "Search name or barcode",
+  "clear": "Clear",
+  "noProductsYet": "No products yet. Tap \"Add product\" to add your first one.",
+  "noMatches": "Nothing found.",
+  "notSentYet": "Not sent yet",
+  "review": "Review",
+  "needsAttentionTitle": "Changes the server did not accept",
+  "nothingToFix": "Nothing to fix.",
+  "removedProduct": "Removed product",
+  "discardChange": "Discard",
+  "close": "Close",
+  "cancel": "Cancel",
+  "save": "Save",
+  "archive": "Remove",
+  "archiveTitle": "Remove {name}?",
+  "@archiveTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "archiveBody": "It will disappear from your list. Past sales keep it.",
+  "productName": "Product name",
+  "productNameHint": "e.g. Kape 3-in-1",
+  "sellingPrice": "Selling price",
+  "barcodeOptional": "Barcode (optional)",
+  "barcodeUsedBy": "This barcode is already used by {name}",
+  "@barcodeUsedBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "openingStockOptional": "How many do you have now? (optional)",
+  "openingStockHelp": "You can fix this later.",
+  "tabToday": "Today",
+  "tabPos": "POS",
+  "more": "More",
+  "unit": "Unit",
+  "unitHelp": "pc, pack, kg, bottle…",
+  "costOptional": "Your cost (optional)",
+  "errBadAmount": "Enter a number, like 12.50",
+  "errDuplicateBarcode": "Another product already has this barcode.",
+  "errLimitProducts": "You reached the product limit of your plan.",
+  "errNotAllowed": "Your account cannot change products.",
+  "errProductArchived": "This product was removed.",
+  "scanBarcode": "Scan barcode",
+  "unknownBarcodeTitle": "New barcode",
+  "unknownBarcodeBody": "No product has barcode {code} yet. Add it now?",
+  "@unknownBarcodeBody": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "takePhoto": "Take photo",
+  "choosePhoto": "Choose photo",
+  "photoFailed": "Could not use that photo. Try another one.",
+  "errPhotoTooLarge": "The photo is too large.",
+  "ok": "OK",
+  "sellSearchHint": "Search or scan to add",
+  "sellCartEmpty": "Tap an item to add it",
+  "sellPay": "Pay",
+  "sellNoPrice": "Set a price for this product first",
+  "sellUnknownBarcode": "No product has barcode {code}",
+  "@sellUnknownBarcode": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "sellQuantity": "Quantity",
+  "sellClearTitle": "Clear this sale?",
+  "sellClearBody": "Everything in the list will be removed.",
+  "sellItems": "{count, plural, =1{{count} item} other{{count} items}}",
+  "@sellItems": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sellStockLeft": "{n} left",
+  "@sellStockLeft": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "sellOutOfStock": "None left (you can still sell)",
+  "payTitle": "Payment",
+  "payTotal": "Total",
+  "payCash": "Cash",
+  "payEwallet": "GCash / Maya",
+  "payReceivedCash": "Cash received (leave empty if exact)",
+  "payReceivedEwallet": "Amount received",
+  "payExact": "Exact",
+  "payChange": "Change",
+  "payAllUtang": "All on utang",
+  "payOnUtang": "{amount} goes on utang",
+  "@payOnUtang": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "payChooseCustomer": "Choose who owes",
+  "payDiscount": "Discount",
+  "payDiscountHint": "Pesos off the total",
+  "payDone": "Finish sale",
+  "customerNew": "New customer",
+  "customerName": "Customer name",
+  "customerPhone": "Phone (optional)",
+  "customerSearch": "Search customers",
+  "receiptTitle": "Receipt",
+  "receiptNumber": "Receipt no. {no}",
+  "@receiptNumber": {
+    "placeholders": {
+      "no": {
+        "type": "String"
+      }
+    }
+  },
+  "receiptSubtotal": "Subtotal",
+  "receiptDiscount": "Discount",
+  "receiptCashReceived": "Cash received",
+  "receiptOnUtang": "On utang",
+  "receiptBalance": "{name}'s utang balance: {amount}",
+  "@receiptBalance": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "receiptNewSale": "New sale",
+  "receiptCancelled": "CANCELLED",
+  "receiptThanks": "Thank you!",
+  "utangTitle": "Utang",
+  "utangTotalOwed": "Total owed to you",
+  "utangEmpty": "Nobody owes you yet. Customers show up here when you sell on utang.",
+  "utangSettled": "Fully paid",
+  "utangOwes": "Owes",
+  "utangPaid": "Record payment",
+  "utangPayTitle": "{name} paid",
+  "@utangPayTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "utangAmountPaid": "Amount paid",
+  "utangNote": "Note (optional)",
+  "utangTooMuch": "That is more than they owe ({amount})",
+  "@utangTooMuch": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "ledgerCharge": "Took on utang",
+  "ledgerPayment": "Paid",
+  "ledgerAdjust": "Adjustment",
+  "ledgerVoid": "Sale cancelled",
+  "todayTitle": "Today",
+  "todaySales": "Sales today",
+  "todayCount": "{count, plural, =0{No sales} =1{{count} sale} other{{count} sales}}",
+  "@todayCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "todayCash": "Cash in",
+  "todayUtang": "On utang",
+  "todayNone": "No sales yet today.",
+  "saleCancelButton": "Cancel this sale",
+  "saleCancelTitle": "Cancel this sale?",
+  "saleCancelBody": "The items go back to your stock and any utang from this sale is removed.",
+  "saleCancelYes": "Yes, cancel it",
+  "saleCancelNo": "No, keep it",
+  "stockTitle": "Stock",
+  "stockAll": "All",
+  "stockLowCount": "{count, plural, =0{Low} =1{{count} low} other{{count} low}}",
+  "@stockLowCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "stockNoneLow": "Nothing is running low.",
+  "stockNotCounted": "Not counted",
+  "stockRunningLow": "Running low",
+  "stockNow": "Now: {n}",
+  "@stockNow": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "stockIn": "Stock in",
+  "stockCount": "Count",
+  "stockInTitle": "Stock in: {name}",
+  "@stockInTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "stockInQty": "How many came in?",
+  "stockInCost": "Cost each (optional)",
+  "stockCountTitle": "Count: {name}",
+  "@stockCountTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "stockCountQty": "How many do you have now?",
+  "reasonCounted": "Counted",
+  "reasonDamage": "Damaged / expired",
+  "reasonOther": "Other",
+  "reorderPoint": "Warn me when stock is at or below",
+  "reorderPointHelp": "Leave empty for no warning",
+  "sellStockLow": "{n} left, running low",
+  "@sellStockLow": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "reportsTitle": "Reports",
+  "reportsRefresh": "Refresh",
+  "reportsDays": "{count, plural, =1{{count} day} other{{count} days}}",
+  "@reportsDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reportsSales": "Sales",
+  "reportsProfit": "Estimated profit: {amount}",
+  "@reportsProfit": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "reportsPerDay": "Per day",
+  "reportsTopItems": "Best sellers",
+  "reportsNothingYet": "No sales in this period.",
+  "reportsQty": "{n} sold",
+  "@reportsQty": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "reportsUtangOwed": "Owed to you: {amount}",
+  "@reportsUtangOwed": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "reportsAsOf": "No signal. Showing the last report from {when}.",
+  "@reportsAsOf": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "reportsNeedSignal": "Reports need a signal the first time. Connect and try again.",
+  "reportsNotSent": "{count, plural, =1{{count} sale or change is not sent yet and is not included.} other{{count} sales or changes are not sent yet and are not included.}}",
+  "@reportsNotSent": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncSignIn": "Session ended. Sign out and sign in again; nothing is lost.",
+  "unsentTitle": "Unsent changes",
+  "unsentBody": "{count, plural, =1{This phone still has {count} change from another business that was never sent.} other{This phone still has {count} changes from another business that were never sent.}} Sign in to that business to send them, or discard them and continue.",
+  "@unsentBody": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "unsentDiscard": "Discard them and continue",
+  "forgotPassword": "Forgot password?",
+  "forgotTitle": "Reset your password",
+  "forgotSend": "Send link",
+  "forgotSent": "If that email has an account, we sent a link to reset the password.",
+  "newPasswordTitle": "Choose a new password",
+  "newPassword": "New password",
+  "confirmPassword": "Type it again",
+  "passwordsDiffer": "The two passwords are different",
+  "passwordSaved": "Password changed",
+  "changePassword": "Change password",
+  "themeTitle": "Look of the app",
+  "themeColors": "Colors",
+  "themeMode": "Brightness",
+  "paletteFreshTide": "Fresh Tide (blue and mint)",
+  "paletteGoldenIndigo": "Golden Indigo (blue and gold)",
+  "themeSystem": "Same as phone",
+  "themeLight": "Light",
+  "themeDark": "Dark",
+  "utangAdjust": "Adjust balance",
+  "utangAdjustTitle": "Adjust {name}'s balance",
+  "@utangAdjustTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "utangWriteOff": "Owes less (write off)",
+  "utangAddMore": "Owes more (correction)",
+  "utangAdjustAmount": "How much?",
+  "utangAdjusted": "Balance adjusted",
+  "scanTitle": "Scan a barcode",
+  "scanHint": "Point the camera at the barcode",
+  "scanDone": "Done",
+  "scanLight": "Light",
+  "scanCameraDenied": "The camera is not available. Allow it in the phone settings, then try again.",
+  "scanAdded": "Added: {name}",
+  "@scanAdded": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "scanWithCamera": "Scan with camera",
+  "receiptPrint": "Print",
+  "receiptShare": "Share",
+  "receiptPrintFailed": "Could not open the printer. Try Share instead.",
+  "settingsTitle": "Settings",
+  "activeStore": "Active store",
+  "settingsAppearance": "Appearance & theme",
+  "change": "Change",
+  "settingsLanguageRegion": "Language & region",
+  "systemLanguage": "System language",
+  "languageCurrentName": "English (US)",
+  "switchLanguage": "Lumipat sa FIL",
+  "settingsSecurity": "Security & account",
+  "updatePasswordHint": "Update your login password",
+  "endSessionHint": "End session on this phone",
+  "localDbNote": "Local database: encrypted & synced",
+  "storeSettings": "Store settings",
+  "storeSettingsHint": "Theme, mode, language & account",
+  "startFirstSale": "Start your first sale",
+  "totalSalesToday": "Total sales today",
+  "tileUtangSub": "Who owes you",
+  "tileStockSub": "What you have left",
+  "tileProductsSub": "Catalog & prices",
+  "tileReportsSub": "Sales & profit",
+  "reportsRevenueSub": "Total store revenue",
+  "reportsAvgOrder": "Average order",
+  "reportsTotalOrders": "Total orders",
+  "reportsInventoryHealth": "Inventory health",
+  "reportsAllHealthy": "All tracked stocks healthy",
+  "tileStockLow": "{count} low",
+  "@tileStockLow": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reportsNeedReorder": "{count, plural, =1{{count} item needs reordering} other{{count} items need reordering}}",
+  "@reportsNeedReorder": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sellPinned": "Pinned {name} to the top",
+  "@sellPinned": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sellUnpinned": "Unpinned {name}",
+  "@sellUnpinned": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sellPinHint": "Hold an item to pin it as a favorite",
+  "restockTitle": "Restock list",
+  "restockEmpty": "Nothing to buy. Nothing is running low.",
+  "restockShareHeader": "Shopping list",
+  "restockCopy": "Copy list",
+  "restockCopied": "List copied. Paste it into a message.",
+  "restockNow": "Now: {n}",
+  "@restockNow": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "restockBuy": "Buy {count}",
+  "@restockBuy": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "restockItems": "{count, plural, =1{{count} item} other{{count} items}}",
+  "@restockItems": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "restockEstimate": "About {amount}",
+  "@restockEstimate": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "exportSection": "Export & backup",
+  "exportHint": "Send as a spreadsheet file (CSV) by message or email",
+  "exportSales": "Sales",
+  "exportUtang": "Utang",
+  "exportStock": "Stock",
+  "exportFailed": "Could not share the file. Try again.",
+  "expensesTitle": "Expenses",
+  "expensesSpentToday": "Spent today",
+  "expensesNone": "No expenses today",
+  "expenseAdd": "Add expense",
+  "expenseAmount": "Amount",
+  "expenseNote": "Note (optional)",
+  "expensePaidFrom": "Paid from",
+  "expensePaidCash": "Cash",
+  "expensePaidEwallet": "E-wallet",
+  "expenseCategoryStockPurchase": "Stock purchase",
+  "expenseCategoryUtilities": "Electric, water",
+  "expenseCategoryTransport": "Transport",
+  "expenseCategoryWages": "Wages",
+  "expenseCategoryRent": "Rent",
+  "expenseCategoryOther": "Other",
+  "expenseVoidTitle": "Cancel this expense?",
+  "expenseVoidBody": "It stays in the list, crossed out, and no longer counts.",
+  "expenseVoidReason": "Reason (optional)",
+  "expenseVoidYes": "Cancel expense",
+  "expenseCancelled": "Cancelled",
+  "expenseNeedsPin": "Needs supervisor PIN",
+  "approvalTitle": "Supervisor PIN",
+  "approvalBody": "A supervisor must approve this. Enter the supervisor's PIN (needs signal).",
+  "approvalPin": "PIN",
+  "approvalApprove": "Approve",
+  "approvalWrongPin": "Wrong PIN. Try again.",
+  "approvalLocked": "Too many wrong tries. Wait a few minutes.",
+  "approvalNoPin": "This person has not set a PIN yet.",
+  "approvalNeedsSignal": "No signal. The PIN can only be checked online.",
+  "approvalRefused": "This approval was refused.",
+  "dayCloseTitle": "Close the day",
+  "dayCloseExpected": "Cash that should be in the drawer",
+  "dayCloseHelp": "Opening cash + cash sales + utang payments - cash expenses",
+  "dayCloseCounted": "Cash you counted",
+  "dayCloseNote": "Note (optional)",
+  "dayCloseExact": "Exact. Nothing short or over.",
+  "dayCloseSave": "Save count",
+  "dayCloseSaved": "Day closed",
+  "dayCloseAgain": "Count again",
+  "dayCloseNeedsPin": "Needs supervisor PIN",
+  "dayCloseShort": "Short by {amount}",
+  "@dayCloseShort": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "dayCloseOver": "Over by {amount}",
+  "@dayCloseOver": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "dayCloseLast": "Last count: {amount} at {time}",
+  "@dayCloseLast": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "expensesCount": "{count, plural, =1{{count} expense} other{{count} expenses}}",
+  "@expensesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reportsExpensesNote": "Stock you bought is already in your cost of goods, so it is not taken off twice.",
+  "reportsExpenses": "Expenses (not stock): {amount}",
+  "@reportsExpenses": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "reportsNetProfit": "Profit after expenses: {amount}",
+  "@reportsNetProfit": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "reportsStockBought": "Stock bought: {amount}",
+  "@reportsStockBought": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "servicesTitle": "Load & e-wallet",
+  "servicesFeesToday": "Earned today (fees)",
+  "servicesFloat": "Wallet float",
+  "servicesNeedsTopup": "Needs a top-up",
+  "servicesNone": "No load or e-wallet entries today",
+  "serviceCashIn": "Cash in",
+  "serviceCashOut": "Cash out",
+  "serviceLoad": "Sell load",
+  "serviceMoveFloat": "Move float",
+  "serviceCashInHint": "Customer gives cash, you send e-wallet money",
+  "serviceCashOutHint": "Customer sends e-wallet money, you give cash",
+  "serviceFloatTopup": "Top up from the drawer",
+  "serviceFloatWithdraw": "Withdraw to the drawer",
+  "serviceFloatAdjust": "Correct the balance",
+  "walletGcash": "GCash",
+  "walletMaya": "Maya",
+  "walletLoad": "Load",
+  "walletOther": "Other",
+  "serviceWallet": "Wallet",
+  "serviceAmount": "Amount",
+  "serviceLoadAmount": "Load amount",
+  "serviceFee": "Fee you charge",
+  "servicePrice": "Customer pays (cash)",
+  "serviceRef": "Phone or reference (optional)",
+  "serviceNote": "Note",
+  "serviceNoteRequired": "A note is needed",
+  "servicePriceTooLow": "The price must be at least the load amount",
+  "serviceAdjustHint": "Use a minus for less, e.g. -50",
+  "serviceVoidTitle": "Cancel this entry?",
+  "serviceVoidBody": "It stays in the list, crossed out, and the money moves back.",
+  "serviceVoidYes": "Cancel entry",
+  "serviceNeedsPin": "Needs supervisor PIN",
+  "serviceEarned": "Earned {amount}",
+  "@serviceEarned": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "tingiSection": "Sold by piece too",
+  "tingiHelp": "Open a pack to add the pieces to your stock",
+  "tingiPieces": "Pieces in one pack",
+  "tingiPieceName": "Piece name",
+  "tingiPiecePrice": "Price per piece",
+  "tingiFailed": "Could not link the pieces. This product may already be a piece of another pack.",
+  "tingiOpenPack": "Open a pack",
+  "tingiPacks": "How many packs?",
+  "tingiLowWarn": "You counted fewer packs than this. You can still go ahead.",
+  "tingiHistory": "Opened packs",
+  "tingiHistoryNone": "No packs opened yet",
+  "tingiVoidTitle": "Undo this opening?",
+  "tingiVoidBody": "The pieces leave your stock and the pack comes back.",
+  "tingiVoidYes": "Undo",
+  "tingiLinkChanged": "The pieces per pack changed. Check the product.",
+  "tingiCancelled": "Undone",
+  "tingiPieceSuffix": "{name} (piece)",
+  "@tingiPieceSuffix": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tingiLinkedTo": "Pieces are sold as {name}",
+  "@tingiLinkedTo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tingiOpenTitle": "Open a pack: {name}",
+  "@tingiOpenTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tingiPreview": "That makes {count} × {name}",
+  "@tingiPreview": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tingiOpened": "{count, plural, =1{{count} piece added to stock} other{{count} pieces added to stock}}",
+  "@tingiOpened": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tingiHistoryRow": "{packs} pack → {pieces} × {name}",
+  "@tingiHistoryRow": {
+    "placeholders": {
+      "packs": {
+        "type": "int"
+      },
+      "pieces": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "utangDueSet": "Set pay-by date",
+  "utangDueChange": "Change date",
+  "utangDueClear": "Clear date",
+  "utangSendStatement": "Send statement",
+  "utangOverdueNone": "Nobody is overdue",
+  "stmtTitle": "Utang statement",
+  "stmtBalance": "Balance",
+  "stmtDueOn": "Pay by",
+  "stmtRecent": "Recent",
+  "stmtCharge": "Utang",
+  "stmtPayment": "Payment",
+  "stmtAdjust": "Adjustment",
+  "stockExpirySet": "Set expiry date",
+  "stockExpiryClear": "Clear expiry date",
+  "stockInExpiry": "Expiry date (optional)",
+  "stockNoneExpiring": "Nothing is close to expiring.",
+  "utangDueOn": "Pay by {date}",
+  "@utangDueOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "utangOverdueDays": "{count, plural, =1{{count} day overdue} other{{count} days overdue}}",
+  "@utangOverdueDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "utangOverdueFilter": "Overdue ({count})",
+  "@utangOverdueFilter": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tileUtangOverdue": "{count} overdue",
+  "@tileUtangOverdue": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "stockExpiringFilter": "Expiring ({count})",
+  "@stockExpiringFilter": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "stockExpiresIn": "{count, plural, =0{Expires today} =1{Expires tomorrow} other{Expires in {count} days}}",
+  "@stockExpiresIn": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "stockExpiredAgo": "{count, plural, =1{Expired yesterday} other{Expired {count} days ago}}",
+  "@stockExpiredAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tileStockExpiring": "{count} expiring",
+  "@tileStockExpiring": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dataTitle": "Import & export",
+  "dataExportSection": "Export",
+  "dataImportSection": "Import products",
+  "dataImportHint": "Copy rows from a spreadsheet and paste them here. Columns: name, price, barcode, cost, stock.",
+  "dataImportOpen": "Paste products",
+  "dataImportTemplate": "Copy the column names",
+  "dataTemplateCopied": "Column names copied. Paste them into a spreadsheet.",
+  "dataImportPaste": "Paste the rows here",
+  "dataTooMany": "Only the first 500 rows are read at a time. Import the rest in another batch.",
+  "dataProbName": "name is missing",
+  "dataProbPrice": "price is not a number",
+  "dataProbCost": "cost is not a number",
+  "dataProbStock": "stock is not a number",
+  "exportProducts": "Products",
+  "dataImportReady": "{count, plural, =1{{count} product ready} other{{count} products ready}}",
+  "@dataImportReady": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dataImportProblems": "{count, plural, =1{{count} row has a problem and is left out} other{{count} rows have a problem and are left out}}",
+  "@dataImportProblems": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dataImportLine": "Row {line}: {problem}",
+  "@dataImportLine": {
+    "placeholders": {
+      "line": {
+        "type": "int"
+      },
+      "problem": {
+        "type": "String"
+      }
+    }
+  },
+  "dataImportGo": "Import {count}",
+  "@dataImportGo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dataImported": "{count, plural, =1{{count} product added} other{{count} products added}}",
+  "@dataImported": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dataSkipped": "{count} skipped: barcode already used",
+  "@dataSkipped": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dayCloseOpening": "Cash you started with (sukli)",
+  "dayCloseOpeningLine": "Started with {amount}",
+  "@dayCloseOpeningLine": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "keypadAdd": "Add to sale",
+  "sellModeItems": "Items",
+  "sellModeKeypad": "Keypad",
+  "openAmountName": "Other item",
+  "payWalletTitle": "Which wallet?",
+  "noProductsHere": "You have no products yet. Add one, or import a list under More > Import & export.",
+  "storePickerTitle": "Switch store",
+  "storeSwitched": "Now selling at {name}",
+  "@storeSwitched": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "storeSwitchAsk": "Switch store?",
+  "storeSwitchKeep": "Switch and keep the sale",
+  "storeSwitchClear": "Switch and clear the sale",
+  "storeSwitchBody": "A sale is in progress ({count, plural, =1{{count} item} other{{count} items}}). If you keep it, it will be paid at {store} and the stock comes off there.",
+  "@storeSwitchBody": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "store": {
+        "type": "String"
+      }
+    }
+  },
+  "upgradeFullSection": "Full Mode",
+  "upgradeFullTitle": "Upgrade to Full Mode",
+  "upgradeFullSubtitle": "Add more stores, warehouse, and cashier staff. Your solo data stays 100% intact.",
+  "upgradeFullAction": "Learn More",
+  "upgradeFullDialogTitle": "Full Mode Upgrade",
+  "upgradeFullDialogBody": "Full Mode unlocks multiple branches, a central warehouse, and role-based staff accounts (Cashier, Manager, Supervisor). All your current sales, products, stock, and utang records are safely retained in place.\n\nTo upgrade, open the XZACTO POS web app in any browser and use the Upgrade Wizard.",
+  "upgradeFullClose": "Got it"
+}
