@@ -629,11 +629,41 @@ class Meta extends Table {
   Set<Column> get primaryKey => {key};
 }
 
+/// Cashier shifts (F-05m): open_shift / close_shift ops, sync_pull_shifts. A shift is open until its closing fields are set;
+/// the server's copy replaces the local one when pulled (unless a change of this device is still unsent).
+@TableIndex(name: 'shifts_opened', columns: {#openedAt})
+class Shifts extends Table {
+  TextColumn get id => text()();
+  TextColumn get locationId => text().nullable()();
+
+  /// Whose shift it is (the signed-in user's id).
+  TextColumn get cashierId => text().nullable()();
+  TextColumn get currency => text()();
+  IntColumn get openingCash => integer().withDefault(const Constant(0))();
+  TextColumn get openedAt => text()();
+  TextColumn get closedAt => text().nullable()();
+
+  /// What the phone worked out when the shift was closed.
+  IntColumn get expectedCash => integer().nullable()();
+
+  /// What the server computed from its own data; null until the close was applied and pulled.
+  IntColumn get serverExpectedCash => integer().nullable()();
+  IntColumn get countedCash => integer().nullable()();
+  IntColumn get difference => integer().nullable()();
+  TextColumn get note => text().nullable()();
+  TextColumn get closedBy => text().nullable()();
+  TextColumn get updatedAt => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+
 @DriftDatabase(tables: [
   Categories, Products, Variants, Prices, SyncCursors, Outbox, OpeningStock, Meta, PhotoUploads, PhotoCache,
   Customers, ServerLedger, LocalLedger, StockLevels, LocalMovements, Sales, SaleItems, SalePayments,
   Expenses, DayCloses, ServiceTxns, WalletFloats, LocalFloatEffects, Conversions, StockExpiry,
-  Warehouses, WhBins, WhBinStock, WhStock, Suppliers, PurchaseOrders, PoItems, WhReceipts, WhReceiptItems,
+  Warehouses, WhBins, WhBinStock, WhStock, Suppliers, PurchaseOrders, PoItems, WhReceipts, WhReceiptItems, Shifts,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
@@ -654,7 +684,7 @@ class AppDatabase extends _$AppDatabase {
   static const _name = 'xzactopos';
 
   @override
-  int get schemaVersion => 15;
+  int get schemaVersion => 16;
 
   /// Adds a column unless it is there already (a database made by a newer build and stepped back in a test, or a
   /// table an earlier step created with today's definition). Skips a table that does not exist.
@@ -789,6 +819,11 @@ class AppDatabase extends _$AppDatabase {
             if (hasCursors.isNotEmpty) {
               await customStatement("delete from sync_cursors where table_key like 'wh:%'");
             }
+          }
+          if (from < 16) {
+            // F-05m: shifts. A new table only; every row and unsent op stays. No cursor yet: the first pull brings the open
+            // shift and the last 30 days.
+            await m.createTable(shifts);
           }
         },
       );

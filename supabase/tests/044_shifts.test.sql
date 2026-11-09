@@ -1,7 +1,7 @@
 -- 044_shifts.test.sql: cashier shifts (F-05m): open_shift / close_shift ops, the server's expected cash for a shift,
 -- who may do what, the table's protection, row-level reads, sync_pull_shifts.
 begin;
-select plan(41);
+select plan(46);
 
 create function pg_temp.u(p text) returns uuid language sql immutable as $$ select md5('u:' || p)::uuid $$;
 create function pg_temp.t(p text) returns uuid language sql immutable as $$ select md5('t:' || p)::uuid $$;
@@ -189,6 +189,28 @@ select pg_temp.login('juan', 'A');
 set local role authenticated;
 select is(jsonb_array_length(public.sync_pull_shifts() -> 'rows'), 2, 'the pull sends a cashier their own shifts');
 select is((public.sync_pull_shifts() -> 'rows' -> 0 ->> 'closed_at') is not null or (public.sync_pull_shifts() -> 'rows' -> 1 ->> 'closed_at') is not null, true, 'closed and open ones');
+reset role;
+
+
+-- ---------------------------------------------------------------------------
+-- shift_expected_now: the server's figure for an open shift, for the cashier and for admins only
+-- ---------------------------------------------------------------------------
+reset role;
+insert into public.sales (id, tenant_id, location_id, local_no, status, subtotal, total, sold_at, voided_at, created_by) values
+  (pg_temp.id('s9'), pg_temp.t('A'), pg_temp.id('S01'), 'D-9', 'completed', 700, 700, now(), null, pg_temp.u('juan'));
+insert into public.payments (tenant_id, sale_id, location_id, method, amount, tendered) values
+  (pg_temp.t('A'), pg_temp.id('s9'), pg_temp.id('S01'), 'cash', 700, 700);
+select pg_temp.login('juan', 'A');
+set local role authenticated;
+select is((public.shift_expected_now(pg_temp.id('sh:j3')) ->> 'server_expected_cash')::bigint, 19750::bigint, 'an open shift: its opening cash plus everything the cashier took in its window (5000 + 13000 + 1500 - 2500 + 2050 + 700)');
+select pg_temp.login('pia', 'A');
+select throws_ok($$ select public.shift_expected_now(pg_temp.id('sh:j3')) $$, '42501', null, 'another cashier cannot ask for it');
+select pg_temp.login('maria', 'A');
+select is((public.shift_expected_now(pg_temp.id('sh:j3')) ->> 'server_expected_cash')::bigint, 19750::bigint, 'an admin of the store can');
+select throws_ok($$ select public.shift_expected_now(pg_temp.id('sh:nope')) $$, '22023', null, 'an unknown shift is refused');
+reset role;
+set local role anon;
+select throws_ok($$ select public.shift_expected_now(pg_temp.id('sh:j3')) $$, '42501', null, 'and so is someone not signed in');
 reset role;
 
 select is((select count(*)::int from public.audit_log where action in ('shift.open', 'shift.close')), 6, 'every open and close is in the audit log');

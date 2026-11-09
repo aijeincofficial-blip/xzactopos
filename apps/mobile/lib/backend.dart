@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'data/count_models.dart';
+import 'data/shift_models.dart';
 import 'sync/sync_engine.dart';
 
 /// True when the failure is an ANSWER from the server (it was reached and said no), false when it was not reached at all (no
@@ -126,7 +127,7 @@ const pinRefusalHints = {
   'location_denied', 'module_disabled',
 };
 
-class SupabaseBackend implements Backend, DeviceApi, WarehouseApi, CountApi {
+class SupabaseBackend implements Backend, DeviceApi, WarehouseApi, CountApi, ShiftApi {
   SupabaseClient get _c => Supabase.instance.client;
 
   @override
@@ -224,6 +225,28 @@ class SupabaseBackend implements Backend, DeviceApi, WarehouseApi, CountApi {
   Future<Map<String, dynamic>> pullPos(Map<String, dynamic> cursors, {int limit = 500}) async {
     final res = await _auth(() => _c.rpc('sync_pull_pos', params: {'p_cursors': cursors, 'p_limit': limit}));
     return (res as Map).cast<String, dynamic>();
+  }
+
+  // ---- cashier shifts (F-05m) ----
+
+  @override
+  Future<Map<String, dynamic>> pullShifts(Map<String, dynamic>? cursor, {int limit = 100}) async {
+    final res = await _auth(() => _c.rpc('sync_pull_shifts', params: {'p_cursor': cursor, 'p_limit': limit}));
+    return (res as Map).cast<String, dynamic>();
+  }
+
+  @override
+  Future<int?> shiftExpectedNow(String shiftId) async {
+    try {
+      final res = await _auth(() => _c.rpc('shift_expected_now', params: {'p_shift_id': shiftId}));
+      return ((res as Map)['server_expected_cash'] as num?)?.toInt();
+    } on PostgrestException {
+      return null; // the server cannot say (not synced yet, not allowed): the phone's own figure is used
+    } on AuthExpired {
+      rethrow;
+    } on Exception {
+      return null; // no signal
+    }
   }
 
   // ---- stock counts (online only, F-13h H6) ----

@@ -1848,6 +1848,11 @@ mixin DriftSales implements SalesStore {
             .write(const ExpensesCompanion(voidedAt: Value(null), voidReason: Value(null)));
       case 'close_day':
         await (db.delete(db.dayCloses)..where((d) => d.id.equals(entityId) & d.updatedAt.isNull())).go();
+      case 'open_shift':
+        await (db.delete(db.shifts)..where((x) => x.id.equals(entityId) & x.updatedAt.isNull())).go();
+      case 'close_shift':
+        await (db.update(db.shifts)..where((x) => x.id.equals(entityId))).write(const ShiftsCompanion(
+            closedAt: Value(null), expectedCash: Value(null), countedCash: Value(null), difference: Value(null), note: Value(null)));
       case 'record_service_txn':
         await (db.delete(db.serviceTxns)..where((t) => t.id.equals(entityId) & t.updatedAt.isNull())).go();
       case 'void_service_txn':
