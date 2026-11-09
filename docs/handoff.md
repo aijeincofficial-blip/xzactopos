@@ -7,7 +7,7 @@ Updated at the end of every task. Read this first in a fresh session. New sessio
 ### Who is doing what (update when you start and finish a task)
 | Agent | Branch and worktree | Working on | Status |
 | --- | --- | --- | --- |
-| Claude | `claude/phase3-sell-8261d3`, `.claude/worktrees/phase3-sell-8261d3` | Priority 1: prove Mobile Solo on the emulator and fix what breaks. | in progress |
+| Claude | `claude/phase3-sell-8261d3`, `.claude/worktrees/phase3-sell-8261d3` | Priority 1 done (see `docs/tasks/SOLO-emulator-proof.md`); starting priority 3 (cashier shifts and X/Z reports on the phone). | in progress |
 | Antigravity | `ag/work`, `.claude/worktrees/ag-work` | not started: priority 1 (prove Mobile Solo on the emulator) | waiting |
 | Owner | merges branches into `main`; makes the git remote and the keystore | | |
 
@@ -16,13 +16,13 @@ Row status words: `waiting`, `in progress`, `done`, `stopped` / `limit reached` 
 ### Completion estimate and priorities (2026-11-09, judgment, not measured)
 | Product | Built | Checked in use | Main gap |
 | --- | --- | --- | --- |
-| Mobile Solo | ~90% | ~70% | Many features only tested in code, not on the emulator; no real phone; release APK unsigned |
+| Mobile Solo | ~92% | ~90% | Run feature by feature on the emulator on 2026-11-09 (expiry, tingi, offline sale and reconnect, utang dates and statement, expenses, reports, day close, load, CSV, pins). Not covered: supervisor PIN, camera barcode decode, real printer, release-build speed. No real phone; release APK unsigned |
 | Web Solo | ~85% | ~65% | Online only; Solo/Full mode is guessed from the access data; no component tests |
 | Web Full | ~80% | ~55% | No pick-list or put-away screens; staff and shifts barely used by hand; never run with a real multi-store setup |
 | Mobile Full | ~55% | ~40% | No shifts or staff on the phone; no transfers or pick/put-away on the phone (receive, count and stock for warehouses are done and were run on the emulator) |
 
 **Priorities for what to build next** (reason in brackets):
-1. **Prove what exists on the emulator (Mobile Solo), then fix what breaks.** Tingi, expiry, pay-by dates, supervisor PIN, sharing, offline then reconnect. [Mobile Solo is the product a tindera uses first; ~30% of it has never been seen running. Cheap, and it finds bugs before new work piles on.]
+1. ~~Prove what exists on the emulator (Mobile Solo), then fix what breaks.~~ **Done 2026-11-09**: everything on the not-checked list passed on the device and matched the server; one usability fix (the who-owes button hid under the keypad). Report: `docs/tasks/SOLO-emulator-proof.md`.
 2. **Get CI running and sign the release APK.** Needs a git remote and a keystore the owner creates. [Nothing has ever been checked by CI; an unsigned APK cannot be installed outside the emulator.]
 3. **Cashier-ready Mobile Full: per-cashier shifts and X/Z reports on the phone (F-05 mobile), staff on the phone.** [The decision log says shifts are needed before staff go live, and cashiers use phones at the till; the warehouse phone work serves fewer people.]
 4. **Web Full UI overhaul (design).** One design system for `apps/client`: colour and spacing tokens, type scale, a real component set (table, tabs, dialog, form, empty and error states, toasts), a responsive layout with a proper sidebar instead of the long top nav (it already has 15+ links), dark mode, and accessibility checks. Then restyle every screen on it, starting with the busiest (Sell, Today, Products, Purchasing, Counts, Warehouses). Use `docs/design-references.md` and the look already chosen for the phone app so the two match. [The web UI is plain Tailwind built screen by screen; the three F-13 screens just added more of it. Doing the system first keeps later screens from needing a redo. Do it after priorities 1 to 3, before more screens are added.]
@@ -30,6 +30,7 @@ Row status words: `waiting`, `in progress`, `done`, `stopped` / `limit reached` 
 6. ~~F-13h H2 to H8, the warehouse phone~~ **Done 2026-11-09** (receive offline, count online, bin stock, offline start). Offline counting (H7) is still item 8.
 7. **Web Solo/Full gaps:** a stored mode flag, pick-list and put-away screens, editing a draft purchase order, product search by typing. [Real but not blocking.]
 8. **Later:** offline counting (H7), web offline, per-warehouse reorder points, card payments.
+- **Priority 1 done: Mobile Solo proven on the emulator (2026-11-09).** New account through the app, then expiry, tingi (exact cost split), an offline sale that synced on reconnect (temporary receipt number became the server's), utang pay-by date and statement sharing, expenses, reports with expenses, day close with opening cash, load/e-wallet float, CSV export and pinning, each checked against the server's rows. Fixed: the "Choose who owes" button hid under the keypad after "All on utang" (new test). Not covered: supervisor PIN (needs a second user), camera barcode decode, real printer, release-build speed. Test account `tindera.p1@example.test` / `Tindera-pass1` (tenant `solo-e423847bcdeb`) is in the local database.
 - **Local test data cleaned (2026-11-09).** Tenants `h8-mw91d2at` and `f13i-mw97727i` and their users were deleted from the local database. The ledger's append-only guard blocks deleting a tenant that has stock movements, so the delete ran in one transaction with only the `stock_movements_append_only` trigger switched off, switched on again before commit (checked). The three scratch tenants from scenario reruns (`f13i-mw976d6b`, `f13i-mw986o6r`, `f13i-mw987676`) and their nine users were deleted the same way; only the older `whtest` is left. Next time: use the same transaction, or give the scenario script a cleanup step.
 - **Phone cleanups (2026-11-09).** Settings now says "Active warehouse" ("Aktibong bodega") for a warehouse clerk and keeps "Active store" for everyone else; two tests, one mutation checked. The other note, the sync badge doing nothing while a bottom sheet is open, is the normal behaviour of a modal sheet (the first tap outside closes it), so it was left alone. Flutter 497 tests.
 - **Negative stock report: done (2026-11-09).** `negative_stock_list` (security invoker, scoped by row-level security, keyset-paged) and a "Below zero" tab on the web Warehouses screen (en + fil). Lines clear themselves when stock is added. Migration `20261109001000`, pgTAP 043 (19 tests), vitest 120. Not on the phone; no place filter in the web screen yet.
