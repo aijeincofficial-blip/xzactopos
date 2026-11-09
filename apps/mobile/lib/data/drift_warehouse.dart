@@ -20,6 +20,8 @@ import 'warehouse_models.dart';
 mixin DriftWarehouse implements WarehouseStore {
   AppDatabase get db;
   Future<void> enqueue(String opId, String kind, String entityId, Map<String, dynamic> payload);
+  Future<String?> meta(String key);
+  Future<void> setMeta(String key, String? value);
 
   static String _iso(DateTime t) => t.toUtc().toIso8601String();
   static double _r3(double v) => (v * 1000).round() / 1000;
@@ -31,6 +33,36 @@ mixin DriftWarehouse implements WarehouseStore {
 
   Stream<List<T>> _watch<T>(Set<TableInfo> reads, Future<List<T>> Function() load) =>
       db.customSelect('select 1', readsFrom: reads).watch().asyncMap((_) => load());
+
+  // ---------------------------------------------------------------------------
+  // The active warehouse
+  // ---------------------------------------------------------------------------
+
+  static const _activeWarehouseKey = 'active_warehouse_id';
+
+  static WarehouseView _view(Warehouse w) => WarehouseView(id: w.id, code: w.code, name: w.name, binsEnabled: w.binsEnabled);
+
+  Future<List<Warehouse>> _liveWarehouses() => (db.select(db.warehouses)
+        ..where((w) => w.deletedAt.isNull() & w.active.equals(true))
+        ..orderBy([(w) => OrderingTerm.asc(w.code)]))
+      .get();
+
+  @override
+  Future<WarehouseView?> activeWarehouse() async {
+    final all = await _liveWarehouses();
+    if (all.isEmpty) return null;
+    final chosen = await meta(_activeWarehouseKey);
+    return _view(all.firstWhere((w) => w.id == chosen, orElse: () => all.first));
+  }
+
+  @override
+  Stream<WarehouseView?> watchActiveWarehouse() =>
+      db.customSelect('select 1', readsFrom: {db.warehouses, db.meta}).watch().asyncMap((_) => activeWarehouse()).distinct();
+
+  @override
+  Future<void> setActiveWarehouse(String warehouseId) async {
+    if ((await _liveWarehouses()).any((w) => w.id == warehouseId)) await setMeta(_activeWarehouseKey, warehouseId);
+  }
 
   // ---------------------------------------------------------------------------
   // Reads

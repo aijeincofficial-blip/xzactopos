@@ -78,7 +78,7 @@ Map<String, dynamic> _po(String id, String no, String wh, {String status = 'orde
           ],
     };
 
-Future<List<T>> _first<T>(Stream<List<T>> s) => s.first;
+Future<T> _first<T>(Stream<T> s) => s.first;
 
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -172,6 +172,68 @@ void main() {
       final before = await store.warehouseCursors();
       await store.applyPullWarehouse(_pull());
       expect(await store.warehouseCursors(), before);
+    });
+  });
+
+  group('the active warehouse', () {
+    test('with no warehouse yet there is none', () async {
+      expect(await store.activeWarehouse(), isNull);
+      expect(await _first(store.watchActiveWarehouse()), isNull);
+    });
+
+    test('with several, the first by code until the clerk chooses; the choice is remembered', () async {
+      await loadBasics();
+      expect((await store.activeWarehouse())!.code, 'W1');
+      await store.setActiveWarehouse(_w2);
+      expect((await store.activeWarehouse())!.code, 'W2');
+      expect((await _first(store.watchActiveWarehouse()))!.id, _w2);
+      expect(await store.meta('active_warehouse_id'), _w2);
+    });
+
+    test('the stream follows a change at once', () async {
+      await loadBasics();
+      final seen = <String?>[];
+      final sub = store.watchActiveWarehouse().listen((w) => seen.add(w?.code));
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      await store.setActiveWarehouse(_w2);
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      await sub.cancel();
+      expect(seen.first, 'W1');
+      expect(seen.last, 'W2');
+    });
+
+    test('unrelated changes to the device notes do not re-announce the same warehouse', () async {
+      await loadBasics();
+      var emitted = 0;
+      final sub = store.watchActiveWarehouse().listen((_) => emitted++);
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      await store.setMeta('something_else', 'x');
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      await sub.cancel();
+      expect(emitted, 1);
+    });
+
+    test('a remembered warehouse the user no longer has falls back to the first one', () async {
+      await loadBasics();
+      await store.setActiveWarehouse(_w2);
+      await store.applyPullWarehouse(_pull(warehouses: [_wh(_w2, 'W2', deletedAt: '2026-11-09T10:00:00Z')]));
+      expect((await store.activeWarehouse())!.code, 'W1');
+    });
+
+    test('an unknown warehouse cannot be chosen', () async {
+      await loadBasics();
+      await store.setActiveWarehouse('nope');
+      expect((await store.activeWarehouse())!.code, 'W1');
+      expect(await store.meta('active_warehouse_id'), isNull);
+    });
+
+    test('signing in to another business forgets the choice', () async {
+      await store.ensureTenant('tenant-a', baseCurrency: 'PHP');
+      await loadBasics();
+      await store.setActiveWarehouse(_w2);
+      await store.ensureTenant('tenant-b', baseCurrency: 'PHP', discardUnsent: true);
+      expect(await store.meta('active_warehouse_id'), isNull);
+      expect(await store.activeWarehouse(), isNull);
     });
   });
 

@@ -2641,6 +2641,156 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Got it'**
   String get upgradeFullClose;
+
+  /// No description provided for @whTabReceive.
+  ///
+  /// In en, this message translates to:
+  /// **'Receive'**
+  String get whTabReceive;
+
+  /// No description provided for @whTabCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Count'**
+  String get whTabCount;
+
+  /// No description provided for @whTabStock.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock'**
+  String get whTabStock;
+
+  /// No description provided for @whTabMore.
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get whTabMore;
+
+  /// No description provided for @whNoWarehouse.
+  ///
+  /// In en, this message translates to:
+  /// **'No warehouse yet. Connect to the internet once so your warehouses can load.'**
+  String get whNoWarehouse;
+
+  /// No description provided for @whSwitchTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose warehouse'**
+  String get whSwitchTitle;
+
+  /// No description provided for @whSwitched.
+  ///
+  /// In en, this message translates to:
+  /// **'Working in {name}'**
+  String whSwitched(String name);
+
+  /// No description provided for @whSwitchAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch warehouse'**
+  String get whSwitchAction;
+
+  /// No description provided for @whOpenOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Open orders'**
+  String get whOpenOrders;
+
+  /// No description provided for @whNoOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'No open orders in this warehouse.'**
+  String get whNoOrders;
+
+  /// No description provided for @whOrderLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{{count} left to receive} other{{count} left to receive}}'**
+  String whOrderLeft(num count);
+
+  /// No description provided for @whOrderComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Fully received'**
+  String get whOrderComplete;
+
+  /// No description provided for @whWaitingSync.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting to sync'**
+  String get whWaitingSync;
+
+  /// No description provided for @whStatusOrdered.
+  ///
+  /// In en, this message translates to:
+  /// **'Ordered'**
+  String get whStatusOrdered;
+
+  /// No description provided for @whStatusPartly.
+  ///
+  /// In en, this message translates to:
+  /// **'Partly received'**
+  String get whStatusPartly;
+
+  /// No description provided for @whOrderLines.
+  ///
+  /// In en, this message translates to:
+  /// **'Items on this order'**
+  String get whOrderLines;
+
+  /// No description provided for @whLineProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'{received} of {ordered} received'**
+  String whLineProgress(String received, String ordered);
+
+  /// No description provided for @whReceipts.
+  ///
+  /// In en, this message translates to:
+  /// **'Receipts from this phone'**
+  String get whReceipts;
+
+  /// No description provided for @whNoReceipts.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing received on this phone yet.'**
+  String get whNoReceipts;
+
+  /// No description provided for @whReceiptWalkin.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery without an order'**
+  String get whReceiptWalkin;
+
+  /// No description provided for @whSearchStock.
+  ///
+  /// In en, this message translates to:
+  /// **'Search stock'**
+  String get whSearchStock;
+
+  /// No description provided for @whNoStock.
+  ///
+  /// In en, this message translates to:
+  /// **'No stock in this warehouse yet.'**
+  String get whNoStock;
+
+  /// No description provided for @whStockPending.
+  ///
+  /// In en, this message translates to:
+  /// **'{qty} on the way in'**
+  String whStockPending(String qty);
+
+  /// No description provided for @whCountSoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Counting on the phone is coming soon. Use the web app for stock counts for now.'**
+  String get whCountSoon;
+
+  /// No description provided for @whUnknownProduct.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown product'**
+  String get whUnknownProduct;
 }
 
 class _AppLocalizationsDelegate

@@ -71,3 +71,15 @@ Files: `apps/mobile/lib/sync/sync_engine.dart`, `lib/backend.dart`, `lib/sync/st
 - **Mutation checks:** 15 rules broken on purpose (receipts not sent through sync_push, acknowledged as store ops, store pulls always made, warehouse data always pulled, only one page, cursors not sent, data not applied, page limit ignored, snapshot never forgetting / forgetting on every pull / forgetting before the last page / deleting needed orders / never clearing its memory / reacting to an empty answer, and both directions of the role rule). 13 caught first time; two survivors showed missing tests (a completed snapshot must clear its memory), now added and caught.
 - **Not verified (no unit test possible):** the real `SupabaseBackend.pullWarehouse` against a live server, including the `module_disabled` mapping. H8 (emulator acceptance) covers it. The user-facing text for the new refusal hints (`location_denied`, `invalid_state`, `not_on_po`, ...) belongs to H4/H5.
 - Next: H4 (warehouse home and picker), H5 (receive screens), H6 (count and stock screens), H8 (acceptance).
+
+## H4 result (2026-11-09)
+Files: `apps/mobile/lib/screens/warehouse_shell.dart` (new), `lib/app.dart` (routing), `lib/data/drift_warehouse.dart` + `warehouse_models.dart` (active warehouse), `lib/l10n/*.arb` (22 `wh*` keys, en + fil), tests `test/warehouse_home_test.dart` (17) and 7 more in `test/warehouse_store_test.dart` (now 51). Flutter 448 tests green.
+
+- **Routing:** a `warehouse`-role user gets `WarehouseShell` (Receive, Count, Stock, More); every other role keeps `HomeShell`.
+- **Active warehouse:** `watchActiveWarehouse` / `activeWarehouse` / `setActiveWarehouse`, remembered in meta `active_warehouse_id`; falls back to the first warehouse by code when none chosen or the chosen one is gone; unknown ids ignored; cleared when the phone switches to another business; the stream does not re-announce the same warehouse on unrelated meta writes.
+- **Screens:** warehouse chip with picker (only when 2+ warehouses; snackbar on switch); Receive = open orders of the active warehouse (left to receive, "waiting to sync" marker) + order detail (lines with product names and progress) + receipts from this phone; Stock = searchable read-only list with "on the way in" for unsettled receipts; Count = honest "coming soon" note (H6); More = switch warehouse (2+) and Settings.
+- **Mutation checks:** 10 rules broken on purpose (routing both ways, picker with one warehouse, switch entry, choice not remembered, search ignored, pending marker, unknown id, stale choice, choice ignored). All caught.
+- **Test note:** widget tests seed receipts before the app opens; a store write made while the widget is already showing is not picked up reliably by Drift streams under the fake test clock (the store tests cover live updates).
+- **Not done:** receive screens (H5), count and bin-level stock (H6); user-facing text for refusal hints (`location_denied`, `invalid_state`, `not_on_po`, ...) comes with H5. Not run on a device yet (H8).
+- Next: H5.
+

@@ -9,6 +9,7 @@ import 'l10n/app_localizations.dart';
 import 'screens/auth_screen.dart';
 import 'screens/password_screens.dart';
 import 'screens/home_shell.dart';
+import 'screens/warehouse_shell.dart';
 import 'screens/store_name_screen.dart';
 import 'sync/store_session.dart';
 
@@ -181,7 +182,9 @@ class _GateState extends State<Gate> {
           backend: widget.backend,
           access: access,
           openStore: widget.openStore,
-          child: HomeShell(backend: widget.backend, storeName: name),
+          child: syncScopeForRole(access['role'] as String?).warehouse
+              ? WarehouseShell(backend: widget.backend, storeName: name)
+              : HomeShell(backend: widget.backend, storeName: name),
         );
       },
     );

@@ -934,5 +934,61 @@
   "upgradeFullAction": "Alamin Pa",
   "upgradeFullDialogTitle": "Full Mode Upgrade",
   "upgradeFullDialogBody": "Binubuksan ng Full Mode ang maraming tindahan, gitnang bodega, at mga account ng kawani (Kahera, Manager, Supervisor). Ang lahat ng iyong kasalukuyang benta, produkto, stock, at utang ay ligtas na mananatili.\n\nUpang mag-upgrade, buksan ang XZACTO POS web app sa anumang browser at gamitin ang Upgrade Wizard.",
-  "upgradeFullClose": "Naintindihan"
+  "upgradeFullClose": "Naintindihan",
+  "whTabReceive": "Tanggapin",
+  "whTabCount": "Bilang",
+  "whTabStock": "Stock",
+  "whTabMore": "Iba pa",
+  "whNoWarehouse": "Wala pang bodega. Mag-online muna para ma-load ang mga bodega mo.",
+  "whSwitchTitle": "Pumili ng bodega",
+  "whSwitched": "Nasa {name} ka na",
+  "@whSwitched": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "whSwitchAction": "Palitan ang bodega",
+  "whOpenOrders": "Mga bukas na order",
+  "whNoOrders": "Walang bukas na order sa bodegang ito.",
+  "whOrderLeft": "{count, plural, =1{{count} na lang ang tatanggapin} other{{count} na lang ang tatanggapin}}",
+  "@whOrderLeft": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "whOrderComplete": "Natanggap na lahat",
+  "whWaitingSync": "Hinihintay i-sync",
+  "whStatusOrdered": "Na-order na",
+  "whStatusPartly": "Bahagyang natanggap",
+  "whOrderLines": "Mga item sa order na ito",
+  "whLineProgress": "{received} sa {ordered} ang natanggap",
+  "@whLineProgress": {
+    "placeholders": {
+      "received": {
+        "type": "String"
+      },
+      "ordered": {
+        "type": "String"
+      }
+    }
+  },
+  "whReceipts": "Mga resibo mula sa teleponong ito",
+  "whNoReceipts": "Wala pang natanggap sa teleponong ito.",
+  "whReceiptWalkin": "Delivery na walang order",
+  "whSearchStock": "Hanapin ang stock",
+  "whNoStock": "Wala pang stock sa bodegang ito.",
+  "whStockPending": "{qty} ang papasok",
+  "@whStockPending": {
+    "placeholders": {
+      "qty": {
+        "type": "String"
+      }
+    }
+  },
+  "whCountSoon": "Malapit nang magamit ang pagbibilang sa telepono. Sa ngayon, gamitin ang web app para sa stock count.",
+  "whUnknownProduct": "Hindi kilalang produkto"
 }

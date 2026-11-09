@@ -1583,4 +1583,95 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get upgradeFullClose => 'Naintindihan';
+
+  @override
+  String get whTabReceive => 'Tanggapin';
+
+  @override
+  String get whTabCount => 'Bilang';
+
+  @override
+  String get whTabStock => 'Stock';
+
+  @override
+  String get whTabMore => 'Iba pa';
+
+  @override
+  String get whNoWarehouse =>
+      'Wala pang bodega. Mag-online muna para ma-load ang mga bodega mo.';
+
+  @override
+  String get whSwitchTitle => 'Pumili ng bodega';
+
+  @override
+  String whSwitched(String name) {
+    return 'Nasa $name ka na';
+  }
+
+  @override
+  String get whSwitchAction => 'Palitan ang bodega';
+
+  @override
+  String get whOpenOrders => 'Mga bukas na order';
+
+  @override
+  String get whNoOrders => 'Walang bukas na order sa bodegang ito.';
+
+  @override
+  String whOrderLeft(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count na lang ang tatanggapin',
+      one: '$count na lang ang tatanggapin',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get whOrderComplete => 'Natanggap na lahat';
+
+  @override
+  String get whWaitingSync => 'Hinihintay i-sync';
+
+  @override
+  String get whStatusOrdered => 'Na-order na';
+
+  @override
+  String get whStatusPartly => 'Bahagyang natanggap';
+
+  @override
+  String get whOrderLines => 'Mga item sa order na ito';
+
+  @override
+  String whLineProgress(String received, String ordered) {
+    return '$received sa $ordered ang natanggap';
+  }
+
+  @override
+  String get whReceipts => 'Mga resibo mula sa teleponong ito';
+
+  @override
+  String get whNoReceipts => 'Wala pang natanggap sa teleponong ito.';
+
+  @override
+  String get whReceiptWalkin => 'Delivery na walang order';
+
+  @override
+  String get whSearchStock => 'Hanapin ang stock';
+
+  @override
+  String get whNoStock => 'Wala pang stock sa bodegang ito.';
+
+  @override
+  String whStockPending(String qty) {
+    return '$qty ang papasok';
+  }
+
+  @override
+  String get whCountSoon =>
+      'Malapit nang magamit ang pagbibilang sa telepono. Sa ngayon, gamitin ang web app para sa stock count.';
+
+  @override
+  String get whUnknownProduct => 'Hindi kilalang produkto';
 }

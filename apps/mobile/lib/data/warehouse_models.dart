@@ -12,6 +12,13 @@ class WarehouseView {
   final String code;
   final String name;
   final bool binsEnabled;
+
+  @override
+  bool operator ==(Object other) =>
+      other is WarehouseView && other.id == id && other.code == code && other.name == name && other.binsEnabled == binsEnabled;
+
+  @override
+  int get hashCode => Object.hash(id, code, name, binsEnabled);
 }
 
 class BinView {
@@ -179,6 +186,15 @@ class WarehouseReceiptException implements Exception {
 
 /// The warehouse side of the device store. Implemented by the Drift store; screens and the sync engine depend on this.
 abstract class WarehouseStore {
+  // ---- the warehouse this phone is working in ----
+  /// The warehouse the clerk chose (kept on the device), or the first by code when none was chosen or the chosen one is no
+  /// longer among the user's warehouses. Null until the first pull has brought a warehouse.
+  Stream<WarehouseView?> watchActiveWarehouse();
+  Future<WarehouseView?> activeWarehouse();
+
+  /// Remembers [warehouseId] as the one to work in. An id that is not one of the user's warehouses is ignored.
+  Future<void> setActiveWarehouse(String warehouseId);
+
   // ---- reads (work offline) ----
   Stream<List<WarehouseView>> watchWarehouses();
   Stream<List<BinView>> watchBins(String warehouseId);

@@ -934,5 +934,61 @@
   "upgradeFullAction": "Learn More",
   "upgradeFullDialogTitle": "Full Mode Upgrade",
   "upgradeFullDialogBody": "Full Mode unlocks multiple branches, a central warehouse, and role-based staff accounts (Cashier, Manager, Supervisor). All your current sales, products, stock, and utang records are safely retained in place.\n\nTo upgrade, open the XZACTO POS web app in any browser and use the Upgrade Wizard.",
-  "upgradeFullClose": "Got it"
+  "upgradeFullClose": "Got it",
+  "whTabReceive": "Receive",
+  "whTabCount": "Count",
+  "whTabStock": "Stock",
+  "whTabMore": "More",
+  "whNoWarehouse": "No warehouse yet. Connect to the internet once so your warehouses can load.",
+  "whSwitchTitle": "Choose warehouse",
+  "whSwitched": "Working in {name}",
+  "@whSwitched": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "whSwitchAction": "Switch warehouse",
+  "whOpenOrders": "Open orders",
+  "whNoOrders": "No open orders in this warehouse.",
+  "whOrderLeft": "{count, plural, =1{{count} left to receive} other{{count} left to receive}}",
+  "@whOrderLeft": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "whOrderComplete": "Fully received",
+  "whWaitingSync": "Waiting to sync",
+  "whStatusOrdered": "Ordered",
+  "whStatusPartly": "Partly received",
+  "whOrderLines": "Items on this order",
+  "whLineProgress": "{received} of {ordered} received",
+  "@whLineProgress": {
+    "placeholders": {
+      "received": {
+        "type": "String"
+      },
+      "ordered": {
+        "type": "String"
+      }
+    }
+  },
+  "whReceipts": "Receipts from this phone",
+  "whNoReceipts": "Nothing received on this phone yet.",
+  "whReceiptWalkin": "Delivery without an order",
+  "whSearchStock": "Search stock",
+  "whNoStock": "No stock in this warehouse yet.",
+  "whStockPending": "{qty} on the way in",
+  "@whStockPending": {
+    "placeholders": {
+      "qty": {
+        "type": "String"
+      }
+    }
+  },
+  "whCountSoon": "Counting on the phone is coming soon. Use the web app for stock counts for now.",
+  "whUnknownProduct": "Unknown product"
 }

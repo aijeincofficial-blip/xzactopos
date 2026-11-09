@@ -1580,4 +1580,95 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get upgradeFullClose => 'Got it';
+
+  @override
+  String get whTabReceive => 'Receive';
+
+  @override
+  String get whTabCount => 'Count';
+
+  @override
+  String get whTabStock => 'Stock';
+
+  @override
+  String get whTabMore => 'More';
+
+  @override
+  String get whNoWarehouse =>
+      'No warehouse yet. Connect to the internet once so your warehouses can load.';
+
+  @override
+  String get whSwitchTitle => 'Choose warehouse';
+
+  @override
+  String whSwitched(String name) {
+    return 'Working in $name';
+  }
+
+  @override
+  String get whSwitchAction => 'Switch warehouse';
+
+  @override
+  String get whOpenOrders => 'Open orders';
+
+  @override
+  String get whNoOrders => 'No open orders in this warehouse.';
+
+  @override
+  String whOrderLeft(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count left to receive',
+      one: '$count left to receive',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get whOrderComplete => 'Fully received';
+
+  @override
+  String get whWaitingSync => 'Waiting to sync';
+
+  @override
+  String get whStatusOrdered => 'Ordered';
+
+  @override
+  String get whStatusPartly => 'Partly received';
+
+  @override
+  String get whOrderLines => 'Items on this order';
+
+  @override
+  String whLineProgress(String received, String ordered) {
+    return '$received of $ordered received';
+  }
+
+  @override
+  String get whReceipts => 'Receipts from this phone';
+
+  @override
+  String get whNoReceipts => 'Nothing received on this phone yet.';
+
+  @override
+  String get whReceiptWalkin => 'Delivery without an order';
+
+  @override
+  String get whSearchStock => 'Search stock';
+
+  @override
+  String get whNoStock => 'No stock in this warehouse yet.';
+
+  @override
+  String whStockPending(String qty) {
+    return '$qty on the way in';
+  }
+
+  @override
+  String get whCountSoon =>
+      'Counting on the phone is coming soon. Use the web app for stock counts for now.';
+
+  @override
+  String get whUnknownProduct => 'Unknown product';
 }
