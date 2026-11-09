@@ -2,12 +2,13 @@
 
 # Work order (owner-approved 2026-11-09)
 
-## Where things stand now
-- `main` was merged from this branch on 2026-11-09 and contains Solo (phone and web), Full mode on the server and the web (F-01 to F-12) and the whole warehouse set F-13a to F-13g (merge commit `8664c76`). Nothing is pushed anywhere (no remote).
-- The branch is ahead of `main` by the F-13h plan and card H1 (`docs/tasks/F-13h-phone-warehouse.md`).
-- Gate, last run: `pnpm check` green: pgTAP 4423 in 41 files, web 117, Flutter 361, lint and types clean.
-- Estimates (judgment): Mobile Solo ~90% built / ~70% checked in use; Web Solo ~85% / ~65%; Web Full ~80% / ~55%; Mobile Full ~35% / ~25%. Table in `docs/handoff.md`, section "Completion estimate and priorities".
-- **Another Claude session may have uncommitted work on F-13h H2 in `apps/mobile/lib/data/` (db.dart, drift_store.dart, local_store.dart) and a new migration `20261109000800_...`.** Do not edit those files or start H2 to H8 until `git status` shows them committed.
+## Where things stand now (updated 2026-11-10, Claude stopping, hand-over to Antigravity)
+- `main` contains everything Claude did, merged no-fast-forward (latest merge `a8c9886`). Nothing is pushed anywhere (no remote). Claude's branch `claude/phase3-sell-8261d3` equals `main` now and has no uncommitted work. On `ag/work` run `git merge main` first.
+- **Done since the order below was written:** 1 (Mobile Solo proven on the emulator), 3 (shifts and X/Z on the phone, staff on the phone: `docs/tasks/F-05m-cashier-shifts.md`, `F-04m-phone-staff.md`), 5 (F-13i), 6 (H2 to H8 warehouse phone, transfer stock guard, negative stock report). **4 is partly done:** design tokens, dark mode, sidebar, shared components, 16 tables, tabs, page headers (`docs/web-design-system.md`).
+- **Still open, in order:** (2) CI and signed APK: needs the owner (remote, keystore). (4, rest) toasts, `ErrorState` on load failures, more `EmptyState`, restyle Products list markup, a contrast pass in dark mode, and look at the Full-mode screens (Purchasing, Counts, Warehouses, tables) in a browser: not seen yet because no Full-mode test account was handy (create one on the local stack). (7) web gaps: stored mode flag, pick-list and put-away screens, editing a draft purchase order, product search by typing. (8) later: offline counting H7, web offline, per-warehouse reorder points, card payments.
+- Gate, last run: pgTAP 4555 in 44 files, Flutter 545, web 122, lint and types clean. A full `pnpm check` was not re-run after the last web and phone changes; run it first on `ag/work` after merging `main`.
+- Local test data left in the shared database: tenant `solo-e423847bcdeb` (owner `tindera.p1@example.test`, cashier `pia`, a deactivated `probe...` cashier) and an older `whtest`. Safe to delete (the append-only ledger needs the trigger-disable transaction used before; ask the owner).
+- Phone gotchas learned: Drift streams with identical SQL are shared (give each watcher unique SQL); `setState(() => x = future)` must use a block body; Dart test names must not contain apostrophes.
 
 ## Where you work (one worktree and branch per agent, owner decision 2026-11-09)
 - **Antigravity works ONLY in `C:\Users\USER\xzactopos\.claude\worktrees\ag-work` on branch `ag/work`.** Never edit files in `phase3-sell-8261d3` (Claude's) or in the original checkout `C:\Users\USER\xzactopos` (branch `flutter-solo`, old). Run `git branch --show-current` before you edit anything: it must print `ag/work`.
