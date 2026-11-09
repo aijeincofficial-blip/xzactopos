@@ -94,3 +94,16 @@ Files: `apps/mobile/lib/screens/warehouse_receive.dart` (new), `lib/screens/ware
 - **Not done:** bin put-away (not in v1), count and bin stock (H6), device check (H8).
 - Next: H6.
 
+## H6 result (2026-11-09)
+Files: `apps/mobile/lib/data/count_models.dart` (new: `CountApi`, session, line, result, `CountException`, `CountOffline`), `lib/backend.dart` (`SupabaseBackend` implements `CountApi`), `lib/screens/warehouse_count.dart` (new Count tab), `lib/screens/warehouse_shell.dart` (Count tab wired in, bin breakdown on Stock), `lib/l10n/*.arb` (27 more `wh*` keys, en + fil), tests `test/warehouse_count_test.dart` (15) and 2 more in `test/warehouse_home_test.dart`.
+
+- **Counting is online only** (decision 1). The phone calls `start_count`, `record_count`, `close_count`, `cancel_count` directly and reads the open count from `stock_counts` with its lines (row-level security limits it to the clerk's warehouses). Nothing is queued. No signal shows "You need a connection to count stock" with a Try again button; losing signal while saving keeps the typed count on screen.
+- **Count tab:** no open count: start one (whole warehouse, or one bin when the warehouse uses bins; optional notes). Open count: search or scan a product, type the quantity, save. Each saved line shows what the system held at that moment and the difference. Tapping a line counts it again (replaces it, as on the server). Warehouses with bins need a bin on every line of a whole-warehouse count; a one-bin count sends its own bin. Finish asks first and offers "treat products I did not count as zero"; the result says how many corrections were made and the net change. Cancel asks first. Each warehouse has its own count; switching warehouse switches the count shown.
+- **Ids:** the start of a count uses one id per attempt, so a retry opens the same count; a new id is made after success.
+- **Server refusals** (`count_in_progress`, `bin_required`, `bin_*`, `bins_not_enabled`, `qty_invalid`, `nothing_counted`, `not_allowed`/`location_denied`, `invalid_state`) have English and Filipino text; anything else shows the general error.
+- **Stock tab:** in a warehouse with bins, tapping a product shows which bins hold it (from the synced bin stock, so it works offline).
+- **Mutation checks:** 21 rules broken on purpose; 15 caught first time, 6 survivors led to new tests (id reuse, finish/cancel confirmation, notes sent, no scope picker without bins, other products' bin rows), all now caught.
+- **Not verified:** the real `SupabaseBackend` count calls and the `stock_counts` select with embedded bins against a live server, and the offline-versus-refusal mapping (`CountOffline` is any non-server error). H8 covers it.
+- **Test note:** a hidden tab showing a progress spinner stops `pumpAndSettle`, so the open helper can pump by time instead (`spinnerOk`).
+- Next: H8 (emulator acceptance); H7 (offline counting) stays later.
+

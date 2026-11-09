@@ -9,6 +9,7 @@ import '../l10n/app_localizations.dart';
 import '../sync/store_session.dart';
 import '../sync/sync_badge.dart';
 import 'settings_screen.dart';
+import 'warehouse_count.dart';
 import 'warehouse_receive.dart';
 
 /// The home of a warehouse clerk (F-13h): receive, count, stock, more. No selling, no store tabs.
@@ -30,7 +31,7 @@ class _WarehouseShellState extends State<WarehouseShell> {
     final store = CatalogScope.of(context).store;
     final pages = <Widget>[
       const ReceiveTab(),
-      const _CountTab(),
+      CountTab(backend: widget.backend),
       const StockTab(),
       _MoreTab(backend: widget.backend, storeName: widget.storeName),
     ];
@@ -344,6 +345,7 @@ class _StockTabState extends State<StockTab> {
                               title: Text(names[r.variantId] ?? t.whUnknownProduct),
                               subtitle: r.pending > 0 ? Text(t.whStockPending(_qty(r.pending))) : null,
                               trailing: Text(_qty(r.qty), style: Theme.of(context).textTheme.titleMedium),
+                              onTap: wh.binsEnabled ? () => _showBins(context, store, wh, r.variantId, names[r.variantId] ?? t.whUnknownProduct) : null,
                             ),
                         ]),
                 ),
@@ -356,15 +358,28 @@ class _StockTabState extends State<StockTab> {
   }
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-// Count (v1: placeholder; counting is online-only and arrives in H6) and More
-// ---------------------------------------------------------------------------------------------------------------------
-
-class _CountTab extends StatelessWidget {
-  const _CountTab();
-  @override
-  Widget build(BuildContext context) => _Empty(text: AppLocalizations.of(context).whCountSoon, textKey: const Key('count-soon'));
+/// Where a product sits in a warehouse that uses bins.
+Future<void> _showBins(BuildContext context, LocalStore store, WarehouseView wh, String variantId, String name) async {
+  final t = AppLocalizations.of(context);
+  final rows = [for (final r in await store.watchBinStock(wh.id).first) if (r.variantId == variantId) r];
+  if (!context.mounted) return;
+  await showModalBottomSheet<void>(
+    context: context,
+    builder: (ctx) => SafeArea(
+      child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Padding(padding: const EdgeInsets.fromLTRB(Gap.xl, Gap.l, Gap.xl, Gap.s), child: Text(name, style: Theme.of(ctx).textTheme.titleLarge)),
+        if (rows.isEmpty) Padding(padding: const EdgeInsets.all(Gap.xl), child: Text(t.whNoBinStock, key: const Key('no-bin-stock'))),
+        for (final r in rows)
+          ListTile(key: Key('bin-row-${r.binId}'), leading: const Icon(Icons.view_module_rounded), title: Text(r.binCode), trailing: Text(_qty(r.qty))),
+        const SizedBox(height: Gap.s),
+      ]),
+    ),
+  );
 }
+
+// ---------------------------------------------------------------------------------------------------------------------
+// More
+// ---------------------------------------------------------------------------------------------------------------------
 
 class _MoreTab extends StatelessWidget {
   const _MoreTab({required this.backend, required this.storeName});

@@ -1013,5 +1013,50 @@
   "whErrQtyInvalid": "Enter a quantity greater than zero.",
   "whErrCostInvalid": "The cost is not a valid amount.",
   "whErrNoLines": "Enter a quantity for at least one product.",
-  "whErrUnknownWarehouse": "This warehouse is not available to you."
+  "whErrUnknownWarehouse": "This warehouse is not available to you.",
+  "whCountOffline": "You need a connection to count stock. Check your signal and try again.",
+  "whCountRetry": "Try again",
+  "whCountNone": "No count in progress.",
+  "whCountScope": "What to count",
+  "whCountWhole": "Whole warehouse",
+  "whCountStart": "Start counting",
+  "whCountBin": "Bin",
+  "whCountQty": "Quantity counted",
+  "whCountSaveLine": "Save count",
+  "whCountNoLines": "Nothing counted yet. Search or scan a product.",
+  "whCountSystemWas": "system had {qty}",
+  "@whCountSystemWas": {
+    "placeholders": {
+      "qty": {
+        "type": "String"
+      }
+    }
+  },
+  "whCountFinish": "Finish count",
+  "whCountFinishAsk": "Finish this count?",
+  "whCountFinishBody": "Stock will be corrected to what you counted. This cannot be undone.",
+  "whCountZeroUncounted": "Treat products I did not count as zero",
+  "whCountCancel": "Cancel count",
+  "whCountCancelAsk": "Cancel this count?",
+  "whCountCancelBody": "What you counted will be dropped. Stock stays as it is.",
+  "whCountKeep": "Keep counting",
+  "whCountErrInProgress": "A count is already open in this warehouse.",
+  "whCountErrBinRequired": "Choose the bin where you counted it.",
+  "whCountErrBin": "That bin is not available for this count.",
+  "whCountErrBinsOff": "This warehouse does not use bins.",
+  "whCountErrNothing": "Nothing was counted yet.",
+  "whCountErrNotAllowed": "You are not allowed to count here.",
+  "whCountErrClosed": "This count is already closed or cancelled.",
+  "whNoBinStock": "No stock in any bin.",
+  "whCountDone": "Count finished. {count, plural, =0{No corrections.} =1{{count} correction made.} other{{count} corrections made.}} Net change: {net}",
+  "@whCountDone": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "net": {
+        "type": "String"
+      }
+    }
+  }
 }

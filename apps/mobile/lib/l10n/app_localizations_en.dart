@@ -1743,4 +1743,103 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get whErrUnknownWarehouse => 'This warehouse is not available to you.';
+
+  @override
+  String get whCountOffline =>
+      'You need a connection to count stock. Check your signal and try again.';
+
+  @override
+  String get whCountRetry => 'Try again';
+
+  @override
+  String get whCountNone => 'No count in progress.';
+
+  @override
+  String get whCountScope => 'What to count';
+
+  @override
+  String get whCountWhole => 'Whole warehouse';
+
+  @override
+  String get whCountStart => 'Start counting';
+
+  @override
+  String get whCountBin => 'Bin';
+
+  @override
+  String get whCountQty => 'Quantity counted';
+
+  @override
+  String get whCountSaveLine => 'Save count';
+
+  @override
+  String get whCountNoLines => 'Nothing counted yet. Search or scan a product.';
+
+  @override
+  String whCountSystemWas(String qty) {
+    return 'system had $qty';
+  }
+
+  @override
+  String get whCountFinish => 'Finish count';
+
+  @override
+  String get whCountFinishAsk => 'Finish this count?';
+
+  @override
+  String get whCountFinishBody =>
+      'Stock will be corrected to what you counted. This cannot be undone.';
+
+  @override
+  String get whCountZeroUncounted => 'Treat products I did not count as zero';
+
+  @override
+  String get whCountCancel => 'Cancel count';
+
+  @override
+  String get whCountCancelAsk => 'Cancel this count?';
+
+  @override
+  String get whCountCancelBody =>
+      'What you counted will be dropped. Stock stays as it is.';
+
+  @override
+  String get whCountKeep => 'Keep counting';
+
+  @override
+  String get whCountErrInProgress =>
+      'A count is already open in this warehouse.';
+
+  @override
+  String get whCountErrBinRequired => 'Choose the bin where you counted it.';
+
+  @override
+  String get whCountErrBin => 'That bin is not available for this count.';
+
+  @override
+  String get whCountErrBinsOff => 'This warehouse does not use bins.';
+
+  @override
+  String get whCountErrNothing => 'Nothing was counted yet.';
+
+  @override
+  String get whCountErrNotAllowed => 'You are not allowed to count here.';
+
+  @override
+  String get whCountErrClosed => 'This count is already closed or cancelled.';
+
+  @override
+  String get whNoBinStock => 'No stock in any bin.';
+
+  @override
+  String whCountDone(int count, String net) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count corrections made.',
+      one: '$count correction made.',
+      zero: 'No corrections.',
+    );
+    return 'Count finished. $_temp0 Net change: $net';
+  }
 }

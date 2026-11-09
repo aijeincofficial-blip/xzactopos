@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'data/count_models.dart';
 import 'sync/sync_engine.dart';
 
 /// What the app needs from the server. Screens depend on this, so tests can fake it.
@@ -118,7 +119,7 @@ const pinRefusalHints = {
   'location_denied', 'module_disabled',
 };
 
-class SupabaseBackend implements Backend, DeviceApi, WarehouseApi {
+class SupabaseBackend implements Backend, DeviceApi, WarehouseApi, CountApi {
   SupabaseClient get _c => Supabase.instance.client;
 
   @override
@@ -214,6 +215,55 @@ class SupabaseBackend implements Backend, DeviceApi, WarehouseApi {
     final res = await _auth(() => _c.rpc('sync_pull_pos', params: {'p_cursors': cursors, 'p_limit': limit}));
     return (res as Map).cast<String, dynamic>();
   }
+
+  // ---- stock counts (online only, F-13h H6) ----
+
+  /// Runs a count call: the server's refusal becomes a [CountException] with its hint, and anything that is not an answer
+  /// from the server (no signal, timeout) becomes [CountOffline]. An expired sign-in stays [AuthExpired].
+  Future<T> _count<T>(Future<T> Function() call) async {
+    try {
+      return await _auth(call);
+    } on AuthExpired {
+      rethrow;
+    } on PostgrestException catch (e) {
+      throw CountException(e.hint ?? e.code ?? 'error');
+    } on Exception {
+      throw const CountOffline();
+    }
+  }
+
+  @override
+  Future<CountSession?> openCount(String warehouseId) => _count(() async {
+        final row = await _c
+            .from('stock_counts')
+            .select('id, count_no, warehouse_id, bin_id, notes, bin:bins!stock_counts_bin_fk(code), '
+                'stock_count_items(variant_id, bin_id, qty_system, qty_counted, bin:bins!stock_count_items_bin_fk(code))')
+            .eq('warehouse_id', warehouseId)
+            .eq('status', 'open')
+            .maybeSingle();
+        return row == null ? null : CountSession.fromJson(row);
+      });
+
+  @override
+  Future<void> startCount({required String id, required String warehouseId, String? binId, String? notes}) => _count(() async {
+        await _c.rpc('start_count', params: {'p_id': id, 'p_warehouse_id': warehouseId, 'p_bin_id': binId, 'p_notes': notes});
+      });
+
+  @override
+  Future<void> recordCount(String countId, List<CountEntry> items) => _count(() async {
+        await _c.rpc('record_count', params: {'p_count_id': countId, 'p_items': [for (final i in items) i.toJson()]});
+      });
+
+  @override
+  Future<CountResult> closeCount(String countId, {bool zeroUncounted = false}) => _count(() async {
+        final res = await _c.rpc('close_count', params: {'p_count_id': countId, 'p_zero_uncounted': zeroUncounted});
+        return CountResult.fromJson((res as Map).cast<String, dynamic>());
+      });
+
+  @override
+  Future<void> cancelCount(String countId, {String? reason}) => _count(() async {
+        await _c.rpc('cancel_count', params: {'p_count_id': countId, 'p_reason': reason});
+      });
 
   @override
   Future<Map<String, dynamic>> pullWarehouse(Map<String, dynamic> cursors, {int limit = 500}) async {

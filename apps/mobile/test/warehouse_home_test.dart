@@ -28,12 +28,14 @@ Map<String, dynamic> _pull({
   List<Map<String, dynamic>> warehouses = const [],
   List<Map<String, dynamic>> stock = const [],
   List<Map<String, dynamic>> pos = const [],
+  List<Map<String, dynamic>> bins = const [],
+  List<Map<String, dynamic>> binStock = const [],
 }) =>
     {
       'server_time': '2026-11-09T10:00:00Z',
       'warehouses': _t(warehouses),
-      'bins': _t(const []),
-      'bin_stock_levels': _t(const []),
+      'bins': _t(bins),
+      'bin_stock_levels': _t(binStock),
       'stock_levels': _t(stock),
       'suppliers': _t([
         {'id': _sup, 'name': 'Mega Rice Trading', 'contact_name': null, 'phone': null, 'email': null, 'notes': null, 'updated_at': _at, 'deleted_at': null},
@@ -41,8 +43,8 @@ Map<String, dynamic> _pull({
       'purchase_orders': _t(pos),
     };
 
-Map<String, dynamic> _wh(String id, String code) =>
-    {'id': id, 'code': code, 'name': 'Bodega $code', 'bins_enabled': false, 'active': true, 'updated_at': _at, 'deleted_at': null};
+Map<String, dynamic> _wh(String id, String code, {bool bins = false}) =>
+    {'id': id, 'code': code, 'name': 'Bodega $code', 'bins_enabled': bins, 'active': true, 'updated_at': _at, 'deleted_at': null};
 
 Map<String, dynamic> _po(String id, String no, String wh) => {
       'id': id, 'po_no': no, 'warehouse_id': wh, 'supplier_id': _sup, 'status': 'ordered', 'expected_at': null, 'notes': null, 'updated_at': _at,
@@ -52,10 +54,15 @@ Map<String, dynamic> _po(String id, String no, String wh) => {
       ],
     };
 
+Map<String, dynamic> _bin(String id, String wh, String code) => {
+      'id': id, 'warehouse_id': wh, 'zone_id': null, 'code': code, 'aisle': null, 'rack': null, 'shelf': null, 'position': null,
+      'type': 'shelf', 'max_qty': null, 'active': true, 'updated_at': _at, 'deleted_at': null,
+    };
+
 Map<String, dynamic> _stock(String wh, String v, num q) => {'location_id': wh, 'variant_id': v, 'qty_on_hand': q, 'avg_cost': 1000, 'updated_at': _at};
 
 /// Opens the app signed in as [role] with [seed] applied to the device store before the first screen.
-Future<DriftStore> open(WidgetTester tester, {String? role = 'warehouse', String locale = 'en', Size? size, bool two = true, Future<void> Function(DriftStore)? before}) async {
+Future<DriftStore> open(WidgetTester tester, {String? role = 'warehouse', String locale = 'en', Size? size, bool two = true, Future<void> Function(DriftStore)? before, bool bins = false, FakeBackend Function()? makeBackend, bool spinnerOk = false}) async {
   tester.view.physicalSize = size ?? const Size(1080, 2340);
   tester.view.devicePixelRatio = 2.625;
   addTearDown(tester.view.reset);
@@ -64,18 +71,29 @@ Future<DriftStore> open(WidgetTester tester, {String? role = 'warehouse', String
   await store.saveProduct(const ProductDraft(id: _p1, variantId: _rice, name: 'Rice 25kg', price: 1200), opId: 'op-1');
   await store.saveProduct(const ProductDraft(id: _p2, variantId: _oil, name: 'Cooking oil', price: 900), opId: 'op-2');
   await store.applyPullWarehouse(_pull(
-    warehouses: [_wh(_w1, 'W1'), if (two) _wh(_w2, 'W2')],
+    warehouses: [_wh(_w1, 'W1', bins: bins), if (two) _wh(_w2, 'W2')],
+    bins: [if (bins) _bin('b1000000-0000-4000-8000-000000000001', _w1, 'A-01'), if (bins) _bin('b2000000-0000-4000-8000-000000000002', _w1, 'B-02')],
+    binStock: [if (bins) {'bin_id': 'b1000000-0000-4000-8000-000000000001', 'variant_id': _rice, 'qty_on_hand': 40, 'updated_at': _at}, if (bins) {'bin_id': 'b2000000-0000-4000-8000-000000000002', 'variant_id': _oil, 'qty_on_hand': 5, 'updated_at': _at}],
     stock: [_stock(_w1, _rice, 40), if (two) _stock(_w2, _oil, 5)],
     pos: [_po(_po1, 'PO-1', _w1), if (two) _po(_po2, 'PO-2', _w2)],
   ));
   if (before != null) await before(store);
-  final backend = FakeBackend(signedInAtStart: true)
+  final backend = (makeBackend?.call() ?? FakeBackend(signedInAtStart: true))
+    ..signedInAtStart = true
     ..access = {
       'tenant': {'id': 't1', 'name': 'Tindahan', 'base_currency': 'PHP'},
       'role': ?role,
     };
   await tester.pumpWidget(App(backend: backend, openStore: ({bool safeMode = false}) => store, initialLocale: locale));
-  await tester.pumpAndSettle();
+  if (spinnerOk) {
+    // a hidden tab may be showing a progress spinner, which never lets pumpAndSettle finish
+    for (var i = 0; i < 6; i++) {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 80)));
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+  } else {
+    await tester.pumpAndSettle();
+  }
   return store;
 }
 
@@ -185,6 +203,26 @@ void main() {
     await tester.enterText(find.byKey(const Key('stock-search')), 'ric');
     await tester.pumpAndSettle();
     expect(find.text('Rice 25kg'), findsOneWidget);
+    await leave(tester);
+  });
+
+  testWidgets('in a warehouse with bins a stock row shows where the product sits', (tester) async {
+    await open(tester, bins: true);
+    await tab(tester, 'tab-stock');
+    await tester.tap(find.byKey(const Key('stock-$_rice')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('bin-row-b1000000-0000-4000-8000-000000000001')), findsOneWidget);
+    expect(find.text('A-01'), findsOneWidget);
+    expect(find.byKey(const Key('bin-row-b2000000-0000-4000-8000-000000000002')), findsNothing, reason: 'that bin holds another product');
+    await leave(tester);
+  });
+
+  testWidgets('without bins a stock row does nothing when tapped', (tester) async {
+    await open(tester);
+    await tab(tester, 'tab-stock');
+    await tester.tap(find.byKey(const Key('stock-$_rice')));
+    await tester.pumpAndSettle();
+    expect(find.byType(BottomSheet), findsNothing);
     await leave(tester);
   });
 

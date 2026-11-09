@@ -2929,6 +2929,174 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This warehouse is not available to you.'**
   String get whErrUnknownWarehouse;
+
+  /// No description provided for @whCountOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'You need a connection to count stock. Check your signal and try again.'**
+  String get whCountOffline;
+
+  /// No description provided for @whCountRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get whCountRetry;
+
+  /// No description provided for @whCountNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No count in progress.'**
+  String get whCountNone;
+
+  /// No description provided for @whCountScope.
+  ///
+  /// In en, this message translates to:
+  /// **'What to count'**
+  String get whCountScope;
+
+  /// No description provided for @whCountWhole.
+  ///
+  /// In en, this message translates to:
+  /// **'Whole warehouse'**
+  String get whCountWhole;
+
+  /// No description provided for @whCountStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start counting'**
+  String get whCountStart;
+
+  /// No description provided for @whCountBin.
+  ///
+  /// In en, this message translates to:
+  /// **'Bin'**
+  String get whCountBin;
+
+  /// No description provided for @whCountQty.
+  ///
+  /// In en, this message translates to:
+  /// **'Quantity counted'**
+  String get whCountQty;
+
+  /// No description provided for @whCountSaveLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Save count'**
+  String get whCountSaveLine;
+
+  /// No description provided for @whCountNoLines.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing counted yet. Search or scan a product.'**
+  String get whCountNoLines;
+
+  /// No description provided for @whCountSystemWas.
+  ///
+  /// In en, this message translates to:
+  /// **'system had {qty}'**
+  String whCountSystemWas(String qty);
+
+  /// No description provided for @whCountFinish.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish count'**
+  String get whCountFinish;
+
+  /// No description provided for @whCountFinishAsk.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish this count?'**
+  String get whCountFinishAsk;
+
+  /// No description provided for @whCountFinishBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock will be corrected to what you counted. This cannot be undone.'**
+  String get whCountFinishBody;
+
+  /// No description provided for @whCountZeroUncounted.
+  ///
+  /// In en, this message translates to:
+  /// **'Treat products I did not count as zero'**
+  String get whCountZeroUncounted;
+
+  /// No description provided for @whCountCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel count'**
+  String get whCountCancel;
+
+  /// No description provided for @whCountCancelAsk.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel this count?'**
+  String get whCountCancelAsk;
+
+  /// No description provided for @whCountCancelBody.
+  ///
+  /// In en, this message translates to:
+  /// **'What you counted will be dropped. Stock stays as it is.'**
+  String get whCountCancelBody;
+
+  /// No description provided for @whCountKeep.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep counting'**
+  String get whCountKeep;
+
+  /// No description provided for @whCountErrInProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'A count is already open in this warehouse.'**
+  String get whCountErrInProgress;
+
+  /// No description provided for @whCountErrBinRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the bin where you counted it.'**
+  String get whCountErrBinRequired;
+
+  /// No description provided for @whCountErrBin.
+  ///
+  /// In en, this message translates to:
+  /// **'That bin is not available for this count.'**
+  String get whCountErrBin;
+
+  /// No description provided for @whCountErrBinsOff.
+  ///
+  /// In en, this message translates to:
+  /// **'This warehouse does not use bins.'**
+  String get whCountErrBinsOff;
+
+  /// No description provided for @whCountErrNothing.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing was counted yet.'**
+  String get whCountErrNothing;
+
+  /// No description provided for @whCountErrNotAllowed.
+  ///
+  /// In en, this message translates to:
+  /// **'You are not allowed to count here.'**
+  String get whCountErrNotAllowed;
+
+  /// No description provided for @whCountErrClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'This count is already closed or cancelled.'**
+  String get whCountErrClosed;
+
+  /// No description provided for @whNoBinStock.
+  ///
+  /// In en, this message translates to:
+  /// **'No stock in any bin.'**
+  String get whNoBinStock;
+
+  /// No description provided for @whCountDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Count finished. {count, plural, =0{No corrections.} =1{{count} correction made.} other{{count} corrections made.}} Net change: {net}'**
+  String whCountDone(int count, String net);
 }
 
 class _AppLocalizationsDelegate

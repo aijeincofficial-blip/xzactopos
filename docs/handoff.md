@@ -7,7 +7,7 @@ Updated at the end of every task. Read this first in a fresh session. New sessio
 ### Who is doing what (update when you start and finish a task)
 | Agent | Branch and worktree | Working on | Status |
 | --- | --- | --- | --- |
-| Claude | `claude/phase3-sell-8261d3`, `.claude/worktrees/phase3-sell-8261d3` | F-13h phone warehouse (H6 count and stock screens next). H1 to H5 done. | between steps (nothing in progress) |
+| Claude | `claude/phase3-sell-8261d3`, `.claude/worktrees/phase3-sell-8261d3` | F-13h phone warehouse (H8 emulator acceptance next). H1 to H6 done. | between steps (nothing in progress) |
 | Antigravity | `ag/work`, `.claude/worktrees/ag-work` | not started: priority 1 (prove Mobile Solo on the emulator) | waiting |
 | Owner | merges branches into `main`; makes the git remote and the keystore | | |
 
@@ -30,6 +30,7 @@ Row status words: `waiting`, `in progress`, `done`, `stopped` / `limit reached` 
 6. **F-13h H2 to H8, the warehouse phone** (receive offline, count online). [Biggest single gap in Mobile Full, but the web already covers warehouse work, so it is less urgent than 1 to 3.]
 7. **Web Solo/Full gaps:** a stored mode flag, pick-list and put-away screens, editing a draft purchase order, product search by typing. [Real but not blocking.]
 8. **Later:** offline counting (H7), web offline, per-warehouse reorder points, card payments.
+- **F-13h H6 count and stock screens: done (2026-11-09).** Count tab on the phone (online only): start for the warehouse or one bin, count by search or scan with the system quantity shown per line, finish (optionally zeroing uncounted) or cancel, each warehouse with its own count; Stock shows which bins hold a product. en + fil text for server refusals. 17 new Flutter tests, 21 mutations caught. `SupabaseBackend` count calls not yet checked against a live server (H8). Next: H8 emulator acceptance, then merge H1 to H6 to `main`.
 - **F-13h H5 receive screens: done (2026-11-09).** Receive goods against an order (quantity, optional cost, over-delivery warning, reference, notes) and delivery without an order (supplier, search or scan); saved on the phone at once, receipt number shown after sync; en + fil text for the phone-side refusals. 11 new Flutter tests, 13 mutations (11 caught, 2 equivalent). Next: H6 count and stock screens, H8.
 - **F-13h H4 warehouse home and picker: done (2026-11-09).** Warehouse-role users land on `WarehouseShell` (Receive, Count, Stock, More); active warehouse remembered on the phone, picker only with 2+ warehouses; Receive lists open orders (with waiting-to-sync marker) and receipts from this phone; Stock is searchable. en + fil strings. Flutter 448, 10 mutations caught. Count is a placeholder until H6. Next: H5 receive screens, H6, H8.
 - **F-13h H3 warehouse sync in the sync engine: done (2026-11-09).** `WarehouseApi`, receipts through `sync_push`, pull with cursors and paging, `syncScopeForRole` (warehouse clerks pull warehouse data and no store data; everyone else the reverse), and a snapshot rule so orders that finish elsewhere are forgotten after a re-pull. 25 new Flutter tests (424), 15 mutations checked. A real-server check of `SupabaseBackend.pullWarehouse` waits for H8. Next: H4, H5, H6, H8.
