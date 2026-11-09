@@ -53,6 +53,15 @@ abstract class DeviceApi {
   Future<Map<String, dynamic>> registerDevice(String id, {String? name, String? platform});
 }
 
+/// Warehouse data (F-13h). Kept apart from [SyncApi] like [DeviceApi]: only a phone used in a warehouse asks for it, and
+/// servers / fakes without it still work. `SupabaseBackend` implements it.
+abstract class WarehouseApi {
+  /// sync_pull_warehouse: the caller's warehouses, bins, bin and warehouse stock, suppliers and open purchase orders, keyset
+  /// paged by [cursors] (kept by name in the store). Returns `{server_time, <table>: {rows, cursor, has_more}}`; an empty map
+  /// means there is nothing to apply (the tenant has switched the warehouse module off). Throws on network or server trouble.
+  Future<Map<String, dynamic>> pullWarehouse(Map<String, dynamic> cursors, {int limit = 500});
+}
+
 /// The server refused an op permanently (bad data, duplicate barcode, no permission). Retrying will not help.
 class OpRejected implements Exception {
   const OpRejected(this.hint);
@@ -86,10 +95,19 @@ class SyncEngine {
     this.idleInterval = const Duration(seconds: 120),
     this.pokeDelay = const Duration(seconds: 2),
     this.pageLimit = 500,
+    this.pullsStore = true,
+    this.pullsWarehouse = false,
   });
 
   final LocalStore store;
   final SyncApi api;
+
+  /// Pull the store's data (stock levels, utang, sales, expenses, day closes, load / e-wallet, opened packs). A warehouse
+  /// clerk has no store: false skips those requests (and keeps warehouse stock out of the store tables).
+  final bool pullsStore;
+
+  /// Pull the warehouse data ([WarehouseApi]). Only for people who work in a warehouse; a store phone never asks.
+  final bool pullsWarehouse;
   final Duration idleInterval;
   final Duration pokeDelay;
   final int pageLimit;
@@ -212,6 +230,13 @@ class SyncEngine {
     'void_service_txn', 'set_tingi_link', 'open_pack', 'void_open_pack', 'set_utang_due', 'set_expiry',
   };
 
+  /// Warehouse receipts (F-13h) ride the same batches. Their answer carries `grn_no` and the server's `applied_at`, and is
+  /// acknowledged through [LocalStore.warehouseOpApplied]: the receipt keeps counting on screen until a complete pull has
+  /// caught up with that time.
+  static const warehouseKinds = {'receive_po', 'receive_without_po'};
+
+  static bool _viaSyncPush(String kind) => posKinds.contains(kind) || warehouseKinds.contains(kind);
+
   /// One batch through sync_push. Results are applied in order; a transient `error` stops the batch.
   /// Returns how many ops were settled (applied or refused).
   Future<int> _pushPos(List<OutboxOp> batch) async {
@@ -232,7 +257,11 @@ class SyncEngine {
       switch (r['status']) {
         case 'ok':
           final result = (r['result'] as Map?)?.cast<String, dynamic>();
-          await store.posOpApplied(op.opId, result?['applied_at'] as String?, result: result);
+          if (warehouseKinds.contains(op.kind)) {
+            await store.warehouseOpApplied(op.opId, result?['applied_at'] as String?, result: result);
+          } else {
+            await store.posOpApplied(op.opId, result?['applied_at'] as String?, result: result);
+          }
           await store.opDone(op.opId);
           settled++;
         case 'rejected':
@@ -254,10 +283,10 @@ class SyncEngine {
       var settled = 0;
       while (i < ops.length) {
         final op = ops[i];
-        if (posKinds.contains(op.kind)) {
-          // consecutive sale/stock/utang ops go together, in order
+        if (_viaSyncPush(op.kind)) {
+          // consecutive sale/stock/utang/warehouse-receipt ops go together, in order
           var j = i;
-          while (j < ops.length && posKinds.contains(ops[j].kind)) {
+          while (j < ops.length && _viaSyncPush(ops[j].kind)) {
             j++;
           }
           settled += await _pushPos(ops.sublist(i, j));
@@ -308,6 +337,24 @@ class SyncEngine {
       final more = res.values.any((v) => v is Map && v['has_more'] == true);
       if (!more) break;
     }
+    if (pullsStore) await _pullStore();
+    // warehouse staff: after the push, so what was just sent is already in the server's copy
+    final wh = api;
+    if (pullsWarehouse && wh is WarehouseApi) await _pullWarehouse(wh as WarehouseApi);
+  }
+
+  /// A page at a time until the pull is complete: the store settles receipts only on a complete pull. A pull that
+  /// runs out of pages simply continues next run.
+  Future<void> _pullWarehouse(WarehouseApi wh) async {
+    for (var page = 0; page < _maxPagesPerRun; page++) {
+      final res = await wh.pullWarehouse(await store.warehouseCursors(), limit: pageLimit);
+      await store.applyPullWarehouse(res);
+      final more = res.values.any((v) => v is Map && v['has_more'] == true);
+      if (!more) break;
+    }
+  }
+
+  Future<void> _pullStore() async {
     for (var page = 0; page < _maxPagesPerRun; page++) {
       final res = await api.pullPos(await store.cursors(), limit: pageLimit);
       await store.applyPullPos(res);

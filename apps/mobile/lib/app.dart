@@ -1,14 +1,17 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'backend.dart';
+import 'core/access_cache.dart';
 import 'core/theme.dart';
 import 'l10n/app_localizations.dart';
 import 'screens/auth_screen.dart';
 import 'screens/password_screens.dart';
 import 'screens/home_shell.dart';
+import 'screens/warehouse_shell.dart';
 import 'screens/store_name_screen.dart';
 import 'sync/store_session.dart';
 
@@ -112,6 +115,8 @@ class _GateState extends State<Gate> {
   StreamSubscription<void>? _recoverySub;
   bool _recovering = false;
   Future<Map<String, dynamic>?>? _access;
+  Timer? _refresh;
+  Map<String, dynamic>? _shown;
 
   @override
   void initState() {
@@ -122,23 +127,75 @@ class _GateState extends State<Gate> {
     _sub = widget.backend.signedInChanges.listen((v) {
       // the stream repeats the current state on start and on token refresh; only real changes matter
       if (!mounted || v == _signedIn) return;
+      if (!v) {
+        // signing out takes the saved access with it
+        _refresh?.cancel();
+        accessCache.clear();
+      }
       setState(() {
         _signedIn = v;
-        _access = v ? widget.backend.myAccess() : null;
+        _access = v ? _loadAccess() : null;
       });
     });
-    if (_signedIn) _access = widget.backend.myAccess();
+    if (_signedIn) _access = _loadAccess();
   }
 
   @override
   void dispose() {
     _sub?.cancel();
     _recoverySub?.cancel();
+    _refresh?.cancel();
     super.dispose();
   }
 
+  /// The user's access from the server. When the server cannot be reached at all, the copy saved on the phone (same user, not
+  /// too old) is used instead, so the app opens with no signal; it keeps asking the server and swaps in the real answer.
+  Future<Map<String, dynamic>?> _loadAccess() async {
+    try {
+      final a = await widget.backend.myAccess();
+      final id = widget.backend.userId;
+      if (a == null) {
+        await accessCache.clear();
+      } else if (id != null) {
+        await accessCache.write(id, a);
+      }
+      _refresh?.cancel();
+      return _shown = a;
+    } catch (e) {
+      if (serverAnswered(e)) rethrow;
+      final saved = await accessCache.read(widget.backend.userId);
+      if (saved == null) rethrow;
+      _refresh?.cancel();
+      _refresh = Timer.periodic(const Duration(seconds: 60), (_) => _confirmSavedAccess());
+      return _shown = saved;
+    }
+  }
+
+  /// While running on the saved copy: ask the server again; once it answers, show what it says.
+  Future<void> _confirmSavedAccess() async {
+    final Map<String, dynamic>? a;
+    try {
+      a = await widget.backend.myAccess();
+    } catch (_) {
+      return; // still no answer: stay on the saved copy
+    }
+    _refresh?.cancel();
+    final id = widget.backend.userId;
+    if (a == null) {
+      await accessCache.clear();
+    } else if (id != null) {
+      await accessCache.write(id, a);
+    }
+    if (!mounted || jsonEncode(a) == jsonEncode(_shown)) return;
+    final fresh = a;
+    setState(() {
+      _shown = fresh;
+      _access = Future.value(fresh);
+    });
+  }
+
   void _reload() {
-    final next = widget.backend.myAccess();
+    final next = _loadAccess();
     setState(() {
       _access = next;
     });
@@ -181,7 +238,9 @@ class _GateState extends State<Gate> {
           backend: widget.backend,
           access: access,
           openStore: widget.openStore,
-          child: HomeShell(backend: widget.backend, storeName: name),
+          child: syncScopeForRole(access['role'] as String?).warehouse
+              ? WarehouseShell(backend: widget.backend, storeName: name)
+              : HomeShell(backend: widget.backend, storeName: name),
         );
       },
     );

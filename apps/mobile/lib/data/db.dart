@@ -479,6 +479,148 @@ class StockExpiry extends Table {
 }
 
 /// Small key/value facts about this device's data (e.g. which tenant it belongs to).
+// ---------------------------------------------------------------------------
+// Warehouse side (schema v15, F-13h). Mirrors sync_pull_warehouse, plus the receipts made on this device.
+// ---------------------------------------------------------------------------
+
+class Warehouses extends Table {
+  TextColumn get id => text()();
+  TextColumn get code => text()();
+  TextColumn get name => text()();
+  BoolColumn get binsEnabled => boolean().withDefault(const Constant(false))();
+  BoolColumn get active => boolean().withDefault(const Constant(true))();
+  TextColumn get updatedAt => text().nullable()();
+  TextColumn get deletedAt => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+@TableIndex(name: 'wh_bins_warehouse', columns: {#warehouseId})
+class WhBins extends Table {
+  TextColumn get id => text()();
+  TextColumn get warehouseId => text()();
+  TextColumn get zoneId => text().nullable()();
+  TextColumn get code => text()();
+  TextColumn get aisle => text().nullable()();
+  TextColumn get rack => text().nullable()();
+  TextColumn get shelf => text().nullable()();
+  TextColumn get position => text().nullable()();
+  TextColumn get type => text().withDefault(const Constant('shelf'))();
+  RealColumn get maxQty => real().nullable()();
+  BoolColumn get active => boolean().withDefault(const Constant(true))();
+  TextColumn get updatedAt => text().nullable()();
+  TextColumn get deletedAt => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+class WhBinStock extends Table {
+  TextColumn get binId => text()();
+  TextColumn get variantId => text()();
+  RealColumn get qty => real()();
+  TextColumn get updatedAt => text()();
+
+  @override
+  Set<Column> get primaryKey => {binId, variantId};
+}
+
+/// Stock of a product in a warehouse as the server last said. Kept apart from [StockLevels] (the stores' stock).
+class WhStock extends Table {
+  TextColumn get locationId => text()();
+  TextColumn get variantId => text()();
+  RealColumn get qty => real()();
+  IntColumn get avgCost => integer().nullable()();
+  TextColumn get updatedAt => text()();
+
+  @override
+  Set<Column> get primaryKey => {locationId, variantId};
+}
+
+class Suppliers extends Table {
+  TextColumn get id => text()();
+  TextColumn get name => text()();
+  TextColumn get contactName => text().nullable()();
+  TextColumn get phone => text().nullable()();
+  TextColumn get email => text().nullable()();
+  TextColumn get notes => text().nullable()();
+  TextColumn get updatedAt => text().nullable()();
+  TextColumn get deletedAt => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Orders as the server last said (never drafts). A finished order is dropped once nothing local depends on it.
+@TableIndex(name: 'purchase_orders_warehouse', columns: {#warehouseId, #status})
+class PurchaseOrders extends Table {
+  TextColumn get id => text()();
+  TextColumn get poNo => text()();
+  TextColumn get warehouseId => text()();
+  TextColumn get supplierId => text()();
+  TextColumn get status => text()();
+  TextColumn get expectedAt => text().nullable()();
+  TextColumn get notes => text().nullable()();
+  TextColumn get updatedAt => text()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+@TableIndex(name: 'po_items_po', columns: {#poId})
+class PoItems extends Table {
+  TextColumn get id => text()();
+  TextColumn get poId => text()();
+  TextColumn get variantId => text()();
+  RealColumn get qtyOrdered => real()();
+  RealColumn get qtyReceived => real()();
+  IntColumn get unitCost => integer().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// A delivery received on this device. The row is the receipt's record AND, until [settled], its effect: the order's
+/// remaining and the stock count it on top of the server's copy. [opId] is the outbox op id and the server's receipt id.
+@TableIndex(name: 'wh_receipts_warehouse', columns: {#warehouseId, #createdAt})
+class WhReceipts extends Table {
+  TextColumn get opId => text()();
+
+  /// `po` or `walkin`.
+  TextColumn get kind => text()();
+  TextColumn get warehouseId => text()();
+  TextColumn get poId => text().nullable()();
+
+  /// Kept with the receipt: the order itself is forgotten once it finishes.
+  TextColumn get poNo => text().nullable()();
+  TextColumn get supplierId => text().nullable()();
+  TextColumn get deliveryRef => text().nullable()();
+  TextColumn get notes => text().nullable()();
+  TextColumn get createdAt => text()();
+
+  /// The server's receipt number, once it answered.
+  TextColumn get grnNo => text().nullable()();
+
+  /// The server's own time of the receipt (set when it answered). The effect stays until a pull has passed this time.
+  TextColumn get confirmedAfter => text().nullable()();
+
+  /// The server's copy has caught up: the effect is no longer counted on top of it.
+  BoolColumn get settled => boolean().withDefault(const Constant(false))();
+
+  @override
+  Set<Column> get primaryKey => {opId};
+}
+
+@TableIndex(name: 'wh_receipt_items_op', columns: {#opId})
+class WhReceiptItems extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get opId => text()();
+  TextColumn get variantId => text()();
+  RealColumn get qty => real()();
+  IntColumn get unitCost => integer().nullable()();
+}
+
 class Meta extends Table {
   TextColumn get key => text()();
   TextColumn get value => text()();
@@ -491,6 +633,7 @@ class Meta extends Table {
   Categories, Products, Variants, Prices, SyncCursors, Outbox, OpeningStock, Meta, PhotoUploads, PhotoCache,
   Customers, ServerLedger, LocalLedger, StockLevels, LocalMovements, Sales, SaleItems, SalePayments,
   Expenses, DayCloses, ServiceTxns, WalletFloats, LocalFloatEffects, Conversions, StockExpiry,
+  Warehouses, WhBins, WhBinStock, WhStock, Suppliers, PurchaseOrders, PoItems, WhReceipts, WhReceiptItems,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
@@ -511,7 +654,7 @@ class AppDatabase extends _$AppDatabase {
   static const _name = 'xzactopos';
 
   @override
-  int get schemaVersion => 14;
+  int get schemaVersion => 15;
 
   /// Adds a column unless it is there already (a database made by a newer build and stepped back in a test, or a
   /// table an earlier step created with today's definition). Skips a table that does not exist.
@@ -632,6 +775,20 @@ class AppDatabase extends _$AppDatabase {
           }
           if (from < 14) {
             await _deviceStep(m);
+          }
+          if (from < 15) {
+            // new tables only (IF NOT EXISTS): every existing row and unsent op stays. No cursor yet, so the first warehouse
+            // pull brings everything (only a warehouse user's phone ever asks for it).
+            for (final t in <TableInfo<Table, dynamic>>[
+              warehouses, whBins, whBinStock, whStock, suppliers, purchaseOrders, poItems, whReceipts, whReceiptItems,
+            ]) {
+              await m.createTable(t);
+            }
+            // tables made now are empty: a warehouse cursor left from somewhere must not say they are up to date
+            final hasCursors = await customSelect("select 1 from sqlite_master where type = 'table' and name = 'sync_cursors'").get();
+            if (hasCursors.isNotEmpty) {
+              await customStatement("delete from sync_cursors where table_key like 'wh:%'");
+            }
           }
         },
       );

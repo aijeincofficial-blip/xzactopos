@@ -380,7 +380,8 @@ void main() {
 
     final v14 = DriftStore(AppDatabase(NativeDatabase(file)));
     await v14.ensureTenant('t1', baseCurrency: 'PHP', stores: const [_storeA]);
-    expect((await v14.db.customSelect('PRAGMA user_version').getSingle()).data.values.single, 14);
+    // the upgrade runs every step after 13 (later schema versions included), so compare with the current version
+    expect((await v14.db.customSelect('PRAGMA user_version').getSingle()).data.values.single, v14.db.schemaVersion);
     final dev = await v14.deviceId();
     expect(dev, matches(_uuidV7), reason: 'made by the upgrade');
     final after = await v14.nextOps();

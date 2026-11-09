@@ -1583,4 +1583,272 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get upgradeFullClose => 'Naintindihan';
+
+  @override
+  String get whTabReceive => 'Tanggapin';
+
+  @override
+  String get whTabCount => 'Bilang';
+
+  @override
+  String get whTabStock => 'Stock';
+
+  @override
+  String get whTabMore => 'Iba pa';
+
+  @override
+  String get whNoWarehouse =>
+      'Wala pang bodega. Mag-online muna para ma-load ang mga bodega mo.';
+
+  @override
+  String get whSwitchTitle => 'Pumili ng bodega';
+
+  @override
+  String whSwitched(String name) {
+    return 'Nasa $name ka na';
+  }
+
+  @override
+  String get whSwitchAction => 'Palitan ang bodega';
+
+  @override
+  String get whOpenOrders => 'Mga bukas na order';
+
+  @override
+  String get whNoOrders => 'Walang bukas na order sa bodegang ito.';
+
+  @override
+  String whOrderLeft(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count na lang ang tatanggapin',
+      one: '$count na lang ang tatanggapin',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get whOrderComplete => 'Natanggap na lahat';
+
+  @override
+  String get whWaitingSync => 'Hinihintay i-sync';
+
+  @override
+  String get whStatusOrdered => 'Na-order na';
+
+  @override
+  String get whStatusPartly => 'Bahagyang natanggap';
+
+  @override
+  String get whOrderLines => 'Mga item sa order na ito';
+
+  @override
+  String whLineProgress(String received, String ordered) {
+    return '$received sa $ordered ang natanggap';
+  }
+
+  @override
+  String get whReceipts => 'Mga resibo mula sa teleponong ito';
+
+  @override
+  String get whNoReceipts => 'Wala pang natanggap sa teleponong ito.';
+
+  @override
+  String get whReceiptWalkin => 'Delivery na walang order';
+
+  @override
+  String get whSearchStock => 'Hanapin ang stock';
+
+  @override
+  String get whNoStock => 'Wala pang stock sa bodegang ito.';
+
+  @override
+  String whStockPending(String qty) {
+    return '$qty ang papasok';
+  }
+
+  @override
+  String get whCountSoon =>
+      'Malapit nang magamit ang pagbibilang sa telepono. Sa ngayon, gamitin ang web app para sa stock count.';
+
+  @override
+  String get whUnknownProduct => 'Hindi kilalang produkto';
+
+  @override
+  String get whReceiveStart => 'Tanggapin ang mga paninda';
+
+  @override
+  String get whReceiveTitle => 'Tanggapin';
+
+  @override
+  String get whReceiveSave => 'I-save ang resibo';
+
+  @override
+  String get whReceiptSaved =>
+      'Na-save ang resibo. Mase-sync ito kapag online ka.';
+
+  @override
+  String get whQtyReceived => 'Dami na natanggap';
+
+  @override
+  String get whInvoiceCost => 'Presyo bawat isa (opsyonal)';
+
+  @override
+  String get whDeliveryRef => 'Delivery o invoice no. (opsyonal)';
+
+  @override
+  String get whNotes => 'Tala (opsyonal)';
+
+  @override
+  String get whOverDelivery =>
+      'Mas marami kaysa sa order. Mamarkahan ang sobra.';
+
+  @override
+  String get whWalkInStart => 'Delivery na walang order';
+
+  @override
+  String get whWalkInTitle => 'Delivery na walang order';
+
+  @override
+  String get whWalkInHint =>
+      'Idagdag ang dumating. Mamarkahan ito para suriin dahil walang order.';
+
+  @override
+  String get whSupplier => 'Supplier';
+
+  @override
+  String get whNoSupplier => 'Walang supplier';
+
+  @override
+  String get whScanUnknown => 'Walang produktong may ganyang barcode.';
+
+  @override
+  String get whErrUnknownOrder =>
+      'Wala na ang order na ito sa telepono. Mag-sync at subukan ulit.';
+
+  @override
+  String get whErrOrderClosed => 'Sarado na ang order na ito.';
+
+  @override
+  String get whErrNotOnOrder => 'Wala sa order na ito ang produktong iyon.';
+
+  @override
+  String get whErrDuplicateLine =>
+      'Isang beses lang puwedeng lumabas ang bawat produkto.';
+
+  @override
+  String get whErrQtyInvalid => 'Maglagay ng dami na higit sa zero.';
+
+  @override
+  String get whErrCostInvalid => 'Hindi tamang halaga ang presyo.';
+
+  @override
+  String get whErrNoLines => 'Maglagay ng dami para sa kahit isang produkto.';
+
+  @override
+  String get whErrUnknownWarehouse =>
+      'Hindi available sa iyo ang bodegang ito.';
+
+  @override
+  String get whCountOffline =>
+      'Kailangan ng koneksyon para magbilang ng stock. Tingnan ang signal at subukan ulit.';
+
+  @override
+  String get whCountRetry => 'Subukan ulit';
+
+  @override
+  String get whCountNone => 'Walang kasalukuyang bilang.';
+
+  @override
+  String get whCountScope => 'Ano ang bibilangin';
+
+  @override
+  String get whCountWhole => 'Buong bodega';
+
+  @override
+  String get whCountStart => 'Simulan ang pagbibilang';
+
+  @override
+  String get whCountBin => 'Bin';
+
+  @override
+  String get whCountQty => 'Dami na nabilang';
+
+  @override
+  String get whCountSaveLine => 'I-save ang bilang';
+
+  @override
+  String get whCountNoLines =>
+      'Wala pang nabilang. Maghanap o mag-scan ng produkto.';
+
+  @override
+  String whCountSystemWas(String qty) {
+    return '$qty ang nasa system';
+  }
+
+  @override
+  String get whCountFinish => 'Tapusin ang bilang';
+
+  @override
+  String get whCountFinishAsk => 'Tapusin ang bilang na ito?';
+
+  @override
+  String get whCountFinishBody =>
+      'Itatama ang stock ayon sa nabilang mo. Hindi na ito mababawi.';
+
+  @override
+  String get whCountZeroUncounted =>
+      'Ituring na zero ang mga hindi ko nabilang';
+
+  @override
+  String get whCountCancel => 'Kanselahin ang bilang';
+
+  @override
+  String get whCountCancelAsk => 'Kanselahin ang bilang na ito?';
+
+  @override
+  String get whCountCancelBody =>
+      'Aalisin ang mga nabilang mo. Mananatili ang stock.';
+
+  @override
+  String get whCountKeep => 'Ituloy ang pagbibilang';
+
+  @override
+  String get whCountErrInProgress => 'May bukas nang bilang sa bodegang ito.';
+
+  @override
+  String get whCountErrBinRequired =>
+      'Piliin ang bin kung saan mo ito nabilang.';
+
+  @override
+  String get whCountErrBin =>
+      'Hindi available ang bin na iyon sa bilang na ito.';
+
+  @override
+  String get whCountErrBinsOff => 'Hindi gumagamit ng bin ang bodegang ito.';
+
+  @override
+  String get whCountErrNothing => 'Wala pang nabilang.';
+
+  @override
+  String get whCountErrNotAllowed => 'Hindi ka puwedeng magbilang dito.';
+
+  @override
+  String get whCountErrClosed => 'Sarado o kinansela na ang bilang na ito.';
+
+  @override
+  String get whNoBinStock => 'Walang stock sa anumang bin.';
+
+  @override
+  String whCountDone(int count, String net) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ang itinama.',
+      one: '$count ang itinama.',
+      zero: 'Walang itinama.',
+    );
+    return 'Tapos na ang bilang. $_temp0 Netong pagbabago: $net';
+  }
 }

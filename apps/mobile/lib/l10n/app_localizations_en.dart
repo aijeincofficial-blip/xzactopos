@@ -1580,4 +1580,266 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get upgradeFullClose => 'Got it';
+
+  @override
+  String get whTabReceive => 'Receive';
+
+  @override
+  String get whTabCount => 'Count';
+
+  @override
+  String get whTabStock => 'Stock';
+
+  @override
+  String get whTabMore => 'More';
+
+  @override
+  String get whNoWarehouse =>
+      'No warehouse yet. Connect to the internet once so your warehouses can load.';
+
+  @override
+  String get whSwitchTitle => 'Choose warehouse';
+
+  @override
+  String whSwitched(String name) {
+    return 'Working in $name';
+  }
+
+  @override
+  String get whSwitchAction => 'Switch warehouse';
+
+  @override
+  String get whOpenOrders => 'Open orders';
+
+  @override
+  String get whNoOrders => 'No open orders in this warehouse.';
+
+  @override
+  String whOrderLeft(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count left to receive',
+      one: '$count left to receive',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get whOrderComplete => 'Fully received';
+
+  @override
+  String get whWaitingSync => 'Waiting to sync';
+
+  @override
+  String get whStatusOrdered => 'Ordered';
+
+  @override
+  String get whStatusPartly => 'Partly received';
+
+  @override
+  String get whOrderLines => 'Items on this order';
+
+  @override
+  String whLineProgress(String received, String ordered) {
+    return '$received of $ordered received';
+  }
+
+  @override
+  String get whReceipts => 'Receipts from this phone';
+
+  @override
+  String get whNoReceipts => 'Nothing received on this phone yet.';
+
+  @override
+  String get whReceiptWalkin => 'Delivery without an order';
+
+  @override
+  String get whSearchStock => 'Search stock';
+
+  @override
+  String get whNoStock => 'No stock in this warehouse yet.';
+
+  @override
+  String whStockPending(String qty) {
+    return '$qty on the way in';
+  }
+
+  @override
+  String get whCountSoon =>
+      'Counting on the phone is coming soon. Use the web app for stock counts for now.';
+
+  @override
+  String get whUnknownProduct => 'Unknown product';
+
+  @override
+  String get whReceiveStart => 'Receive goods';
+
+  @override
+  String get whReceiveTitle => 'Receive';
+
+  @override
+  String get whReceiveSave => 'Save receipt';
+
+  @override
+  String get whReceiptSaved =>
+      'Receipt saved. It will sync when you are online.';
+
+  @override
+  String get whQtyReceived => 'Quantity received';
+
+  @override
+  String get whInvoiceCost => 'Cost each (optional)';
+
+  @override
+  String get whDeliveryRef => 'Delivery or invoice no. (optional)';
+
+  @override
+  String get whNotes => 'Notes (optional)';
+
+  @override
+  String get whOverDelivery => 'More than ordered. The extra will be flagged.';
+
+  @override
+  String get whWalkInStart => 'Delivery without an order';
+
+  @override
+  String get whWalkInTitle => 'Delivery without an order';
+
+  @override
+  String get whWalkInHint =>
+      'Add what arrived. It will be flagged for review because there is no order.';
+
+  @override
+  String get whSupplier => 'Supplier';
+
+  @override
+  String get whNoSupplier => 'No supplier';
+
+  @override
+  String get whScanUnknown => 'No product has that barcode.';
+
+  @override
+  String get whErrUnknownOrder =>
+      'This order is no longer on the phone. Pull to refresh and try again.';
+
+  @override
+  String get whErrOrderClosed => 'This order is already closed.';
+
+  @override
+  String get whErrNotOnOrder => 'That product is not on this order.';
+
+  @override
+  String get whErrDuplicateLine => 'Each product can only appear once.';
+
+  @override
+  String get whErrQtyInvalid => 'Enter a quantity greater than zero.';
+
+  @override
+  String get whErrCostInvalid => 'The cost is not a valid amount.';
+
+  @override
+  String get whErrNoLines => 'Enter a quantity for at least one product.';
+
+  @override
+  String get whErrUnknownWarehouse => 'This warehouse is not available to you.';
+
+  @override
+  String get whCountOffline =>
+      'You need a connection to count stock. Check your signal and try again.';
+
+  @override
+  String get whCountRetry => 'Try again';
+
+  @override
+  String get whCountNone => 'No count in progress.';
+
+  @override
+  String get whCountScope => 'What to count';
+
+  @override
+  String get whCountWhole => 'Whole warehouse';
+
+  @override
+  String get whCountStart => 'Start counting';
+
+  @override
+  String get whCountBin => 'Bin';
+
+  @override
+  String get whCountQty => 'Quantity counted';
+
+  @override
+  String get whCountSaveLine => 'Save count';
+
+  @override
+  String get whCountNoLines => 'Nothing counted yet. Search or scan a product.';
+
+  @override
+  String whCountSystemWas(String qty) {
+    return 'system had $qty';
+  }
+
+  @override
+  String get whCountFinish => 'Finish count';
+
+  @override
+  String get whCountFinishAsk => 'Finish this count?';
+
+  @override
+  String get whCountFinishBody =>
+      'Stock will be corrected to what you counted. This cannot be undone.';
+
+  @override
+  String get whCountZeroUncounted => 'Treat products I did not count as zero';
+
+  @override
+  String get whCountCancel => 'Cancel count';
+
+  @override
+  String get whCountCancelAsk => 'Cancel this count?';
+
+  @override
+  String get whCountCancelBody =>
+      'What you counted will be dropped. Stock stays as it is.';
+
+  @override
+  String get whCountKeep => 'Keep counting';
+
+  @override
+  String get whCountErrInProgress =>
+      'A count is already open in this warehouse.';
+
+  @override
+  String get whCountErrBinRequired => 'Choose the bin where you counted it.';
+
+  @override
+  String get whCountErrBin => 'That bin is not available for this count.';
+
+  @override
+  String get whCountErrBinsOff => 'This warehouse does not use bins.';
+
+  @override
+  String get whCountErrNothing => 'Nothing was counted yet.';
+
+  @override
+  String get whCountErrNotAllowed => 'You are not allowed to count here.';
+
+  @override
+  String get whCountErrClosed => 'This count is already closed or cancelled.';
+
+  @override
+  String get whNoBinStock => 'No stock in any bin.';
+
+  @override
+  String whCountDone(int count, String net) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count corrections made.',
+      one: '$count correction made.',
+      zero: 'No corrections.',
+    );
+    return 'Count finished. $_temp0 Net change: $net';
+  }
 }

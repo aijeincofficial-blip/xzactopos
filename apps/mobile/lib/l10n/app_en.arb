@@ -934,5 +934,129 @@
   "upgradeFullAction": "Learn More",
   "upgradeFullDialogTitle": "Full Mode Upgrade",
   "upgradeFullDialogBody": "Full Mode unlocks multiple branches, a central warehouse, and role-based staff accounts (Cashier, Manager, Supervisor). All your current sales, products, stock, and utang records are safely retained in place.\n\nTo upgrade, open the XZACTO POS web app in any browser and use the Upgrade Wizard.",
-  "upgradeFullClose": "Got it"
+  "upgradeFullClose": "Got it",
+  "whTabReceive": "Receive",
+  "whTabCount": "Count",
+  "whTabStock": "Stock",
+  "whTabMore": "More",
+  "whNoWarehouse": "No warehouse yet. Connect to the internet once so your warehouses can load.",
+  "whSwitchTitle": "Choose warehouse",
+  "whSwitched": "Working in {name}",
+  "@whSwitched": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "whSwitchAction": "Switch warehouse",
+  "whOpenOrders": "Open orders",
+  "whNoOrders": "No open orders in this warehouse.",
+  "whOrderLeft": "{count, plural, =1{{count} left to receive} other{{count} left to receive}}",
+  "@whOrderLeft": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "whOrderComplete": "Fully received",
+  "whWaitingSync": "Waiting to sync",
+  "whStatusOrdered": "Ordered",
+  "whStatusPartly": "Partly received",
+  "whOrderLines": "Items on this order",
+  "whLineProgress": "{received} of {ordered} received",
+  "@whLineProgress": {
+    "placeholders": {
+      "received": {
+        "type": "String"
+      },
+      "ordered": {
+        "type": "String"
+      }
+    }
+  },
+  "whReceipts": "Receipts from this phone",
+  "whNoReceipts": "Nothing received on this phone yet.",
+  "whReceiptWalkin": "Delivery without an order",
+  "whSearchStock": "Search stock",
+  "whNoStock": "No stock in this warehouse yet.",
+  "whStockPending": "{qty} on the way in",
+  "@whStockPending": {
+    "placeholders": {
+      "qty": {
+        "type": "String"
+      }
+    }
+  },
+  "whCountSoon": "Counting on the phone is coming soon. Use the web app for stock counts for now.",
+  "whUnknownProduct": "Unknown product",
+  "whReceiveStart": "Receive goods",
+  "whReceiveTitle": "Receive",
+  "whReceiveSave": "Save receipt",
+  "whReceiptSaved": "Receipt saved. It will sync when you are online.",
+  "whQtyReceived": "Quantity received",
+  "whInvoiceCost": "Cost each (optional)",
+  "whDeliveryRef": "Delivery or invoice no. (optional)",
+  "whNotes": "Notes (optional)",
+  "whOverDelivery": "More than ordered. The extra will be flagged.",
+  "whWalkInStart": "Delivery without an order",
+  "whWalkInTitle": "Delivery without an order",
+  "whWalkInHint": "Add what arrived. It will be flagged for review because there is no order.",
+  "whSupplier": "Supplier",
+  "whNoSupplier": "No supplier",
+  "whScanUnknown": "No product has that barcode.",
+  "whErrUnknownOrder": "This order is no longer on the phone. Pull to refresh and try again.",
+  "whErrOrderClosed": "This order is already closed.",
+  "whErrNotOnOrder": "That product is not on this order.",
+  "whErrDuplicateLine": "Each product can only appear once.",
+  "whErrQtyInvalid": "Enter a quantity greater than zero.",
+  "whErrCostInvalid": "The cost is not a valid amount.",
+  "whErrNoLines": "Enter a quantity for at least one product.",
+  "whErrUnknownWarehouse": "This warehouse is not available to you.",
+  "whCountOffline": "You need a connection to count stock. Check your signal and try again.",
+  "whCountRetry": "Try again",
+  "whCountNone": "No count in progress.",
+  "whCountScope": "What to count",
+  "whCountWhole": "Whole warehouse",
+  "whCountStart": "Start counting",
+  "whCountBin": "Bin",
+  "whCountQty": "Quantity counted",
+  "whCountSaveLine": "Save count",
+  "whCountNoLines": "Nothing counted yet. Search or scan a product.",
+  "whCountSystemWas": "system had {qty}",
+  "@whCountSystemWas": {
+    "placeholders": {
+      "qty": {
+        "type": "String"
+      }
+    }
+  },
+  "whCountFinish": "Finish count",
+  "whCountFinishAsk": "Finish this count?",
+  "whCountFinishBody": "Stock will be corrected to what you counted. This cannot be undone.",
+  "whCountZeroUncounted": "Treat products I did not count as zero",
+  "whCountCancel": "Cancel count",
+  "whCountCancelAsk": "Cancel this count?",
+  "whCountCancelBody": "What you counted will be dropped. Stock stays as it is.",
+  "whCountKeep": "Keep counting",
+  "whCountErrInProgress": "A count is already open in this warehouse.",
+  "whCountErrBinRequired": "Choose the bin where you counted it.",
+  "whCountErrBin": "That bin is not available for this count.",
+  "whCountErrBinsOff": "This warehouse does not use bins.",
+  "whCountErrNothing": "Nothing was counted yet.",
+  "whCountErrNotAllowed": "You are not allowed to count here.",
+  "whCountErrClosed": "This count is already closed or cancelled.",
+  "whNoBinStock": "No stock in any bin.",
+  "whCountDone": "Count finished. {count, plural, =0{No corrections.} =1{{count} correction made.} other{{count} corrections made.}} Net change: {net}",
+  "@whCountDone": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "net": {
+        "type": "String"
+      }
+    }
+  }
 }
