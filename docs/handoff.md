@@ -7,7 +7,7 @@ Updated at the end of every task. Read this first in a fresh session. New sessio
 ### Who is doing what (update when you start and finish a task)
 | Agent | Branch and worktree | Working on | Status |
 | --- | --- | --- | --- |
-| Claude | `claude/phase3-sell-8261d3`, `.claude/worktrees/phase3-sell-8261d3` | F-13h phone warehouse (H8 emulator acceptance next). H1 to H6 done. | between steps (nothing in progress) |
+| Claude | `claude/phase3-sell-8261d3`, `.claude/worktrees/phase3-sell-8261d3` | F-13h H8 (emulator acceptance of the phone warehouse work; uses the shared local DB, creates a tenant with slug `h8-...`). H1 to H6 done. | in progress |
 | Antigravity | `ag/work`, `.claude/worktrees/ag-work` | not started: priority 1 (prove Mobile Solo on the emulator) | waiting |
 | Owner | merges branches into `main`; makes the git remote and the keystore | | |
 
