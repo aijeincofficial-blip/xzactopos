@@ -38,7 +38,7 @@ Gaps found:
 | F-13e Warehouse stock counts (**DONE 2026-11-09**, see below) | `stock_counts`, `stock_count_items`; `start_count`, `submit_count`, `close_count` writes `count_correction` movements for the differences only; works per bin when bins are on, and keeps the invariant. | Opus |
 | F-13f Cross-warehouse views (**DONE 2026-11-09**, see below) | RPCs for stock of one variant across all my warehouses, per-warehouse reorder list, in-transit between warehouses. Reads only; explicit columns, paginated. | Sonnet |
 | F-13g React screens (**DONE 2026-11-09**: Purchasing, Counts, Warehouse overview) | Suppliers, POs, receiving, counts, warehouse switcher; Full-only, guarded with `can()` keys (`purchasing.manage`, `stock.count` already exist in `permissions.ts`). | Sonnet |
-| F-13h Flutter warehouse role | Receive (scan), count, pick/put-away for warehouse users; outbox ops through `sync_push`; reuse the supervisor-PIN pattern for large adjustments. | Opus (sync) then Sonnet |
+| F-13h Flutter warehouse role (**planned 2026-11-09**: see `F-13h-phone-warehouse.md`, cards H1 to H8) | Receive (scan), count, pick/put-away for warehouse users; outbox ops through `sync_push`; reuse the supervisor-PIN pattern for large adjustments. | Opus (sync) then Sonnet |
 | F-13i Acceptance | Two-warehouse scenario end to end: PO to receipt at W1, put-away, W1 to W2 transfer, W2 to store, counts at both; stock correct at every step, bin invariants hold, run partly offline on the phone. Report in handoff. | Sonnet |
 
 Dependencies: F-13a first (it may reveal bugs the rest builds on); F-13b before F-13d; F-13c before F-13d; F-13e after F-13b; screens last.
