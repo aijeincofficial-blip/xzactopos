@@ -3301,6 +3301,162 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No shift'**
   String get shiftChipNone;
+
+  /// No description provided for @staffTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff'**
+  String get staffTitle;
+
+  /// No description provided for @staffAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a cashier'**
+  String get staffAdd;
+
+  /// No description provided for @staffNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No staff yet.'**
+  String get staffNone;
+
+  /// No description provided for @staffOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff needs a signal. Try again when you are online.'**
+  String get staffOffline;
+
+  /// No description provided for @staffUsername.
+  ///
+  /// In en, this message translates to:
+  /// **'Username (letters, numbers, dot, dash)'**
+  String get staffUsername;
+
+  /// No description provided for @staffFullName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get staffFullName;
+
+  /// No description provided for @staffPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Password (at least 8 characters)'**
+  String get staffPassword;
+
+  /// No description provided for @staffStore.
+  ///
+  /// In en, this message translates to:
+  /// **'Store'**
+  String get staffStore;
+
+  /// No description provided for @staffCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create account'**
+  String get staffCreate;
+
+  /// No description provided for @staffCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Account created. Tell {name} to sign in as {login}.'**
+  String staffCreated(String name, String login);
+
+  /// No description provided for @staffSignIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Signs in as {login}'**
+  String staffSignIn(String login);
+
+  /// No description provided for @staffInactive.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get staffInactive;
+
+  /// No description provided for @staffDeactivate.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch off'**
+  String get staffDeactivate;
+
+  /// No description provided for @staffActivate.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch on'**
+  String get staffActivate;
+
+  /// No description provided for @staffResetPin.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear PIN'**
+  String get staffResetPin;
+
+  /// No description provided for @staffPinCleared.
+  ///
+  /// In en, this message translates to:
+  /// **'PIN cleared.'**
+  String get staffPinCleared;
+
+  /// No description provided for @staffRoleSuperadmin.
+  ///
+  /// In en, this message translates to:
+  /// **'Owner'**
+  String get staffRoleSuperadmin;
+
+  /// No description provided for @staffRoleAdmin.
+  ///
+  /// In en, this message translates to:
+  /// **'Manager'**
+  String get staffRoleAdmin;
+
+  /// No description provided for @staffRoleWarehouse.
+  ///
+  /// In en, this message translates to:
+  /// **'Warehouse'**
+  String get staffRoleWarehouse;
+
+  /// No description provided for @staffRoleCashier.
+  ///
+  /// In en, this message translates to:
+  /// **'Cashier'**
+  String get staffRoleCashier;
+
+  /// No description provided for @staffErrDuplicate.
+  ///
+  /// In en, this message translates to:
+  /// **'That username is taken.'**
+  String get staffErrDuplicate;
+
+  /// No description provided for @staffErrInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Check the username and password.'**
+  String get staffErrInvalid;
+
+  /// No description provided for @staffErrDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'You cannot do this.'**
+  String get staffErrDenied;
+
+  /// No description provided for @staffErrSelf.
+  ///
+  /// In en, this message translates to:
+  /// **'You cannot switch yourself off.'**
+  String get staffErrSelf;
+
+  /// No description provided for @staffErrLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'This plan has no room for more users.'**
+  String get staffErrLimit;
+
+  /// No description provided for @loginHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff: username.storecode'**
+  String get loginHelper;
 }
 
 class _AppLocalizationsDelegate

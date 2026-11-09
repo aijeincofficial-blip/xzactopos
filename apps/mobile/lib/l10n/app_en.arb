@@ -1140,5 +1140,48 @@
   "shiftErrAlreadyOpen": "You already have a shift open.",
   "shiftErrAmount": "Enter an amount.",
   "shiftChipOpen": "Shift open",
-  "shiftChipNone": "No shift"
+  "shiftChipNone": "No shift",
+  "staffTitle": "Staff",
+  "staffAdd": "Add a cashier",
+  "staffNone": "No staff yet.",
+  "staffOffline": "Staff needs a signal. Try again when you are online.",
+  "staffUsername": "Username (letters, numbers, dot, dash)",
+  "staffFullName": "Name",
+  "staffPassword": "Password (at least 8 characters)",
+  "staffStore": "Store",
+  "staffCreate": "Create account",
+  "staffCreated": "Account created. Tell {name} to sign in as {login}.",
+  "@staffCreated": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "login": {
+        "type": "String"
+      }
+    }
+  },
+  "staffSignIn": "Signs in as {login}",
+  "@staffSignIn": {
+    "placeholders": {
+      "login": {
+        "type": "String"
+      }
+    }
+  },
+  "staffInactive": "Off",
+  "staffDeactivate": "Switch off",
+  "staffActivate": "Switch on",
+  "staffResetPin": "Clear PIN",
+  "staffPinCleared": "PIN cleared.",
+  "staffRoleSuperadmin": "Owner",
+  "staffRoleAdmin": "Manager",
+  "staffRoleWarehouse": "Warehouse",
+  "staffRoleCashier": "Cashier",
+  "staffErrDuplicate": "That username is taken.",
+  "staffErrInvalid": "Check the username and password.",
+  "staffErrDenied": "You cannot do this.",
+  "staffErrSelf": "You cannot switch yourself off.",
+  "staffErrLimit": "This plan has no room for more users.",
+  "loginHelper": "Staff: username.storecode"
 }

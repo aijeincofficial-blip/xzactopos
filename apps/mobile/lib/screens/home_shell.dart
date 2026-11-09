@@ -17,6 +17,7 @@ import 'restock_screen.dart';
 import 'sell_screen.dart';
 import 'services_screen.dart';
 import 'settings_screen.dart';
+import 'staff_screen.dart';
 import 'shift_screen.dart';
 import 'stock_screen.dart';
 import 'store_picker.dart';
@@ -175,6 +176,13 @@ class MoreScreen extends StatelessWidget {
         glyph: const _Glyph(Icons.lock_clock_rounded, [Color(0xFF7C3AED), Color(0xFF6366F1)]),
         onTap: () => open(ShiftScreen(backend: backend, storeName: storeName)),
       ),
+      if (scope.isAdminOrSuperadmin)
+        _GlassTile(
+          key: const Key('more-staff'),
+          label: t.staffTitle,
+          glyph: const _Glyph(Icons.groups_rounded, [Color(0xFF0D9488), Color(0xFF14B8A6)]),
+          onTap: () => open(StaffScreen(backend: backend)),
+        ),
       _GlassTile(
         key: const Key('more-services'),
         label: t.servicesTitle,

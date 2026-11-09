@@ -1958,4 +1958,87 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get shiftChipNone => 'No shift';
+
+  @override
+  String get staffTitle => 'Staff';
+
+  @override
+  String get staffAdd => 'Add a cashier';
+
+  @override
+  String get staffNone => 'No staff yet.';
+
+  @override
+  String get staffOffline =>
+      'Staff needs a signal. Try again when you are online.';
+
+  @override
+  String get staffUsername => 'Username (letters, numbers, dot, dash)';
+
+  @override
+  String get staffFullName => 'Name';
+
+  @override
+  String get staffPassword => 'Password (at least 8 characters)';
+
+  @override
+  String get staffStore => 'Store';
+
+  @override
+  String get staffCreate => 'Create account';
+
+  @override
+  String staffCreated(String name, String login) {
+    return 'Account created. Tell $name to sign in as $login.';
+  }
+
+  @override
+  String staffSignIn(String login) {
+    return 'Signs in as $login';
+  }
+
+  @override
+  String get staffInactive => 'Off';
+
+  @override
+  String get staffDeactivate => 'Switch off';
+
+  @override
+  String get staffActivate => 'Switch on';
+
+  @override
+  String get staffResetPin => 'Clear PIN';
+
+  @override
+  String get staffPinCleared => 'PIN cleared.';
+
+  @override
+  String get staffRoleSuperadmin => 'Owner';
+
+  @override
+  String get staffRoleAdmin => 'Manager';
+
+  @override
+  String get staffRoleWarehouse => 'Warehouse';
+
+  @override
+  String get staffRoleCashier => 'Cashier';
+
+  @override
+  String get staffErrDuplicate => 'That username is taken.';
+
+  @override
+  String get staffErrInvalid => 'Check the username and password.';
+
+  @override
+  String get staffErrDenied => 'You cannot do this.';
+
+  @override
+  String get staffErrSelf => 'You cannot switch yourself off.';
+
+  @override
+  String get staffErrLimit => 'This plan has no room for more users.';
+
+  @override
+  String get loginHelper => 'Staff: username.storecode';
 }

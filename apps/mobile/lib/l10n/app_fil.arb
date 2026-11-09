@@ -1140,5 +1140,48 @@
   "shiftErrAlreadyOpen": "May bukas ka nang shift.",
   "shiftErrAmount": "Maglagay ng halaga.",
   "shiftChipOpen": "Bukas ang shift",
-  "shiftChipNone": "Walang shift"
+  "shiftChipNone": "Walang shift",
+  "staffTitle": "Mga tauhan",
+  "staffAdd": "Magdagdag ng kahera",
+  "staffNone": "Wala pang tauhan.",
+  "staffOffline": "Kailangan ng signal. Subukan ulit kapag online ka.",
+  "staffUsername": "Username (letra, numero, tuldok, gitling)",
+  "staffFullName": "Pangalan",
+  "staffPassword": "Password (hindi bababa sa 8 karakter)",
+  "staffStore": "Tindahan",
+  "staffCreate": "Gumawa ng account",
+  "staffCreated": "Nagawa na ang account. Sabihin kay {name} na mag-sign in bilang {login}.",
+  "@staffCreated": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "login": {
+        "type": "String"
+      }
+    }
+  },
+  "staffSignIn": "Nagsa-sign in bilang {login}",
+  "@staffSignIn": {
+    "placeholders": {
+      "login": {
+        "type": "String"
+      }
+    }
+  },
+  "staffInactive": "Naka-off",
+  "staffDeactivate": "I-off",
+  "staffActivate": "I-on",
+  "staffResetPin": "Burahin ang PIN",
+  "staffPinCleared": "Nabura na ang PIN.",
+  "staffRoleSuperadmin": "May-ari",
+  "staffRoleAdmin": "Manager",
+  "staffRoleWarehouse": "Bodega",
+  "staffRoleCashier": "Kahera",
+  "staffErrDuplicate": "May gumagamit na ng username na iyan.",
+  "staffErrInvalid": "Suriin ang username at password.",
+  "staffErrDenied": "Hindi mo ito magagawa.",
+  "staffErrSelf": "Hindi mo maaaring i-off ang sarili mo.",
+  "staffErrLimit": "Walang espasyo para sa dagdag na user sa planong ito.",
+  "loginHelper": "Tauhan: username.storecode"
 }
