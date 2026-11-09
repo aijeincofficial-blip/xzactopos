@@ -180,6 +180,25 @@ select w.who, t.tbl, 0, -1
 from (values ('superadmin'), ('admin'), ('cashier'), ('warehouse'), ('inactive')) w(who)
 cross join (values ('warehouse_zones'), ('bins'), ('bin_stock_levels'), ('pick_lists'), ('pick_list_items')) t(tbl);
 
+-- F-13c suppliers, purchase_orders, po_items: owner and warehouse staff only (cashier, store admin and deactivated see none).
+-- Fixtures: 1 supplier, 1 PO at W01 with 1 line per tenant. pedro (W01) sees the PO; nobody writes directly (-1).
+insert into expected (who, tbl, own_rows, own_updated)
+select w.who, t.tbl, case when w.who in ('superadmin', 'warehouse') then 1 else 0 end, -1
+from (values ('superadmin'), ('admin'), ('cashier'), ('warehouse'), ('inactive')) w(who)
+cross join (values ('suppliers'), ('purchase_orders'), ('po_items')) t(tbl);
+
+-- F-13d goods_receipts, goods_receipt_items: same audience as purchase orders (owner and warehouse staff of W01); 1 receipt with 1 line per tenant
+insert into expected (who, tbl, own_rows, own_updated)
+select w.who, t.tbl, case when w.who in ('superadmin', 'warehouse') then 1 else 0 end, -1
+from (values ('superadmin'), ('admin'), ('cashier'), ('warehouse'), ('inactive')) w(who)
+cross join (values ('goods_receipts'), ('goods_receipt_items')) t(tbl);
+
+-- F-13e stock_counts, stock_count_items: owner and warehouse staff of W01 only; 1 count with 1 line per tenant
+insert into expected (who, tbl, own_rows, own_updated)
+select w.who, t.tbl, case when w.who in ('superadmin', 'warehouse') then 1 else 0 end, -1
+from (values ('superadmin'), ('admin'), ('cashier'), ('warehouse'), ('inactive')) w(who)
+cross join (values ('stock_counts'), ('stock_count_items')) t(tbl);
+
 -- 2 tenants x (who, table) pairs x 5 metrics, plus 8 targeted checks
 select plan((select count(*)::int * 2 * 5 from expected) + 8);
 
@@ -320,6 +339,26 @@ begin
     insert into public.transfer_items (id, tenant_id, transfer_id, variant_id, qty_shipped) values
       (md5('trfi:' || t.label || ':1')::uuid, pg_temp.tid(t.label), md5('trf:' || t.label || ':1')::uuid, md5('var:' || t.label || ':1')::uuid, 10),
       (md5('trfi:' || t.label || ':2')::uuid, pg_temp.tid(t.label), md5('trf:' || t.label || ':2')::uuid, md5('var:' || t.label || ':1')::uuid, 5);
+    -- F-13c: the same supplier name in both tenants, one PO at W01 with one line
+    insert into public.suppliers (id, tenant_id, name) values
+      (md5('sup:' || t.label || ':1')::uuid, pg_temp.tid(t.label), 'Mega Rice Trading');
+    insert into public.purchase_orders (id, tenant_id, po_no, warehouse_id, supplier_id, status) values
+      (md5('po:' || t.label || ':1')::uuid, pg_temp.tid(t.label), 'PO-261108-0001', pg_temp.lid(t.label, 'W01'),
+       md5('sup:' || t.label || ':1')::uuid, 'draft');
+    insert into public.po_items (id, tenant_id, po_id, variant_id, qty_ordered) values
+      (md5('poi:' || t.label || ':1')::uuid, pg_temp.tid(t.label), md5('po:' || t.label || ':1')::uuid,
+       md5('var:' || t.label || ':1')::uuid, 12);
+    insert into public.goods_receipts (id, tenant_id, grn_no, warehouse_id, po_id, supplier_id, without_po) values
+      (md5('grn:' || t.label || ':1')::uuid, pg_temp.tid(t.label), 'GRN-261108-0001', pg_temp.lid(t.label, 'W01'),
+       md5('po:' || t.label || ':1')::uuid, md5('sup:' || t.label || ':1')::uuid, false);
+    insert into public.goods_receipt_items (id, tenant_id, grn_id, po_item_id, variant_id, qty) values
+      (md5('grni:' || t.label || ':1')::uuid, pg_temp.tid(t.label), md5('grn:' || t.label || ':1')::uuid,
+       md5('poi:' || t.label || ':1')::uuid, md5('var:' || t.label || ':1')::uuid, 4);
+    insert into public.stock_counts (id, tenant_id, count_no, warehouse_id, status) values
+      (md5('cnt:' || t.label || ':1')::uuid, pg_temp.tid(t.label), 'CNT-261108-0001', pg_temp.lid(t.label, 'W01'), 'open');
+    insert into public.stock_count_items (id, tenant_id, count_id, variant_id, qty_system, qty_counted) values
+      (md5('cnti:' || t.label || ':1')::uuid, pg_temp.tid(t.label), md5('cnt:' || t.label || ':1')::uuid,
+       md5('var:' || t.label || ':1')::uuid, 10, 9);
   end loop;
 end;
 $$;
@@ -396,7 +435,14 @@ begin
     ('bins',              'tenant_id', 'code = code'),
     ('bin_stock_levels',  'tenant_id', 'qty_on_hand = qty_on_hand'),
     ('pick_lists',        'tenant_id', 'status = status'),
-    ('pick_list_items',   'tenant_id', 'qty_picked = qty_picked')
+    ('pick_list_items',   'tenant_id', 'qty_picked = qty_picked'),
+    ('suppliers',         'tenant_id', 'name = name'),
+    ('purchase_orders',   'tenant_id', 'notes = notes'),
+    ('po_items',          'tenant_id', 'qty_ordered = qty_ordered'),
+    ('goods_receipts',    'tenant_id', 'notes = notes'),
+    ('goods_receipt_items', 'tenant_id', 'qty = qty'),
+    ('stock_counts',      'tenant_id', 'notes = notes'),
+    ('stock_count_items', 'tenant_id', 'qty_counted = qty_counted')
   ) v(tbl, tcol, upd) loop
     begin
       execute format(

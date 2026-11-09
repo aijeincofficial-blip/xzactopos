@@ -16,7 +16,10 @@
     "reports": "Reports",
     "upgrade": "Upgrade to Full",
     "settings": "Settings",
-    "platform": "Platform"
+    "platform": "Platform",
+    "purchasing": "Purchasing",
+    "counts": "Counts",
+    "overview": "Warehouses"
   },
   "roles": {
     "superadmin": "Owner",
@@ -849,5 +852,308 @@
     "presetWarehouse": "Warehouse & Inventory only",
     "timezone": "Timezone",
     "provisionSuccess": "Successfully provisioned business {{name}}."
+  },
+  "purchasing": {
+    "title": "Purchasing",
+    "subtitle": "Suppliers, purchase orders and deliveries for your warehouses.",
+    "tabs": {
+      "orders": "Orders",
+      "suppliers": "Suppliers",
+      "receipts": "Deliveries"
+    },
+    "loading": "Loading...",
+    "saving": "Saving...",
+    "close": "Close",
+    "units": "units",
+    "lines": "lines",
+    "status": {
+      "draft": "Draft",
+      "ordered": "Ordered",
+      "partly_received": "Partly received",
+      "received": "Received",
+      "cancelled": "Cancelled"
+    },
+    "orders": {
+      "new": "New order",
+      "receiveNoPo": "Receive without an order",
+      "filterStatus": "Status",
+      "allStatuses": "All statuses",
+      "filterWarehouse": "Warehouse",
+      "allWarehouses": "All warehouses",
+      "poNo": "Order #",
+      "warehouse": "Warehouse",
+      "supplier": "Supplier",
+      "expected": "Expected",
+      "status": "Status",
+      "progress": "Received",
+      "actions": "Actions",
+      "none": "No purchase orders yet.",
+      "noWarehouses": "You do not have a warehouse to order for.",
+      "shortClosed": "Closed short"
+    },
+    "action": {
+      "details": "Details",
+      "submit": "Place order",
+      "cancel": "Cancel",
+      "receive": "Receive",
+      "close": "Close short"
+    },
+    "form": {
+      "title": "New purchase order",
+      "warehouse": "Warehouse",
+      "supplier": "Supplier",
+      "selectWarehouse": "Choose a warehouse...",
+      "selectSupplier": "Choose a supplier...",
+      "noSuppliers": "Add a supplier first (Suppliers tab).",
+      "expectedOn": "Expected on",
+      "notes": "Notes",
+      "notesPlaceholder": "Optional notes for the supplier...",
+      "lines": "Lines",
+      "addLine": "Add line",
+      "removeLine": "Remove line",
+      "product": "Product",
+      "selectProduct": "Choose a product...",
+      "qty": "Quantity",
+      "cost": "Cost each",
+      "costHint": "Optional, in {{currency}}.",
+      "saveDraft": "Save as draft",
+      "placeNow": "Place order now",
+      "needWarehouse": "Choose a warehouse.",
+      "needSupplier": "Choose a supplier.",
+      "needLines": "Add at least one line.",
+      "created": "Order {{no}} saved."
+    },
+    "lineError": {
+      "product_required": "Choose a product.",
+      "qty_invalid": "Enter a quantity above zero (up to 3 decimals).",
+      "cost_invalid": "Enter a cost like 12.50.",
+      "duplicate_item": "This product is already on the order."
+    },
+    "detail": {
+      "title": "Order {{no}}",
+      "ordered": "Ordered",
+      "received": "Received",
+      "remaining": "Still expected",
+      "cost": "Cost each",
+      "value": "Expected value",
+      "placedOn": "Placed",
+      "cancelReason": "Cancelled: {{reason}}",
+      "closeReason": "Closed short: {{reason}}",
+      "noLines": "No lines."
+    },
+    "receive": {
+      "title": "Receive delivery for {{no}}",
+      "deliveryRef": "Supplier delivery number",
+      "notes": "Notes",
+      "remaining": "Still expected",
+      "arrived": "Arrived now",
+      "cost": "Cost each (optional)",
+      "costHint": "Leave blank to use the cost on the order.",
+      "over": "More than ordered. It will be accepted and flagged.",
+      "nothing": "Enter the quantity that arrived on at least one line.",
+      "confirm": "Receive goods",
+      "done": "Received as {{grn}}.",
+      "fillRemaining": "Fill with what is still expected"
+    },
+    "walkIn": {
+      "title": "Receive without an order",
+      "note": "This delivery is recorded without a purchase order and flagged for review.",
+      "supplier": "Supplier (optional)",
+      "noSupplier": "No supplier",
+      "warehouse": "Warehouse"
+    },
+    "cancel": {
+      "title": "Cancel order {{no}}",
+      "reason": "Reason (optional)",
+      "confirm": "Cancel order",
+      "keep": "Keep order"
+    },
+    "closeShort": {
+      "title": "Close {{no}} short",
+      "help": "The supplier will not deliver the rest. Stock does not change.",
+      "reason": "Reason (optional)",
+      "confirm": "Close order"
+    },
+    "suppliers": {
+      "add": "Add supplier",
+      "edit": "Edit supplier",
+      "name": "Name",
+      "contact": "Contact person",
+      "phone": "Phone",
+      "email": "Email",
+      "notes": "Notes",
+      "none": "No suppliers yet.",
+      "remove": "Remove",
+      "removeConfirm": "Remove {{name}}? Past orders keep it.",
+      "save": "Save supplier",
+      "actions": "Actions"
+    },
+    "receipts": {
+      "grnNo": "Delivery #",
+      "date": "Date",
+      "supplier": "Supplier",
+      "warehouse": "Warehouse",
+      "order": "Order",
+      "noOrder": "No order",
+      "deliveryRef": "Delivery no.",
+      "moreThanOrdered": "More than ordered",
+      "none": "No deliveries yet.",
+      "lines": "Lines"
+    }
+  },
+  "counts": {
+    "title": "Stock counts",
+    "subtitle": "Count a warehouse, or one bin, then apply the differences to stock.",
+    "warehouse": "Warehouse",
+    "noWarehouses": "You do not have a warehouse to count.",
+    "loading": "Loading...",
+    "saving": "Saving...",
+    "close": "Close",
+    "status": {
+      "open": "Open",
+      "closed": "Closed",
+      "cancelled": "Cancelled"
+    },
+    "start": {
+      "title": "Start a count",
+      "scope": "What to count",
+      "wholeWarehouse": "Whole warehouse",
+      "bin": "One bin",
+      "notes": "Notes",
+      "button": "Start counting",
+      "selectBin": "Choose a bin...",
+      "needBin": "Choose a bin to count.",
+      "help": "Counting changes nothing until you close the count."
+    },
+    "open": {
+      "title": "Count {{no}}",
+      "started": "Started {{date}}",
+      "scopeAll": "Whole warehouse",
+      "scopeBin": "Bin {{code}}",
+      "recount": "Counted before: {{counted}} (system then: {{system}})"
+    },
+    "table": {
+      "product": "Product",
+      "bin": "Bin",
+      "system": "In the system now",
+      "count": "Count",
+      "difference": "Difference if closed now",
+      "notCounted": "Not counted yet",
+      "autoZero": "Not found: set to 0",
+      "none": "Nothing is in stock here. Add a product to count it."
+    },
+    "add": {
+      "title": "Add a product",
+      "product": "Product",
+      "selectProduct": "Choose a product...",
+      "bin": "Bin",
+      "selectBin": "Choose a bin...",
+      "button": "Add row"
+    },
+    "save": {
+      "button": "Save counts",
+      "done": "Lines saved: {{n}}.",
+      "nothing": "Type a quantity on at least one row.",
+      "lineError": {
+        "qty_invalid": "Enter 0 or more (up to 3 decimals).",
+        "bin_required": "Choose a bin."
+      }
+    },
+    "cancel": {
+      "button": "Cancel count",
+      "title": "Cancel count {{no}}",
+      "reason": "Reason (optional)",
+      "confirm": "Cancel count",
+      "keep": "Keep counting"
+    },
+    "closeCount": {
+      "button": "Close count",
+      "title": "Close count {{no}}",
+      "help": "Closing changes stock: each difference is applied as a correction. Deliveries or sales made while you counted are kept.",
+      "summary": "Lines that differ: {{corrections}} of {{lines}}. Shortage {{shortage}}, surplus {{surplus}}.",
+      "none": "Nothing has been counted yet.",
+      "zeroLabel": "Treat products I did not count as zero",
+      "zeroWarning": "Products with stock that will be set to 0: {{n}}.",
+      "confirm": "Close and apply",
+      "done": "Count {{no}} closed. Corrections: {{corrections}}, net {{net}}.",
+      "unsaved": "Save your counts first: some typed quantities are not saved yet."
+    },
+    "history": {
+      "title": "Earlier counts",
+      "none": "No earlier counts.",
+      "no": "Count #",
+      "date": "Date",
+      "scope": "Scope",
+      "status": "Status",
+      "lines": "Lines",
+      "corrections": "Corrections",
+      "cancelReason": "Cancelled: {{reason}}",
+      "counted": "counted",
+      "system": "system",
+      "zero": "not found"
+    }
+  },
+  "overview": {
+    "title": "Warehouses",
+    "subtitle": "What to reorder, what is on its way, and where a product is.",
+    "loading": "Loading...",
+    "showMore": "Show more",
+    "tabs": {
+      "reorder": "To reorder",
+      "transit": "In transit",
+      "product": "Find a product"
+    },
+    "filter": {
+      "warehouse": "Warehouse",
+      "all": "All warehouses"
+    },
+    "noWarehouses": "You do not have a warehouse to look at.",
+    "reorder": {
+      "summary": "To order: {{need}} · Covered: {{covered}} · At the point: {{atPoint}}",
+      "warehouse": "Warehouse",
+      "product": "Product",
+      "onHand": "On hand",
+      "point": "Reorder at",
+      "incoming": "In transit to it",
+      "onOrder": "On order",
+      "status": "Status",
+      "shortfall": "Still short",
+      "none": "Nothing needs reordering.",
+      "newOrder": "New order",
+      "legend": "A line is covered when what is on hand plus what is on its way is above the reorder point.",
+      "statusLabel": {
+        "covered": "On its way",
+        "order": "Order now",
+        "at_point": "At the point"
+      }
+    },
+    "transit": {
+      "no": "Shipment #",
+      "from": "From",
+      "to": "To",
+      "shipped": "Shipped",
+      "age": "On the road",
+      "lines": "Lines",
+      "units": "Units",
+      "late": "Late",
+      "other": "Another location",
+      "none": "No shipments on their way.",
+      "ageDays": "{{days}} d {{hours}} h",
+      "ageHours": "{{hours}} h",
+      "help": "Shipments that left a location and have not been received yet. Late after 3 days."
+    },
+    "product": {
+      "product": "Product",
+      "choose": "Choose a product...",
+      "prompt": "Choose a product to see where it is.",
+      "warehouse": "Warehouse",
+      "onHand": "On hand",
+      "incoming": "In transit to it",
+      "onOrder": "On order",
+      "cost": "Average cost",
+      "value": "Value",
+      "total": "All warehouses",
+      "none": "No warehouse to show."
+    }
   }
 }
