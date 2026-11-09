@@ -1,3 +1,32 @@
+> **CURRENT PLAN, 2026-11-09: follow the ordered list below. It replaces the "Next: F-03" lines and the route note further down.** The rest of this file (commands, rules, gotchas) is still correct.
+
+# Work order (owner-approved 2026-11-09)
+
+## Where things stand now
+- `main` was merged from this branch on 2026-11-09 and contains Solo (phone and web), Full mode on the server and the web (F-01 to F-12) and the whole warehouse set F-13a to F-13g (merge commit `8664c76`). Nothing is pushed anywhere (no remote).
+- The branch is ahead of `main` by the F-13h plan and card H1 (`docs/tasks/F-13h-phone-warehouse.md`).
+- Gate, last run: `pnpm check` green: pgTAP 4423 in 41 files, web 117, Flutter 361, lint and types clean.
+- Estimates (judgment): Mobile Solo ~90% built / ~70% checked in use; Web Solo ~85% / ~65%; Web Full ~80% / ~55%; Mobile Full ~35% / ~25%. Table in `docs/handoff.md`, section "Completion estimate and priorities".
+- **Another Claude session may have uncommitted work on F-13h H2 in `apps/mobile/lib/data/` (db.dart, drift_store.dart, local_store.dart) and a new migration `20261109000800_...`.** Do not edit those files or start H2 to H8 until `git status` shows them committed.
+
+## The order (do one, finish it, update `docs/handoff.md`, then the next)
+1. **Prove Mobile Solo on the emulator, then fix what breaks.** Emulator `Pixel_4_API_33`, commands in the sections below. Check by hand and note pass/fail in a new `docs/tasks/P9-device-check.md`: tingi (pack to piece), expiry dates, pay-by dates and the utang statement, supervisor PIN approval (needs a second user with a PIN), CSV and statement sharing, selling offline then reconnecting, day close, e-wallet float. Fix bugs one at a time with a test each. Done when every item has a result and the bugs found are fixed or listed.
+2. **CI and a signed release build.** CI needs a git remote: **ask the owner which remote to use, never create or push to one yourself.** Add `flutter analyze` and `flutter test` to `.github/workflows/ci.yml` (they are already in `pnpm check`). The keystore is made by the OWNER, never generate one; once they give the path (outside the repo, never committed), wire `android/key.properties` through `.gitignore` and build `flutter build apk --release`.
+3. **Cashier-ready Mobile Full.** Per-cashier shifts and X/Z reports on the phone (server side exists, F-05), then staff screens on the phone (F-04 mobile: list, create cashier, set PIN, store assignment). Server first only if something is missing; migrations and pgTAP before UI; Opus-class care for anything touching the sync engine or ledger.
+4. **Web Full UI overhaul.** Read `docs/design-references.md`, `docs/design-audit.md`, `docs/plan-solo-design.md` first and match the phone app's look. Build the system first (tokens, type scale, components: table, tabs, dialog, form, empty and error states, toasts; a sidebar layout instead of the long top nav; dark mode; accessibility), then restyle screens busiest first: Sell, Today, Products, Purchasing, Counts, Warehouses. Keep every `data-testid`, route and i18n key (English and Filipino parity test must stay green). Check each screen in the browser (`pnpm --filter @pos/client dev --port 5174` from the worktree; the preview tool cannot serve this worktree; copy `apps/client/.env.local` from the main checkout).
+5. **F-13i warehouse acceptance.** One two-warehouse scenario on server and web: order, receipt (partial and over), put-away, transfer between warehouses (pick first), count both, stock correct at every step, bin totals equal warehouse totals. Report in `docs/handoff.md` and `docs/tasks/F-13-multi-warehouse.md`.
+6. **F-13h H2 to H8, the warehouse phone** (only after the other session's work is committed): follow `docs/tasks/F-13h-phone-warehouse.md`. Receiving works offline, counting needs signal.
+7. **Smaller web gaps:** stored Solo/Full mode flag, pick-list and put-away screens, editing a draft purchase order, product search by typing.
+8. **Later:** offline counting (H7), web offline, per-warehouse reorder points, card payments.
+
+## Rules that never change (CLAUDE.md, restated)
+Migrations and pgTAP before UI; never edit an existing migration (add a new one; copy the newest `sync_push` definition, now in `20261109000700_warehouse_sync.sql` once H1 is merged); every new table gets RLS plus a row per role in `supabase/tests/004_tenant_isolation_matrix.test.sql`; stock changes only through `stock_movements`; money is integer minor units; strings through i18n (English and Filipino); run `pnpm check` before calling anything done and say plainly what you did not verify; commit per card with explicit paths (`git add <files>`, never `git add -A`); do not merge to `main` or push without the owner's OK; never run `supabase db reset` without asking (it wipes local test data).
+
+## Owner-only (ask, do not do)
+The git remote, the release keystore, merging to `main`, pushing, deleting data.
+
+---
+
 > **ROUTE CHANGED 2026-11-08 (owner): read `docs/START-HERE-full-mode.md` first.** Solo on the phone is done; next is Solo on the web (React, cards W-01 to W-04 in `docs/tasks/W-00-solo-web-and-upgrade.md`), then an in-place "Upgrade to Full" (W-05), then Full in React. The old "Next: F-03 in Flutter" and the Flutter F-03/F-04 items below are **parked**. The numbers, rules and gotchas below are still correct.
 
 # Start here (for Antigravity or any new session)

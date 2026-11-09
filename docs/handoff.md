@@ -3,6 +3,24 @@
 Updated at the end of every task. Read this first in a fresh session. New session or a different tool (Antigravity)? Start with `docs/START-HERE-antigravity.md`.
 
 ## Status
+
+### Completion estimate and priorities (2026-11-09, judgment, not measured)
+| Product | Built | Checked in use | Main gap |
+| --- | --- | --- | --- |
+| Mobile Solo | ~90% | ~70% | Many features only tested in code, not on the emulator; no real phone; release APK unsigned |
+| Web Solo | ~85% | ~65% | Online only; Solo/Full mode is guessed from the access data; no component tests |
+| Web Full | ~80% | ~55% | No pick-list or put-away screens; staff and shifts barely used by hand; never run with a real multi-store setup |
+| Mobile Full | ~35% | ~25% | No shifts, staff, transfers, bins or warehouse on the phone (F-13h H2 to H8 pending) |
+
+**Priorities for what to build next** (reason in brackets):
+1. **Prove what exists on the emulator (Mobile Solo), then fix what breaks.** Tingi, expiry, pay-by dates, supervisor PIN, sharing, offline then reconnect. [Mobile Solo is the product a tindera uses first; ~30% of it has never been seen running. Cheap, and it finds bugs before new work piles on.]
+2. **Get CI running and sign the release APK.** Needs a git remote and a keystore the owner creates. [Nothing has ever been checked by CI; an unsigned APK cannot be installed outside the emulator.]
+3. **Cashier-ready Mobile Full: per-cashier shifts and X/Z reports on the phone (F-05 mobile), staff on the phone.** [The decision log says shifts are needed before staff go live, and cashiers use phones at the till; the warehouse phone work serves fewer people.]
+4. **Web Full UI overhaul (design).** One design system for `apps/client`: colour and spacing tokens, type scale, a real component set (table, tabs, dialog, form, empty and error states, toasts), a responsive layout with a proper sidebar instead of the long top nav (it already has 15+ links), dark mode, and accessibility checks. Then restyle every screen on it, starting with the busiest (Sell, Today, Products, Purchasing, Counts, Warehouses). Use `docs/design-references.md` and the look already chosen for the phone app so the two match. [The web UI is plain Tailwind built screen by screen; the three F-13 screens just added more of it. Doing the system first keeps later screens from needing a redo. Do it after priorities 1 to 3, before more screens are added.]
+5. **F-13i acceptance for the warehouse** (two-warehouse run on server and web). [All pieces exist; one run proves them together. No phone needed.]
+6. **F-13h H2 to H8, the warehouse phone** (receive offline, count online). [Biggest single gap in Mobile Full, but the web already covers warehouse work, so it is less urgent than 1 to 3.]
+7. **Web Solo/Full gaps:** a stored mode flag, pick-list and put-away screens, editing a draft purchase order, product search by typing. [Real but not blocking.]
+8. **Later:** offline counting (H7), web offline, per-warehouse reorder points, card payments.
 - **F-13h H1 server warehouse sync: done (2026-11-09).** Migration `20261109000700_warehouse_sync.sql`, pgTAP `041_warehouse_sync.test.sql` (94). `sync_push` kinds `receive_po` and `receive_without_po` (op id = receipt id); `sync_pull_warehouse` (warehouses, bins, bin and warehouse stock, suppliers, open orders with lines). Newest `sync_push` definition is now in that migration. pgTAP total 4423 in 41 files. Next: H2 local database (Drift v15), H3 sync engine, then screens.
 - **F-13h phone screens: plan (2026-11-09).** `docs/tasks/F-13h-phone-warehouse.md`. Survey result: the Flutter app has no warehouse concept (a warehouse user has no store, and `storesOf()` keeps only stores), so this needs a warehouse home, local schema v15, `sync_pull_warehouse` and two new `sync_push` kinds. Decisions to confirm: receiving offline, counting online-only in v1; warehouse-role users get their own home; no put-away or picking in v1.
 - **F-13g slice 3, Warehouse overview (web): done (2026-11-09), F-13g complete.** `/app/warehouses`: reorder list, shipments in transit, find a product across warehouses. 13 new web tests; client 117, pgTAP 4329, Flutter 361. Next: F-13h phone screens for warehouse staff, then F-13i acceptance.
