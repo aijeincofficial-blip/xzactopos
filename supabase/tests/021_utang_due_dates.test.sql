@@ -26,7 +26,7 @@ create function pg_temp.due_on(cus text default 'rosa') returns date language sq
   select due_on from public.customers where id = pg_temp.id('cus:' || cus)
 $$;
 create function pg_temp.audits() returns int language sql as $$
-  select count(*)::int from public.audit_log where action = 'utang.set_due'
+  select count(*)::int from public.audit_log where tenant_id = pg_temp.t('A') and action = 'utang.set_due'
 $$;
 
 insert into auth.users (id, email)
@@ -89,9 +89,9 @@ select is(pg_temp.due('d2', pg_temp.d(7)) -> 'result' ->> 'changed', 'false', 't
 reset role;
 select is(pg_temp.audits(), 1, 'one audit row: the replay and the no-change send write none');
 select is((select (select array_agg(k order by k) from jsonb_object_keys(meta) k)::text from public.audit_log
-           where action = 'utang.set_due'), '{due_on,op_id,previous}', 'the audit row has small meta');
+           where tenant_id = pg_temp.t('A') and action = 'utang.set_due'), '{due_on,op_id,previous}', 'the audit row has small meta');
 select is((select (entity, entity_id = pg_temp.id('cus:rosa'), meta ->> 'previous')::text from public.audit_log
-           where action = 'utang.set_due'), '(customer,t,)', 'it names the customer and the old value (none)');
+           where tenant_id = pg_temp.t('A') and action = 'utang.set_due'), '(customer,t,)', 'it names the customer and the old value (none)');
 
 -- ===== delivered by the delta pull =====
 set local session_replication_role = replica;
@@ -115,7 +115,7 @@ select is(pg_temp.due_on(), null::date, 'the customer has no due date any more')
 select is(pg_temp.due('d5', 'null') -> 'result' ->> 'changed', 'false', 'clearing again changes nothing');
 reset role;
 select is(pg_temp.audits(), 3, 'set, change and clear: three audit rows');
-select is((select meta ->> 'previous' from public.audit_log where action = 'utang.set_due' and meta ->> 'due_on' is null),
+select is((select meta ->> 'previous' from public.audit_log where tenant_id = pg_temp.t('A') and action = 'utang.set_due' and meta ->> 'due_on' is null),
           to_char(current_date - 1, 'YYYY-MM-DD'), 'the clear records what it cleared');
 
 -- ===== bad input =====

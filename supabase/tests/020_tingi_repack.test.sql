@@ -158,9 +158,9 @@ select is((select counted from public.stock_levels where variant_id = pg_temp.id
 select is((select count(*)::int from public.conversions), 1, 'the replay wrote no second opening');
 select is((select count(*)::int from public.stock_movements where ref_id = pg_temp.id('c:c1')), 2, 'nor more movements');
 reset role;
-select is((select count(*)::int from public.audit_log where action = 'stock.open_pack'), 1, 'one audit row for the opening');
+select is((select count(*)::int from public.audit_log where tenant_id = pg_temp.t('A') and action = 'stock.open_pack'), 1, 'one audit row for the opening');
 select is((select (entity, location_id = pg_temp.id('S01'), (select array_agg(k order by k) from jsonb_object_keys(meta) k))::text
-           from public.audit_log where action = 'stock.open_pack'),
+           from public.audit_log where tenant_id = pg_temp.t('A') and action = 'stock.open_pack'),
           '(conversion,t,"{op_id,pack_variant_id,packs,piece_variant_id,pieces,total_cost}")', 'with small meta');
 set local role authenticated;
 
@@ -227,9 +227,9 @@ select pg_temp.sell('s1', 'sachet', 20);
 select is(pg_temp.vd('v4', 'c17') ->> 'status', 'ok', 'voiding after the pieces were sold is allowed');
 select is(pg_temp.lvl('sachet'), -8::numeric, 'and may push the piece level below zero (24 in, 20 sold, 12 taken back)');
 reset role;
-select is((select count(*)::int from public.audit_log where action = 'stock.void_open_pack'), 2, 'one audit row per void');
+select is((select count(*)::int from public.audit_log where tenant_id = pg_temp.t('A') and action = 'stock.void_open_pack'), 2, 'one audit row per void');
 select is((select (select array_agg(k order by k) from jsonb_object_keys(meta) k)::text from public.audit_log
-           where action = 'stock.void_open_pack' and entity_id = pg_temp.id('c:c1')),
+           where tenant_id = pg_temp.t('A') and action = 'stock.void_open_pack' and entity_id = pg_temp.id('c:c1')),
           '{op_id,packs,pieces,reason}', 'with small meta');
 
 -- the table is append-only, even for the schema owner
