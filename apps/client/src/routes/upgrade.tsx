@@ -174,7 +174,7 @@ export function UpgradePage() {
                   type="checkbox"
                   checked={warehouse}
                   onChange={(e) => setWarehouse(e.target.checked)}
-                  className="mt-1 h-4 w-4 rounded border-slate-300 text-indigo-600"
+                  className="mt-1 h-4 w-4 rounded border-slate-300 text-brand-text"
                 />
                 <div>
                   <div className="font-medium text-sm text-slate-900">{t("upgrade.enableWarehouse")}</div>
@@ -200,7 +200,7 @@ export function UpgradePage() {
                       setLocationName(locationType === "warehouse" ? "Central Warehouse" : "Branch 2");
                     }
                   }}
-                  className="h-4 w-4 rounded border-slate-300 text-indigo-600"
+                  className="h-4 w-4 rounded border-slate-300 text-brand-text"
                 />
               </div>
 

@@ -4,12 +4,14 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
 import { initI18n } from "./i18n/index.ts";
 import { makeRouter } from "./router.tsx";
+import { applyTheme, readTheme } from "./lib/theme.ts";
 import "./index.css";
 
 const queryClient = new QueryClient({
   // No background polling on admin screens; refetch on demand after mutations.
   defaultOptions: { queries: { refetchOnWindowFocus: false, retry: false } },
 });
+applyTheme(readTheme()); // before the first paint, so a dark choice does not flash light
 const router = makeRouter(queryClient);
 
 void initI18n().then(() => {

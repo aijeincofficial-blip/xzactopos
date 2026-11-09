@@ -19,7 +19,13 @@
     "platform": "Plataporma",
     "purchasing": "Pagbili",
     "counts": "Bilangan",
-    "overview": "Mga bodega"
+    "overview": "Mga bodega",
+    "group": {
+      "daily": "Araw-araw",
+      "stock": "Imbentaryo",
+      "business": "Negosyo"
+    },
+    "menu": "Menu"
   },
   "roles": {
     "superadmin": "May-ari",

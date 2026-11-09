@@ -1,9 +1,168 @@
 @import "tailwindcss";
 
+/*
+ * Design tokens for the web app. They match the phone app: brand blue for actions, mint for "good",
+ * amber for "watch", ruby for "stop", obsidian navy for the dark surfaces.
+ *
+ * Screens use the plain Tailwind names (slate, white, red, amber, emerald, indigo). Dark mode re-maps those
+ * variables below, so every screen follows the theme without a per-screen `dark:` class.
+ */
 @theme {
   --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  /* brand */
+  --color-brand-50: #eef5ff;
+  --color-brand-100: #d9e8ff;
+  --color-brand-500: #3b82f6;
+  --color-brand-600: #1e6fff;
+  --color-brand-700: #1858d4;
+  --color-brand-800: #1b3f94;
+  --color-mint-500: #2fd9b2;
+  --color-navy-900: #0f172a;
+  --color-brand-text: #1858d4; /* brand blue for text and links: readable on the surface in both themes */
+
+  /* type scale (size / line height) */
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1.1rem;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.35rem;
+  --text-base: 1rem;
+  --text-base--line-height: 1.55rem;
+  --text-lg: 1.125rem;
+  --text-lg--line-height: 1.6rem;
+  --text-xl: 1.375rem;
+  --text-xl--line-height: 1.8rem;
+  --text-2xl: 1.75rem;
+  --text-2xl--line-height: 2.1rem;
+
+  /* radius and elevation */
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --shadow-sm: 0 1px 2px 0 rgb(15 23 42 / 0.06), 0 1px 1px 0 rgb(15 23 42 / 0.04);
 }
 
 body {
-  @apply bg-slate-50 text-slate-900;
+  @apply bg-slate-50 text-slate-900 antialiased;
+}
+
+/* Dark palette. Applied when the user chose dark, or chose "system" and the device is dark. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-white: #131c31;
+  --color-slate-50: #0a1120;
+  --color-slate-100: #18233a;
+  --color-slate-200: #25324d;
+  --color-slate-300: #384866;
+  --color-slate-400: #7d8aa4;
+  --color-slate-500: #9aa7bf;
+  --color-slate-600: #b3bed2;
+  --color-slate-700: #cad3e2;
+  --color-slate-800: #e2e8f1;
+  --color-slate-900: #f1f5fa;
+  --color-red-50: #3a161b;
+  --color-red-100: #4a1d24;
+  --color-red-200: #7f2a35;
+  --color-red-500: #f87171;
+  --color-red-600: #f87171;
+  --color-red-700: #fca5a5;
+  --color-red-800: #fecaca;
+  --color-red-900: #fee2e2;
+  --color-amber-50: #38290b;
+  --color-amber-100: #4a350c;
+  --color-amber-200: #7a5a14;
+  --color-amber-400: #fbbf24;
+  --color-amber-500: #fbbf24;
+  --color-amber-600: #fbbf24;
+  --color-amber-700: #fcd34d;
+  --color-amber-800: #fde68a;
+  --color-amber-900: #fef3c7;
+  --color-emerald-50: #0d2d24;
+  --color-emerald-100: #11392e;
+  --color-emerald-200: #1b5a48;
+  --color-emerald-500: #34d399;
+  --color-emerald-600: #34d399;
+  --color-emerald-700: #6ee7b7;
+  --color-emerald-800: #a7f3d0;
+  --color-emerald-900: #d1fae5;
+  --color-green-100: #11392e;
+  --color-green-700: #6ee7b7;
+  --color-green-800: #a7f3d0;
+  --color-indigo-100: #1e2a5a;
+  --color-indigo-200: #2c3d85;
+  --color-indigo-600: #8aa4ff;
+  --color-indigo-700: #a5b8ff;
+  --color-indigo-900: #dbe4ff;
+  --color-brand-50: #11284d;
+  --color-brand-100: #17346b;
+  --color-brand-600: #2563eb;
+  --color-brand-700: #1d4ed8;
+  --color-brand-text: #8db7ff;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not([data-theme="dark"]) {
+    color-scheme: dark;
+    --color-white: #131c31;
+    --color-slate-50: #0a1120;
+    --color-slate-100: #18233a;
+    --color-slate-200: #25324d;
+    --color-slate-300: #384866;
+    --color-slate-400: #7d8aa4;
+    --color-slate-500: #9aa7bf;
+    --color-slate-600: #b3bed2;
+    --color-slate-700: #cad3e2;
+    --color-slate-800: #e2e8f1;
+    --color-slate-900: #f1f5fa;
+    --color-red-50: #3a161b;
+    --color-red-100: #4a1d24;
+    --color-red-200: #7f2a35;
+    --color-red-500: #f87171;
+    --color-red-600: #f87171;
+    --color-red-700: #fca5a5;
+    --color-red-800: #fecaca;
+    --color-red-900: #fee2e2;
+    --color-amber-50: #38290b;
+    --color-amber-100: #4a350c;
+    --color-amber-200: #7a5a14;
+    --color-amber-400: #fbbf24;
+    --color-amber-500: #fbbf24;
+    --color-amber-600: #fbbf24;
+    --color-amber-700: #fcd34d;
+    --color-amber-800: #fde68a;
+    --color-amber-900: #fef3c7;
+    --color-emerald-50: #0d2d24;
+    --color-emerald-100: #11392e;
+    --color-emerald-200: #1b5a48;
+    --color-emerald-500: #34d399;
+    --color-emerald-600: #34d399;
+    --color-emerald-700: #6ee7b7;
+    --color-emerald-800: #a7f3d0;
+    --color-emerald-900: #d1fae5;
+    --color-green-100: #11392e;
+    --color-green-700: #6ee7b7;
+    --color-green-800: #a7f3d0;
+    --color-indigo-100: #1e2a5a;
+    --color-indigo-200: #2c3d85;
+    --color-indigo-600: #8aa4ff;
+    --color-indigo-700: #a5b8ff;
+    --color-indigo-900: #dbe4ff;
+    --color-brand-50: #11284d;
+    --color-brand-100: #17346b;
+    --color-brand-600: #2563eb;
+    --color-brand-700: #1d4ed8;
+    --color-brand-text: #8db7ff;
+  }
+}
+
+/* Keyboard focus is always visible, in the brand colour. */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-brand-600);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

@@ -368,7 +368,7 @@ export function PlatformPage() {
 
           <Card className="grid gap-1">
             <span className="text-xs text-slate-500 font-medium uppercase">{t("platform.proTenants")}</span>
-            <div className="text-2xl font-bold text-indigo-700">{m.pro_tenants}</div>
+            <div className="text-2xl font-bold text-brand-text">{m.pro_tenants}</div>
             <div className="text-xs text-slate-500 mt-1">
               {m.total_tenants - m.pro_tenants} Free Tier
             </div>

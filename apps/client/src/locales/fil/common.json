@@ -11,5 +11,15 @@
     "close": "Isara"
   },
   "saved": "Na-save na.",
-  "language": { "label": "Wika", "en": "English", "fil": "Filipino" }
+  "language": {
+    "label": "Wika",
+    "en": "English",
+    "fil": "Filipino"
+  },
+  "theme": {
+    "label": "Tema",
+    "system": "Ayon sa device",
+    "light": "Maliwanag",
+    "dark": "Madilim"
+  }
 }

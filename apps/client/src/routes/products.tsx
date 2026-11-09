@@ -449,12 +449,12 @@ function StockPanel({
 
       {/* Tingi / Repack Open Pack */}
       {row.breaksIntoVariantId && row.breaksIntoQty ? (
-        <div className="rounded border border-indigo-200 bg-indigo-50/50 p-3 grid gap-2.5 mt-2">
+        <div className="rounded border border-brand-100 bg-brand-50 p-3 grid gap-2.5 mt-2">
           <div className="flex items-center justify-between">
-            <span className="font-semibold text-xs text-indigo-900 uppercase tracking-wide">
+            <span className="font-semibold text-xs text-brand-text uppercase tracking-wide">
               {t("products.openPackTitle")}
             </span>
-            <span className="text-xs text-indigo-700">
+            <span className="text-xs text-brand-text">
               1 {row.unit} = {row.breaksIntoQty} {piece ? piece.unit : "pcs"} {piece ? `(${piece.name})` : ""}
             </span>
           </div>
@@ -470,7 +470,7 @@ function StockPanel({
               />
             </Labeled>
             <Labeled label={t("products.piecesProduced")}>
-              <div className="h-9 px-3 flex items-center font-bold text-indigo-900 bg-white border border-slate-200 rounded-md text-sm">
+              <div className="h-9 px-3 flex items-center font-bold text-brand-text bg-white border border-slate-200 rounded-md text-sm">
                 {(parseInt(openPacksCount, 10) || 0) * row.breaksIntoQty} {piece?.unit ?? "pcs"}
               </div>
             </Labeled>
@@ -484,7 +484,7 @@ function StockPanel({
 
           {/* Recent Openings list for this pack */}
           {conversionsQuery.data && conversionsQuery.data.filter((c) => c.pack_variant_id === row.variantId).length > 0 ? (
-            <div className="mt-2 text-xs border-t border-indigo-100 pt-2">
+            <div className="mt-2 text-xs border-t border-brand-100 pt-2">
               <span className="font-medium text-slate-700 block mb-1">{t("products.recentOpenings")}:</span>
               <ul className="grid gap-1">
                 {conversionsQuery.data
@@ -629,7 +629,7 @@ function CategoryDialog({
                   <div className="flex gap-2">
                     <button
                       type="button"
-                      className="text-xs text-indigo-600 hover:underline"
+                      className="text-xs text-brand-text hover:underline"
                       onClick={() => {
                         setEditingId(c.id);
                         setName(c.name);
@@ -770,7 +770,7 @@ function ImportDialog({
               {t("products.importing")} ({progress}%)
             </span>
             <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-              <div className="h-full bg-indigo-600 transition-all" style={{ width: `${progress}%` }} />
+              <div className="h-full bg-brand-600 transition-all" style={{ width: `${progress}%` }} />
             </div>
           </div>
         ) : null}
@@ -925,7 +925,7 @@ export function ProductsPage() {
                     <span className="flex flex-wrap items-center gap-2 text-xs text-slate-500 mt-0.5">
                       <span>{r.sku}</span>
                       {r.categoryName ? <span className="bg-slate-100 text-slate-700 px-1.5 py-0.2 rounded font-medium">{r.categoryName}</span> : null}
-                      {r.breaksIntoVariantId ? <span className="text-indigo-600 font-medium">📦 Pack (1→{r.breaksIntoQty})</span> : null}
+                      {r.breaksIntoVariantId ? <span className="text-brand-text font-medium">📦 Pack (1→{r.breaksIntoQty})</span> : null}
                       {r.active ? "" : <span className="text-slate-400">· {t("products.inactive")}</span>}
                     </span>
                   </span>
