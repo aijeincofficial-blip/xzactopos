@@ -7,7 +7,7 @@ Updated at the end of every task. Read this first in a fresh session. New sessio
 ### Who is doing what (update when you start and finish a task)
 | Agent | Branch and worktree | Working on | Status |
 | --- | --- | --- | --- |
-| Claude | `claude/phase3-sell-8261d3`, `.claude/worktrees/phase3-sell-8261d3` | F-13h phone warehouse: H1 to H8 done. Merged to main; next F-13i. Left a local test tenant `h8-mw91d2at` in the shared DB. | between steps (nothing in progress) |
+| Claude | `claude/phase3-sell-8261d3`, `.claude/worktrees/phase3-sell-8261d3` | Priority 1: prove Mobile Solo on the emulator and fix what breaks. | in progress |
 | Antigravity | `ag/work`, `.claude/worktrees/ag-work` | not started: priority 1 (prove Mobile Solo on the emulator) | waiting |
 | Owner | merges branches into `main`; makes the git remote and the keystore | | |
 
@@ -19,15 +19,15 @@ Row status words: `waiting`, `in progress`, `done`, `stopped` / `limit reached` 
 | Mobile Solo | ~90% | ~70% | Many features only tested in code, not on the emulator; no real phone; release APK unsigned |
 | Web Solo | ~85% | ~65% | Online only; Solo/Full mode is guessed from the access data; no component tests |
 | Web Full | ~80% | ~55% | No pick-list or put-away screens; staff and shifts barely used by hand; never run with a real multi-store setup |
-| Mobile Full | ~35% | ~25% | No shifts, staff, transfers, bins or warehouse on the phone (F-13h H2 to H8 pending) |
+| Mobile Full | ~55% | ~40% | No shifts or staff on the phone; no transfers or pick/put-away on the phone (receive, count and stock for warehouses are done and were run on the emulator) |
 
 **Priorities for what to build next** (reason in brackets):
 1. **Prove what exists on the emulator (Mobile Solo), then fix what breaks.** Tingi, expiry, pay-by dates, supervisor PIN, sharing, offline then reconnect. [Mobile Solo is the product a tindera uses first; ~30% of it has never been seen running. Cheap, and it finds bugs before new work piles on.]
 2. **Get CI running and sign the release APK.** Needs a git remote and a keystore the owner creates. [Nothing has ever been checked by CI; an unsigned APK cannot be installed outside the emulator.]
 3. **Cashier-ready Mobile Full: per-cashier shifts and X/Z reports on the phone (F-05 mobile), staff on the phone.** [The decision log says shifts are needed before staff go live, and cashiers use phones at the till; the warehouse phone work serves fewer people.]
 4. **Web Full UI overhaul (design).** One design system for `apps/client`: colour and spacing tokens, type scale, a real component set (table, tabs, dialog, form, empty and error states, toasts), a responsive layout with a proper sidebar instead of the long top nav (it already has 15+ links), dark mode, and accessibility checks. Then restyle every screen on it, starting with the busiest (Sell, Today, Products, Purchasing, Counts, Warehouses). Use `docs/design-references.md` and the look already chosen for the phone app so the two match. [The web UI is plain Tailwind built screen by screen; the three F-13 screens just added more of it. Doing the system first keeps later screens from needing a redo. Do it after priorities 1 to 3, before more screens are added.]
-5. **F-13i acceptance for the warehouse** (two-warehouse run on server and web). [All pieces exist; one run proves them together. No phone needed.]
-6. **F-13h H2 to H8, the warehouse phone** (receive offline, count online). [Biggest single gap in Mobile Full, but the web already covers warehouse work, so it is less urgent than 1 to 3.]
+5. ~~F-13i acceptance for the warehouse~~ **Done 2026-11-09** (scenario script, transfer stock guard, web and phone checked).
+6. ~~F-13h H2 to H8, the warehouse phone~~ **Done 2026-11-09** (receive offline, count online, bin stock, offline start). Offline counting (H7) is still item 8.
 7. **Web Solo/Full gaps:** a stored mode flag, pick-list and put-away screens, editing a draft purchase order, product search by typing. [Real but not blocking.]
 8. **Later:** offline counting (H7), web offline, per-warehouse reorder points, card payments.
 - **Local test data cleaned (2026-11-09).** Tenants `h8-mw91d2at` and `f13i-mw97727i` and their users were deleted from the local database. The ledger's append-only guard blocks deleting a tenant that has stock movements, so the delete ran in one transaction with only the `stock_movements_append_only` trigger switched off, switched on again before commit (checked). The three scratch tenants from scenario reruns (`f13i-mw976d6b`, `f13i-mw986o6r`, `f13i-mw987676`) and their nine users were deleted the same way; only the older `whtest` is left. Next time: use the same transaction, or give the scenario script a cleanup step.
