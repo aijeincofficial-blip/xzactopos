@@ -9,6 +9,7 @@ import '../l10n/app_localizations.dart';
 import '../sync/store_session.dart';
 import '../sync/sync_badge.dart';
 import 'settings_screen.dart';
+import 'warehouse_receive.dart';
 
 /// The home of a warehouse clerk (F-13h): receive, count, stock, more. No selling, no store tabs.
 class WarehouseShell extends StatefulWidget {
@@ -166,6 +167,13 @@ class ReceiveTab extends StatelessWidget {
               builder: (context, rsnap) {
                 final receipts = rsnap.data ?? const <WhReceiptView>[];
                 return ListView(padding: const EdgeInsets.all(Gap.l), children: [
+                  OutlinedButton.icon(
+                    key: const Key('walkin-start'),
+                    icon: const Icon(Icons.add_rounded),
+                    label: Text(t.whWalkInStart),
+                    onPressed: () => Navigator.of(context).push(_scoped(context, WalkInScreen(warehouseId: wh.id))),
+                  ),
+                  const SizedBox(height: Gap.l),
                   Text(t.whOpenOrders, style: Theme.of(context).textTheme.titleMedium),
                   const SizedBox(height: Gap.s),
                   if (orders.isEmpty) Padding(padding: const EdgeInsets.symmetric(vertical: Gap.l), child: Text(t.whNoOrders, key: const Key('no-orders'))),
@@ -231,6 +239,16 @@ class OrderDetailScreen extends StatelessWidget {
                       Text(order.supplierName ?? '', style: Theme.of(context).textTheme.titleMedium),
                       if (order.hasPending) Padding(padding: const EdgeInsets.only(top: Gap.s), child: Text(t.whWaitingSync, key: const Key('detail-pending'))),
                       const SizedBox(height: Gap.l),
+                      if (!order.completeHere)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: Gap.m),
+                          child: FilledButton.icon(
+                            key: const Key('receive-start'),
+                            icon: const Icon(Icons.move_to_inbox_rounded),
+                            label: Text(t.whReceiveStart),
+                            onPressed: () => Navigator.of(context).push(_scoped(context, ReceiveOrderScreen(orderId: order.id))),
+                          ),
+                        ),
                       Text(t.whOrderLines, style: Theme.of(context).textTheme.titleSmall),
                       for (final l in order.items)
                         ListTile(
@@ -367,7 +385,10 @@ class _MoreTab extends StatelessWidget {
             key: const Key('more-switch'),
             leading: const Icon(Icons.swap_horiz_rounded),
             title: Text(t.whSwitchAction),
-            onTap: () async => showWarehousePicker(context, store, all, await store.activeWarehouse()),
+            onTap: () async {
+              final active = await store.activeWarehouse();
+              if (context.mounted) await showWarehousePicker(context, store, all, active);
+            },
           );
         },
       ),

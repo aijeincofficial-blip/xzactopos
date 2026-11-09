@@ -1674,4 +1674,79 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get whUnknownProduct => 'Hindi kilalang produkto';
+
+  @override
+  String get whReceiveStart => 'Tanggapin ang mga paninda';
+
+  @override
+  String get whReceiveTitle => 'Tanggapin';
+
+  @override
+  String get whReceiveSave => 'I-save ang resibo';
+
+  @override
+  String get whReceiptSaved =>
+      'Na-save ang resibo. Mase-sync ito kapag online ka.';
+
+  @override
+  String get whQtyReceived => 'Dami na natanggap';
+
+  @override
+  String get whInvoiceCost => 'Presyo bawat isa (opsyonal)';
+
+  @override
+  String get whDeliveryRef => 'Delivery o invoice no. (opsyonal)';
+
+  @override
+  String get whNotes => 'Tala (opsyonal)';
+
+  @override
+  String get whOverDelivery =>
+      'Mas marami kaysa sa order. Mamarkahan ang sobra.';
+
+  @override
+  String get whWalkInStart => 'Delivery na walang order';
+
+  @override
+  String get whWalkInTitle => 'Delivery na walang order';
+
+  @override
+  String get whWalkInHint =>
+      'Idagdag ang dumating. Mamarkahan ito para suriin dahil walang order.';
+
+  @override
+  String get whSupplier => 'Supplier';
+
+  @override
+  String get whNoSupplier => 'Walang supplier';
+
+  @override
+  String get whScanUnknown => 'Walang produktong may ganyang barcode.';
+
+  @override
+  String get whErrUnknownOrder =>
+      'Wala na ang order na ito sa telepono. Mag-sync at subukan ulit.';
+
+  @override
+  String get whErrOrderClosed => 'Sarado na ang order na ito.';
+
+  @override
+  String get whErrNotOnOrder => 'Wala sa order na ito ang produktong iyon.';
+
+  @override
+  String get whErrDuplicateLine =>
+      'Isang beses lang puwedeng lumabas ang bawat produkto.';
+
+  @override
+  String get whErrQtyInvalid => 'Maglagay ng dami na higit sa zero.';
+
+  @override
+  String get whErrCostInvalid => 'Hindi tamang halaga ang presyo.';
+
+  @override
+  String get whErrNoLines => 'Maglagay ng dami para sa kahit isang produkto.';
+
+  @override
+  String get whErrUnknownWarehouse =>
+      'Hindi available sa iyo ang bodegang ito.';
 }

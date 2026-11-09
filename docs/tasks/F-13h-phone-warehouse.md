@@ -83,3 +83,14 @@ Files: `apps/mobile/lib/screens/warehouse_shell.dart` (new), `lib/app.dart` (rou
 - **Not done:** receive screens (H5), count and bin-level stock (H6); user-facing text for refusal hints (`location_denied`, `invalid_state`, `not_on_po`, ...) comes with H5. Not run on a device yet (H8).
 - Next: H5.
 
+## H5 result (2026-11-09)
+Files: `apps/mobile/lib/screens/warehouse_receive.dart` (new), `lib/screens/warehouse_shell.dart` (entry points), `lib/l10n/*.arb` (22 more `wh*` keys, en + fil), tests `test/warehouse_receive_test.dart` (11).
+
+- **Receive against an order:** a "Receive goods" button on an order that still expects goods opens one card per line, prefilled with what is still expected. The clerk edits the quantity (comma or dot decimals), optionally the invoice cost each (typed in pesos, kept as centavos), a delivery or invoice number and notes. Empty or zero lines are skipped. More than ordered is allowed with a visible warning (the server flags the extra). One operation id per screen, so a double tap or retry is the same receipt. It is saved on the phone at once, the sync is poked, and the receipt shows in "Receipts from this phone" with the server's receipt number once synced.
+- **Delivery without an order:** a button at the top of Receive opens a form with an optional supplier, product search (name or barcode) with a camera scan, one line per product (quantity, optional cost), reference and notes.
+- **Refusals** found on the phone before anything is queued (`unknown_order`, `order_closed`, `not_on_order`, `duplicate_line`, `qty_invalid`, `cost_invalid`, `no_lines`, `unknown_warehouse`) have plain English and Filipino text. Server-side refusals of a queued receipt (`location_denied`, `invalid_state`, `not_on_po`) still appear only through the existing "needs attention" list and have no phone-specific text yet.
+- **Mutation checks:** 13 rules broken on purpose; 11 caught, 2 survive by design (the form's "no lines" and "zero quantity" checks duplicate the store's own checks with the same wording, so removing one changes nothing a user can see). Four survivors on the first pass led to added tests (prefill after a part delivery, zero lines skipped, supplier kept, one line per product).
+- **Assumption:** costs use two decimal places (centavos), true for PHP, the only currency in use. A tenant with another base currency would need the currency's own minor-unit count.
+- **Not done:** bin put-away (not in v1), count and bin stock (H6), device check (H8).
+- Next: H6.
+

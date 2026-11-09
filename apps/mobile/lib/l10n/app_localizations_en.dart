@@ -1671,4 +1671,76 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get whUnknownProduct => 'Unknown product';
+
+  @override
+  String get whReceiveStart => 'Receive goods';
+
+  @override
+  String get whReceiveTitle => 'Receive';
+
+  @override
+  String get whReceiveSave => 'Save receipt';
+
+  @override
+  String get whReceiptSaved =>
+      'Receipt saved. It will sync when you are online.';
+
+  @override
+  String get whQtyReceived => 'Quantity received';
+
+  @override
+  String get whInvoiceCost => 'Cost each (optional)';
+
+  @override
+  String get whDeliveryRef => 'Delivery or invoice no. (optional)';
+
+  @override
+  String get whNotes => 'Notes (optional)';
+
+  @override
+  String get whOverDelivery => 'More than ordered. The extra will be flagged.';
+
+  @override
+  String get whWalkInStart => 'Delivery without an order';
+
+  @override
+  String get whWalkInTitle => 'Delivery without an order';
+
+  @override
+  String get whWalkInHint =>
+      'Add what arrived. It will be flagged for review because there is no order.';
+
+  @override
+  String get whSupplier => 'Supplier';
+
+  @override
+  String get whNoSupplier => 'No supplier';
+
+  @override
+  String get whScanUnknown => 'No product has that barcode.';
+
+  @override
+  String get whErrUnknownOrder =>
+      'This order is no longer on the phone. Pull to refresh and try again.';
+
+  @override
+  String get whErrOrderClosed => 'This order is already closed.';
+
+  @override
+  String get whErrNotOnOrder => 'That product is not on this order.';
+
+  @override
+  String get whErrDuplicateLine => 'Each product can only appear once.';
+
+  @override
+  String get whErrQtyInvalid => 'Enter a quantity greater than zero.';
+
+  @override
+  String get whErrCostInvalid => 'The cost is not a valid amount.';
+
+  @override
+  String get whErrNoLines => 'Enter a quantity for at least one product.';
+
+  @override
+  String get whErrUnknownWarehouse => 'This warehouse is not available to you.';
 }

@@ -2791,6 +2791,144 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unknown product'**
   String get whUnknownProduct;
+
+  /// No description provided for @whReceiveStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Receive goods'**
+  String get whReceiveStart;
+
+  /// No description provided for @whReceiveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Receive'**
+  String get whReceiveTitle;
+
+  /// No description provided for @whReceiveSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save receipt'**
+  String get whReceiveSave;
+
+  /// No description provided for @whReceiptSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Receipt saved. It will sync when you are online.'**
+  String get whReceiptSaved;
+
+  /// No description provided for @whQtyReceived.
+  ///
+  /// In en, this message translates to:
+  /// **'Quantity received'**
+  String get whQtyReceived;
+
+  /// No description provided for @whInvoiceCost.
+  ///
+  /// In en, this message translates to:
+  /// **'Cost each (optional)'**
+  String get whInvoiceCost;
+
+  /// No description provided for @whDeliveryRef.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery or invoice no. (optional)'**
+  String get whDeliveryRef;
+
+  /// No description provided for @whNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes (optional)'**
+  String get whNotes;
+
+  /// No description provided for @whOverDelivery.
+  ///
+  /// In en, this message translates to:
+  /// **'More than ordered. The extra will be flagged.'**
+  String get whOverDelivery;
+
+  /// No description provided for @whWalkInStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery without an order'**
+  String get whWalkInStart;
+
+  /// No description provided for @whWalkInTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery without an order'**
+  String get whWalkInTitle;
+
+  /// No description provided for @whWalkInHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add what arrived. It will be flagged for review because there is no order.'**
+  String get whWalkInHint;
+
+  /// No description provided for @whSupplier.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplier'**
+  String get whSupplier;
+
+  /// No description provided for @whNoSupplier.
+  ///
+  /// In en, this message translates to:
+  /// **'No supplier'**
+  String get whNoSupplier;
+
+  /// No description provided for @whScanUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'No product has that barcode.'**
+  String get whScanUnknown;
+
+  /// No description provided for @whErrUnknownOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'This order is no longer on the phone. Pull to refresh and try again.'**
+  String get whErrUnknownOrder;
+
+  /// No description provided for @whErrOrderClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'This order is already closed.'**
+  String get whErrOrderClosed;
+
+  /// No description provided for @whErrNotOnOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'That product is not on this order.'**
+  String get whErrNotOnOrder;
+
+  /// No description provided for @whErrDuplicateLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Each product can only appear once.'**
+  String get whErrDuplicateLine;
+
+  /// No description provided for @whErrQtyInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a quantity greater than zero.'**
+  String get whErrQtyInvalid;
+
+  /// No description provided for @whErrCostInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'The cost is not a valid amount.'**
+  String get whErrCostInvalid;
+
+  /// No description provided for @whErrNoLines.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a quantity for at least one product.'**
+  String get whErrNoLines;
+
+  /// No description provided for @whErrUnknownWarehouse.
+  ///
+  /// In en, this message translates to:
+  /// **'This warehouse is not available to you.'**
+  String get whErrUnknownWarehouse;
 }
 
 class _AppLocalizationsDelegate
