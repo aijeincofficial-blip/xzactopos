@@ -34,9 +34,10 @@ const signIn = async (email) => (await call("/auth/v1/token?grant_type=password"
 
 let fails = 0, checks = 0;
 const log = [];
+const sorted = (v) => (v && typeof v === "object" && !Array.isArray(v) ? Object.fromEntries(Object.entries(v).sort(([a], [b]) => a.localeCompare(b))) : v);
 function expect(label, actual, wanted) {
   checks++;
-  const ok = JSON.stringify(actual) === JSON.stringify(wanted);
+  const ok = JSON.stringify(sorted(actual)) === JSON.stringify(sorted(wanted));
   if (!ok) fails++;
   log.push(`${ok ? "PASS" : "FAIL"}  ${label}${ok ? "" : `  got ${JSON.stringify(actual)} wanted ${JSON.stringify(wanted)}`}`);
 }
@@ -81,7 +82,7 @@ async function binsOf() {
   const code = { [binRcv]: "RCV", [binA]: "A-01", [binB]: "B-02" };
   const out = {};
   for (const r of rows) if (Number(r.qty_on_hand) !== 0) out[`${code[r.bin_id] ?? r.bin_id}:${r.variant_id === A.vid ? "A" : "B"}`] = Number(r.qty_on_hand);
-  return out;
+  return Object.fromEntries(Object.entries(out).sort(([a], [b]) => a.localeCompare(b)));
 }
 async function ledgerOk(label) {
   const mv = await get(`stock_movements?select=location_id,variant_id,qty_delta&limit=5000`, owner);

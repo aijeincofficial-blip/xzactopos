@@ -97,5 +97,6 @@
   "bins_not_enabled": "This warehouse does not use bins.",
   "bin_not_allowed": "This warehouse does not use bins.",
   "pick_required": "Pick the items into staging before shipping.",
+  "insufficient_stock": "There is not enough stock at the sending place for this shipment. Check the quantity or count the stock first.",
   "op_id_reused": "That request was already used for something else."
 }

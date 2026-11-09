@@ -190,3 +190,12 @@ Run on the local stack with a throwaway tenant (`f13i-mw97727i`, preset "all"): 
 
 **Cleanup:** tenants `h8-mw91d2at` and `f13i-mw97727i` (and their users) remain in the local database. For `f13i-...` I set `setup_completed_at` directly so the web app would not show the setup wizard.
 
+## F-13i follow-up: transfer stock guard (2026-11-09)
+Closes finding 1 of the F-13i result. Migration `20261109000900_transfer_stock_guard.sql`, pgTAP `042_transfer_stock_guard.test.sql` (16 tests), web text `insufficient_stock` (en + fil).
+
+- **One guard at the ledger:** a BEFORE INSERT trigger on `stock_movements` for type `transfer_out` locks the origin's stock level row and refuses with hint `insufficient_stock` (errcode 55000) when the origin holds less than is being sent. It covers `ship_transfer`, `create_transfer` with ship-now, and any later way of shipping. The lock means two shipments racing for the last units cannot both pass. A shipment with one short line moves nothing.
+- **Not touched:** sales, write-offs, count corrections, receipts and `transfer_in`. Offline sales may still go below zero by design. An origin that is already below zero cannot ship.
+- **Order with the bin guard:** the trigger name sorts before `stock_movements_set_bin`, so "not enough stock" is reported before "pick the items first".
+- **Checks:** all 4,440 database tests pass (42 files); four deliberate breaks of the guard each fail the new test; `pnpm check` green; the F-13i scenario now passes 65 of 65, including "shipping more than W2 holds is refused" (before: W2 went to -481). The earlier five "FAIL" lines in a rerun were the script comparing JSON key order, now fixed.
+- **Not done:** the negative-stock exception report from the plan (for offline sales) is still not built.
+
