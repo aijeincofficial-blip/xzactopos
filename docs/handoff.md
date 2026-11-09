@@ -3,6 +3,7 @@
 Updated at the end of every task. Read this first in a fresh session. New session or a different tool (Antigravity)? Start with `docs/START-HERE-antigravity.md`.
 
 ## Status
+- **F-13a multi-warehouse proof: done (2026-11-09).** `docs/tasks/F-13-multi-warehouse.md` plans the rest (receiving into a warehouse, suppliers/POs, goods receipts, counts, screens). Migration `20261109000100_multi_warehouse_hardening.sql` + pgTAP `035_multi_warehouse.test.sql` (48). Fixed: bin stock and pick list items leaked across warehouses; shipping without a pick made STAGING negative (now `pick_required`). pgTAP total 3599 in 35 files. `main` was merged from this branch on 2026-11-09 (`8b7da68`); this work is on the branch only.
 - **Track 1 Mobile Adaptation Completed (2026-11-09):**
   - **F-06 mobile (`7b24cca`):** Offline supervisor PIN verification utility (`apps/mobile/lib/core/pin.dart`), PBKDF2 hash checking matching Supabase/`@pos/core`, local store offline PIN caching per location, seamless online-to-offline PIN fallback, and outbox op requeue with offline approval payload for sync replay. Tests in `pin_test.dart` and `supervisor_pin_test.dart` all passing.
   - **F-04 mobile (`631a0e2`):** Role-based navigation and staff permission guards in Flutter: `CatalogScope` role context (`role`, `isCashier`, `isWarehouse`, `isAdminOrSuperadmin`), warehouse role stock management permissions, cashier restriction guards (hiding expenses and day close on TodayScreen, hiding upgrade card in Settings). Tests in `role_permissions_test.dart`, `reports_test.dart`, and `stock_screen_test.dart` all passing.
@@ -555,14 +556,17 @@ Read `docs/START-HERE-claude.md` for the complete handoff from Antigravity.
 - **Tests**: All 25 suites and 173 automated tests passing green. Live verified on Android emulator (`emulator-5554`).
 
 ## W-01: web shell and Solo home (2026-11-08)
-- apps/client: mode-aware nav (src/lib/mode.ts, Solo derived from access: owner + one store + no warehouse) and a read-only Today screen (src/routes/today.tsx, eport_summary for the business-timezone day). Solo hides Locations/Users/Modules; Full shows the existing dashboard. en + fil strings under dmin.today.
+- apps/client: mode-aware nav (src/lib/mode.ts, Solo derived from access: owner + one store + no warehouse) and a read-only Today screen (src/routes/today.tsx, 
+eport_summary for the business-timezone day). Solo hides Locations/Users/Modules; Full shows the existing dashboard. en + fil strings under dmin.today.
 - No server change. client typecheck, lint and vitest (24 tests) pass; full pnpm check not run (no SQL touched). Not yet checked in a browser against the local stack.
 - Known gap: an owner with staff but nothing else still derives as Solo (access has no staff count). A stored mode flag can replace tenantMode() later.
 - Next: W-02 Sell.
 
 ## W-02 (part 1): Sell on the web (2026-11-08)
 - apps/client: Sell screen (src/routes/sell.tsx, route /app/sell, nav entry for anyone with sale.create): catalog search (name/SKU/barcode, Enter adds an exact barcode/SKU), cart with fractional qty, discount, cash (with change) or e-wallet (gcash/maya/other + reference), receipt confirmation showing the server sale number.
-- src/lib/sale-math.ts ports the phone's SaleLine math (qty in thousandths, half-up line total, tax-inclusive line tax) and builds the ecord_sale payload; src/lib/sell-api.ts loads the catalog via sync_pull_catalog, keeps a stable web device id + receipt counter in localStorage, egister_device, and sends the sale with sync_push (same op id on retry; retries a clashing provisional number up to 3 times).
+- src/lib/sale-math.ts ports the phone's SaleLine math (qty in thousandths, half-up line total, tax-inclusive line tax) and builds the 
+ecord_sale payload; src/lib/sell-api.ts loads the catalog via sync_pull_catalog, keeps a stable web device id + receipt counter in localStorage, 
+egister_device, and sends the sale with sync_push (same op id on retry; retries a clashing provisional number up to 3 times).
 - Verified: client typecheck, lint, vitest 38 tests (5000 seeded random lines vs a BigInt reference, 500 seeded random payloads; mutation-checked by breaking the rounding and the tax half-up, both caught). Checked against the local server in a rolled-back transaction: both payload kinds accepted, sale_no issued, totals and tax equal, replay recognised, stock and GCash float moved. Not yet clicked through in a browser.
 - NOT done yet in W-02: utang (needs customers: pick/create via upsert_customer), void/refund, split payments, a receipt reprint view. Tax mode: lines carry tax-inclusive tax from the product tax_rate like the phone; no tenant tax_mode logic yet.
 - Stock can go negative: the server does not block selling below zero (existing behaviour, unchanged).
@@ -574,7 +578,8 @@ Read `docs/START-HERE-claude.md` for the complete handoff from Antigravity.
 - Still open for Solo web: utang payments screen and customer balances (W-04), stock and products (W-03). Cashier-role void is refused by the server by design (supervisor-level), the button shows only when sale.void allows it.
 
 ## W-03: Products and stock on the web (2026-11-08)
-- apps/client: Products screen (src/routes/products.tsx, /app/products, permission catalog.manage): catalog with price, on-hand at the store and out/low badges, search, 'only low stock' filter; add product (one default variant, opening stock posted via post_opening_stock), edit, archive; stock panel (needs stock.adjust_store): stock in with optional unit cost (eceive_stock) and a count with reason (djust_stock; the server records the difference as a movement). Stock is never edited directly.
+- apps/client: Products screen (src/routes/products.tsx, /app/products, permission catalog.manage): catalog with price, on-hand at the store and out/low badges, search, 'only low stock' filter; add product (one default variant, opening stock posted via post_opening_stock), edit, archive; stock panel (needs stock.adjust_store): stock in with optional unit cost (
+eceive_stock) and a count with reason (djust_stock; the server records the difference as a movement). Stock is never edited directly.
 - Logic: src/lib/product-math.ts (typed quantities, tax percent to stored rate, stock status; tested), src/lib/stock-api.ts (catalog + stock_levels join, upsert_product / rchive_product RPCs, stock ops through sync_push), pullCatalog() split out of sell-api.ts.
 - Checked on the local server in a rolled-back transaction: create product (SKU auto-made), opening stock 10, receive 10 at cost 800, count 17.5 as damage (delta -2.5, on hand 17.5), edit price/tax/barcode/reorder, archive. client typecheck, lint, vitest 51 tests pass (the locale parity test caught one stray key). Not clicked through in a browser.
 - Notes: a stock-in cost moves the average cost in the ledger but does not change the product's own cost field (server behaviour, unchanged). Not built yet: tingi/open-pack links, expiry dates, categories, product photos, variants/options (Solo shows only the default variant), CSV import/export.
