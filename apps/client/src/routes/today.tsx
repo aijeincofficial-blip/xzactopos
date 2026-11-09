@@ -33,10 +33,10 @@ export function TodayPage() {
   return (
     <>
       {can("tenant.modules") && mode === "solo" ? (
-        <Card className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-indigo-100 bg-gradient-to-r from-indigo-50/60 to-purple-50/40 p-4">
+        <Card className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-brand-100 bg-brand-50 p-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <span className="rounded bg-indigo-600 px-1.5 py-0.5 text-xs font-semibold text-white uppercase tracking-wider">
+              <span className="rounded bg-brand-600 px-1.5 py-0.5 text-xs font-semibold text-[#fff] uppercase tracking-wider">
                 {t("upgrade.badge")}
               </span>
               <h3 className="font-semibold text-slate-900">{t("upgrade.soloBannerTitle")}</h3>

@@ -11,5 +11,15 @@
     "close": "Close"
   },
   "saved": "Saved.",
-  "language": { "label": "Language", "en": "English", "fil": "Filipino" }
+  "language": {
+    "label": "Language",
+    "en": "English",
+    "fil": "Filipino"
+  },
+  "theme": {
+    "label": "Theme",
+    "system": "Match device",
+    "light": "Light",
+    "dark": "Dark"
+  }
 }

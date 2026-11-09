@@ -1,18 +1,18 @@
 // Small shadcn-style primitives. Dialog is Radix; the rest are plain elements with Tailwind classes.
 import type { ComponentProps, ReactNode } from "react";
 import { cva, type VariantProps } from "class-variance-authority";
-import { Dialog as RadixDialog } from "radix-ui";
-import { X } from "lucide-react";
+import { Dialog as RadixDialog, Tabs as RadixTabs } from "radix-ui";
+import { AlertTriangle, Inbox, X } from "lucide-react";
 import { cn } from "../lib/utils.ts";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900 disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
-        primary: "bg-slate-900 text-white hover:bg-slate-700",
+        primary: "bg-brand-600 text-[#fff] hover:bg-brand-700",
         outline: "border border-slate-300 bg-white hover:bg-slate-100",
-        danger: "bg-red-600 text-white hover:bg-red-700",
+        danger: "bg-[#dc2626] text-[#fff] hover:bg-[#b91c1c]",
         ghost: "hover:bg-slate-100",
       },
       size: { md: "h-9 px-4", sm: "h-8 px-3" },
@@ -32,7 +32,7 @@ export function Button({
 }
 
 const field =
-  "h-9 w-full rounded-md border border-slate-300 bg-white px-3 text-sm focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-slate-900 disabled:bg-slate-100 disabled:text-slate-500";
+  "h-9 w-full rounded-md border border-slate-300 bg-white px-3 text-sm focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand-600 disabled:bg-slate-100 disabled:text-slate-500";
 
 export function Input({ className, ...props }: ComponentProps<"input">) {
   return <input className={cn(field, className)} {...props} />;
@@ -116,10 +116,10 @@ export function Dialog({
   return (
     <RadixDialog.Root open={open} onOpenChange={onOpenChange}>
       <RadixDialog.Portal>
-        <RadixDialog.Overlay className="fixed inset-0 bg-slate-900/40" />
+        <RadixDialog.Overlay className="fixed inset-0 bg-black/50" />
         <RadixDialog.Content
           aria-describedby={undefined}
-          className="fixed top-1/2 left-1/2 max-h-[90vh] w-[min(32rem,92vw)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-lg bg-white p-5 shadow-xl"
+          className="fixed top-1/2 left-1/2 max-h-[90vh] w-[min(32rem,92vw)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-lg border border-slate-200 bg-white p-5 shadow-xl"
         >
           <div className="mb-4 flex items-center justify-between">
             <RadixDialog.Title className="text-lg font-semibold">{title}</RadixDialog.Title>
@@ -132,4 +132,104 @@ export function Dialog({
       </RadixDialog.Portal>
     </RadixDialog.Root>
   );
+}
+
+/** Page title with an optional line under it and actions on the right. One per screen. */
+export function PageHeader({ title, subtitle, actions }: { title: string; subtitle?: string; actions?: ReactNode }) {
+  return (
+    <div className="flex flex-wrap items-end justify-between gap-3">
+      <div>
+        <h1 className="text-xl font-semibold tracking-tight">{title}</h1>
+        {subtitle ? <p className="text-sm text-slate-500">{subtitle}</p> : null}
+      </div>
+      {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
+    </div>
+  );
+}
+
+/** Nothing here yet: say so, and offer the next step. */
+export function EmptyState({ title, hint, action }: { title: string; hint?: string; action?: ReactNode }) {
+  return (
+    <div className="grid justify-items-center gap-2 rounded-lg border border-dashed border-slate-300 px-4 py-10 text-center">
+      <Inbox size={28} className="text-slate-400" aria-hidden />
+      <p className="font-medium">{title}</p>
+      {hint ? <p className="max-w-sm text-sm text-slate-500">{hint}</p> : null}
+      {action}
+    </div>
+  );
+}
+
+/** A load or save failed: the reason, and a way to try again. */
+export function ErrorState({ message, retryLabel, onRetry }: { message: string; retryLabel?: string; onRetry?: () => void }) {
+  return (
+    <div role="alert" className="flex flex-wrap items-center gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+      <AlertTriangle size={18} aria-hidden />
+      <span className="mr-auto">{message}</span>
+      {onRetry && retryLabel ? (
+        <Button variant="outline" size="sm" onClick={onRetry}>
+          {retryLabel}
+        </Button>
+      ) : null}
+    </div>
+  );
+}
+
+/** Table with a scrolling wrapper, a quiet header, row dividers and a hover row. Use Th and Td inside. */
+export function Table({ className, ...props }: ComponentProps<"table">) {
+  return (
+    <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+      <table className={cn("w-full text-left text-sm [&_tbody_tr:hover]:bg-slate-50 [&_tbody_tr]:border-t [&_tbody_tr]:border-slate-100", className)} {...props} />
+    </div>
+  );
+}
+
+export function Th({ className, numeric, ...props }: ComponentProps<"th"> & { numeric?: boolean }) {
+  return (
+    <th
+      scope="col"
+      className={cn("bg-slate-50 px-3 py-2 text-xs font-medium tracking-wide text-slate-500 uppercase", numeric && "text-right", className)}
+      {...props}
+    />
+  );
+}
+
+export function Td({ className, numeric, ...props }: ComponentProps<"td"> & { numeric?: boolean }) {
+  return <td className={cn("px-3 py-2", numeric && "text-right tabular-nums", className)} {...props} />;
+}
+
+/** Tabs (Radix: arrow keys, roles and focus come for free). Pass the panels as TabPanel children. */
+export function Tabs({
+  value,
+  onValueChange,
+  tabs,
+  children,
+  label,
+}: {
+  value: string;
+  onValueChange: (v: string) => void;
+  tabs: ReadonlyArray<{ value: string; label: string; testId?: string }>;
+  children: ReactNode;
+  label: string;
+}) {
+  return (
+    <RadixTabs.Root value={value} onValueChange={onValueChange} className="grid gap-4">
+      <RadixTabs.List aria-label={label} className="flex gap-1 overflow-x-auto border-b border-slate-200">
+        {tabs.map((tab) => (
+          <RadixTabs.Trigger
+            key={tab.value}
+            value={tab.value}
+            data-testid={tab.testId}
+            className="-mb-px border-b-2 border-transparent px-3 py-2 text-sm whitespace-nowrap text-slate-600 hover:text-slate-900 data-[state=active]:border-brand-600 data-[state=active]:font-medium data-[state=active]:text-slate-900"
+          >
+            {tab.label}
+          </RadixTabs.Trigger>
+        ))}
+      </RadixTabs.List>
+      {children}
+    </RadixTabs.Root>
+  );
+}
+
+export function TabPanel({ value, children }: { value: string; children: ReactNode }) {
+  return <RadixTabs.Content value={value}>{children}</RadixTabs.Content>;
 }

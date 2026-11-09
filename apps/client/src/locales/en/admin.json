@@ -19,7 +19,13 @@
     "platform": "Platform",
     "purchasing": "Purchasing",
     "counts": "Counts",
-    "overview": "Warehouses"
+    "overview": "Warehouses",
+    "group": {
+      "daily": "Daily",
+      "stock": "Stock",
+      "business": "Business"
+    },
+    "menu": "Menu"
   },
   "roles": {
     "superadmin": "Owner",

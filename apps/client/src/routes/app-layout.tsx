@@ -1,7 +1,34 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, Outlet, useNavigate } from "@tanstack/react-router";
+import { Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
+import {
+  ArrowLeftRight,
+  Banknote,
+  BarChart3,
+  Blocks,
+  Boxes,
+  ClipboardCheck,
+  HandCoins,
+  Home,
+  type LucideIcon,
+  MapPin,
+  Menu,
+  Monitor,
+  Moon,
+  Package,
+  PowerOff,
+  Receipt,
+  Rocket,
+  Settings,
+  ShieldCheck,
+  ShoppingCart,
+  Sun,
+  Truck,
+  Users,
+  Warehouse,
+  X,
+} from "lucide-react";
 import { accessQuery } from "../lib/session.tsx";
 import { PERMISSION_KEYS, type PermissionKey } from "@pos/core";
 import { saveMyLocale, signOut } from "../lib/api.ts";
@@ -9,38 +36,46 @@ import { tenantMode } from "../lib/mode.ts";
 import { pickLocale, storeLocale } from "../i18n/index.ts";
 import { useSession } from "../lib/session.tsx";
 import { useActiveLocation } from "../lib/location-context.tsx";
+import { applyTheme, nextTheme, readTheme, type ThemeChoice } from "../lib/theme.ts";
 import { Badge, Button, Card } from "../components/ui.tsx";
 import { LanguageSelect } from "../components/LanguageSelect.tsx";
 
+type NavGroup = "daily" | "stock" | "business";
+
 const NAV = [
-  { to: "/app", key: "dashboard", perm: null, fullOnly: false },
-  { to: "/app/sell", key: "sell", perm: "sale.create", fullOnly: false },
-  { to: "/app/sales", key: "sales", perm: "sale.create", fullOnly: false },
-  { to: "/app/products", key: "products", perm: "catalog.manage", fullOnly: false },
-  { to: "/app/transfers", key: "transfers", perm: null, perms: ["transfer.manage", "stock.adjust_store"] as const, fullOnly: true },
-  { to: "/app/bins", key: "bins", perm: null, perms: ["transfer.manage", "stock.adjust_store", "locations.manage"] as const, fullOnly: true },
-  { to: "/app/purchasing", key: "purchasing", perm: "purchasing.manage", fullOnly: true },
-  { to: "/app/counts", key: "counts", perm: "stock.adjust_warehouse", fullOnly: true },
-  { to: "/app/warehouses", key: "overview", perm: "reports.warehouse", fullOnly: true },
-  { to: "/app/utang", key: "utang", perm: "sale.create", fullOnly: false },
-  { to: "/app/expenses", key: "expenses", perm: "shift.manage", fullOnly: false },
-  { to: "/app/day-close", key: "dayClose", perm: "shift.manage", fullOnly: false },
-  { to: "/app/reports", key: "reports", perm: null, perms: ["reports.store", "reports.warehouse"] as const, fullOnly: true },
-  { to: "/app/upgrade", key: "upgrade", perm: "tenant.modules", fullOnly: false, soloOnly: true },
-  { to: "/app/locations", key: "locations", perm: "locations.manage", fullOnly: true },
-  { to: "/app/users", key: "users", perm: "users.manage", fullOnly: true },
-  { to: "/app/modules", key: "modules", perm: "tenant.modules", fullOnly: true },
-  { to: "/app/settings", key: "settings", perm: "tenant.settings", fullOnly: false },
-  { to: "/app/platform", key: "platform", perm: null, fullOnly: false, platformAdminOnly: true },
+  { to: "/app", key: "dashboard", icon: Home, group: "daily", perm: null, fullOnly: false },
+  { to: "/app/sell", key: "sell", icon: ShoppingCart, group: "daily", perm: "sale.create", fullOnly: false },
+  { to: "/app/sales", key: "sales", icon: Receipt, group: "daily", perm: "sale.create", fullOnly: false },
+  { to: "/app/utang", key: "utang", icon: HandCoins, group: "daily", perm: "sale.create", fullOnly: false },
+  { to: "/app/expenses", key: "expenses", icon: Banknote, group: "daily", perm: "shift.manage", fullOnly: false },
+  { to: "/app/day-close", key: "dayClose", icon: PowerOff, group: "daily", perm: "shift.manage", fullOnly: false },
+  { to: "/app/products", key: "products", icon: Package, group: "stock", perm: "catalog.manage", fullOnly: false },
+  { to: "/app/transfers", key: "transfers", icon: ArrowLeftRight, group: "stock", perm: null, perms: ["transfer.manage", "stock.adjust_store"] as const, fullOnly: true },
+  { to: "/app/bins", key: "bins", icon: Boxes, group: "stock", perm: null, perms: ["transfer.manage", "stock.adjust_store", "locations.manage"] as const, fullOnly: true },
+  { to: "/app/purchasing", key: "purchasing", icon: Truck, group: "stock", perm: "purchasing.manage", fullOnly: true },
+  { to: "/app/counts", key: "counts", icon: ClipboardCheck, group: "stock", perm: "stock.adjust_warehouse", fullOnly: true },
+  { to: "/app/warehouses", key: "overview", icon: Warehouse, group: "stock", perm: "reports.warehouse", fullOnly: true },
+  { to: "/app/reports", key: "reports", icon: BarChart3, group: "business", perm: null, perms: ["reports.store", "reports.warehouse"] as const, fullOnly: true },
+  { to: "/app/upgrade", key: "upgrade", icon: Rocket, group: "business", perm: "tenant.modules", fullOnly: false, soloOnly: true },
+  { to: "/app/locations", key: "locations", icon: MapPin, group: "business", perm: "locations.manage", fullOnly: true },
+  { to: "/app/users", key: "users", icon: Users, group: "business", perm: "users.manage", fullOnly: true },
+  { to: "/app/modules", key: "modules", icon: Blocks, group: "business", perm: "tenant.modules", fullOnly: true },
+  { to: "/app/settings", key: "settings", icon: Settings, group: "business", perm: "tenant.settings", fullOnly: false },
+  { to: "/app/platform", key: "platform", icon: ShieldCheck, group: "business", perm: null, fullOnly: false, platformAdminOnly: true },
 ] as const satisfies ReadonlyArray<{
   to: string;
   key: string;
+  icon: LucideIcon;
+  group: NavGroup;
   perm: PermissionKey | null;
   perms?: readonly PermissionKey[];
   fullOnly: boolean;
   soloOnly?: boolean;
   platformAdminOnly?: boolean;
 }>;
+
+const GROUPS: readonly NavGroup[] = ["daily", "stock", "business"];
+const THEME_ICON: Record<ThemeChoice, LucideIcon> = { system: Monitor, light: Sun, dark: Moon };
 
 export function AppLayout() {
   const { t, i18n } = useTranslation(["common", "admin"]);
@@ -49,6 +84,14 @@ export function AppLayout() {
   const mode = tenantMode(access);
   const qc = useQueryClient();
   const navigate = useNavigate();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [theme, setTheme] = useState<ThemeChoice>(readTheme);
+  const path = useRouterState({ select: (s) => s.location.pathname });
+  const ThemeIcon = THEME_ICON[theme];
+
+  useEffect(() => applyTheme(theme), [theme]);
+  // a phone user picks a screen and the drawer gets out of the way
+  useEffect(() => setMenuOpen(false), [path]);
 
   // Apply the user's saved language once per sign-in (profile locale, else tenant default).
   // Later manual changes are not overridden because this only re-runs for a different user.
@@ -73,16 +116,84 @@ export function AppLayout() {
     await navigate({ to: "/t/$slug", params: { slug: access.tenant.slug } });
   }
 
-  return (
-    <div className="min-h-screen">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
-          <div className="mr-auto">
-            <div className="font-semibold">{access.tenant.name}</div>
-            <div className="text-xs text-slate-500">
-              {access.full_name || access.username} · {t(`admin:roles.${access.role}`)}
-            </div>
+  const visible = NAV.filter((n) => {
+    if ("platformAdminOnly" in n && n.platformAdminOnly && !access.is_platform_admin) return false;
+    const permOk = "perms" in n && n.perms ? (n.perms as readonly PermissionKey[]).some((p) => can(p)) : n.perm === null || can(n.perm);
+    return permOk && (!n.fullOnly || mode === "full") && (!("soloOnly" in n && n.soloOnly) || mode === "solo");
+  });
+  const showNav = access.tenant.setup_completed;
+
+  const sidebar = (
+    <nav aria-label={t("admin:nav.label")} className="grid content-start gap-5 overflow-y-auto px-3 py-4">
+      {GROUPS.map((g) => {
+        const items = visible.filter((n) => n.group === g);
+        if (items.length === 0) return null;
+        return (
+          <div key={g} className="grid gap-0.5">
+            <div className="px-2 pb-1 text-[0.7rem] font-semibold tracking-wider text-slate-400 uppercase">{t(`admin:nav.group.${g}`)}</div>
+            {items.map((n) => {
+              const Icon = n.icon;
+              return (
+                <Link
+                  key={n.to}
+                  to={n.to}
+                  activeOptions={{ exact: n.to === "/app" }}
+                  className="flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                  activeProps={{ className: "bg-brand-50 font-medium text-brand-text hover:bg-brand-50 hover:text-brand-text", "aria-current": "page" }}
+                >
+                  <Icon size={17} aria-hidden />
+                  {t(`admin:nav.${n.key}`)}
+                </Link>
+              );
+            })}
           </div>
+        );
+      })}
+    </nav>
+  );
+
+  const identity = (
+    <div className="border-b border-slate-200 px-4 py-3">
+      <div className="truncate font-semibold">{access.tenant.name}</div>
+      <div className="truncate text-xs text-slate-500">
+        {access.full_name || access.username} · {t(`admin:roles.${access.role}`)}
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen md:grid md:grid-cols-[15rem_1fr]">
+      {showNav ? (
+        <>
+          <aside className="sticky top-0 hidden h-screen grid-rows-[auto_1fr] border-r border-slate-200 bg-white md:grid">
+            {identity}
+            {sidebar}
+          </aside>
+          {menuOpen ? (
+            <div className="fixed inset-0 z-40 md:hidden">
+              <button aria-label={t("common:actions.close")} className="absolute inset-0 bg-black/50" onClick={() => setMenuOpen(false)} />
+              <aside className="absolute inset-y-0 left-0 grid w-64 grid-rows-[auto_1fr] bg-white shadow-xl">
+                <div className="flex items-center justify-between">
+                  {identity}
+                  <button aria-label={t("common:actions.close")} className="mr-2 rounded p-1 hover:bg-slate-100" onClick={() => setMenuOpen(false)}>
+                    <X size={18} />
+                  </button>
+                </div>
+                {sidebar}
+              </aside>
+            </div>
+          ) : null}
+        </>
+      ) : null}
+      <div className="min-w-0">
+        <header className="sticky top-0 z-30 flex flex-wrap items-center gap-2 border-b border-slate-200 bg-white/95 px-4 py-2 backdrop-blur">
+          {showNav ? (
+            <Button variant="ghost" size="sm" className="md:hidden" aria-label={t("admin:nav.menu")} onClick={() => setMenuOpen(true)}>
+              <Menu size={18} />
+            </Button>
+          ) : null}
+          <div className="mr-auto font-semibold md:hidden">{access.tenant.name}</div>
+          <div className="mr-auto hidden md:block" />
           {stores.length > 1 ? (
             <div className="flex items-center gap-1.5 rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs">
               <span className="font-medium text-slate-500">🏪 {t("admin:users.store")}:</span>
@@ -101,40 +212,29 @@ export function AppLayout() {
             </div>
           ) : null}
           <LanguageSelect onChoose={(l) => void chooseLocale(l)} />
+          <Button
+            variant="outline"
+            size="sm"
+            data-testid="theme-toggle"
+            aria-label={`${t("common:theme.label")}: ${t(`common:theme.${theme}`)}`}
+            title={`${t("common:theme.label")}: ${t(`common:theme.${theme}`)}`}
+            onClick={() => setTheme(nextTheme(theme))}
+          >
+            <ThemeIcon size={16} aria-hidden />
+          </Button>
           <Button variant="outline" size="sm" onClick={() => void leave()}>
             {t("common:actions.signOut")}
           </Button>
-        </div>
-        {access.tenant.setup_completed ? (
-          <nav aria-label={t("admin:nav.label")} className="mx-auto flex max-w-5xl gap-1 px-4">
-            {NAV.filter((n) => {
-              if ("platformAdminOnly" in n && n.platformAdminOnly && !access.is_platform_admin) return false;
-              const permOk = "perms" in n && n.perms
-                ? (n.perms as readonly PermissionKey[]).some((p) => can(p))
-                : n.perm === null || can(n.perm);
-              return permOk && (!n.fullOnly || mode === "full") && (!("soloOnly" in n && n.soloOnly) || mode === "solo");
-            }).map((n) => (
-              <Link
-                key={n.to}
-                to={n.to}
-                activeOptions={{ exact: n.to === "/app" }}
-                className="rounded-t-md border-b-2 border-transparent px-3 py-2 text-sm text-slate-600 hover:text-slate-900"
-                activeProps={{ className: "border-slate-900 font-medium text-slate-900" }}
-              >
-                {t(`admin:nav.${n.key}`)}
-              </Link>
-            ))}
-          </nav>
-        ) : null}
-      </header>
-      <main className="mx-auto grid max-w-5xl gap-4 px-4 py-6">
-        {access.tenant.status !== "active" ? (
-          <p role="alert" className="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900">
-            {t("admin:suspended")}
-          </p>
-        ) : null}
-        <Outlet />
-      </main>
+        </header>
+        <main className="mx-auto grid max-w-6xl gap-4 px-4 py-6">
+          {access.tenant.status !== "active" ? (
+            <p role="alert" className="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900">
+              {t("admin:suspended")}
+            </p>
+          ) : null}
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 }
