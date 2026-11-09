@@ -1967,4 +1967,88 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get shiftChipNone => 'Walang shift';
+
+  @override
+  String get staffTitle => 'Mga tauhan';
+
+  @override
+  String get staffAdd => 'Magdagdag ng kahera';
+
+  @override
+  String get staffNone => 'Wala pang tauhan.';
+
+  @override
+  String get staffOffline =>
+      'Kailangan ng signal. Subukan ulit kapag online ka.';
+
+  @override
+  String get staffUsername => 'Username (letra, numero, tuldok, gitling)';
+
+  @override
+  String get staffFullName => 'Pangalan';
+
+  @override
+  String get staffPassword => 'Password (hindi bababa sa 8 karakter)';
+
+  @override
+  String get staffStore => 'Tindahan';
+
+  @override
+  String get staffCreate => 'Gumawa ng account';
+
+  @override
+  String staffCreated(String name, String login) {
+    return 'Nagawa na ang account. Sabihin kay $name na mag-sign in bilang $login.';
+  }
+
+  @override
+  String staffSignIn(String login) {
+    return 'Nagsa-sign in bilang $login';
+  }
+
+  @override
+  String get staffInactive => 'Naka-off';
+
+  @override
+  String get staffDeactivate => 'I-off';
+
+  @override
+  String get staffActivate => 'I-on';
+
+  @override
+  String get staffResetPin => 'Burahin ang PIN';
+
+  @override
+  String get staffPinCleared => 'Nabura na ang PIN.';
+
+  @override
+  String get staffRoleSuperadmin => 'May-ari';
+
+  @override
+  String get staffRoleAdmin => 'Manager';
+
+  @override
+  String get staffRoleWarehouse => 'Bodega';
+
+  @override
+  String get staffRoleCashier => 'Kahera';
+
+  @override
+  String get staffErrDuplicate => 'May gumagamit na ng username na iyan.';
+
+  @override
+  String get staffErrInvalid => 'Suriin ang username at password.';
+
+  @override
+  String get staffErrDenied => 'Hindi mo ito magagawa.';
+
+  @override
+  String get staffErrSelf => 'Hindi mo maaaring i-off ang sarili mo.';
+
+  @override
+  String get staffErrLimit =>
+      'Walang espasyo para sa dagdag na user sa planong ito.';
+
+  @override
+  String get loginHelper => 'Tauhan: username.storecode';
 }

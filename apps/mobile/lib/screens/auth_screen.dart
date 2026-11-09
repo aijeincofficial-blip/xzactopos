@@ -159,6 +159,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       textInputAction: TextInputAction.next,
                       decoration: InputDecoration(
                         labelText: t.email,
+                        helperText: t.loginHelper,
                         prefixIcon: const Icon(Icons.email_outlined, size: 20),
                       ),
                       validator: (v) => (v == null || v.trim().isEmpty) ? t.errRequired : null,

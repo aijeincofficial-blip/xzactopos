@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'data/count_models.dart';
 import 'data/shift_models.dart';
+import 'data/staff_models.dart';
 import 'sync/sync_engine.dart';
 
 /// True when the failure is an ANSWER from the server (it was reached and said no), false when it was not reached at all (no
@@ -127,7 +128,7 @@ const pinRefusalHints = {
   'location_denied', 'module_disabled',
 };
 
-class SupabaseBackend implements Backend, DeviceApi, WarehouseApi, CountApi, ShiftApi {
+class SupabaseBackend implements Backend, DeviceApi, WarehouseApi, CountApi, ShiftApi, StaffApi {
   SupabaseClient get _c => Supabase.instance.client;
 
   @override
@@ -142,7 +143,7 @@ class SupabaseBackend implements Backend, DeviceApi, WarehouseApi, CountApi, Shi
 
   @override
   Future<void> signIn(String email, String password) async {
-    await _c.auth.signInWithPassword(email: email, password: password);
+    await _c.auth.signInWithPassword(email: loginEmail(email), password: password);
   }
 
   @override
@@ -248,6 +249,81 @@ class SupabaseBackend implements Backend, DeviceApi, WarehouseApi, CountApi, Shi
       return null; // no signal
     }
   }
+
+  // ---- staff (online only) ----
+
+  Future<T> _staff<T>(Future<T> Function() call) async {
+    try {
+      return await _auth(call);
+    } on AuthExpired {
+      rethrow;
+    } on PostgrestException catch (e) {
+      throw StaffException(e.hint ?? e.code ?? 'error');
+    } on FunctionException catch (e) {
+      final d = e.details;
+      final err = d is Map ? d['error'] : null;
+      final hint = err is Map ? (err['hint'] ?? err['code']) : null;
+      throw StaffException('${hint ?? 'error'}');
+    } on Exception {
+      throw const StaffOffline();
+    }
+  }
+
+  @override
+  Future<List<StaffMember>> listStaff() => _staff(() async {
+        final people = await _c
+            .from('profiles')
+            .select('user_id, username, full_name, role, active')
+            .isFilter('deleted_at', null)
+            .order('username')
+            .limit(500);
+        final access = await _c.from('location_access').select('user_id, location:locations(name)').isFilter('deleted_at', null).limit(2000);
+        final byUser = <String, List<String>>{};
+        for (final a in (access as List).cast<Map>()) {
+          final n = (a['location'] as Map?)?['name'] as String?;
+          if (n != null) byUser.putIfAbsent(a['user_id'] as String, () => []).add(n);
+        }
+        return [
+          for (final r in (people as List).cast<Map>())
+            StaffMember(
+              userId: r['user_id'] as String,
+              username: r['username'] as String,
+              fullName: (r['full_name'] as String?) ?? '',
+              role: r['role'] as String,
+              active: r['active'] as bool,
+              stores: byUser[r['user_id']] ?? const [],
+            ),
+        ];
+      });
+
+  @override
+  Future<List<StaffStore>> listStores() => _staff(() async {
+        final rows = await _c.from('locations').select('id, name').eq('type', 'store').eq('active', true).isFilter('deleted_at', null).order('name');
+        return [for (final r in (rows as List).cast<Map>()) StaffStore(r['id'] as String, r['name'] as String)];
+      });
+
+  @override
+  Future<String> createCashier({required String username, required String fullName, required String password, required String locationId}) =>
+      _staff(() async {
+        final res = await _c.functions.invoke('create_user', body: {
+          'username': username,
+          'password': password,
+          'role': 'cashier',
+          'full_name': fullName,
+          'location_id': locationId,
+        });
+        return (res.data as Map)['user_id'] as String;
+      });
+
+  @override
+  Future<void> setActive(String userId, bool active) => _staff(() async {
+        await _c.rpc('set_user_active', params: {'p_user': userId, 'p_active': active});
+      });
+
+  @override
+  Future<void> clearPin(String userId) => _staff(() async {
+        await _c.rpc('clear_user_pin', params: {'p_user_id': userId});
+      });
 
   // ---- stock counts (online only, F-13h H6) ----
 
