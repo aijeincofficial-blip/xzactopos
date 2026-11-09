@@ -3097,6 +3097,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Count finished. {count, plural, =0{No corrections.} =1{{count} correction made.} other{{count} corrections made.}} Net change: {net}'**
   String whCountDone(int count, String net);
+
+  /// No description provided for @activeWarehouse.
+  ///
+  /// In en, this message translates to:
+  /// **'Active warehouse'**
+  String get activeWarehouse;
 }
 
 class _AppLocalizationsDelegate

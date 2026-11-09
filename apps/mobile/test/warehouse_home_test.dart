@@ -251,6 +251,26 @@ void main() {
     await leave(tester);
   });
 
+  testWidgets('settings call it the active warehouse for a clerk, and the active store for everyone else', (tester) async {
+    await open(tester);
+    await tab(tester, 'tab-more');
+    await tester.tap(find.byKey(const Key('more-settings')));
+    await tester.pumpAndSettle();
+    expect(find.text('Active warehouse'), findsOneWidget);
+    expect(find.text('Active store'), findsNothing);
+    await leave(tester);
+  });
+
+  testWidgets('a store user still sees the active store in settings', (tester) async {
+    await open(tester, role: 'admin');
+    await tab(tester, 'tab-more');
+    await tester.tap(find.byKey(const Key('more-settings-gear')));
+    await tester.pumpAndSettle();
+    expect(find.text('Active store'), findsOneWidget);
+    expect(find.text('Active warehouse'), findsNothing);
+    await leave(tester);
+  });
+
   testWidgets('Filipino labels', (tester) async {
     await open(tester, locale: 'fil');
     expect(find.text('Tanggapin'), findsOneWidget);
