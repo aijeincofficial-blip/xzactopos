@@ -18,7 +18,8 @@
     "settings": "Mga Setting",
     "platform": "Plataporma",
     "purchasing": "Pagbili",
-    "counts": "Bilangan"
+    "counts": "Bilangan",
+    "overview": "Mga bodega"
   },
   "roles": {
     "superadmin": "May-ari",
@@ -1090,6 +1091,69 @@
       "counted": "nabilang",
       "system": "system",
       "zero": "hindi nakita"
+    }
+  },
+  "overview": {
+    "title": "Mga bodega",
+    "subtitle": "Ano ang oorderin, ano ang paparating, at nasaan ang isang produkto.",
+    "loading": "Naglo-load...",
+    "showMore": "Magpakita pa",
+    "tabs": {
+      "reorder": "Oorderin",
+      "transit": "Nasa biyahe",
+      "product": "Maghanap ng produkto"
+    },
+    "filter": {
+      "warehouse": "Bodega",
+      "all": "Lahat ng bodega"
+    },
+    "noWarehouses": "Wala kang bodega na matitingnan.",
+    "reorder": {
+      "summary": "Oorderin: {{need}} · Saklaw na: {{covered}} · Nasa antas: {{atPoint}}",
+      "warehouse": "Bodega",
+      "product": "Produkto",
+      "onHand": "Nasa kamay",
+      "point": "Mag-order sa",
+      "incoming": "Papunta rito",
+      "onOrder": "Naka-order",
+      "status": "Status",
+      "shortfall": "Kulang pa",
+      "none": "Walang kailangang i-order.",
+      "newOrder": "Bagong order",
+      "legend": "Saklaw na ang isang linya kapag ang nasa kamay at ang paparating ay higit sa antas ng pag-order.",
+      "statusLabel": {
+        "covered": "Paparating na",
+        "order": "Mag-order na",
+        "at_point": "Nasa antas"
+      }
+    },
+    "transit": {
+      "no": "Padala #",
+      "from": "Mula",
+      "to": "Patungo",
+      "shipped": "Ipinadala",
+      "age": "Nasa daan",
+      "lines": "Mga linya",
+      "units": "Piraso",
+      "late": "Huli",
+      "other": "Ibang lokasyon",
+      "none": "Walang padalang nasa biyahe.",
+      "ageDays": "{{days}} araw {{hours}} oras",
+      "ageHours": "{{hours}} oras",
+      "help": "Mga padalang umalis na sa isang lokasyon at hindi pa natatanggap. Huli pagkalipas ng 3 araw."
+    },
+    "product": {
+      "product": "Produkto",
+      "choose": "Pumili ng produkto...",
+      "prompt": "Pumili ng produkto para makita kung nasaan ito.",
+      "warehouse": "Bodega",
+      "onHand": "Nasa kamay",
+      "incoming": "Papunta rito",
+      "onOrder": "Naka-order",
+      "cost": "Karaniwang presyo",
+      "value": "Halaga",
+      "total": "Lahat ng bodega",
+      "none": "Walang bodegang maipapakita."
     }
   }
 }

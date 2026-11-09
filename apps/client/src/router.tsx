@@ -26,6 +26,7 @@ import { TransfersPage } from "./routes/transfers.tsx";
 import { BinsPage } from "./routes/bins.tsx";
 import { PurchasingPage } from "./routes/purchasing.tsx";
 import { CountsPage } from "./routes/counts.tsx";
+import { OverviewPage } from "./routes/overview.tsx";
 import { ReportsPage } from "./routes/reports.tsx";
 import { tenantMode } from "./lib/mode.ts";
 import { useSession } from "./lib/session.tsx";
@@ -121,6 +122,7 @@ const transfers = createRoute({ getParentRoute: () => app, path: "/transfers", b
 const bins = createRoute({ getParentRoute: () => app, path: "/bins", beforeLoad: requiresAny("transfer.manage", "stock.adjust_store", "locations.manage"), component: BinsPage });
 const purchasing = createRoute({ getParentRoute: () => app, path: "/purchasing", beforeLoad: requires("purchasing.manage"), component: PurchasingPage });
 const counts = createRoute({ getParentRoute: () => app, path: "/counts", beforeLoad: requires("stock.adjust_warehouse"), component: CountsPage });
+const overview = createRoute({ getParentRoute: () => app, path: "/warehouses", beforeLoad: requires("reports.warehouse"), component: OverviewPage });
 const reports = createRoute({ getParentRoute: () => app, path: "/reports", beforeLoad: requiresAny("reports.store", "reports.warehouse"), component: ReportsPage });
 const platform = createRoute({
   getParentRoute: () => app,
@@ -135,7 +137,7 @@ const forbidden = createRoute({ getParentRoute: () => app, path: "/forbidden", c
 const routeTree = root.addChildren([
   home,
   login,
-  app.addChildren([dashboard, setup, sell, sales, products, utang, expenses, dayClose, upgrade, settings, transfers, bins, purchasing, counts, reports, locations, users, modules, platform, forbidden]),
+  app.addChildren([dashboard, setup, sell, sales, products, utang, expenses, dayClose, upgrade, settings, transfers, bins, purchasing, counts, overview, reports, locations, users, modules, platform, forbidden]),
 ]);
 
 export function makeRouter(queryClient: QueryClient) {

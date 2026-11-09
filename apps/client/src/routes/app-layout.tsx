@@ -21,6 +21,7 @@ const NAV = [
   { to: "/app/bins", key: "bins", perm: null, perms: ["transfer.manage", "stock.adjust_store", "locations.manage"] as const, fullOnly: true },
   { to: "/app/purchasing", key: "purchasing", perm: "purchasing.manage", fullOnly: true },
   { to: "/app/counts", key: "counts", perm: "stock.adjust_warehouse", fullOnly: true },
+  { to: "/app/warehouses", key: "overview", perm: "reports.warehouse", fullOnly: true },
   { to: "/app/utang", key: "utang", perm: "sale.create", fullOnly: false },
   { to: "/app/expenses", key: "expenses", perm: "shift.manage", fullOnly: false },
   { to: "/app/day-close", key: "dayClose", perm: "shift.manage", fullOnly: false },

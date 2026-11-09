@@ -18,7 +18,8 @@
     "settings": "Settings",
     "platform": "Platform",
     "purchasing": "Purchasing",
-    "counts": "Counts"
+    "counts": "Counts",
+    "overview": "Warehouses"
   },
   "roles": {
     "superadmin": "Owner",
@@ -1090,6 +1091,69 @@
       "counted": "counted",
       "system": "system",
       "zero": "not found"
+    }
+  },
+  "overview": {
+    "title": "Warehouses",
+    "subtitle": "What to reorder, what is on its way, and where a product is.",
+    "loading": "Loading...",
+    "showMore": "Show more",
+    "tabs": {
+      "reorder": "To reorder",
+      "transit": "In transit",
+      "product": "Find a product"
+    },
+    "filter": {
+      "warehouse": "Warehouse",
+      "all": "All warehouses"
+    },
+    "noWarehouses": "You do not have a warehouse to look at.",
+    "reorder": {
+      "summary": "To order: {{need}} · Covered: {{covered}} · At the point: {{atPoint}}",
+      "warehouse": "Warehouse",
+      "product": "Product",
+      "onHand": "On hand",
+      "point": "Reorder at",
+      "incoming": "In transit to it",
+      "onOrder": "On order",
+      "status": "Status",
+      "shortfall": "Still short",
+      "none": "Nothing needs reordering.",
+      "newOrder": "New order",
+      "legend": "A line is covered when what is on hand plus what is on its way is above the reorder point.",
+      "statusLabel": {
+        "covered": "On its way",
+        "order": "Order now",
+        "at_point": "At the point"
+      }
+    },
+    "transit": {
+      "no": "Shipment #",
+      "from": "From",
+      "to": "To",
+      "shipped": "Shipped",
+      "age": "On the road",
+      "lines": "Lines",
+      "units": "Units",
+      "late": "Late",
+      "other": "Another location",
+      "none": "No shipments on their way.",
+      "ageDays": "{{days}} d {{hours}} h",
+      "ageHours": "{{hours}} h",
+      "help": "Shipments that left a location and have not been received yet. Late after 3 days."
+    },
+    "product": {
+      "product": "Product",
+      "choose": "Choose a product...",
+      "prompt": "Choose a product to see where it is.",
+      "warehouse": "Warehouse",
+      "onHand": "On hand",
+      "incoming": "In transit to it",
+      "onOrder": "On order",
+      "cost": "Average cost",
+      "value": "Value",
+      "total": "All warehouses",
+      "none": "No warehouse to show."
     }
   }
 }
