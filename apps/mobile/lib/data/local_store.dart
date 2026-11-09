@@ -1,10 +1,11 @@
 import 'dart:typed_data';
 
 import 'sales_models.dart';
+import 'warehouse_models.dart';
 
 /// The device's copy of the catalog plus the outbox. Screens and the sync engine depend on this
 /// interface only (CLAUDE.md: local store behind a `LocalStore` interface); Drift implements it.
-abstract class LocalStore implements SalesStore {
+abstract class LocalStore implements SalesStore, WarehouseStore {
   /// Clears everything when the device is used for a different business. Returns true if it cleared.
   /// Throws [UnsentChangesException] instead when that would throw away changes never sent to the server,
   /// unless [discardUnsent] is true.

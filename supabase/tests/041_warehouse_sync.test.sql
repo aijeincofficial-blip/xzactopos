@@ -1,6 +1,6 @@
 -- 041_warehouse_sync.test.sql: F-13h H1. The phone's server side: receipts through sync_push, and sync_pull_warehouse.
 begin;
-select plan(94);
+select plan(95);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures. Tenant X: warehouses W1 (bins) and W2, store S1. Tenant Y: its own warehouse, supplier and order.
@@ -219,6 +219,7 @@ create temp table b1 as select pg_temp.push('wh1', 'receive_po', 'g1', pg_temp.r
 select is((select res ->> 'status' from b1), 'ok', 'wh1 receives 60 rice against PO1 through the outbox');
 select is((select res -> 'result' ->> 'po_status' from b1), 'partly_received', 'the order is partly received');
 select ok((select res -> 'result' ->> 'grn_no' ~ '^GRN-[0-9]{6}-[0-9]{4}$' from b1), 'and the answer carries the receipt number the phone will show');
+select is((select (res -> 'result' ->> 'applied_at')::timestamptz from b1), (select received_at from public.goods_receipts where id = pg_temp.oid('g1')), 'and the server''s own time of the receipt, which the phone uses to know when its copy has caught up');
 select is((select qty_on_hand from public.stock_levels where location_id = pg_temp.lid('W1') and variant_id = pg_temp.vid('rice')), 103::numeric, 'W1 rice is 40 + 3 + 60');
 select is((select qty_on_hand from public.bin_stock_levels bsl join public.bins b on b.id = bsl.bin_id where b.code = 'RECEIVING' and b.warehouse_id = pg_temp.lid('W1')), 103::numeric, 'all of it in the RECEIVING bin');
 select is((select count(*)::int from public.goods_receipts where id = pg_temp.oid('g1') and delivery_ref = 'DR-9' and notes = 'phone' and received_by = pg_temp.uid('wh1')), 1,

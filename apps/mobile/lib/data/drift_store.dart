@@ -6,10 +6,11 @@ import 'package:uuid/uuid.dart';
 import '../core/search.dart';
 import 'db.dart';
 import 'drift_sales.dart';
+import 'drift_warehouse.dart';
 import 'local_store.dart';
 import 'sales_models.dart';
 
-class DriftStore with DriftSales implements LocalStore {
+class DriftStore with DriftSales, DriftWarehouse implements LocalStore {
   DriftStore(this.db);
 
   @override
@@ -430,6 +431,7 @@ class DriftStore with DriftSales implements LocalStore {
       await (db.delete(db.localMovements)..where((m) => m.opId.equals(opId))).go();
       await (db.delete(db.localLedger)..where((m) => m.opId.equals(opId))).go();
       await (db.delete(db.localFloatEffects)..where((m) => m.opId.equals(opId))).go();
+      await discardWarehouseOp(opId);
       if (op.kind == 'record_sale') await deleteSaleRows(op.entityId);
       // expenses, day closes, service entries, openings, expiry dates
       await undoLocalOp(op.kind, op.entityId, (jsonDecode(op.payload) as Map).cast<String, dynamic>());
