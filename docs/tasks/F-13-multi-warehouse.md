@@ -33,7 +33,7 @@ Gaps found:
 | --- | --- | --- |
 | F-13a Multi-warehouse proof (**DONE 2026-11-09**, see below) | pgTAP `035_multi_warehouse.test.sql`: 1 tenant, warehouses W1 (bins on) and W2 (bins off), 2 stores, a warehouse user per warehouse + one with both. Proves: each user sees only their warehouses' stock, movements, transfers, bins; cannot ship/receive/put-away/pick in the other; W1-to-W2 transfer ships, receives, blends cost and keeps W1's bin invariant; same bin code in both warehouses; user with both sees both. **Fix whatever it finds** in a new migration. | Opus |
 | F-13b Receive into a warehouse (**DONE 2026-11-09**, see below) | RPC `op_receive_warehouse_stock` (idempotent, outbox-ready): warehouse role + warehouse assignment required, location must be a warehouse, lands in the default RECEIVING bin when `bins_enabled`, blends average cost. Stays inside the ledger (`stock_movements` only). | Opus |
-| F-13c Suppliers and purchase orders | `suppliers`, `purchase_orders`, `po_items` (tenant-leading, RLS, isolation-matrix rows per role). RPCs: `upsert_supplier`, `create_po` (draft), `submit_po`, `cancel_po`. PO addressed to one warehouse; status draft, ordered, partly_received, received, cancelled. | Opus |
+| F-13c Suppliers and purchase orders (**DONE 2026-11-09**, see below) | `suppliers`, `purchase_orders`, `po_items` (tenant-leading, RLS, isolation-matrix rows per role). RPCs: `upsert_supplier`, `create_po` (draft), `submit_po`, `cancel_po`. PO addressed to one warehouse; status draft, ordered, partly_received, received, cancelled. | Opus |
 | F-13d Goods receipts | `goods_receipts`, `goods_receipt_items`; `receive_po(po_id, items)` supports partial and over/under receipt, writes `receipt` movements via F-13b, updates `qty_received`, flags discrepancies; receipt without a PO allowed and flagged. | Opus |
 | F-13e Warehouse stock counts | `stock_counts`, `stock_count_items`; `start_count`, `submit_count`, `close_count` writes `count_correction` movements for the differences only; works per bin when bins are on, and keeps the invariant. | Opus |
 | F-13f Cross-warehouse views | RPCs for stock of one variant across all my warehouses, per-warehouse reorder list, in-transit between warehouses. Reads only; explicit columns, paginated. | Sonnet |
@@ -80,3 +80,18 @@ Migration `20261109000200_warehouse_receiving.sql`, pgTAP `036_warehouse_receivi
 - Mutation checks (rule broken on purpose, test must fail): no location-access check, stores allowed, no replay guard, cost ignored: all caught. "Admin role allowed": not caught, and cannot be: `validate_location_access` only lets admins hold stores,
   so an admin never has warehouse access; the role check is defense in depth behind that rule.
 - Not done here (by design): batching several lines, supplier or PO reference, a receipt document (F-13c/F-13d); expiry date on warehouse receipts; any screen; the Dart `sync_push` kinds list on the phone.
+
+## F-13c result (2026-11-09)
+Migration `20261109000300_suppliers_purchase_orders.sql`, pgTAP `037_suppliers_purchase_orders.test.sql` (67 tests), isolation matrix `004` gained `suppliers`, `purchase_orders`, `po_items` (2308 tests now).
+`pnpm check` green (pgTAP 3846 in 37 files). Decisions taken as recommended: suppliers belong to the tenant, a PO is addressed to one warehouse, only the owner and warehouse staff order.
+
+- Tables: `suppliers` (name unique per tenant ignoring case and spacing, soft delete), `purchase_orders` (`PO-YYMMDD-NNNN`, status draft / ordered / partly_received / received / cancelled, warehouse-only by trigger),
+  `po_items` (one line per product, `qty_received` default 0, over-receipt allowed, expected `unit_cost`). RLS: owner and warehouse role only; POs and lines only for the user's own warehouses; no client writes.
+- RPCs (all need both modules on and the owner or warehouse role): `upsert_supplier` (client id, full replace), `archive_supplier` (refused while a draft/ordered/partly-received PO uses it), `create_po` (client id; same id + warehouse + supplier = replay),
+  `submit_po` (draft to ordered, harmless if repeated), `cancel_po` (draft or ordered with nothing received; harmless if repeated). Each writes `audit_log`. Hints are listed at the top of the migration.
+- Not done here: editing a draft PO (cancel and recreate for now), receiving goods against a PO (F-13d writes `qty_received` and the status moves to partly_received / received), screens, the Dart side.
+- Mutation checks: 13 rules broken on purpose, 11 caught outright; 2 more tests added for `create_po` (owner to a store) and `cancel_po` (received quantity alone), both now caught. Three survivors are equivalent by design:
+  `upsert_supplier` duplicate-name check (the unique index gives the same hint), `po_items_read` warehouse clause (the `exists` over `purchase_orders` is already filtered; kept explicit as defense in depth after the F-13a leak),
+  and `cancel_po` dropping only the status half of "has receipts" (the quantity half covers consistent data).
+- Concurrency note: PO numbers take a per-tenant advisory lock and have a unique key, but there is no concurrent test.
+- **Found, not fixed (out of scope):** `next_transfer_no` (F-08) has no lock and `transfers` has no unique `(tenant_id, transfer_no)`, so two simultaneous transfers can get the same number. Same fix as POs; candidate for a small follow-up card.
