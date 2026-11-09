@@ -17,7 +17,8 @@
     "upgrade": "Mag-upgrade sa Full",
     "settings": "Mga Setting",
     "platform": "Plataporma",
-    "purchasing": "Pagbili"
+    "purchasing": "Pagbili",
+    "counts": "Bilangan"
   },
   "roles": {
     "superadmin": "May-ari",
@@ -997,6 +998,98 @@
       "moreThanOrdered": "Higit sa in-order",
       "none": "Wala pang delivery.",
       "lines": "Mga linya"
+    }
+  },
+  "counts": {
+    "title": "Bilangan ng stock",
+    "subtitle": "Bilangin ang isang bodega, o isang bin, saka ilapat ang mga pagkakaiba sa stock.",
+    "warehouse": "Bodega",
+    "noWarehouses": "Wala kang bodega na mabibilang.",
+    "loading": "Naglo-load...",
+    "saving": "Sine-save...",
+    "close": "Isara",
+    "status": {
+      "open": "Bukas",
+      "closed": "Sarado",
+      "cancelled": "Kinansela"
+    },
+    "start": {
+      "title": "Magsimula ng bilangan",
+      "scope": "Ano ang bibilangin",
+      "wholeWarehouse": "Buong bodega",
+      "bin": "Isang bin",
+      "notes": "Mga tala",
+      "button": "Simulan ang pagbilang",
+      "selectBin": "Pumili ng bin...",
+      "needBin": "Pumili ng bin na bibilangin.",
+      "help": "Walang magbabago hangga't hindi mo isinasara ang bilangan."
+    },
+    "open": {
+      "title": "Bilangan {{no}}",
+      "started": "Nagsimula {{date}}",
+      "scopeAll": "Buong bodega",
+      "scopeBin": "Bin {{code}}",
+      "recount": "Nabilang kanina: {{counted}} (sa system noon: {{system}})"
+    },
+    "table": {
+      "product": "Produkto",
+      "bin": "Bin",
+      "system": "Nasa system ngayon",
+      "count": "Bilang",
+      "difference": "Pagkakaiba kung isasara ngayon",
+      "notCounted": "Hindi pa nabibilang",
+      "autoZero": "Hindi nakita: gagawing 0",
+      "none": "Walang stock dito. Magdagdag ng produkto para mabilang ito."
+    },
+    "add": {
+      "title": "Magdagdag ng produkto",
+      "product": "Produkto",
+      "selectProduct": "Pumili ng produkto...",
+      "bin": "Bin",
+      "selectBin": "Pumili ng bin...",
+      "button": "Idagdag ang hanay"
+    },
+    "save": {
+      "button": "I-save ang mga bilang",
+      "done": "Mga linyang na-save: {{n}}.",
+      "nothing": "Maglagay ng dami sa kahit isang hanay.",
+      "lineError": {
+        "qty_invalid": "Maglagay ng 0 o higit pa (hanggang 3 decimal).",
+        "bin_required": "Pumili ng bin."
+      }
+    },
+    "cancel": {
+      "button": "Kanselahin ang bilangan",
+      "title": "Kanselahin ang bilangan {{no}}",
+      "reason": "Dahilan (opsyonal)",
+      "confirm": "Kanselahin ang bilangan",
+      "keep": "Ituloy ang pagbilang"
+    },
+    "closeCount": {
+      "button": "Isara ang bilangan",
+      "title": "Isara ang bilangan {{no}}",
+      "help": "Babaguhin ng pagsara ang stock: ilalapat bilang pagwawasto ang bawat pagkakaiba. Mananatili ang mga delivery o benta habang nagbibilang ka.",
+      "summary": "Mga linyang magkaiba: {{corrections}} sa {{lines}}. Kulang {{shortage}}, sobra {{surplus}}.",
+      "none": "Wala pang nabibilang.",
+      "zeroLabel": "Ituring na zero ang mga hindi ko nabilang",
+      "zeroWarning": "Mga produktong may stock na gagawing 0: {{n}}.",
+      "confirm": "Isara at ilapat",
+      "done": "Nasara ang bilangan {{no}}. Mga pagwawasto: {{corrections}}, kabuuang {{net}}.",
+      "unsaved": "I-save muna ang mga bilang: may mga nilagay na dami na hindi pa na-save."
+    },
+    "history": {
+      "title": "Mga nakaraang bilangan",
+      "none": "Walang nakaraang bilangan.",
+      "no": "Bilangan #",
+      "date": "Petsa",
+      "scope": "Sakop",
+      "status": "Status",
+      "lines": "Mga linya",
+      "corrections": "Mga pagwawasto",
+      "cancelReason": "Kinansela: {{reason}}",
+      "counted": "nabilang",
+      "system": "system",
+      "zero": "hindi nakita"
     }
   }
 }

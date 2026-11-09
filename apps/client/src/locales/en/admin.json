@@ -17,7 +17,8 @@
     "upgrade": "Upgrade to Full",
     "settings": "Settings",
     "platform": "Platform",
-    "purchasing": "Purchasing"
+    "purchasing": "Purchasing",
+    "counts": "Counts"
   },
   "roles": {
     "superadmin": "Owner",
@@ -997,6 +998,98 @@
       "moreThanOrdered": "More than ordered",
       "none": "No deliveries yet.",
       "lines": "Lines"
+    }
+  },
+  "counts": {
+    "title": "Stock counts",
+    "subtitle": "Count a warehouse, or one bin, then apply the differences to stock.",
+    "warehouse": "Warehouse",
+    "noWarehouses": "You do not have a warehouse to count.",
+    "loading": "Loading...",
+    "saving": "Saving...",
+    "close": "Close",
+    "status": {
+      "open": "Open",
+      "closed": "Closed",
+      "cancelled": "Cancelled"
+    },
+    "start": {
+      "title": "Start a count",
+      "scope": "What to count",
+      "wholeWarehouse": "Whole warehouse",
+      "bin": "One bin",
+      "notes": "Notes",
+      "button": "Start counting",
+      "selectBin": "Choose a bin...",
+      "needBin": "Choose a bin to count.",
+      "help": "Counting changes nothing until you close the count."
+    },
+    "open": {
+      "title": "Count {{no}}",
+      "started": "Started {{date}}",
+      "scopeAll": "Whole warehouse",
+      "scopeBin": "Bin {{code}}",
+      "recount": "Counted before: {{counted}} (system then: {{system}})"
+    },
+    "table": {
+      "product": "Product",
+      "bin": "Bin",
+      "system": "In the system now",
+      "count": "Count",
+      "difference": "Difference if closed now",
+      "notCounted": "Not counted yet",
+      "autoZero": "Not found: set to 0",
+      "none": "Nothing is in stock here. Add a product to count it."
+    },
+    "add": {
+      "title": "Add a product",
+      "product": "Product",
+      "selectProduct": "Choose a product...",
+      "bin": "Bin",
+      "selectBin": "Choose a bin...",
+      "button": "Add row"
+    },
+    "save": {
+      "button": "Save counts",
+      "done": "Lines saved: {{n}}.",
+      "nothing": "Type a quantity on at least one row.",
+      "lineError": {
+        "qty_invalid": "Enter 0 or more (up to 3 decimals).",
+        "bin_required": "Choose a bin."
+      }
+    },
+    "cancel": {
+      "button": "Cancel count",
+      "title": "Cancel count {{no}}",
+      "reason": "Reason (optional)",
+      "confirm": "Cancel count",
+      "keep": "Keep counting"
+    },
+    "closeCount": {
+      "button": "Close count",
+      "title": "Close count {{no}}",
+      "help": "Closing changes stock: each difference is applied as a correction. Deliveries or sales made while you counted are kept.",
+      "summary": "Lines that differ: {{corrections}} of {{lines}}. Shortage {{shortage}}, surplus {{surplus}}.",
+      "none": "Nothing has been counted yet.",
+      "zeroLabel": "Treat products I did not count as zero",
+      "zeroWarning": "Products with stock that will be set to 0: {{n}}.",
+      "confirm": "Close and apply",
+      "done": "Count {{no}} closed. Corrections: {{corrections}}, net {{net}}.",
+      "unsaved": "Save your counts first: some typed quantities are not saved yet."
+    },
+    "history": {
+      "title": "Earlier counts",
+      "none": "No earlier counts.",
+      "no": "Count #",
+      "date": "Date",
+      "scope": "Scope",
+      "status": "Status",
+      "lines": "Lines",
+      "corrections": "Corrections",
+      "cancelReason": "Cancelled: {{reason}}",
+      "counted": "counted",
+      "system": "system",
+      "zero": "not found"
     }
   }
 }
