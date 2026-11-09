@@ -166,3 +166,27 @@ Route `/app/warehouses` (guard `reports.warehouse`, nav "Warehouses" / "Mga bode
 
 ## F-13g is complete
 Purchasing, Counts and Overview are all in the web app. Remaining in the plan: F-13h (phone screens for warehouse staff) and F-13i (end-to-end acceptance).
+
+## F-13i result: two-warehouse acceptance (2026-11-09)
+Run on the local stack with a throwaway tenant (`f13i-mw97727i`, preset "all"): warehouse W1 with bins (RECEIVING, A-01, B-02), warehouse W2 without bins, store S1, two products, a clerk for each warehouse. The server scenario is repeatable: `scripts/acceptance/f13i-two-warehouses.mjs` (calls the real RPCs as the owner and the clerks, and after every step checks stock per place, the bin invariant, and that every stock level equals the sum of its movements). Then the web screens and the phone were checked against the same tenant.
+
+| Step | Result |
+| --- | --- |
+| PO at W1: part delivery, rest of the order, status `partly_received` then `received`; a further receipt on the finished order refused | **Pass.** Goods land in the RECEIVING bin |
+| Put-away from RECEIVING to A-01 / B-02 | **Pass** |
+| W1 to W2 transfer from a warehouse with bins: ship without a pick refused (`pick_required`), pick list, ship (W1 drops, W2 unchanged while in transit), W2 clerk receives | **Pass** at every step |
+| W2 to store S1 (W2 has no bins, no pick) | **Pass** |
+| Counts: one bin at W1 (system 30, counted 28), whole warehouse at W2 with a delivery landing while the count is open | **Pass.** Stock does not move while a count is open; the correction is counted minus the system quantity at the moment of counting, so the delivery in between survives |
+| Who may do what: W2 clerk cannot count W1, cannot ship out of W1, cannot receive W1's order, sees only W2's counts | **Pass** (`location_denied`) |
+| Bin invariant (bins of W1 add up to W1) and ledger (levels equal sum of movements) after every step | **Pass** (11 steps) |
+| Web, signed in as the owner: stock finder, Counts list | **Pass.** Same numbers as the server (W1 68, W2 and totals), the closed bin count listed with 1 line and 1 correction |
+| Phone (emulator), clerk of W1: switch from the earlier test business, stock and bin breakdown (A-01 28, RECEIVING 40) match the server; receive on an order with airplane mode on (shows rice 73, "5 on the way in", RECEIVING 45, 1 waiting); reconnect; server then holds rice 73 and RECEIVING 45 | **Pass.** First time the bin breakdown and a receipt into a bin-enabled warehouse were seen on the device |
+
+**Finding 1 (decision needed): nothing stops a transfer from taking a warehouse below zero.** Shipping 500 units out of W2 (which held 19) was accepted and left W2 at -481; the web finder shows it, and the ledger still balances. The plan accepts negative stock for offline sales and bin picks, and names a "negative stock" exception report, but that report was never built, and a transfer entered online by a person is not an offline race. Recommended: `ship_transfer` (and `create_transfer` with ship-now) refuse with an `insufficient_stock` hint when the origin holds less than the quantity, leaving offline sales as they are; plus the exception report later. Not changed here because it alters stock rules (migration, pgTAP and web text).
+
+**Finding 2 (fixed): signing out left the Settings screen on top of the sign-in screen** until Back was pressed (it still showed the old business name). The gate now closes any screen opened over the old session when the user signs out. Test added.
+
+**Smaller notes:** Settings says "Active store" under a warehouse clerk's business name (wording only). A tap on the sync badge while a bottom sheet is open only closes the sheet, so it does not start a sync.
+
+**Cleanup:** tenants `h8-mw91d2at` and `f13i-mw97727i` (and their users) remain in the local database. For `f13i-...` I set `setup_completed_at` directly so the web app would not show the setup wizard.
+

@@ -128,9 +128,10 @@ class _GateState extends State<Gate> {
       // the stream repeats the current state on start and on token refresh; only real changes matter
       if (!mounted || v == _signedIn) return;
       if (!v) {
-        // signing out takes the saved access with it
+        // signing out takes the saved access with it, and closes any screen (Settings, an order) opened over the old session
         _refresh?.cancel();
         accessCache.clear();
+        Navigator.of(context).popUntil((r) => r.isFirst);
       }
       setState(() {
         _signedIn = v;
