@@ -1851,4 +1851,7 @@ class AppLocalizationsFil extends AppLocalizations {
     );
     return 'Tapos na ang bilang. $_temp0 Netong pagbabago: $net';
   }
+
+  @override
+  String get activeWarehouse => 'Aktibong bodega';
 }

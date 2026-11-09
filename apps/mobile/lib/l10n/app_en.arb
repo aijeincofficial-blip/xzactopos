@@ -1058,5 +1058,6 @@
         "type": "String"
       }
     }
-  }
+  },
+  "activeWarehouse": "Active warehouse"
 }

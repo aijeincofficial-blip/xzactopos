@@ -99,7 +99,7 @@ class SettingsScreen extends StatelessWidget {
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              t.activeStore,
+                              (CatalogScope.maybeOf(context)?.isWarehouse ?? false) ? t.activeWarehouse : t.activeStore,
                               style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: scheme.outline),
                             ),
                           ],

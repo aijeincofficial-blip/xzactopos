@@ -1842,4 +1842,7 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return 'Count finished. $_temp0 Net change: $net';
   }
+
+  @override
+  String get activeWarehouse => 'Active warehouse';
 }
