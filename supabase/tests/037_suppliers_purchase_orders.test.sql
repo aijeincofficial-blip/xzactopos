@@ -82,7 +82,7 @@ select is(pg_temp.try(format($$ select public.upsert_supplier(%L, '  mega rice t
 select is(pg_temp.try(format($$ select public.upsert_supplier(%L, '   ') $$, pg_temp.sid('B'))),
   '22023:name_required', 'a blank name is refused');
 reset role;
-select is((select count(*)::int from public.suppliers where lower(name) = 'mega rice trading'), 2,
+select is((select count(*)::int from public.suppliers where lower(name) = 'mega rice trading' and tenant_id in (pg_temp.tid('X'), pg_temp.tid('Y'))), 2,
   'the same supplier name exists in two tenants');
 
 select pg_temp.login('wh1');
@@ -283,7 +283,7 @@ select throws_ok(format($$ insert into public.po_items (tenant_id, po_id, varian
 
 select is((select count(*)::int from public.audit_log where action in ('po.create', 'po.submit', 'po.cancel')
            and location_id = pg_temp.lid('W1')), 4, 'create x2, submit and cancel are audited against W1');
-select is((select count(*)::int from public.audit_log where action in ('supplier.save', 'supplier.archive')), 4,
+select is((select count(*)::int from public.audit_log where action in ('supplier.save', 'supplier.archive') and tenant_id = pg_temp.tid('X')), 4,
   'three supplier saves (owner, wh1 x2) and the archive are audited');
 
 -- ---------------------------------------------------------------------------

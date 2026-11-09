@@ -16,7 +16,8 @@
     "reports": "Mga Ulat",
     "upgrade": "Mag-upgrade sa Full",
     "settings": "Mga Setting",
-    "platform": "Plataporma"
+    "platform": "Plataporma",
+    "purchasing": "Pagbili"
   },
   "roles": {
     "superadmin": "May-ari",
@@ -849,5 +850,153 @@
     "presetWarehouse": "Bodega at Imbentaryo lamang",
     "timezone": "Timezone",
     "provisionSuccess": "Matagumpay na na-provision ang negosyong {{name}}."
+  },
+  "purchasing": {
+    "title": "Pagbili",
+    "subtitle": "Mga supplier, purchase order at delivery para sa iyong mga bodega.",
+    "tabs": {
+      "orders": "Mga order",
+      "suppliers": "Mga supplier",
+      "receipts": "Mga delivery"
+    },
+    "loading": "Naglo-load...",
+    "saving": "Sine-save...",
+    "close": "Isara",
+    "units": "piraso",
+    "lines": "linya",
+    "status": {
+      "draft": "Draft",
+      "ordered": "Na-order",
+      "partly_received": "Bahagyang natanggap",
+      "received": "Natanggap",
+      "cancelled": "Kinansela"
+    },
+    "orders": {
+      "new": "Bagong order",
+      "receiveNoPo": "Tumanggap nang walang order",
+      "filterStatus": "Status",
+      "allStatuses": "Lahat ng status",
+      "filterWarehouse": "Bodega",
+      "allWarehouses": "Lahat ng bodega",
+      "poNo": "Order #",
+      "warehouse": "Bodega",
+      "supplier": "Supplier",
+      "expected": "Inaasahan",
+      "status": "Status",
+      "progress": "Natanggap",
+      "actions": "Mga aksyon",
+      "none": "Wala pang purchase order.",
+      "noWarehouses": "Wala kang bodega na maaaring pag-orderan.",
+      "shortClosed": "Isinara kahit kulang"
+    },
+    "action": {
+      "details": "Mga detalye",
+      "submit": "I-place ang order",
+      "cancel": "Kanselahin",
+      "receive": "Tanggapin",
+      "close": "Isara kahit kulang"
+    },
+    "form": {
+      "title": "Bagong purchase order",
+      "warehouse": "Bodega",
+      "supplier": "Supplier",
+      "selectWarehouse": "Pumili ng bodega...",
+      "selectSupplier": "Pumili ng supplier...",
+      "noSuppliers": "Magdagdag muna ng supplier (tab na Mga supplier).",
+      "expectedOn": "Inaasahan sa",
+      "notes": "Mga tala",
+      "notesPlaceholder": "Opsyonal na tala para sa supplier...",
+      "lines": "Mga linya",
+      "addLine": "Magdagdag ng linya",
+      "removeLine": "Alisin ang linya",
+      "product": "Produkto",
+      "selectProduct": "Pumili ng produkto...",
+      "qty": "Dami",
+      "cost": "Presyo bawat isa",
+      "costHint": "Opsyonal, sa {{currency}}.",
+      "saveDraft": "I-save bilang draft",
+      "placeNow": "I-place ang order ngayon",
+      "needWarehouse": "Pumili ng bodega.",
+      "needSupplier": "Pumili ng supplier.",
+      "needLines": "Magdagdag ng kahit isang linya.",
+      "created": "Na-save ang order {{no}}."
+    },
+    "lineError": {
+      "product_required": "Pumili ng produkto.",
+      "qty_invalid": "Maglagay ng dami na higit sa zero (hanggang 3 decimal).",
+      "cost_invalid": "Maglagay ng presyo tulad ng 12.50.",
+      "duplicate_item": "Nasa order na ang produktong ito."
+    },
+    "detail": {
+      "title": "Order {{no}}",
+      "ordered": "Inorder",
+      "received": "Natanggap",
+      "remaining": "Inaasahan pa",
+      "cost": "Presyo bawat isa",
+      "value": "Inaasahang halaga",
+      "placedOn": "Na-place",
+      "cancelReason": "Kinansela: {{reason}}",
+      "closeReason": "Isinara kahit kulang: {{reason}}",
+      "noLines": "Walang linya."
+    },
+    "receive": {
+      "title": "Tanggapin ang delivery para sa {{no}}",
+      "deliveryRef": "Numero ng delivery ng supplier",
+      "notes": "Mga tala",
+      "remaining": "Inaasahan pa",
+      "arrived": "Dumating ngayon",
+      "cost": "Presyo bawat isa (opsyonal)",
+      "costHint": "Iwanang blangko para gamitin ang presyo sa order.",
+      "over": "Higit sa in-order. Tatanggapin ito at lalagyan ng marka.",
+      "nothing": "Maglagay ng dumating na dami sa kahit isang linya.",
+      "confirm": "Tanggapin ang mga paninda",
+      "done": "Natanggap bilang {{grn}}.",
+      "fillRemaining": "Punan ng inaasahan pa"
+    },
+    "walkIn": {
+      "title": "Tumanggap nang walang order",
+      "note": "Itatala ang delivery na ito nang walang purchase order at lalagyan ng marka para suriin.",
+      "supplier": "Supplier (opsyonal)",
+      "noSupplier": "Walang supplier",
+      "warehouse": "Bodega"
+    },
+    "cancel": {
+      "title": "Kanselahin ang order {{no}}",
+      "reason": "Dahilan (opsyonal)",
+      "confirm": "Kanselahin ang order",
+      "keep": "Panatilihin ang order"
+    },
+    "closeShort": {
+      "title": "Isara ang {{no}} kahit kulang",
+      "help": "Hindi na ihahatid ng supplier ang natitira. Walang magbabago sa stock.",
+      "reason": "Dahilan (opsyonal)",
+      "confirm": "Isara ang order"
+    },
+    "suppliers": {
+      "add": "Magdagdag ng supplier",
+      "edit": "I-edit ang supplier",
+      "name": "Pangalan",
+      "contact": "Kausap",
+      "phone": "Telepono",
+      "email": "Email",
+      "notes": "Mga tala",
+      "none": "Wala pang supplier.",
+      "remove": "Alisin",
+      "removeConfirm": "Alisin si {{name}}? Mananatili siya sa mga lumang order.",
+      "save": "I-save ang supplier",
+      "actions": "Mga aksyon"
+    },
+    "receipts": {
+      "grnNo": "Delivery #",
+      "date": "Petsa",
+      "supplier": "Supplier",
+      "warehouse": "Bodega",
+      "order": "Order",
+      "noOrder": "Walang order",
+      "deliveryRef": "Blg. ng delivery",
+      "moreThanOrdered": "Higit sa in-order",
+      "none": "Wala pang delivery.",
+      "lines": "Mga linya"
+    }
   }
 }

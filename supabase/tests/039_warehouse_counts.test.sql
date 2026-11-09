@@ -140,7 +140,7 @@ select is((select qty_system from public.stock_count_items where count_id = pg_t
   'the line remembers the system quantity at the moment it was counted');
 select is((select qty_counted from public.stock_count_items where count_id = pg_temp.cid('c1') and variant_id = pg_temp.vid('salt')), 9::numeric, 'and the counted quantity');
 select is(pg_temp.qty('W1', 'rice'), 100::numeric, 'recording a count does not change stock');
-select is((select count(*)::int from public.stock_movements where ref_type = 'stock_count'), 0, 'and writes no movement');
+select is((select count(*)::int from public.stock_movements where ref_type = 'stock_count' and tenant_id = pg_temp.tid('X')), 0, 'and writes no movement');
 
 select pg_temp.login('wh1');
 set local role authenticated;
@@ -320,9 +320,9 @@ select throws_ok(format($$ insert into public.stock_count_items (tenant_id, coun
   pg_temp.tid('X'), pg_temp.cid('c4'), pg_temp.vid('rice')), '23514', null, 'a negative counted quantity is refused by the table');
 select throws_ok(format($$ insert into public.stock_count_items (tenant_id, count_id, variant_id, qty_system, qty_counted) values (%L, %L, %L, 0, 1) $$,
   pg_temp.tid('Y'), pg_temp.cid('c4'), pg_temp.vid('rice')), '23503', null, 'a line cannot point at another tenant''s count');
-select is((select count(*)::int from public.audit_log where action = 'count.start'), 6, 'six counts were started and audited');
-select is((select count(*)::int from public.audit_log where action = 'count.close'), 4, 'four closes are audited');
-select is((select count(*)::int from public.audit_log where action = 'count.cancel'), 1, 'one cancel is audited');
+select is((select count(*)::int from public.audit_log where action = 'count.start' and tenant_id = pg_temp.tid('X')), 6, 'six counts were started and audited');
+select is((select count(*)::int from public.audit_log where action = 'count.close' and tenant_id = pg_temp.tid('X')), 4, 'four closes are audited');
+select is((select count(*)::int from public.audit_log where action = 'count.cancel' and tenant_id = pg_temp.tid('X')), 1, 'one cancel is audited');
 
 -- ---------------------------------------------------------------------------
 -- 8. The warehouse module must be on

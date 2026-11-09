@@ -16,7 +16,8 @@
     "reports": "Reports",
     "upgrade": "Upgrade to Full",
     "settings": "Settings",
-    "platform": "Platform"
+    "platform": "Platform",
+    "purchasing": "Purchasing"
   },
   "roles": {
     "superadmin": "Owner",
@@ -849,5 +850,153 @@
     "presetWarehouse": "Warehouse & Inventory only",
     "timezone": "Timezone",
     "provisionSuccess": "Successfully provisioned business {{name}}."
+  },
+  "purchasing": {
+    "title": "Purchasing",
+    "subtitle": "Suppliers, purchase orders and deliveries for your warehouses.",
+    "tabs": {
+      "orders": "Orders",
+      "suppliers": "Suppliers",
+      "receipts": "Deliveries"
+    },
+    "loading": "Loading...",
+    "saving": "Saving...",
+    "close": "Close",
+    "units": "units",
+    "lines": "lines",
+    "status": {
+      "draft": "Draft",
+      "ordered": "Ordered",
+      "partly_received": "Partly received",
+      "received": "Received",
+      "cancelled": "Cancelled"
+    },
+    "orders": {
+      "new": "New order",
+      "receiveNoPo": "Receive without an order",
+      "filterStatus": "Status",
+      "allStatuses": "All statuses",
+      "filterWarehouse": "Warehouse",
+      "allWarehouses": "All warehouses",
+      "poNo": "Order #",
+      "warehouse": "Warehouse",
+      "supplier": "Supplier",
+      "expected": "Expected",
+      "status": "Status",
+      "progress": "Received",
+      "actions": "Actions",
+      "none": "No purchase orders yet.",
+      "noWarehouses": "You do not have a warehouse to order for.",
+      "shortClosed": "Closed short"
+    },
+    "action": {
+      "details": "Details",
+      "submit": "Place order",
+      "cancel": "Cancel",
+      "receive": "Receive",
+      "close": "Close short"
+    },
+    "form": {
+      "title": "New purchase order",
+      "warehouse": "Warehouse",
+      "supplier": "Supplier",
+      "selectWarehouse": "Choose a warehouse...",
+      "selectSupplier": "Choose a supplier...",
+      "noSuppliers": "Add a supplier first (Suppliers tab).",
+      "expectedOn": "Expected on",
+      "notes": "Notes",
+      "notesPlaceholder": "Optional notes for the supplier...",
+      "lines": "Lines",
+      "addLine": "Add line",
+      "removeLine": "Remove line",
+      "product": "Product",
+      "selectProduct": "Choose a product...",
+      "qty": "Quantity",
+      "cost": "Cost each",
+      "costHint": "Optional, in {{currency}}.",
+      "saveDraft": "Save as draft",
+      "placeNow": "Place order now",
+      "needWarehouse": "Choose a warehouse.",
+      "needSupplier": "Choose a supplier.",
+      "needLines": "Add at least one line.",
+      "created": "Order {{no}} saved."
+    },
+    "lineError": {
+      "product_required": "Choose a product.",
+      "qty_invalid": "Enter a quantity above zero (up to 3 decimals).",
+      "cost_invalid": "Enter a cost like 12.50.",
+      "duplicate_item": "This product is already on the order."
+    },
+    "detail": {
+      "title": "Order {{no}}",
+      "ordered": "Ordered",
+      "received": "Received",
+      "remaining": "Still expected",
+      "cost": "Cost each",
+      "value": "Expected value",
+      "placedOn": "Placed",
+      "cancelReason": "Cancelled: {{reason}}",
+      "closeReason": "Closed short: {{reason}}",
+      "noLines": "No lines."
+    },
+    "receive": {
+      "title": "Receive delivery for {{no}}",
+      "deliveryRef": "Supplier delivery number",
+      "notes": "Notes",
+      "remaining": "Still expected",
+      "arrived": "Arrived now",
+      "cost": "Cost each (optional)",
+      "costHint": "Leave blank to use the cost on the order.",
+      "over": "More than ordered. It will be accepted and flagged.",
+      "nothing": "Enter the quantity that arrived on at least one line.",
+      "confirm": "Receive goods",
+      "done": "Received as {{grn}}.",
+      "fillRemaining": "Fill with what is still expected"
+    },
+    "walkIn": {
+      "title": "Receive without an order",
+      "note": "This delivery is recorded without a purchase order and flagged for review.",
+      "supplier": "Supplier (optional)",
+      "noSupplier": "No supplier",
+      "warehouse": "Warehouse"
+    },
+    "cancel": {
+      "title": "Cancel order {{no}}",
+      "reason": "Reason (optional)",
+      "confirm": "Cancel order",
+      "keep": "Keep order"
+    },
+    "closeShort": {
+      "title": "Close {{no}} short",
+      "help": "The supplier will not deliver the rest. Stock does not change.",
+      "reason": "Reason (optional)",
+      "confirm": "Close order"
+    },
+    "suppliers": {
+      "add": "Add supplier",
+      "edit": "Edit supplier",
+      "name": "Name",
+      "contact": "Contact person",
+      "phone": "Phone",
+      "email": "Email",
+      "notes": "Notes",
+      "none": "No suppliers yet.",
+      "remove": "Remove",
+      "removeConfirm": "Remove {{name}}? Past orders keep it.",
+      "save": "Save supplier",
+      "actions": "Actions"
+    },
+    "receipts": {
+      "grnNo": "Delivery #",
+      "date": "Date",
+      "supplier": "Supplier",
+      "warehouse": "Warehouse",
+      "order": "Order",
+      "noOrder": "No order",
+      "deliveryRef": "Delivery no.",
+      "moreThanOrdered": "More than ordered",
+      "none": "No deliveries yet.",
+      "lines": "Lines"
+    }
   }
 }
