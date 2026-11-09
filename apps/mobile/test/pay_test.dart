@@ -87,7 +87,7 @@ void main() {
   testWidgets('paying less than the total puts the rest on utang and needs a customer', (tester) async {
     final store = await openPay(tester);
     await tester.enterText(find.byKey(const Key('received-field')), '20');
-    await tester.pump();
+    await tester.pumpAndSettle(); // lets the card scroll into view
     expect(find.text('₱17.50 goes on utang'), findsOneWidget);
     expect(tester.widget<FilledButton>(find.byKey(const Key('pay-done'))).onPressed, isNull, reason: 'no customer yet');
 
@@ -120,7 +120,7 @@ void main() {
     final store = await openPay(tester, kape: 1);
     await store.saveCustomer(id: 'c-1', name: 'Berto', opId: 'oc');
     await tester.tap(find.byKey(const Key('all-utang')));
-    await tester.pump();
+    await tester.pumpAndSettle();
     expect(find.text('₱12.50 goes on utang'), findsOneWidget);
     await tester.tap(find.byKey(const Key('choose-customer')));
     await tester.pumpAndSettle();
@@ -133,6 +133,21 @@ void main() {
       {'method': 'utang', 'amount': 1250}
     ]);
     expect((await store.watchCustomers().first).single.balance, 1250);
+    await leave(tester);
+  });
+
+  testWidgets('on a small phone, "All on utang" brings the who-owes button into view above the keypad', (tester) async {
+    final store = await openPay(tester, kape: 6);
+    tester.view.physicalSize = const Size(1080, 1700); // a short phone: the keypad covers the lower part
+    addTearDown(tester.view.reset);
+    await tester.pumpAndSettle();
+    await store.saveCustomer(id: 'c-9', name: 'Nena', opId: 'oc9');
+    await tester.tap(find.byKey(const Key('all-utang')));
+    await tester.pumpAndSettle();
+    final visible = tester.getRect(find.byType(ListView).first);
+    final button = tester.getRect(find.byKey(const Key('choose-customer')));
+    expect(button.bottom, lessThanOrEqualTo(visible.bottom), reason: 'the button the sale is waiting for must not be below the visible area');
+    expect(button.top, greaterThanOrEqualTo(visible.top));
     await leave(tester);
   });
 

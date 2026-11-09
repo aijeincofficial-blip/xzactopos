@@ -31,6 +31,8 @@ class _PayScreenState extends State<PayScreen> {
   final _received = TextEditingController();
   final _discount = TextEditingController();
   String _method = 'cash'; // cash | ewallet
+  final _utangKey = GlobalKey();
+  bool _utangShown = false;
   String _wallet = 'gcash'; // which wallet an e-wallet payment went to
   PickedCustomer? _customer;
   bool _saving = false;
@@ -127,6 +129,16 @@ class _PayScreenState extends State<PayScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // when part or all of the sale goes on utang, the who-owes button must not stay under the keypad
+    if (_utang > 0 && !_utangShown) {
+      _utangShown = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final c = _utangKey.currentContext;
+        if (c != null && mounted) Scrollable.ensureVisible(c, duration: const Duration(milliseconds: 250), curve: Curves.easeOut);
+      });
+    } else if (_utang <= 0) {
+      _utangShown = false;
+    }
     final t = AppLocalizations.of(context);
     final scheme = Theme.of(context).colorScheme;
     return Scaffold(
@@ -340,6 +352,7 @@ class _PayScreenState extends State<PayScreen> {
           // Utang / Receivables Card
           if (_utang > 0)
             AppCard(
+              key: _utangKey,
               color: scheme.primaryContainer,
               padding: const EdgeInsets.all(Gap.m),
               radius: Gap.radiusM,
