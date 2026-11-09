@@ -121,6 +121,12 @@ insert into expected (who, tbl, own_rows, own_updated)
 select w.who, 'day_closes', case when w.who in ('superadmin', 'admin') then 2 else 0 end, -1
 from (values ('superadmin'), ('admin'), ('cashier'), ('warehouse'), ('inactive')) w(who);
 
+-- F-05m shifts: the owner and admins read the shifts of their stores (2: S01 + S02), a cashier only their own (1, juan's);
+-- warehouse and inactive none; no client writes
+insert into expected (who, tbl, own_rows, own_updated)
+select w.who, 'shifts', case w.who when 'superadmin' then 2 when 'admin' then 2 when 'cashier' then 1 else 0 end, -1
+from (values ('superadmin'), ('admin'), ('cashier'), ('warehouse'), ('inactive')) w(who);
+
 -- P8-06 service ledger: service_txns and wallet_float are front of store (owner, admin: S01 + S02 = 2; cashier juan: S01 = 1);
 -- the day rollup is owner and admin only (2); warehouse and inactive none; nobody writes (the triggers keep both derived tables)
 insert into expected (who, tbl, own_rows, own_updated)
@@ -309,6 +315,10 @@ begin
                                    difference, server_expected_cash, closed_at) values
       (md5('dc:' || t.label || ':1')::uuid, pg_temp.tid(t.label), pg_temp.lid(t.label, 'S01'), md5('dcop:1')::uuid, '2026-11-08', t.ccy, 2500, 2400, -100, 2500, now()),
       (md5('dc:' || t.label || ':2')::uuid, pg_temp.tid(t.label), pg_temp.lid(t.label, 'S02'), md5('dcop:2')::uuid, '2026-11-08', t.ccy, 0, 0, 0, 0, now());
+    -- shifts: the cashier juan has one open shift at S01, the admin maria one at S02, colliding open op ids across tenants
+    insert into public.shifts (id, tenant_id, location_id, cashier_id, open_op_id, currency, opening_cash, opened_at) values
+      (md5('sh:' || t.label || ':1')::uuid, pg_temp.tid(t.label), pg_temp.lid(t.label, 'S01'), pg_temp.uid(t.label, 'juan'), md5('shop:1')::uuid, t.ccy, 5000, now()),
+      (md5('sh:' || t.label || ':2')::uuid, pg_temp.tid(t.label), pg_temp.lid(t.label, 'S02'), pg_temp.uid(t.label, 'maria'), md5('shop:2')::uuid, t.ccy, 0, now());
     -- service ledger: one entry at each store, colliding client op ids across tenants; the triggers write one float row
     -- and one day-summary row per store
     insert into public.service_txns (id, tenant_id, location_id, client_op_id, kind, wallet, amount, fee, currency, ref, txn_at) values
@@ -421,6 +431,7 @@ begin
     ('daily_expense_summary', 'tenant_id', 'amount = amount'),
     ('supervisor_approvals', 'tenant_id', 'used_at = used_at'),
     ('day_closes',        'tenant_id', 'note = note'),
+    ('shifts',            'tenant_id', 'note = note'),
     ('service_txns',      'tenant_id', 'note = note'),
     ('wallet_float',      'tenant_id', 'balance = balance'),
     ('daily_service_summary', 'tenant_id', 'fee = fee'),

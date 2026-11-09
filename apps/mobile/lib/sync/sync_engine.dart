@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../data/local_store.dart';
+import '../data/shift_models.dart';
 
 /// Server calls the engine needs. `Backend` implements it; tests fake it.
 abstract class SyncApi {
@@ -235,7 +236,10 @@ class SyncEngine {
   /// caught up with that time.
   static const warehouseKinds = {'receive_po', 'receive_without_po'};
 
-  static bool _viaSyncPush(String kind) => posKinds.contains(kind) || warehouseKinds.contains(kind);
+  /// Cashier shifts (F-05m): opening and closing go through sync_push like any other op.
+  static const shiftKinds = {'open_shift', 'close_shift'};
+
+  static bool _viaSyncPush(String kind) => posKinds.contains(kind) || warehouseKinds.contains(kind) || shiftKinds.contains(kind);
 
   /// One batch through sync_push. Results are applied in order; a transient `error` stops the batch.
   /// Returns how many ops were settled (applied or refused).
@@ -259,6 +263,8 @@ class SyncEngine {
           final result = (r['result'] as Map?)?.cast<String, dynamic>();
           if (warehouseKinds.contains(op.kind)) {
             await store.warehouseOpApplied(op.opId, result?['applied_at'] as String?, result: result);
+          } else if (shiftKinds.contains(op.kind)) {
+            await store.shiftOpApplied(op.opId, result?['applied_at'] as String?, result: result);
           } else {
             await store.posOpApplied(op.opId, result?['applied_at'] as String?, result: result);
           }
@@ -380,6 +386,15 @@ class SyncEngine {
       final res = await api.pullDayCloses(cursor is Map ? cursor.cast<String, dynamic>() : null, limit: 100);
       await store.applyPullDayCloses(res);
       if (res['has_more'] != true) break;
+    }
+    // cashier shifts: the open one and the last 30 days (after the push, so what was just sent is already in the server's copy)
+    final sh = api;
+    if (sh is ShiftApi) {
+      for (var page = 0; page < _maxPagesPerRun; page++) {
+        final res = await (sh as ShiftApi).pullShifts(await store.shiftCursor(), limit: 100);
+        await store.applyPullShifts(res);
+        if (res['has_more'] != true) break;
+      }
     }
     // load / e-wallet entries and the float balances (after the push, so the balances include what was just sent)
     for (var page = 0; page < _maxPagesPerRun; page++) {

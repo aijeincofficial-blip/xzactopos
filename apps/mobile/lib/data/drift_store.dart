@@ -6,11 +6,12 @@ import 'package:uuid/uuid.dart';
 import '../core/search.dart';
 import 'db.dart';
 import 'drift_sales.dart';
+import 'drift_shifts.dart';
 import 'drift_warehouse.dart';
 import 'local_store.dart';
 import 'sales_models.dart';
 
-class DriftStore with DriftSales, DriftWarehouse implements LocalStore {
+class DriftStore with DriftSales, DriftWarehouse, DriftShifts implements LocalStore {
   DriftStore(this.db);
 
   @override

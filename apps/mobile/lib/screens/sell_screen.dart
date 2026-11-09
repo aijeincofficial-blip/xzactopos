@@ -7,6 +7,7 @@ import '../core/money.dart';
 import '../core/theme.dart';
 import '../core/ui.dart';
 import '../data/local_store.dart';
+import '../data/shift_models.dart';
 import '../l10n/app_localizations.dart';
 import '../sync/store_session.dart';
 import '../sync/sync_badge.dart';
@@ -15,6 +16,7 @@ import 'cart.dart';
 import 'store_picker.dart';
 import '../data/sales_models.dart';
 import 'pay_screen.dart';
+import 'shift_screen.dart';
 import 'today_screen.dart';
 import 'product_form_screen.dart';
 import 'product_thumb.dart';
@@ -22,10 +24,13 @@ import 'products_screen.dart' show looksLikeBarcode;
 
 /// The Sell screen: search or scan to add, quick-tap tiles for the usual items, the cart, and the Pay button.
 class SellScreen extends StatefulWidget {
-  const SellScreen({super.key, this.backend});
+  const SellScreen({super.key, this.backend, this.storeName = ''});
 
   /// Needed for the Today strip (it opens the Today screen); without it the strip is left out.
   final Backend? backend;
+
+  /// Named on the shift slips.
+  final String storeName;
 
   @override
   State<SellScreen> createState() => _SellScreenState();
@@ -306,7 +311,38 @@ class _SellScreenState extends State<SellScreen> {
     final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.fromLTRB(Gap.xl, Gap.xs, Gap.xl, 0),
-      child: StreamBuilder<TodayTotals>(
+      child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+        Expanded(child: _todayCard(context, backend, t, scope, scheme)),
+        const SizedBox(width: Gap.s),
+        _shiftChip(context, backend, t, scope, scheme),
+      ]),
+    );
+  }
+
+  /// A small button beside the Today strip: is a shift open for this user, and a way into it.
+  Widget _shiftChip(BuildContext context, Backend backend, AppLocalizations t, CatalogScope scope, ColorScheme scheme) {
+    return StreamBuilder<ShiftView?>(
+      stream: scope.store.watchOpenShift(backend.userId ?? ''),
+      builder: (context, snap) {
+        final open = snap.data != null;
+        return AppCard(
+          key: const Key('shift-chip'),
+          padding: const EdgeInsets.all(Gap.s + 2),
+          radius: Gap.radiusL,
+          onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => scope.wrap(ShiftScreen(backend: backend, storeName: widget.storeName)))),
+          child: Tooltip(
+            message: open ? t.shiftChipOpen : t.shiftChipNone,
+            child: Icon(open ? Icons.lock_open_rounded : Icons.lock_outline_rounded, size: 22, color: open ? scheme.success : scheme.outline),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _todayCard(BuildContext context, Backend backend, AppLocalizations t, CatalogScope scope, ColorScheme scheme) {
+    return Builder(builder: (context) {
+      return StreamBuilder<TodayTotals>(
         stream: scope.store.watchToday(),
         builder: (context, snap) {
           final d = snap.data ?? const TodayTotals();
@@ -324,6 +360,8 @@ class _SellScreenState extends State<SellScreen> {
                 Expanded(
                   child: Text(
                     t.todaySales,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(fontSize: 13, color: scheme.outline, fontWeight: FontWeight.w600),
                   ),
                 ),
@@ -333,18 +371,22 @@ class _SellScreenState extends State<SellScreen> {
                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
                 ),
                 const SizedBox(width: Gap.s),
-                Text(
-                  t.todayCount(d.count),
-                  key: const Key('today-strip-count'),
-                  style: TextStyle(fontSize: 12, color: scheme.outline),
+                Flexible(
+                  child: Text(
+                    t.todayCount(d.count),
+                    key: const Key('today-strip-count'),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 12, color: scheme.outline),
+                  ),
                 ),
                 Icon(Icons.chevron_right_rounded, size: 18, color: scheme.outline),
               ],
             ),
           );
         },
-      ),
-    );
+      );
+    });
   }
 
   Future<void> _pay(Cart cart) async {

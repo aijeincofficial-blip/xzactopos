@@ -1059,5 +1059,86 @@
       }
     }
   },
-  "activeWarehouse": "Active warehouse"
+  "activeWarehouse": "Active warehouse",
+  "shiftTitle": "Shift",
+  "shiftNoneOpen": "No shift open",
+  "shiftNoneHelp": "Start a shift when you take over the till, and count the cash you start with.",
+  "shiftOpeningField": "Cash in the drawer when you start",
+  "shiftStart": "Start shift",
+  "shiftOpenSince": "Open since {time}",
+  "@shiftOpenSince": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "shiftOpeningLabel": "Opening cash",
+  "shiftCashSales": "Cash sales",
+  "shiftUtangTaken": "Utang paid in cash",
+  "shiftPaidOut": "Cash paid out (expenses)",
+  "shiftLoadCash": "Load and e-wallet (cash)",
+  "shiftSalesLine": "Sales: {count} · Total: {total}",
+  "@shiftSalesLine": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "shiftOtherTenders": "E-wallet: {ewallet} · On utang: {utang}",
+  "@shiftOtherTenders": {
+    "placeholders": {
+      "ewallet": {
+        "type": "String"
+      },
+      "utang": {
+        "type": "String"
+      }
+    }
+  },
+  "shiftEstimateNote": "This is this phone's figure. Sales made on other phones are not included.",
+  "shiftShareX": "Share this reading",
+  "shiftClose": "Close shift",
+  "shiftCloseAsk": "Count the drawer",
+  "shiftChecking": "Checking with the server...",
+  "shiftServerFigure": "Figure from the server",
+  "shiftPhoneFigure": "Figure from this phone",
+  "shiftConfirmClose": "Close this shift",
+  "shiftClosed": "Shift closed",
+  "shiftZTitle": "Shift report",
+  "shiftOpenedLine": "Opened {time}",
+  "@shiftOpenedLine": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "shiftClosedLine": "Closed {time}",
+  "@shiftClosedLine": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "shiftServerDiffers": "The server worked out {amount} for this shift. A supervisor may want to look.",
+  "@shiftServerDiffers": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "shiftHistory": "Recent shifts",
+  "shiftNoHistory": "No shifts yet.",
+  "shiftStillOpen": "Open",
+  "shiftErrAlreadyOpen": "You already have a shift open.",
+  "shiftErrAmount": "Enter an amount.",
+  "shiftChipOpen": "Shift open",
+  "shiftChipNone": "No shift"
 }

@@ -721,7 +721,7 @@ void main() {
         final upgraded = DriftStore(AppDatabase(NativeDatabase(file)));
         await upgraded.ensureTenant('tenant-a', baseCurrency: 'PHP');
         final version = await upgraded.db.customSelect('PRAGMA user_version').getSingle();
-        expect(version.data.values.single, 15);
+        expect(version.data.values.single, upgraded.db.schemaVersion);
         expect([for (final o in await upgraded.nextOps()) o.opId], ['op-keep'], reason: 'unsent ops survive');
         expect((await upgraded.db.select(upgraded.db.customers).get()).map((c) => c.name), ['Aling Nena']);
         expect(await _first(upgraded.watchWarehouses()), isEmpty, reason: 'new and empty: the first pull fills it');

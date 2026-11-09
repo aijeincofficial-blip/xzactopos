@@ -1059,5 +1059,86 @@
       }
     }
   },
-  "activeWarehouse": "Aktibong bodega"
+  "activeWarehouse": "Aktibong bodega",
+  "shiftTitle": "Shift",
+  "shiftNoneOpen": "Walang bukas na shift",
+  "shiftNoneHelp": "Magsimula ng shift kapag ikaw na ang hahawak ng kaha, at bilangin ang panimulang cash.",
+  "shiftOpeningField": "Cash sa kaha sa pagsisimula mo",
+  "shiftStart": "Simulan ang shift",
+  "shiftOpenSince": "Bukas mula {time}",
+  "@shiftOpenSince": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "shiftOpeningLabel": "Panimulang cash",
+  "shiftCashSales": "Benta sa cash",
+  "shiftUtangTaken": "Bayad sa utang (cash)",
+  "shiftPaidOut": "Cash na nailabas (gastos)",
+  "shiftLoadCash": "Load at e-wallet (cash)",
+  "shiftSalesLine": "Mga benta: {count} · Kabuuan: {total}",
+  "@shiftSalesLine": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "shiftOtherTenders": "E-wallet: {ewallet} · Sa utang: {utang}",
+  "@shiftOtherTenders": {
+    "placeholders": {
+      "ewallet": {
+        "type": "String"
+      },
+      "utang": {
+        "type": "String"
+      }
+    }
+  },
+  "shiftEstimateNote": "Ito ang bilang ng teleponong ito. Hindi kasama ang mga benta sa ibang telepono.",
+  "shiftShareX": "Ibahagi ang bilang na ito",
+  "shiftClose": "Isara ang shift",
+  "shiftCloseAsk": "Bilangin ang kaha",
+  "shiftChecking": "Tinitingnan sa server...",
+  "shiftServerFigure": "Bilang mula sa server",
+  "shiftPhoneFigure": "Bilang mula sa teleponong ito",
+  "shiftConfirmClose": "Isara ang shift na ito",
+  "shiftClosed": "Naisara na ang shift",
+  "shiftZTitle": "Ulat ng shift",
+  "shiftOpenedLine": "Binuksan {time}",
+  "@shiftOpenedLine": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "shiftClosedLine": "Isinara {time}",
+  "@shiftClosedLine": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "shiftServerDiffers": "Ang nakuha ng server ay {amount} para sa shift na ito. Maaaring gustong suriin ng supervisor.",
+  "@shiftServerDiffers": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "shiftHistory": "Mga huling shift",
+  "shiftNoHistory": "Wala pang shift.",
+  "shiftStillOpen": "Bukas",
+  "shiftErrAlreadyOpen": "May bukas ka nang shift.",
+  "shiftErrAmount": "Maglagay ng halaga.",
+  "shiftChipOpen": "Bukas ang shift",
+  "shiftChipNone": "Walang shift"
 }
