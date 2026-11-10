@@ -91,10 +91,10 @@ const S2 = uuid();
 const W1 = uuid();
 const W2 = uuid();
 
-await rpc("upsert_location", owner, { p_id: S1, p_type: "store", p_code: "S01", p_name: "Central Store" });
-await rpc("upsert_location", owner, { p_id: S2, p_type: "store", p_code: "S02", p_name: "Express Branch" });
-await rpc("upsert_location", owner, { p_id: W1, p_type: "warehouse", p_code: "W01", p_name: "Main Distribution Hub" });
-await rpc("upsert_location", owner, { p_id: W2, p_type: "warehouse", p_code: "W02", p_name: "North Storage Facility" });
+await rpc("upsert_location", owner, { p_id: S1, p_type: "store", p_code: "STR-01", p_name: "Central Store" });
+await rpc("upsert_location", owner, { p_id: S2, p_type: "store", p_code: "STR-02", p_name: "Express Branch" });
+await rpc("upsert_location", owner, { p_id: W1, p_type: "warehouse", p_code: "WH-01", p_name: "Main Distribution Hub" });
+await rpc("upsert_location", owner, { p_id: W2, p_type: "warehouse", p_code: "WH-02", p_name: "North Storage Facility" });
 
 // Enable bins on W01 (this creates RECEIVING, STAGING, and A-01-1)
 await rpc("enable_warehouse_bins", owner, { p_warehouse_id: W1 });

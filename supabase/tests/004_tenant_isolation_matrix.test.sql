@@ -562,7 +562,7 @@ select is_empty(
 
 -- Business keys really collide across the two tenants.
 select is(
-  (select count(*)::int from public.locations where code = 'S01'),
+  (select count(*)::int from public.locations where code = 'S01' and tenant_id in (pg_temp.tid('A'), pg_temp.tid('B'))),
   2,
   'both tenants own a store coded S01'
 );
