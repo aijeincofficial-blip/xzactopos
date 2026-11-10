@@ -166,3 +166,32 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* POS Thermal Receipt Slip Printing */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .printable-slip,
+  .printable-slip * {
+    visibility: visible;
+  }
+  .printable-slip {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 58mm;
+    margin: 0;
+    padding: 2mm 3mm;
+    color: #000 !important;
+    background: #fff !important;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+    font-size: 11px !important;
+    line-height: 1.25 !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+}

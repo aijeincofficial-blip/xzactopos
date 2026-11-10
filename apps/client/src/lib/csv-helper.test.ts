@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { exportProductsCsv, parseAndValidateImport, parseCsv } from "./csv-helper.ts";
+import {
+  exportDayClosesCsv,
+  exportProductsCsv,
+  exportShiftsCsv,
+  parseAndValidateImport,
+  parseCsv,
+} from "./csv-helper.ts";
 import type { ProductRow } from "./stock-api.ts";
 
 describe("csv-helper", () => {
@@ -64,5 +70,55 @@ describe("csv-helper", () => {
     expect(result.errors.length).toBe(2);
     expect(result.errors[0]!).toContain("Line 3: Missing product name");
     expect(result.errors[1]!).toContain("Line 4: Invalid price");
+  });
+
+  it("exports shift rows to CSV with proper headers and values", () => {
+    const csv = exportShiftsCsv([
+      {
+        id: "sh-1",
+        cashier: "Juan Dela Cruz",
+        status: "closed",
+        openedAt: "2026-11-10T08:00:00Z",
+        closedAt: "2026-11-10T16:00:00Z",
+        openingCash: 50000,
+        expectedCash: 125000,
+        countedCash: 124500,
+        difference: -500,
+        closedBy: "Maria Santos",
+        note: "Short 5 pesos",
+      },
+    ]);
+
+    expect(csv).toContain("Shift ID,Cashier,Status");
+    expect(csv).toContain("Juan Dela Cruz");
+    expect(csv).toContain("500.00");
+    expect(csv).toContain("1250.00");
+    expect(csv).toContain("1245.00");
+    expect(csv).toContain("-5.00");
+    expect(csv).toContain("Maria Santos");
+    expect(csv).toContain("Short 5 pesos");
+  });
+
+  it("exports day close rows to CSV with proper formatting", () => {
+    const csv = exportDayClosesCsv([
+      {
+        day: "2026-11-10",
+        openingCash: 50000,
+        expectedCash: 250000,
+        countedCash: 250000,
+        difference: 0,
+        closedAt: "2026-11-10T20:00:00Z",
+        closedBy: "Owner Admin",
+        note: "Balanced drawer",
+      },
+    ]);
+
+    expect(csv).toContain("Date,Opening Cash,Expected Cash");
+    expect(csv).toContain("2026-11-10");
+    expect(csv).toContain("500.00");
+    expect(csv).toContain("2500.00");
+    expect(csv).toContain("0.00");
+    expect(csv).toContain("Owner Admin");
+    expect(csv).toContain("Balanced drawer");
   });
 });

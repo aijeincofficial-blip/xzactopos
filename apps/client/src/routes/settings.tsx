@@ -1,4 +1,4 @@
-import { useState, useEffect, type FormEvent } from "react";
+import { useMemo, useState, useEffect, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -6,13 +6,21 @@ import { fetchTenantSettings, updateTenantSettings } from "../lib/settings-api.t
 import { fieldErrors, tenantSettingsSchema } from "../lib/schemas.ts";
 import { accessQuery } from "../lib/session.tsx";
 import { useErrorMessage, useValidationMessage } from "../lib/i18n-helpers.ts";
-import { Alert, Badge, Button, Card, ErrorState, Field, Input, PageHeader, Select, Table, useToast } from "../components/ui.tsx";
+import { Alert, Badge, Button, Card, Dialog, ErrorState, Field, Input, PageHeader, Select, Table, useToast } from "../components/ui.tsx";
 import {
   fetchStorageMetrics,
   runArchiveMaintenance,
   checkHealthPing,
   type HealthPingResult,
 } from "../lib/maintenance-api.ts";
+import {
+  deactivateTenantCurrency,
+  fetchReferenceCurrencies,
+  fetchTenantCurrencies,
+  upsertTenantCurrency,
+  type ReferenceCurrency,
+  type TenantCurrency,
+} from "../lib/currency-api.ts";
 
 function timezones(): string[] {
   try {
@@ -52,6 +60,43 @@ export function SettingsPage() {
   const [archiveMessage, setArchiveMessage] = useState<string | null>(null);
   const [pingResult, setPingResult] = useState<HealthPingResult | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+
+  // Currency & FX Rate states
+  const [currencyDialogOpen, setCurrencyDialogOpen] = useState(false);
+  const [editingCurrency, setEditingCurrency] = useState<TenantCurrency | null>(null);
+
+  const refCurrenciesQuery = useQuery({
+    queryKey: ["reference-currencies"],
+    queryFn: fetchReferenceCurrencies,
+    staleTime: 5 * 60_000,
+  });
+
+  const tenantCurrenciesQuery = useQuery({
+    queryKey: ["tenant-currencies"],
+    queryFn: fetchTenantCurrencies,
+  });
+
+  const currencyMap = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const c of refCurrenciesQuery.data ?? []) {
+      m.set(c.code, c.name);
+    }
+    return m;
+  }, [refCurrenciesQuery.data]);
+
+  const deactivateCurrencyMut = useMutation({
+    mutationFn: async (code: string) => {
+      if (!q.data) return;
+      await deactivateTenantCurrency(q.data.tenant.id, code);
+    },
+    onSuccess: async (_, code) => {
+      await qc.invalidateQueries({ queryKey: ["tenant-currencies"] });
+      toast.good(t("settings.currencyDeactivated", { code }));
+    },
+    onError: (e) => {
+      toast.error(errMsg(e));
+    },
+  });
 
   const storageQuery = useQuery({
     queryKey: ["storage-metrics"],
@@ -335,6 +380,105 @@ export function SettingsPage() {
           </div>
         </Card>
 
+        {/* Accepted Currencies & FX Rates */}
+        <Card className="grid gap-4" data-testid="currencies-card">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+            <div>
+              <h2 className="text-lg font-semibold">{t("settings.currenciesSection")}</h2>
+              <p className="text-xs text-slate-500">{t("settings.currenciesDesc")}</p>
+            </div>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              data-testid="add-currency-btn"
+              onClick={() => {
+                setEditingCurrency(null);
+                setCurrencyDialogOpen(true);
+              }}
+            >
+              + {t("settings.addCurrency")}
+            </Button>
+          </div>
+
+          <div className="flex items-center gap-2 text-sm bg-slate-50 p-2.5 rounded border border-slate-200">
+            <span className="font-medium text-slate-700">{t("settings.baseCurrency")}:</span>
+            <Badge tone="good">
+              {d.tenant.base_currency} ({currencyMap.get(d.tenant.base_currency) ?? ""})
+            </Badge>
+            <span className="text-xs text-slate-500 italic">({t("settings.currencyLockedHint")})</span>
+          </div>
+
+          {tenantCurrenciesQuery.isPending ? (
+            <p className="text-xs text-slate-500">{t("settings.loading")}</p>
+          ) : (tenantCurrenciesQuery.data ?? []).length === 0 ? (
+            <p className="text-xs text-slate-500 italic">{t("settings.noCurrencies")}</p>
+          ) : (
+            <div className="rounded border border-slate-200 overflow-hidden text-xs">
+              <Table bare>
+                <thead className="bg-slate-50 text-slate-600 uppercase">
+                  <tr>
+                    <th className="p-2">{t("settings.currencyCode")}</th>
+                    <th className="p-2 text-right">{t("settings.rateToBase")}</th>
+                    <th className="p-2">{t("settings.rateDate")}</th>
+                    <th className="p-2">{t("settings.rounding")}</th>
+                    <th className="p-2 text-center">{t("settings.currencyStatus")}</th>
+                    <th className="p-2 text-right">{t("settings.currencyActions")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(tenantCurrenciesQuery.data ?? []).map((tc) => (
+                    <tr key={tc.code} className="border-t border-slate-100" data-testid={`currency-row-${tc.code}`}>
+                      <td className="p-2 font-medium text-slate-900">
+                        {tc.code} <span className="font-normal text-slate-500">({currencyMap.get(tc.code) ?? ""})</span>
+                      </td>
+                      <td className="p-2 text-right font-mono font-semibold text-slate-900">
+                        1 {tc.code} = {tc.rate_to_base.toFixed(4)} {d.tenant.base_currency}
+                      </td>
+                      <td className="p-2 text-slate-600">{tc.rate_date}</td>
+                      <td className="p-2 text-slate-600">{tc.rounding}</td>
+                      <td className="p-2 text-center">
+                        {tc.active ? (
+                          <Badge tone="good">{t("settings.status.active")}</Badge>
+                        ) : (
+                          <Badge tone="warn">{t("settings.status.suspended")}</Badge>
+                        )}
+                      </td>
+                      <td className="p-2 text-right">
+                        <div className="flex justify-end gap-1.5">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-7 text-xs px-2"
+                            data-testid={`edit-currency-${tc.code}`}
+                            onClick={() => {
+                              setEditingCurrency(tc);
+                              setCurrencyDialogOpen(true);
+                            }}
+                          >
+                            {t("settings.editCurrency")}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-7 text-xs px-2 text-red-600 hover:text-red-700"
+                            data-testid={`deactivate-currency-${tc.code}`}
+                            onClick={() => deactivateCurrencyMut.mutate(tc.code)}
+                          >
+                            {t("settings.deactivateCurrency")}
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+            </div>
+          )}
+        </Card>
+
         {/* Sales Controls & Permissions */}
         <Card className="grid gap-4">
           <h2 className="text-lg font-semibold">{t("settings.salesControlsSection")}</h2>
@@ -549,6 +693,174 @@ export function SettingsPage() {
           </div>
         </div>
       </form>
+
+      {currencyDialogOpen && q.data ? (
+        <CurrencyRateDialog
+          tenantId={q.data.tenant.id}
+          baseCurrency={q.data.tenant.base_currency}
+          referenceCurrencies={refCurrenciesQuery.data ?? []}
+          existingCurrencies={tenantCurrenciesQuery.data ?? []}
+          initialCurrency={editingCurrency}
+          onClose={() => {
+            setCurrencyDialogOpen(false);
+            setEditingCurrency(null);
+          }}
+          onSaved={async () => {
+            setCurrencyDialogOpen(false);
+            setEditingCurrency(null);
+            await qc.invalidateQueries({ queryKey: ["tenant-currencies"] });
+            toast.good(t("settings.currencySuccess"));
+          }}
+        />
+      ) : null}
     </div>
+  );
+}
+
+function CurrencyRateDialog({
+  tenantId,
+  baseCurrency,
+  referenceCurrencies,
+  existingCurrencies,
+  initialCurrency,
+  onClose,
+  onSaved,
+}: {
+  tenantId: string;
+  baseCurrency: string;
+  referenceCurrencies: ReferenceCurrency[];
+  existingCurrencies: TenantCurrency[];
+  initialCurrency: TenantCurrency | null;
+  onClose: () => void;
+  onSaved: (code: string) => void;
+}) {
+  const { t } = useTranslation(["admin", "common"]);
+  const [code, setCode] = useState(initialCurrency?.code ?? "");
+  const [rateText, setRateText] = useState(
+    initialCurrency ? String(initialCurrency.rate_to_base) : "",
+  );
+  const [rounding, setRounding] = useState<"half-up" | "half-even" | "floor" | "ceil">(
+    initialCurrency?.rounding ?? "half-up",
+  );
+  const [active, setActive] = useState(initialCurrency?.active ?? true);
+  const [error, setError] = useState<string | null>(null);
+
+  const availableCurrencies = referenceCurrencies.filter(
+    (c) =>
+      c.code !== baseCurrency &&
+      (initialCurrency || !existingCurrencies.some((ec) => ec.code === c.code)),
+  );
+
+  const mut = useMutation({
+    mutationFn: async () => {
+      const parsedRate = parseFloat(rateText);
+      if (isNaN(parsedRate) || parsedRate <= 0) {
+        throw new Error("Exchange rate must be a valid number greater than zero.");
+      }
+      if (!code) {
+        throw new Error("Please select a currency.");
+      }
+      return upsertTenantCurrency({
+        tenantId,
+        code,
+        rateToBase: parsedRate,
+        rounding,
+        active,
+      });
+    },
+    onSuccess: (saved) => {
+      onSaved(saved.code);
+    },
+    onError: (e) => {
+      setError(e instanceof Error ? e.message : "Error saving currency rate");
+    },
+  });
+
+  return (
+    <Dialog
+      open
+      onOpenChange={(o) => !o && onClose()}
+      title={initialCurrency ? t("settings.editCurrency") : t("settings.addCurrency")}
+      closeLabel={t("common:actions.close")}
+    >
+      <div className="grid gap-3 text-sm">
+        {initialCurrency ? (
+          <div>
+            <span className="text-xs text-slate-500">{t("settings.currencyCode")}</span>
+            <div className="font-semibold text-slate-900 text-base">{code}</div>
+          </div>
+        ) : (
+          <Field label={t("settings.currencyCode")}>
+            <Select
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              data-testid="currency-select"
+            >
+              <option value="">-- {t("settings.selectCurrency")} --</option>
+              {availableCurrencies.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.code} - {c.name}
+                </option>
+              ))}
+            </Select>
+          </Field>
+        )}
+
+        <Field
+          label={t("settings.rateToBase")}
+          hint={code ? t("settings.rateHelper", { code, rate: rateText || "...", base: baseCurrency }) : undefined}
+        >
+          <Input
+            data-testid="currency-rate-input"
+            type="number"
+            step="0.0001"
+            min="0.000001"
+            placeholder="1.0000"
+            value={rateText}
+            onChange={(e) => setRateText(e.target.value)}
+          />
+        </Field>
+
+        <Field label={t("settings.rounding")}>
+          <Select
+            value={rounding}
+            onChange={(e) => setRounding(e.target.value as "half-up" | "half-even" | "floor" | "ceil")}
+          >
+            <option value="half-up">{t("settings.roundingHalfUp")}</option>
+            <option value="half-even">{t("settings.roundingHalfEven")}</option>
+            <option value="floor">{t("settings.roundingFloor")}</option>
+            <option value="ceil">{t("settings.roundingCeil")}</option>
+          </Select>
+        </Field>
+
+        <div>
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <input
+              type="checkbox"
+              checked={active}
+              onChange={(e) => setActive(e.target.checked)}
+              className="h-4 w-4 rounded border-slate-300 text-slate-900"
+            />
+            <span className="font-medium text-slate-800">{t("settings.status.active")}</span>
+          </label>
+        </div>
+
+        {error ? <Alert tone="error">{error}</Alert> : null}
+
+        <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+          <Button type="button" variant="outline" onClick={onClose}>
+            {t("common:actions.cancel")}
+          </Button>
+          <Button
+            type="button"
+            data-testid="currency-save-btn"
+            disabled={mut.isPending || !code || !rateText}
+            onClick={() => mut.mutate()}
+          >
+            {mut.isPending ? t("settings.saving") : t("common:actions.save")}
+          </Button>
+        </div>
+      </div>
+    </Dialog>
   );
 }

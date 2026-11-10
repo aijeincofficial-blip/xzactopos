@@ -78,6 +78,91 @@ export function downloadCsv(content: string, filename: string): void {
   URL.revokeObjectURL(url);
 }
 
+export interface ShiftExportItem {
+  id: string;
+  cashier: string;
+  status: "open" | "closed";
+  openedAt: string;
+  closedAt: string | null;
+  openingCash: number;
+  expectedCash: number | null;
+  countedCash: number | null;
+  difference: number | null;
+  closedBy: string | null;
+  note: string | null;
+}
+
+export function exportShiftsCsv(shifts: ShiftExportItem[]): string {
+  const headers = [
+    "Shift ID",
+    "Cashier",
+    "Status",
+    "Opened At",
+    "Closed At",
+    "Opening Cash",
+    "Expected Cash",
+    "Counted Cash",
+    "Difference",
+    "Closed By",
+    "Note",
+  ];
+  const lines = [headers.join(",")];
+  for (const s of shifts) {
+    lines.push([
+      escapeCsvField(s.id),
+      escapeCsvField(s.cashier),
+      escapeCsvField(s.status),
+      escapeCsvField(s.openedAt),
+      escapeCsvField(s.closedAt ?? ""),
+      escapeCsvField((s.openingCash / 100).toFixed(2)),
+      escapeCsvField(s.expectedCash !== null ? (s.expectedCash / 100).toFixed(2) : ""),
+      escapeCsvField(s.countedCash !== null ? (s.countedCash / 100).toFixed(2) : ""),
+      escapeCsvField(s.difference !== null ? (s.difference / 100).toFixed(2) : ""),
+      escapeCsvField(s.closedBy ?? ""),
+      escapeCsvField(s.note ?? ""),
+    ].join(","));
+  }
+  return lines.join("\r\n");
+}
+
+export interface DayCloseExportItem {
+  day: string;
+  openingCash: number;
+  expectedCash: number;
+  countedCash: number;
+  difference: number;
+  closedAt: string;
+  closedBy: string | null;
+  note: string | null;
+}
+
+export function exportDayClosesCsv(closes: DayCloseExportItem[]): string {
+  const headers = [
+    "Date",
+    "Opening Cash",
+    "Expected Cash",
+    "Counted Cash",
+    "Difference",
+    "Closed At",
+    "Closed By",
+    "Note",
+  ];
+  const lines = [headers.join(",")];
+  for (const c of closes) {
+    lines.push([
+      escapeCsvField(c.day),
+      escapeCsvField((c.openingCash / 100).toFixed(2)),
+      escapeCsvField((c.expectedCash / 100).toFixed(2)),
+      escapeCsvField((c.countedCash / 100).toFixed(2)),
+      escapeCsvField((c.difference / 100).toFixed(2)),
+      escapeCsvField(c.closedAt),
+      escapeCsvField(c.closedBy ?? ""),
+      escapeCsvField(c.note ?? ""),
+    ].join(","));
+  }
+  return lines.join("\r\n");
+}
+
 /** Parses standard CSV text with quotes, escaped quotes (""), and commas. */
 export function parseCsv(text: string): string[][] {
   const rows: string[][] = [];
