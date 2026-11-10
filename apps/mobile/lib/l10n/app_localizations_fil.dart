@@ -2263,4 +2263,158 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get transferNewAction => 'Bagong Paglipat';
+
+  @override
+  String get supervisorPinDiscountTitle => 'Override ng Supervisor';
+
+  @override
+  String supervisorPinDiscountSubtitle(String amount) {
+    return 'Kailangan ng pag-apruba ng supervisor para sa diskwentong $amount';
+  }
+
+  @override
+  String get supervisorPinRequiredDiscount =>
+      'Kailangan ang PIN ng supervisor para sa diskwento';
+
+  @override
+  String get supervisorPinApproveBtn => 'Aprubahan';
+
+  @override
+  String supervisorPinApprovedBy(String name) {
+    return 'Inaprubahan ni $name';
+  }
+
+  @override
+  String get pickListTitle => 'Mga Listahan ng Pagkuha';
+
+  @override
+  String get pickListDraftTransfers => 'Mga Outbound Transfer para Kunin';
+
+  @override
+  String get pickListNoDrafts =>
+      'Walang draft transfer na naghihintay ng pagkuha.';
+
+  @override
+  String get pickListGenerate => 'Gumawa ng Pick List';
+
+  @override
+  String get pickListGenerating => 'Ginagawa...';
+
+  @override
+  String get pickListWalkingRoute => 'Mga Bin ayon sa Rutang Paglakad';
+
+  @override
+  String pickListItemsCount(int count) {
+    return '$count mga aytem';
+  }
+
+  @override
+  String get pickListItemPick => 'Kunin ang Aytem';
+
+  @override
+  String get pickListScanItem => 'I-scan ang Aytem / Bin';
+
+  @override
+  String get pickListQtyToPick => 'Dami na Kukunin';
+
+  @override
+  String get pickListShortReason => 'Dahilan kung Kulang';
+
+  @override
+  String get pickListShortReasonHint => 'hal. Sira, nawawala sa bin';
+
+  @override
+  String get pickListConfirmPick => 'Kumpirmahin ang Pagkuha';
+
+  @override
+  String get pickListPicking => 'Kinukumpirma...';
+
+  @override
+  String get pickListCompleted => 'Tapos Na';
+
+  @override
+  String get pickListInProgress => 'Kasalukuyang Ginagawa';
+
+  @override
+  String get pickListPending => 'Nakabinbin';
+
+  @override
+  String pickListProgress(int picked, int total) {
+    return '$picked sa $total ang nakuha';
+  }
+
+  @override
+  String get pickListStagingNotice =>
+      'Ang mga aytem ay inililipat sa STAGING bin para sa pagpapadala.';
+
+  @override
+  String pickListBinCoord(String aisle, String rack, String shelf) {
+    return 'Aisle $aisle • Rack $rack • Shelf $shelf';
+  }
+
+  @override
+  String get pickListAllPicked =>
+      'Lahat ng aytem ay nakuha at nailipat na sa staging';
+
+  @override
+  String get pickListAction => 'Listahan ng Pagkuha';
+
+  @override
+  String get shiftCashDrop => 'Cash Drop / Skim';
+
+  @override
+  String get shiftCashDropSubtitle =>
+      'Maglipat ng sobrang pera mula sa drawer papuntang safe o kustodiya';
+
+  @override
+  String get shiftCashDropAmount => 'Halaga ng Drop';
+
+  @override
+  String get shiftCashDropAmountHint => '0.00';
+
+  @override
+  String get shiftCashDropReason => 'Dahilan / Destinasyon';
+
+  @override
+  String get shiftCashDropReasonHint => 'hal. Mid-day safe drop, bangko';
+
+  @override
+  String get shiftCashDropChipSafe => 'Safe Drop';
+
+  @override
+  String get shiftCashDropChipBank => 'Para sa Bangko';
+
+  @override
+  String get shiftCashDropChipSkim => 'Drawer Skim';
+
+  @override
+  String get shiftCashDropConfirm => 'Itala ang Cash Drop';
+
+  @override
+  String shiftCashDropSuccess(String amount) {
+    return 'Naitala ang cash drop na $amount';
+  }
+
+  @override
+  String get shiftCashDropSlipTitle => 'RESAPIS NG CASH DROP';
+
+  @override
+  String get shiftCashDropSlipCashier => 'Kahero';
+
+  @override
+  String get shiftCashDropSlipWitness => 'Saksi / Supervisor';
+
+  @override
+  String get shiftCashDropShare => 'Ibahagi ang Slip';
+
+  @override
+  String get shiftCashDropPrint => 'I-print ang Slip';
+
+  @override
+  String get shiftCashDropErrAmount =>
+      'Maglagay ng wastong halaga na higit sa zero';
+
+  @override
+  String get shiftCashDropErrExceeds =>
+      'Hindi maaaring lumampas ang drop sa inaasahang laman ng drawer';
 }

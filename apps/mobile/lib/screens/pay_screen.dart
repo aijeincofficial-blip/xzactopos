@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
+import '../backend.dart';
 import '../core/money.dart';
+import '../core/supervisor_pin_dialog.dart';
 import '../core/theme.dart';
 import '../core/ui.dart';
 import '../data/sales_models.dart';
@@ -36,6 +38,7 @@ class _PayScreenState extends State<PayScreen> {
   String _wallet = 'gcash'; // which wallet an e-wallet payment went to
   PickedCustomer? _customer;
   bool _saving = false;
+  SupervisorApprovalResult? _approvalResult;
 
   @override
   void dispose() {
@@ -81,10 +84,36 @@ class _PayScreenState extends State<PayScreen> {
     if (c != null && mounted) setState(() => _customer = c);
   }
 
+  Future<bool> _requestSupervisorApproval() async {
+    final scope = CatalogScope.of(context);
+    final backend = (scope.engine.api is Backend) ? scope.engine.api as Backend : null;
+    if (backend == null) return true;
+    final t = AppLocalizations.of(context);
+    final res = await showSupervisorPinDialog(
+      context,
+      backend: backend,
+      action: 'sale_discount',
+      refId: _saleId,
+      title: t.supervisorPinDiscountTitle,
+      subtitle: t.supervisorPinDiscountSubtitle(_money(_discountAmt)),
+    );
+    if (!mounted) return false;
+    if (res != null) {
+      setState(() => _approvalResult = res);
+      return true;
+    }
+    return false;
+  }
+
   Future<void> _finish() async {
     if (!_valid || _saving) return;
-    setState(() => _saving = true);
     final scope = CatalogScope.of(context);
+    if (scope.isCashier && _discountAmt > 0 && _approvalResult == null) {
+      final approved = await _requestSupervisorApproval();
+      if (!approved) return;
+      if (!mounted) return;
+    }
+    setState(() => _saving = true);
     try {
       final draft = SaleDraft(
         id: _saleId,
@@ -92,6 +121,8 @@ class _PayScreenState extends State<PayScreen> {
         lines: [for (final l in widget.cart.lines) l.toSaleLine()],
         discount: _discountAmt,
         customerId: _utang > 0 ? _customer!.id : null,
+        approvalId: _approvalResult?.approvalId,
+        offlineApproval: _approvalResult?.offlineApproval,
         payments: [
           if (_applied > 0)
             PaymentDraft(
@@ -140,6 +171,7 @@ class _PayScreenState extends State<PayScreen> {
       _utangShown = false;
     }
     final t = AppLocalizations.of(context);
+    final scope = CatalogScope.of(context);
     final scheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(title: Text(t.payTitle)),
@@ -389,16 +421,87 @@ class _PayScreenState extends State<PayScreen> {
               children: [
                 Padding(
                   padding: const EdgeInsets.only(bottom: Gap.s),
-                  child: TextField(
-                    key: const Key('discount-field'),
-                    controller: _discount,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: InputDecoration(
-                      isDense: true,
-                      labelText: t.payDiscountHint,
-                      errorText: _parse(_discount.text) == -1 ? t.errBadAmount : null,
-                    ),
-                    onChanged: (_) => setState(() {}),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      TextField(
+                        key: const Key('discount-field'),
+                        controller: _discount,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        decoration: InputDecoration(
+                          isDense: true,
+                          labelText: t.payDiscountHint,
+                          errorText: _parse(_discount.text) == -1 ? t.errBadAmount : null,
+                        ),
+                        onChanged: (_) => setState(() {
+                          _approvalResult = null;
+                        }),
+                      ),
+                      if (scope.isCashier && _discountAmt > 0) ...[
+                        const SizedBox(height: Gap.xs),
+                        if (_approvalResult == null)
+                          Container(
+                            key: const Key('discount-supervisor-required'),
+                            padding: const EdgeInsets.symmetric(horizontal: Gap.s, vertical: Gap.xs),
+                            decoration: BoxDecoration(
+                              color: Colors.amber.shade50,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.amber.shade300),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.shield_outlined, size: 16, color: Colors.amber.shade800),
+                                const SizedBox(width: Gap.xs),
+                                Expanded(
+                                  child: Text(
+                                    t.supervisorPinRequiredDiscount,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.amber.shade900,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                                TextButton(
+                                  key: const Key('discount-approve-btn'),
+                                  style: TextButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(horizontal: Gap.s),
+                                    minimumSize: const Size(0, 32),
+                                  ),
+                                  onPressed: _requestSupervisorApproval,
+                                  child: Text(t.supervisorPinApproveBtn),
+                                ),
+                              ],
+                            ),
+                          )
+                        else
+                          Container(
+                            key: const Key('discount-approved-badge'),
+                            padding: const EdgeInsets.symmetric(horizontal: Gap.s, vertical: Gap.xs),
+                            decoration: BoxDecoration(
+                              color: Colors.green.shade50,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.green.shade300),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.check_circle_outline_rounded, size: 16, color: Colors.green.shade700),
+                                const SizedBox(width: Gap.xs),
+                                Expanded(
+                                  child: Text(
+                                    t.supervisorPinApprovedBy(_approvalResult!.approvedBy),
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.green.shade900,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ],
                   ),
                 ),
               ],

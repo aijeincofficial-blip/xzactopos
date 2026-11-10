@@ -158,6 +158,19 @@ class FakeBackend implements Backend {
     required String variantId,
     required double qty,
   }) async {}
+  @override
+  Future<PickListSummary?> fetchPickListForTransfer(String transferId) async => null;
+  @override
+  Future<String> generatePickList(String transferId) async => 'pck-mock-1';
+  @override
+  Future<void> confirmPickItem({
+    required String pickListId,
+    required String itemId,
+    required double qtyPicked,
+    String? shortReason,
+  }) async {}
+  @override
+  Future<List<TransferHeader>> fetchDraftTransfers(String warehouseId) async => [];
 
   final pushed = <String>[];
   @override

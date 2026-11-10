@@ -1263,5 +1263,101 @@
   "transferNoItemsError": "Add at least one item to ship",
   "transferDestinationsError": "Failed to load branches",
   "transferCreatedSuccess": "Transfer dispatched and shipped successfully.",
-  "transferNewAction": "New Transfer"
+  "transferNewAction": "New Transfer",
+  "supervisorPinDiscountTitle": "Supervisor Override",
+  "supervisorPinDiscountSubtitle": "Supervisor approval needed for {amount} discount",
+  "@supervisorPinDiscountSubtitle": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "supervisorPinRequiredDiscount": "Supervisor PIN required for discount",
+  "supervisorPinApproveBtn": "Approve",
+  "supervisorPinApprovedBy": "Approved by {name}",
+  "@supervisorPinApprovedBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pickListTitle": "Pick Lists",
+  "pickListDraftTransfers": "Outbound Transfer Pick Lists",
+  "pickListNoDrafts": "No draft transfers awaiting picking.",
+  "pickListGenerate": "Generate Pick List",
+  "pickListGenerating": "Generating...",
+  "pickListWalkingRoute": "Walking Route Bins",
+  "pickListItemsCount": "{count} items",
+  "@pickListItemsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "pickListItemPick": "Pick Item",
+  "pickListScanItem": "Scan Item / Bin",
+  "pickListQtyToPick": "Quantity to Pick",
+  "pickListShortReason": "Short Reason (if less than requested)",
+  "pickListShortReasonHint": "e.g. Damaged, missing in bin",
+  "pickListConfirmPick": "Confirm Pick",
+  "pickListPicking": "Confirming...",
+  "pickListCompleted": "Completed",
+  "pickListInProgress": "In Progress",
+  "pickListPending": "Pending",
+  "pickListProgress": "{picked} of {total} picked",
+  "@pickListProgress": {
+    "placeholders": {
+      "picked": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "pickListStagingNotice": "Items are moved to STAGING bin for dispatch.",
+  "pickListBinCoord": "Aisle {aisle} • Rack {rack} • Shelf {shelf}",
+  "@pickListBinCoord": {
+    "placeholders": {
+      "aisle": {
+        "type": "String"
+      },
+      "rack": {
+        "type": "String"
+      },
+      "shelf": {
+        "type": "String"
+      }
+    }
+  },
+  "pickListAllPicked": "All items picked and staged",
+  "pickListAction": "Pick List",
+  "shiftCashDrop": "Cash Drop / Skim",
+  "shiftCashDropSubtitle": "Move excess cash from drawer to safe or custody",
+  "shiftCashDropAmount": "Drop Amount",
+  "shiftCashDropAmountHint": "0.00",
+  "shiftCashDropReason": "Reason / Destination",
+  "shiftCashDropReasonHint": "e.g. Mid-day safe drop, bank run",
+  "shiftCashDropChipSafe": "Safe Drop",
+  "shiftCashDropChipBank": "Bank Run",
+  "shiftCashDropChipSkim": "Drawer Skim",
+  "shiftCashDropConfirm": "Record Cash Drop",
+  "shiftCashDropSuccess": "Cash drop of {amount} recorded",
+  "@shiftCashDropSuccess": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "shiftCashDropSlipTitle": "CASH DROP RECEIPT",
+  "shiftCashDropSlipCashier": "Cashier",
+  "shiftCashDropSlipWitness": "Witness / Supervisor",
+  "shiftCashDropShare": "Share Slip",
+  "shiftCashDropPrint": "Print Slip",
+  "shiftCashDropErrAmount": "Enter a valid drop amount greater than zero",
+  "shiftCashDropErrExceeds": "Drop amount cannot exceed expected drawer cash"
 }

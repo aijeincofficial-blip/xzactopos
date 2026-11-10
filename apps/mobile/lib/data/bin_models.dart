@@ -96,3 +96,85 @@ class ReceivingStockItem {
     );
   }
 }
+
+class PickListItem {
+  const PickListItem({
+    required this.id,
+    required this.pickListId,
+    required this.variantId,
+    required this.sku,
+    required this.productName,
+    required this.binId,
+    required this.binCode,
+    required this.locationInfo,
+    required this.qtyRequested,
+    required this.qtyPicked,
+    this.shortReason,
+  });
+
+  final String id;
+  final String pickListId;
+  final String variantId;
+  final String sku;
+  final String productName;
+  final String binId;
+  final String binCode;
+  final String locationInfo;
+  final double qtyRequested;
+  final double qtyPicked;
+  final String? shortReason;
+
+  bool get isCompleted => qtyPicked >= qtyRequested;
+
+  factory PickListItem.fromJson(Map<String, dynamic> json) {
+    return PickListItem(
+      id: json['id'] as String? ?? '',
+      pickListId: json['pick_list_id'] as String? ?? '',
+      variantId: json['variant_id'] as String? ?? '',
+      sku: json['sku'] as String? ?? '',
+      productName: json['product_name'] as String? ?? '',
+      binId: json['bin_id'] as String? ?? '',
+      binCode: json['bin_code'] as String? ?? '',
+      locationInfo: json['location_info'] as String? ?? '',
+      qtyRequested: (json['qty_requested'] as num?)?.toDouble() ?? 0.0,
+      qtyPicked: (json['qty_picked'] as num?)?.toDouble() ?? 0.0,
+      shortReason: json['short_reason'] as String?,
+    );
+  }
+}
+
+class PickListSummary {
+  const PickListSummary({
+    required this.id,
+    required this.warehouseId,
+    required this.transferId,
+    required this.pickListNo,
+    required this.status,
+    required this.createdAt,
+    required this.items,
+  });
+
+  final String id;
+  final String warehouseId;
+  final String transferId;
+  final String pickListNo;
+  final String status;
+  final String createdAt;
+  final List<PickListItem> items;
+
+  int get completedCount => items.where((i) => i.isCompleted).length;
+  bool get isAllPicked => items.isNotEmpty && items.every((i) => i.isCompleted);
+
+  factory PickListSummary.fromJson(Map<String, dynamic> json) {
+    final rawItems = json['items'] as List<dynamic>? ?? [];
+    return PickListSummary(
+      id: json['id'] as String? ?? '',
+      warehouseId: json['warehouse_id'] as String? ?? '',
+      transferId: json['transfer_id'] as String? ?? '',
+      pickListNo: json['pick_list_no'] as String? ?? '',
+      status: json['status'] as String? ?? 'pending',
+      createdAt: json['created_at'] as String? ?? '',
+      items: rawItems.map((i) => PickListItem.fromJson(i as Map<String, dynamic>)).toList(),
+    );
+  }
+}

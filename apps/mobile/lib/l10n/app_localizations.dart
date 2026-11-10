@@ -3853,6 +3853,276 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'New Transfer'**
   String get transferNewAction;
+
+  /// No description provided for @supervisorPinDiscountTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Supervisor Override'**
+  String get supervisorPinDiscountTitle;
+
+  /// No description provided for @supervisorPinDiscountSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Supervisor approval needed for {amount} discount'**
+  String supervisorPinDiscountSubtitle(String amount);
+
+  /// No description provided for @supervisorPinRequiredDiscount.
+  ///
+  /// In en, this message translates to:
+  /// **'Supervisor PIN required for discount'**
+  String get supervisorPinRequiredDiscount;
+
+  /// No description provided for @supervisorPinApproveBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve'**
+  String get supervisorPinApproveBtn;
+
+  /// No description provided for @supervisorPinApprovedBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved by {name}'**
+  String supervisorPinApprovedBy(String name);
+
+  /// No description provided for @pickListTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick Lists'**
+  String get pickListTitle;
+
+  /// No description provided for @pickListDraftTransfers.
+  ///
+  /// In en, this message translates to:
+  /// **'Outbound Transfer Pick Lists'**
+  String get pickListDraftTransfers;
+
+  /// No description provided for @pickListNoDrafts.
+  ///
+  /// In en, this message translates to:
+  /// **'No draft transfers awaiting picking.'**
+  String get pickListNoDrafts;
+
+  /// No description provided for @pickListGenerate.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate Pick List'**
+  String get pickListGenerate;
+
+  /// No description provided for @pickListGenerating.
+  ///
+  /// In en, this message translates to:
+  /// **'Generating...'**
+  String get pickListGenerating;
+
+  /// No description provided for @pickListWalkingRoute.
+  ///
+  /// In en, this message translates to:
+  /// **'Walking Route Bins'**
+  String get pickListWalkingRoute;
+
+  /// No description provided for @pickListItemsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} items'**
+  String pickListItemsCount(int count);
+
+  /// No description provided for @pickListItemPick.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick Item'**
+  String get pickListItemPick;
+
+  /// No description provided for @pickListScanItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan Item / Bin'**
+  String get pickListScanItem;
+
+  /// No description provided for @pickListQtyToPick.
+  ///
+  /// In en, this message translates to:
+  /// **'Quantity to Pick'**
+  String get pickListQtyToPick;
+
+  /// No description provided for @pickListShortReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Short Reason (if less than requested)'**
+  String get pickListShortReason;
+
+  /// No description provided for @pickListShortReasonHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Damaged, missing in bin'**
+  String get pickListShortReasonHint;
+
+  /// No description provided for @pickListConfirmPick.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Pick'**
+  String get pickListConfirmPick;
+
+  /// No description provided for @pickListPicking.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirming...'**
+  String get pickListPicking;
+
+  /// No description provided for @pickListCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get pickListCompleted;
+
+  /// No description provided for @pickListInProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'In Progress'**
+  String get pickListInProgress;
+
+  /// No description provided for @pickListPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get pickListPending;
+
+  /// No description provided for @pickListProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'{picked} of {total} picked'**
+  String pickListProgress(int picked, int total);
+
+  /// No description provided for @pickListStagingNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Items are moved to STAGING bin for dispatch.'**
+  String get pickListStagingNotice;
+
+  /// No description provided for @pickListBinCoord.
+  ///
+  /// In en, this message translates to:
+  /// **'Aisle {aisle} • Rack {rack} • Shelf {shelf}'**
+  String pickListBinCoord(String aisle, String rack, String shelf);
+
+  /// No description provided for @pickListAllPicked.
+  ///
+  /// In en, this message translates to:
+  /// **'All items picked and staged'**
+  String get pickListAllPicked;
+
+  /// No description provided for @pickListAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick List'**
+  String get pickListAction;
+
+  /// No description provided for @shiftCashDrop.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash Drop / Skim'**
+  String get shiftCashDrop;
+
+  /// No description provided for @shiftCashDropSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Move excess cash from drawer to safe or custody'**
+  String get shiftCashDropSubtitle;
+
+  /// No description provided for @shiftCashDropAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Drop Amount'**
+  String get shiftCashDropAmount;
+
+  /// No description provided for @shiftCashDropAmountHint.
+  ///
+  /// In en, this message translates to:
+  /// **'0.00'**
+  String get shiftCashDropAmountHint;
+
+  /// No description provided for @shiftCashDropReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason / Destination'**
+  String get shiftCashDropReason;
+
+  /// No description provided for @shiftCashDropReasonHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Mid-day safe drop, bank run'**
+  String get shiftCashDropReasonHint;
+
+  /// No description provided for @shiftCashDropChipSafe.
+  ///
+  /// In en, this message translates to:
+  /// **'Safe Drop'**
+  String get shiftCashDropChipSafe;
+
+  /// No description provided for @shiftCashDropChipBank.
+  ///
+  /// In en, this message translates to:
+  /// **'Bank Run'**
+  String get shiftCashDropChipBank;
+
+  /// No description provided for @shiftCashDropChipSkim.
+  ///
+  /// In en, this message translates to:
+  /// **'Drawer Skim'**
+  String get shiftCashDropChipSkim;
+
+  /// No description provided for @shiftCashDropConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Record Cash Drop'**
+  String get shiftCashDropConfirm;
+
+  /// No description provided for @shiftCashDropSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash drop of {amount} recorded'**
+  String shiftCashDropSuccess(String amount);
+
+  /// No description provided for @shiftCashDropSlipTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'CASH DROP RECEIPT'**
+  String get shiftCashDropSlipTitle;
+
+  /// No description provided for @shiftCashDropSlipCashier.
+  ///
+  /// In en, this message translates to:
+  /// **'Cashier'**
+  String get shiftCashDropSlipCashier;
+
+  /// No description provided for @shiftCashDropSlipWitness.
+  ///
+  /// In en, this message translates to:
+  /// **'Witness / Supervisor'**
+  String get shiftCashDropSlipWitness;
+
+  /// No description provided for @shiftCashDropShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Share Slip'**
+  String get shiftCashDropShare;
+
+  /// No description provided for @shiftCashDropPrint.
+  ///
+  /// In en, this message translates to:
+  /// **'Print Slip'**
+  String get shiftCashDropPrint;
+
+  /// No description provided for @shiftCashDropErrAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid drop amount greater than zero'**
+  String get shiftCashDropErrAmount;
+
+  /// No description provided for @shiftCashDropErrExceeds.
+  ///
+  /// In en, this message translates to:
+  /// **'Drop amount cannot exceed expected drawer cash'**
+  String get shiftCashDropErrExceeds;
 }
 
 class _AppLocalizationsDelegate

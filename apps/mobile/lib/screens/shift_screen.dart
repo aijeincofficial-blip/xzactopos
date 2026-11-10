@@ -136,6 +136,26 @@ class _ShiftScreenState extends State<ShiftScreen> {
     if (id != null && mounted) _openSlip(id);
   }
 
+  Future<void> _openCashDrop(ShiftView shift, XReading x) async {
+    final scope = CatalogScope.of(context);
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+        child: _CashDropSheet(
+          scope: scope,
+          storeName: widget.storeName,
+          shift: shift,
+          expectedCash: x.expected,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
@@ -236,6 +256,13 @@ class _ShiftScreenState extends State<ShiftScreen> {
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: Gap.xl),
                       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                        OutlinedButton.icon(
+                          key: const Key('shift-cash-drop-btn'),
+                          icon: const Icon(Icons.arrow_downward_rounded, size: 18),
+                          label: Text(t.shiftCashDrop),
+                          onPressed: () => _openCashDrop(shift, x),
+                        ),
+                        const SizedBox(height: Gap.s),
                         FilledButton(key: const Key('shift-close'), onPressed: () => _close(shift, x), child: Text(t.shiftClose)),
                         const SizedBox(height: Gap.s),
                         Row(children: [
@@ -590,6 +617,271 @@ class ShiftSlipScreen extends StatelessWidget {
             ]),
           ]);
         },
+      ),
+    );
+  }
+}
+
+class _CashDropSheet extends StatefulWidget {
+  const _CashDropSheet({
+    required this.scope,
+    required this.storeName,
+    required this.shift,
+    required this.expectedCash,
+  });
+
+  final CatalogScope scope;
+  final String storeName;
+  final ShiftView shift;
+  final int expectedCash;
+
+  @override
+  State<_CashDropSheet> createState() => _CashDropSheetState();
+}
+
+class _CashDropSheetState extends State<_CashDropSheet> {
+  final _amount = TextEditingController();
+  final _reason = TextEditingController();
+  String? _error;
+  bool _submitting = false;
+
+  @override
+  void dispose() {
+    _amount.dispose();
+    _reason.dispose();
+    super.dispose();
+  }
+
+  int? _cents(String ccy) {
+    final raw = _amount.text.trim();
+    if (raw.isEmpty) return null;
+    try {
+      final c = Money.parse(raw, ccy).amount;
+      return c <= 0 ? null : c;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  void _setPresetReason(String reason) {
+    setState(() => _reason.text = reason);
+  }
+
+  Future<void> _submit() async {
+    final t = AppLocalizations.of(context);
+    final ccy = widget.scope.store.baseCurrency;
+    final cents = _cents(ccy);
+    if (cents == null) {
+      setState(() => _error = t.shiftCashDropErrAmount);
+      return;
+    }
+    if (cents > widget.expectedCash && widget.expectedCash > 0) {
+      setState(() => _error = t.shiftCashDropErrExceeds);
+      return;
+    }
+
+    setState(() {
+      _submitting = true;
+      _error = null;
+    });
+
+    try {
+      final noteText = _reason.text.trim().isNotEmpty
+          ? '${t.shiftCashDrop}: ${_reason.text.trim()}'
+          : t.shiftCashDrop;
+      await widget.scope.store.recordExpense(
+        id: const Uuid().v7(),
+        amount: cents,
+        category: 'other',
+        paidFrom: 'cash',
+        note: noteText,
+        opId: const Uuid().v7(),
+      );
+      widget.scope.engine.poke();
+
+      if (!mounted) return;
+      final locale = Localizations.localeOf(context).languageCode;
+      final amountFormatted = Money(cents, ccy).format(locale);
+      final dateStr = DateFormat.yMMMd(locale).add_jm().format(DateTime.now());
+
+      final slipText = '''
+================================
+     ${t.shiftCashDropSlipTitle}
+================================
+Store: ${widget.storeName}
+Date: $dateStr
+Shift Cashier: ${widget.shift.cashierId}
+Amount: $amountFormatted
+Reason: $noteText
+
+--------------------------------
+${t.shiftCashDropSlipCashier}: _________________
+${t.shiftCashDropSlipWitness}: _________________
+================================
+''';
+
+      Navigator.pop(context);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(t.shiftCashDropSuccess(amountFormatted)),
+          action: SnackBarAction(
+            label: t.shiftCashDropShare,
+            onPressed: () => textSharer.shareText(slipText),
+          ),
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _submitting = false;
+          _error = e.toString();
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
+    final ccy = widget.scope.store.baseCurrency;
+    final locale = Localizations.localeOf(context).languageCode;
+    final expectedFmt = Money(widget.expectedCash, ccy).format(locale);
+
+    return Padding(
+      padding: const EdgeInsets.all(Gap.l),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              CoinBadge(
+                icon: Icons.arrow_downward_rounded,
+                color: Colors.amber.shade700,
+                size: 36,
+              ),
+              const SizedBox(width: Gap.m),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      t.shiftCashDrop,
+                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+                    ),
+                    Text(
+                      t.shiftCashDropSubtitle,
+                      style: TextStyle(fontSize: 12, color: scheme.outline),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close_rounded),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+          const SizedBox(height: Gap.m),
+
+          // Drawer Expected info
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: Gap.m, vertical: Gap.s),
+            decoration: BoxDecoration(
+              color: scheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    t.dayCloseExpected,
+                    style: TextStyle(fontSize: 12, color: scheme.outline, fontWeight: FontWeight.w600),
+                  ),
+                ),
+                const SizedBox(width: Gap.s),
+                Text(
+                  expectedFmt,
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: Gap.m),
+
+          // Amount input
+          TextField(
+            key: const Key('cash-drop-amount'),
+            controller: _amount,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            autofocus: true,
+            decoration: InputDecoration(
+              labelText: t.shiftCashDropAmount,
+              hintText: t.shiftCashDropAmountHint,
+              isDense: true,
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onChanged: (_) => setState(() => _error = null),
+          ),
+          const SizedBox(height: Gap.s),
+
+          // Preset Chips
+          Wrap(
+            spacing: Gap.s,
+            children: [
+              ActionChip(
+                key: const Key('cash-drop-chip-safe'),
+                label: Text(t.shiftCashDropChipSafe),
+                onPressed: () => _setPresetReason(t.shiftCashDropChipSafe),
+              ),
+              ActionChip(
+                key: const Key('cash-drop-chip-bank'),
+                label: Text(t.shiftCashDropChipBank),
+                onPressed: () => _setPresetReason(t.shiftCashDropChipBank),
+              ),
+              ActionChip(
+                key: const Key('cash-drop-chip-skim'),
+                label: Text(t.shiftCashDropChipSkim),
+                onPressed: () => _setPresetReason(t.shiftCashDropChipSkim),
+              ),
+            ],
+          ),
+          const SizedBox(height: Gap.s),
+
+          // Reason note
+          TextField(
+            key: const Key('cash-drop-note'),
+            controller: _reason,
+            decoration: InputDecoration(
+              labelText: t.shiftCashDropReason,
+              hintText: t.shiftCashDropReasonHint,
+              isDense: true,
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+
+          if (_error != null) ...[
+            const SizedBox(height: Gap.s),
+            Text(
+              _error!,
+              key: const Key('cash-drop-error'),
+              style: TextStyle(color: scheme.error, fontSize: 13),
+            ),
+          ],
+
+          const SizedBox(height: Gap.l),
+          FilledButton(
+            key: const Key('cash-drop-confirm-btn'),
+            onPressed: _submitting ? null : _submit,
+            child: _submitting
+                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                : Text(t.shiftCashDropConfirm),
+          ),
+        ],
       ),
     );
   }

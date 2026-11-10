@@ -66,6 +66,8 @@ class SaleDraft {
     required this.payments,
     this.discount = 0,
     this.customerId,
+    this.approvalId,
+    this.offlineApproval,
   });
 
   final String id;
@@ -74,6 +76,8 @@ class SaleDraft {
   final List<PaymentDraft> payments;
   final int discount;
   final String? customerId;
+  final String? approvalId;
+  final Map<String, dynamic>? offlineApproval;
 
   int get subtotal => lines.fold(0, (a, l) => a + l.lineTotal);
   int get total => subtotal - discount;

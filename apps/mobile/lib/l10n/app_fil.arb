@@ -1263,5 +1263,101 @@
   "transferNoItemsError": "Magdagdag ng kahit isang item para maipadala",
   "transferDestinationsError": "Nabigong i-load ang mga lokasyon",
   "transferCreatedSuccess": "Matagumpay na naipadala ang paglilipat ng stock.",
-  "transferNewAction": "Bagong Paglipat"
+  "transferNewAction": "Bagong Paglipat",
+  "supervisorPinDiscountTitle": "Override ng Supervisor",
+  "supervisorPinDiscountSubtitle": "Kailangan ng pag-apruba ng supervisor para sa diskwentong {amount}",
+  "@supervisorPinDiscountSubtitle": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "supervisorPinRequiredDiscount": "Kailangan ang PIN ng supervisor para sa diskwento",
+  "supervisorPinApproveBtn": "Aprubahan",
+  "supervisorPinApprovedBy": "Inaprubahan ni {name}",
+  "@supervisorPinApprovedBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pickListTitle": "Mga Listahan ng Pagkuha",
+  "pickListDraftTransfers": "Mga Outbound Transfer para Kunin",
+  "pickListNoDrafts": "Walang draft transfer na naghihintay ng pagkuha.",
+  "pickListGenerate": "Gumawa ng Pick List",
+  "pickListGenerating": "Ginagawa...",
+  "pickListWalkingRoute": "Mga Bin ayon sa Rutang Paglakad",
+  "pickListItemsCount": "{count} mga aytem",
+  "@pickListItemsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "pickListItemPick": "Kunin ang Aytem",
+  "pickListScanItem": "I-scan ang Aytem / Bin",
+  "pickListQtyToPick": "Dami na Kukunin",
+  "pickListShortReason": "Dahilan kung Kulang",
+  "pickListShortReasonHint": "hal. Sira, nawawala sa bin",
+  "pickListConfirmPick": "Kumpirmahin ang Pagkuha",
+  "pickListPicking": "Kinukumpirma...",
+  "pickListCompleted": "Tapos Na",
+  "pickListInProgress": "Kasalukuyang Ginagawa",
+  "pickListPending": "Nakabinbin",
+  "pickListProgress": "{picked} sa {total} ang nakuha",
+  "@pickListProgress": {
+    "placeholders": {
+      "picked": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "pickListStagingNotice": "Ang mga aytem ay inililipat sa STAGING bin para sa pagpapadala.",
+  "pickListBinCoord": "Aisle {aisle} • Rack {rack} • Shelf {shelf}",
+  "@pickListBinCoord": {
+    "placeholders": {
+      "aisle": {
+        "type": "String"
+      },
+      "rack": {
+        "type": "String"
+      },
+      "shelf": {
+        "type": "String"
+      }
+    }
+  },
+  "pickListAllPicked": "Lahat ng aytem ay nakuha at nailipat na sa staging",
+  "pickListAction": "Listahan ng Pagkuha",
+  "shiftCashDrop": "Cash Drop / Skim",
+  "shiftCashDropSubtitle": "Maglipat ng sobrang pera mula sa drawer papuntang safe o kustodiya",
+  "shiftCashDropAmount": "Halaga ng Drop",
+  "shiftCashDropAmountHint": "0.00",
+  "shiftCashDropReason": "Dahilan / Destinasyon",
+  "shiftCashDropReasonHint": "hal. Mid-day safe drop, bangko",
+  "shiftCashDropChipSafe": "Safe Drop",
+  "shiftCashDropChipBank": "Para sa Bangko",
+  "shiftCashDropChipSkim": "Drawer Skim",
+  "shiftCashDropConfirm": "Itala ang Cash Drop",
+  "shiftCashDropSuccess": "Naitala ang cash drop na {amount}",
+  "@shiftCashDropSuccess": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "shiftCashDropSlipTitle": "RESAPIS NG CASH DROP",
+  "shiftCashDropSlipCashier": "Kahero",
+  "shiftCashDropSlipWitness": "Saksi / Supervisor",
+  "shiftCashDropShare": "Ibahagi ang Slip",
+  "shiftCashDropPrint": "I-print ang Slip",
+  "shiftCashDropErrAmount": "Maglagay ng wastong halaga na higit sa zero",
+  "shiftCashDropErrExceeds": "Hindi maaaring lumampas ang drop sa inaasahang laman ng drawer"
 }

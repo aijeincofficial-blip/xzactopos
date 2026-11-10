@@ -15,7 +15,7 @@ import 'sync/sync_engine.dart';
 bool serverAnswered(Object e) => e is PostgrestException || e is AuthException;
 
 /// What the app needs from the server. Screens depend on this, so tests can fake it.
-abstract class Backend implements SyncApi {
+abstract class Backend implements SyncApi, BinApi, TransferApi {
   bool get signedIn;
 
   /// The signed-in user's id, or null when signed out.
@@ -76,33 +76,6 @@ abstract class Backend implements SyncApi {
 
   /// Pulls store approver PIN hashes for offline verification (F-06).
   Future<List<Map<String, dynamic>>> pullOfflinePins({String? locationId});
-
-  // ---- transfers (F-08) ----
-  Future<List<TransferHeader>> fetchIncomingTransfers(String locationId);
-  Future<List<TransferHeader>> fetchTransferHistory(String locationId);
-  Future<void> receiveTransfer({
-    required String transferId,
-    required List<Map<String, dynamic>> items,
-  });
-  Future<List<TransferLocationRef>> fetchTransferDestinations(String currentBranchId);
-  Future<String> createAndShipTransfer({
-    required String fromLocationId,
-    required String toLocationId,
-    required List<TransferDraftLine> items,
-    String? notes,
-    bool shipNow = true,
-  });
-
-  // ---- warehouse bins & put-away (F-09) ----
-  Future<List<ReceivingStockItem>> fetchReceivingStock(String warehouseId);
-  Future<List<WarehouseBin>> fetchWarehouseBins(String warehouseId);
-  Future<void> executePutaway({
-    required String warehouseId,
-    required String fromBinId,
-    required String toBinId,
-    required String variantId,
-    required double qty,
-  });
 }
 
 abstract class TransferApi {
@@ -132,6 +105,15 @@ abstract class BinApi {
     required String variantId,
     required double qty,
   });
+  Future<PickListSummary?> fetchPickListForTransfer(String transferId);
+  Future<String> generatePickList(String transferId);
+  Future<void> confirmPickItem({
+    required String pickListId,
+    required String itemId,
+    required double qtyPicked,
+    String? shortReason,
+  });
+  Future<List<TransferHeader>> fetchDraftTransfers(String warehouseId);
 }
 
 class PinResult {
@@ -692,6 +674,51 @@ class SupabaseBackend implements Backend, DeviceApi, WarehouseApi, CountApi, Shi
           'p_variant_id': variantId,
           'p_qty': qty,
         }));
+  }
+
+  @override
+  Future<PickListSummary?> fetchPickListForTransfer(String transferId) async {
+    final res = await _auth(() => _c.rpc('get_pick_list_for_transfer', params: {
+          'p_transfer_id': transferId,
+        }));
+    if (res == null) return null;
+    return PickListSummary.fromJson(res as Map<String, dynamic>);
+  }
+
+  @override
+  Future<String> generatePickList(String transferId) async {
+    final res = await _auth(() => _c.rpc('generate_pick_list', params: {
+          'p_transfer_id': transferId,
+        }));
+    return res.toString();
+  }
+
+  @override
+  Future<void> confirmPickItem({
+    required String pickListId,
+    required String itemId,
+    required double qtyPicked,
+    String? shortReason,
+  }) async {
+    await _op(() => _c.rpc('confirm_pick_item', params: {
+          'p_pick_list_id': pickListId,
+          'p_item_id': itemId,
+          'p_qty_picked': qtyPicked,
+          'p_short_reason': shortReason,
+        }));
+  }
+
+  @override
+  Future<List<TransferHeader>> fetchDraftTransfers(String warehouseId) async {
+    final res = await _auth(() => _c
+        .from('transfers')
+        .select('*, from_location:locations!transfers_from_location_fk(name), to_location:locations!transfers_to_location_fk(name), transfer_items(*, variant:product_variants(*, product:products(*)))')
+        .eq('from_location_id', warehouseId)
+        .eq('status', 'draft')
+        .order('created_at', ascending: false));
+    return (res as List<dynamic>)
+        .map((row) => TransferHeader.fromJson(row as Map<String, dynamic>))
+        .toList();
   }
 
   /// Maps refusals that retrying cannot fix to [OpRejected]; everything else (network, 5xx, expired token)

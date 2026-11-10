@@ -6,6 +6,7 @@ import '../core/theme.dart';
 import '../core/ui.dart';
 import '../data/transfer_models.dart';
 import '../l10n/app_localizations.dart';
+import 'picklist_screen.dart';
 import 'transfer_create_screen.dart';
 import 'transfer_receive_screen.dart';
 
@@ -164,7 +165,22 @@ class _TransfersScreenState extends State<TransfersScreen> with SingleTickerProv
                   padding: const EdgeInsets.all(Gap.l),
                   itemCount: transfers.length,
                   separatorBuilder: (context, index) => const SizedBox(height: Gap.m),
-                  itemBuilder: (context, i) => _TransferCard(transfer: transfers[i]),
+                  itemBuilder: (context, i) => _TransferCard(
+                    transfer: transfers[i],
+                    onPickListTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => PickListScreen(
+                            backend: widget.backend,
+                            warehouseId: transfers[i].fromLocationId,
+                            warehouseName: transfers[i].fromLocationName,
+                            initialTransferId: transfers[i].id,
+                            initialTransferNo: transfers[i].transferNo,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
                 );
               },
             ),
@@ -203,10 +219,11 @@ class _TransfersScreenState extends State<TransfersScreen> with SingleTickerProv
 }
 
 class _TransferCard extends StatelessWidget {
-  const _TransferCard({required this.transfer, this.onTap});
+  const _TransferCard({required this.transfer, this.onTap, this.onPickListTap});
 
   final TransferHeader transfer;
   final VoidCallback? onTap;
+  final VoidCallback? onPickListTap;
 
   @override
   Widget build(BuildContext context) {
@@ -255,6 +272,16 @@ class _TransferCard extends StatelessWidget {
                   ),
                   onPressed: onTap,
                   child: Text(t.transferReceive, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
+                ),
+              if (onPickListTap != null && transfer.status == 'draft')
+                FilledButton.tonal(
+                  key: Key('picklist-transfer-${transfer.id}'),
+                  style: FilledButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  ),
+                  onPressed: onPickListTap,
+                  child: Text(t.pickListAction, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
                 ),
             ],
           ),

@@ -276,6 +276,8 @@ mixin DriftSales implements SalesStore {
               'wallet': ?p.wallet,
             }
         ],
+        if (d.approvalId != null) 'approval_id': d.approvalId,
+        if (d.offlineApproval != null) 'offline_approval': d.offlineApproval,
       });
       return SaleReceipt(d.id, localNo);
     });

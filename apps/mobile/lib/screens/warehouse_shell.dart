@@ -8,6 +8,7 @@ import '../data/warehouse_models.dart';
 import '../l10n/app_localizations.dart';
 import '../sync/store_session.dart';
 import '../sync/sync_badge.dart';
+import 'picklist_screen.dart';
 import 'putaway_screen.dart';
 import 'settings_screen.dart';
 import 'transfers_screen.dart';
@@ -411,6 +412,24 @@ class _MoreTab extends StatelessWidget {
             Navigator.of(context).push(_scoped(
               context,
               PutawayScreen(
+                backend: backend,
+                warehouseId: wh.id,
+                warehouseName: wh.name,
+              ),
+            ));
+          }
+        },
+      ),
+      ListTile(
+        key: const Key('more-picklist'),
+        leading: const Icon(Icons.inventory_2_rounded),
+        title: Text(t.pickListTitle),
+        onTap: () async {
+          final wh = await store.activeWarehouse();
+          if (wh != null && context.mounted) {
+            Navigator.of(context).push(_scoped(
+              context,
+              PickListScreen(
                 backend: backend,
                 warehouseId: wh.id,
                 warehouseName: wh.name,

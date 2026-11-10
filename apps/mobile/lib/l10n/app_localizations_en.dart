@@ -2252,4 +2252,156 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get transferNewAction => 'New Transfer';
+
+  @override
+  String get supervisorPinDiscountTitle => 'Supervisor Override';
+
+  @override
+  String supervisorPinDiscountSubtitle(String amount) {
+    return 'Supervisor approval needed for $amount discount';
+  }
+
+  @override
+  String get supervisorPinRequiredDiscount =>
+      'Supervisor PIN required for discount';
+
+  @override
+  String get supervisorPinApproveBtn => 'Approve';
+
+  @override
+  String supervisorPinApprovedBy(String name) {
+    return 'Approved by $name';
+  }
+
+  @override
+  String get pickListTitle => 'Pick Lists';
+
+  @override
+  String get pickListDraftTransfers => 'Outbound Transfer Pick Lists';
+
+  @override
+  String get pickListNoDrafts => 'No draft transfers awaiting picking.';
+
+  @override
+  String get pickListGenerate => 'Generate Pick List';
+
+  @override
+  String get pickListGenerating => 'Generating...';
+
+  @override
+  String get pickListWalkingRoute => 'Walking Route Bins';
+
+  @override
+  String pickListItemsCount(int count) {
+    return '$count items';
+  }
+
+  @override
+  String get pickListItemPick => 'Pick Item';
+
+  @override
+  String get pickListScanItem => 'Scan Item / Bin';
+
+  @override
+  String get pickListQtyToPick => 'Quantity to Pick';
+
+  @override
+  String get pickListShortReason => 'Short Reason (if less than requested)';
+
+  @override
+  String get pickListShortReasonHint => 'e.g. Damaged, missing in bin';
+
+  @override
+  String get pickListConfirmPick => 'Confirm Pick';
+
+  @override
+  String get pickListPicking => 'Confirming...';
+
+  @override
+  String get pickListCompleted => 'Completed';
+
+  @override
+  String get pickListInProgress => 'In Progress';
+
+  @override
+  String get pickListPending => 'Pending';
+
+  @override
+  String pickListProgress(int picked, int total) {
+    return '$picked of $total picked';
+  }
+
+  @override
+  String get pickListStagingNotice =>
+      'Items are moved to STAGING bin for dispatch.';
+
+  @override
+  String pickListBinCoord(String aisle, String rack, String shelf) {
+    return 'Aisle $aisle • Rack $rack • Shelf $shelf';
+  }
+
+  @override
+  String get pickListAllPicked => 'All items picked and staged';
+
+  @override
+  String get pickListAction => 'Pick List';
+
+  @override
+  String get shiftCashDrop => 'Cash Drop / Skim';
+
+  @override
+  String get shiftCashDropSubtitle =>
+      'Move excess cash from drawer to safe or custody';
+
+  @override
+  String get shiftCashDropAmount => 'Drop Amount';
+
+  @override
+  String get shiftCashDropAmountHint => '0.00';
+
+  @override
+  String get shiftCashDropReason => 'Reason / Destination';
+
+  @override
+  String get shiftCashDropReasonHint => 'e.g. Mid-day safe drop, bank run';
+
+  @override
+  String get shiftCashDropChipSafe => 'Safe Drop';
+
+  @override
+  String get shiftCashDropChipBank => 'Bank Run';
+
+  @override
+  String get shiftCashDropChipSkim => 'Drawer Skim';
+
+  @override
+  String get shiftCashDropConfirm => 'Record Cash Drop';
+
+  @override
+  String shiftCashDropSuccess(String amount) {
+    return 'Cash drop of $amount recorded';
+  }
+
+  @override
+  String get shiftCashDropSlipTitle => 'CASH DROP RECEIPT';
+
+  @override
+  String get shiftCashDropSlipCashier => 'Cashier';
+
+  @override
+  String get shiftCashDropSlipWitness => 'Witness / Supervisor';
+
+  @override
+  String get shiftCashDropShare => 'Share Slip';
+
+  @override
+  String get shiftCashDropPrint => 'Print Slip';
+
+  @override
+  String get shiftCashDropErrAmount =>
+      'Enter a valid drop amount greater than zero';
+
+  @override
+  String get shiftCashDropErrExceeds =>
+      'Drop amount cannot exceed expected drawer cash';
 }
