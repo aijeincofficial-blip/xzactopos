@@ -4207,6 +4207,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Request Restock Transfer'**
   String get stockRequestTransfer;
+
+  /// No description provided for @denominationCalculator.
+  ///
+  /// In en, this message translates to:
+  /// **'Bills & Coins Counter'**
+  String get denominationCalculator;
+
+  /// No description provided for @bills.
+  ///
+  /// In en, this message translates to:
+  /// **'Banknotes'**
+  String get bills;
+
+  /// No description provided for @coins.
+  ///
+  /// In en, this message translates to:
+  /// **'Coins'**
+  String get coins;
+
+  /// No description provided for @applyCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Use Count'**
+  String get applyCount;
+
+  /// No description provided for @clearCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear All'**
+  String get clearCount;
+
+  /// No description provided for @totalCalculated.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Cash Counted'**
+  String get totalCalculated;
 }
 
 class _AppLocalizationsDelegate

@@ -173,7 +173,10 @@ class _SellScreenState extends State<SellScreen> {
       if (hit == null) return ScanFeedback(t.sellUnknownBarcode(code), ok: false);
       if (hit.price == null) return ScanFeedback(t.sellNoPrice, ok: false);
       _cart!.add(hit);
-      return ScanFeedback(t.scanAdded(hit.name));
+      return ScanFeedback(
+        t.scanAdded(hit.name),
+        subtext: '${t.sellItems(_cart!.itemCount)} · ${_money(_cart!.subtotal)}',
+      );
     });
   }
 

@@ -11,6 +11,7 @@ import '../l10n/app_localizations.dart';
 import '../sync/store_session.dart';
 import '../sync/sync_badge.dart';
 import 'supervisor_pin.dart';
+import 'denomination_sheet.dart';
 
 /// End of day: count the drawer, see what is short or over. Saved as a record (a recount adds another).
 class DayCloseScreen extends StatefulWidget {
@@ -164,7 +165,25 @@ class _DayCloseScreenState extends State<DayCloseScreen> {
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
                         onChanged: (_) => setState(() => _error = null),
                         style: const TextStyle(fontSize: 24),
-                        decoration: InputDecoration(labelText: t.dayCloseCounted, errorText: _error),
+                        decoration: InputDecoration(
+                          labelText: t.dayCloseCounted,
+                          errorText: _error,
+                          suffixIcon: IconButton(
+                            key: const Key('day-close-denomination-btn'),
+                            tooltip: t.denominationCalculator,
+                            icon: const Icon(Icons.calculate_outlined),
+                            onPressed: () => showDenominationSheet(
+                              context,
+                              currency: ccy,
+                              onApply: (total) {
+                                setState(() {
+                                  _counted.text = total.toStringAsFixed(2);
+                                  _error = null;
+                                });
+                              },
+                            ),
+                          ),
+                        ),
                       ),
                       if (diff != null)
                         Padding(

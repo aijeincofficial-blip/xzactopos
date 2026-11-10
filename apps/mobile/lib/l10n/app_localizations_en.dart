@@ -2450,4 +2450,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get stockRequestTransfer => 'Request Restock Transfer';
+
+  @override
+  String get denominationCalculator => 'Bills & Coins Counter';
+
+  @override
+  String get bills => 'Banknotes';
+
+  @override
+  String get coins => 'Coins';
+
+  @override
+  String get applyCount => 'Use Count';
+
+  @override
+  String get clearCount => 'Clear All';
+
+  @override
+  String get totalCalculated => 'Total Cash Counted';
 }

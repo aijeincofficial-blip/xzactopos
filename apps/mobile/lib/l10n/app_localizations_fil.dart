@@ -2463,4 +2463,22 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get stockRequestTransfer => 'Humiling ng Transfer para sa Stock';
+
+  @override
+  String get denominationCalculator => 'Kwentador ng Papel at Barya';
+
+  @override
+  String get bills => 'Mga Salaping Papel';
+
+  @override
+  String get coins => 'Mga Barya';
+
+  @override
+  String get applyCount => 'Gamitin ang Bilang';
+
+  @override
+  String get clearCount => 'Burahin Lahat';
+
+  @override
+  String get totalCalculated => 'Kabuuang Nabilang na Pera';
 }

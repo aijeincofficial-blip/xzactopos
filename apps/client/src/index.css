@@ -380,7 +380,7 @@ body {
   }
 }
 
-/* POS Thermal Receipt Slip & Document Printing */
+/* POS Thermal Receipt Slip, Barcode Labels & Document Printing */
 @media print {
   body * {
     visibility: hidden;
@@ -388,7 +388,9 @@ body {
   .printable-slip,
   .printable-slip *,
   .printable-statement,
-  .printable-statement * {
+  .printable-statement *,
+  .printable-barcode-labels,
+  .printable-barcode-labels * {
     visibility: visible;
   }
   .printable-slip {
@@ -405,6 +407,54 @@ body {
     line-height: 1.25 !important;
     box-shadow: none !important;
     border: none !important;
+  }
+  .printable-barcode-labels {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    color: #000 !important;
+    background: #fff !important;
+  }
+  .printable-barcode-labels.format-roll {
+    width: 50mm;
+  }
+  .printable-barcode-labels.format-roll .barcode-label-item {
+    width: 50mm;
+    height: 30mm;
+    box-sizing: border-box;
+    page-break-after: always;
+    break-after: page;
+    padding: 2mm 3mm;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    text-align: center;
+    border: none !important;
+    box-shadow: none !important;
+  }
+  .printable-barcode-labels.format-sheet {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 3mm 4mm;
+    padding: 8mm 6mm;
+  }
+  .printable-barcode-labels.format-sheet .barcode-label-item {
+    height: 25mm;
+    box-sizing: border-box;
+    border: 1px dashed #d1d5db;
+    padding: 2mm 3mm;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    text-align: center;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    box-shadow: none !important;
   }
   .printable-statement {
     position: absolute;

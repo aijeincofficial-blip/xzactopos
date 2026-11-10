@@ -8,7 +8,7 @@ Updated at the end of every task. Read this first in a fresh session. New sessio
 | Agent | Branch and worktree | Working on | Status |
 | --- | --- | --- | --- |
 | Claude | `claude/phase3-sell-8261d3`, `.claude/worktrees/phase3-sell-8261d3` | Priority 3: cashier shifts and X/Z on the phone done (`docs/tasks/F-05m-cashier-shifts.md`); staff on the phone done (`docs/tasks/F-04m-phone-staff.md`); priority 4 (web design system) started: tokens, dark mode, sidebar, components (`docs/web-design-system.md`). | stopped (owner switched to Antigravity 2026-11-10; branch equals main, clean) |
-| Antigravity | `ag/work`, `.claude/worktrees/ag-work` | Mobile Continuous Barcode Scanning (Opt 1), Cash Denomination Breakdown Calculator on Web & Mobile (Opt 2), and Printable Barcode & Shelf Label Generator on Web (Opt 3) | in progress |
+| Antigravity | `ag/work`, `.claude/worktrees/ag-work` | Mobile Continuous Barcode Scanning (Opt 1), Cash Denomination Breakdown Calculator on Web & Mobile (Opt 2), and Printable Barcode & Shelf Label Generator on Web (Opt 3) | done |
 | Owner | merges branches into `main`; makes the git remote and the keystore | | |
 
 Row status words: `waiting`, `in progress`, `done`, `stopped` / `limit reached` (the other agent may take over, see `docs/START-HERE-antigravity.md` "Working together").
@@ -30,6 +30,26 @@ Row status words: `waiting`, `in progress`, `done`, `stopped` / `limit reached` 
 6. ~~F-13h H2 to H8, the warehouse phone~~ **Done 2026-11-09** (receive offline, count online, bin stock, offline start). Offline counting (H7) is still item 8.
 7. ~~**Web Solo/Full gaps:** a stored mode flag, pick-list and put-away screens, editing a draft purchase order, product search by typing.~~ **Done 2026-11-10.**
 8. **Later:** offline counting (H7), web offline, per-warehouse reorder points, card payments.
+- **Mobile Continuous Barcode Scanning, Cash Denomination Breakdown Calculator (Web & Mobile), and Printable Barcode & Shelf Tag Generator (Web): done (2026-11-10, branch `ag/work`).**
+  - **Option 1 (Mobile Continuous Barcode Scanning & Scan-to-Cart Engine - sell_screen.dart & camera_scanner.dart):**
+    - Extended `ScanFeedback` with optional `subtext` in `apps/mobile/lib/core/camera_scanner.dart`.
+    - Integrated running cart count and subtotal calculation into `_scanWithCamera()` in `apps/mobile/lib/screens/sell_screen.dart`: on each scan, delivers immediate visual confirmation of product name and running cart subtext (`'${t.sellItems(_cart!.itemCount)} · ${_money(_cart!.subtotal)}'`), enabling high-speed continuous multi-item ringing without closing camera reticle.
+    - Verified in `apps/mobile/test/camera_scan_test.dart` (all 6 tests passing).
+  - **Option 2 (Cash Denomination Breakdown Calculator on Web & Mobile - Day Close & Shifts):**
+    - **Web:** Created `apps/client/src/lib/denomination-math.ts` with PHP bill & coin denominations (₱1000, ₱500, ₱200, ₱100, ₱50, ₱20 bills; ₱20, ₱10, ₱5, ₱1, ₱0.25 coins) and mathematical tally helpers (`calculateDenominationTotal`). Created modal tally sheet `apps/client/src/components/denomination-counter-dialog.tsx` with live line subtotals, running total, and direct "Apply Count" into counted cash fields. Integrated into `apps/client/src/routes/day-close.tsx` for both cashier day-close reconciliation and supervisor shift closing modals. Unit tests in `denomination-math.test.ts`.
+    - **Mobile:** Created `apps/mobile/lib/screens/denomination_sheet.dart` (`showDenominationSheet`) providing a bills & coins breakdown modal with steppers, direct number inputs, line totals, running sum, Clear All, and Apply Count. Wired into drawer cash counting on `ShiftScreen` (`shift_screen.dart`) and `DayCloseScreen` (`day_close_screen.dart`). Tested with `apps/mobile/test/denomination_sheet_test.dart`.
+  - **Option 3 (Printable Barcode & Shelf Price Tag Label Generator on Web Products - products.tsx):**
+    - Created pure ISO/IEC 15417 Code 128 (Subset B) barcode encoder and crisp SVG renderer in `apps/client/src/lib/barcode-svg.tsx` (`encodeCode128`, `<BarcodeSvg />`) with checksum calculation and unit tests in `barcode-svg.test.ts`.
+    - Created `apps/client/src/components/barcode-labels-dialog.tsx` supporting:
+      - Quantity selection (1 to 200 labels).
+      - Multi-format printing: Thermal Sticker Roll (50mm × 30mm) vs 30-up Sheet (A4 / Letter 3x10 grid).
+      - Toggles for Retail Price, Store Name, and SKU.
+      - Live realistic label preview.
+      - Isolated `@media print` CSS rules in `apps/client/src/index.css` with page breaks, grid layout, zero-margin thermal sizing, and browser chrome hiding.
+    - Integrated into `apps/client/src/routes/products.tsx` with dedicated "Print Barcode Labels" action button on product detail (`data-testid="print-barcode-btn"`).
+  - **Verification & Localization:**
+    - Added 100% 1:1 `en`/`fil` localization parity across `admin.json` (web) and `app_en.arb`/`app_fil.arb` (mobile).
+    - Full verification clean: `pnpm -C apps/client typecheck` (0 errors), `pnpm -C apps/client test` (19 test files / 136 tests passing), `pnpm lint` (0 errors), `flutter analyze` (0 issues), and `pnpm check:mobile` (all SW checks pass, 584 mobile tests passing).
 - **Refactoring UI & Vibecheck Design System Overhaul: done (2026-11-10, branch `ag/work`).**
   - **Tokens & Theme Setup (`apps/client/src/index.css`):**
     - Integrated Vibecheck / Refactoring UI CSS variables into `:root`:

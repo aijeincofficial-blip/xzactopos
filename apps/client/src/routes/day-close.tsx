@@ -42,6 +42,7 @@ import {
   exportDayClosesCsv,
   exportShiftsCsv,
 } from "../lib/csv-helper.ts";
+import { DenominationCounterDialog } from "../components/denomination-counter-dialog.tsx";
 
 export function DayClosePage() {
   const { t, i18n } = useTranslation(["admin", "common"]);
@@ -63,6 +64,7 @@ export function DayClosePage() {
   // Day close drawer inputs
   const [openingText, setOpeningText] = useState("");
   const [countedText, setCountedText] = useState("");
+  const [showDenomDialog, setShowDenomDialog] = useState(false);
   const [note, setNote] = useState("");
   const [closeError, setCloseError] = useState<string | null>(null);
   const [successNote, setSuccessNote] = useState<string | null>(null);
@@ -273,7 +275,19 @@ export function DayClosePage() {
                   {todayClose ? t("dayClose.recountTitle") : t("dayClose.countTitle")}
                 </h3>
 
-                <Field label={t("dayClose.countedCash")}>
+                <div className="grid gap-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold">{t("dayClose.countedCash")}</span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      data-testid="open-denomination-counter"
+                      onClick={() => setShowDenomDialog(true)}
+                    >
+                      🧮 {t("dayClose.denominationCalculator")}
+                    </Button>
+                  </div>
                   <Input
                     data-testid="counted-cash-input"
                     inputMode="decimal"
@@ -281,7 +295,7 @@ export function DayClosePage() {
                     value={countedText}
                     onChange={(e) => setCountedText(e.target.value)}
                   />
-                </Field>
+                </div>
 
                 {diff !== null ? (
                   <div
@@ -632,6 +646,13 @@ export function DayClosePage() {
           }}
         />
       ) : null}
+
+      <DenominationCounterDialog
+        open={showDenomDialog}
+        onClose={() => setShowDenomDialog(false)}
+        onApply={(_, decimalStr) => setCountedText(decimalStr)}
+        currency={currency}
+      />
     </div>
   );
 }
@@ -1044,6 +1065,7 @@ function SupervisorCloseShiftModal({
   const { t } = useTranslation(["admin", "common"]);
   const msg = useErrorMessage();
   const [countedText, setCountedText] = useState("");
+  const [showDenomDialog, setShowDenomDialog] = useState(false);
   const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -1105,7 +1127,19 @@ function SupervisorCloseShiftModal({
           </div>
         </div>
 
-        <Field label={t("dayClose.countedCash")}>
+        <div className="grid gap-1.5">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-semibold">{t("dayClose.countedCash")}</span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              data-testid="supervisor-open-denomination-counter"
+              onClick={() => setShowDenomDialog(true)}
+            >
+              🧮 {t("dayClose.denominationCalculator")}
+            </Button>
+          </div>
           <Input
             data-testid="supervisor-counted-input"
             inputMode="decimal"
@@ -1113,7 +1147,7 @@ function SupervisorCloseShiftModal({
             value={countedText}
             onChange={(e) => setCountedText(e.target.value)}
           />
-        </Field>
+        </div>
 
         {diff !== null ? (
           <div
@@ -1155,6 +1189,13 @@ function SupervisorCloseShiftModal({
           </Button>
         </div>
       </div>
+
+      <DenominationCounterDialog
+        open={showDenomDialog}
+        onClose={() => setShowDenomDialog(false)}
+        onApply={(_, decimalStr) => setCountedText(decimalStr)}
+        currency={currency}
+      />
     </Dialog>
   );
 }

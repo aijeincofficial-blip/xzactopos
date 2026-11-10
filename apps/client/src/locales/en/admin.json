@@ -533,6 +533,12 @@
     "print": "Print Slip",
     "tabDayClose": "Day Close",
     "tabShifts": "Cashier Shifts",
+    "denominationCalculator": "Bills & Coins Counter",
+    "bills": "Banknotes",
+    "coins": "Coins",
+    "applyCount": "Use Total Count",
+    "clearCount": "Clear All",
+    "totalCalculated": "Total Cash Counted",
     "exportCsv": "Export CSV",
     "shiftsTitle": "Cashier Shift History",
     "noShifts": "No cashier shifts recorded for this store.",
@@ -1257,5 +1263,19 @@
         "warehouse": "warehouse"
       }
     }
+  },
+  "barcodeLabels": {
+    "title": "Print Barcode Labels",
+    "subtitle": "Generate and print shelf price tags or thermal barcode stickers",
+    "format": "Label Layout",
+    "formatRoll": "Thermal Sticker Roll (50mm × 30mm)",
+    "formatSheet": "30-up Sheet (A4 / Letter 3x10 grid)",
+    "quantity": "Labels Quantity",
+    "includePrice": "Include Retail Price",
+    "includeStore": "Include Store Name",
+    "includeSku": "Include SKU",
+    "print": "Print Labels",
+    "close": "Close",
+    "preview": "Print Preview"
   }
 }

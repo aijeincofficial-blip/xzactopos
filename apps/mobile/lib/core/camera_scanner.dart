@@ -7,11 +7,14 @@ import '../l10n/app_localizations.dart';
 
 /// What the camera screen shows after a code was read, and whether to close it.
 class ScanFeedback {
-  const ScanFeedback(this.message, {this.ok = true});
+  const ScanFeedback(this.message, {this.ok = true, this.subtext});
   final String message;
 
   /// false = something to notice (unknown barcode): shown in the warning colour.
   final bool ok;
+
+  /// Optional secondary line (e.g. running cart count or price).
+  final String? subtext;
 }
 
 /// The phone camera as a barcode reader. Screens use this interface only, so tests can fake it
@@ -145,6 +148,15 @@ class _CameraScanScreenState extends State<CameraScanScreen> {
                   style: TextStyle(
                       color: (_feedback?.ok ?? true) ? Colors.white : scheme.errorContainer, fontSize: 18, fontWeight: FontWeight.w600),
                 ),
+                if (_feedback?.subtext != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    _feedback!.subtext!,
+                    key: const Key('scan-subtext'),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.white70, fontSize: 14),
+                  ),
+                ],
                 if (widget.onCode != null) ...[
                   const SizedBox(height: 12),
                   FilledButton(key: const Key('scan-done'), onPressed: () => Navigator.of(context).pop(), child: Text(t.scanDone)),

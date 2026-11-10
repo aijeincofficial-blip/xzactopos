@@ -533,6 +533,12 @@
     "print": "I-print ang Resibo",
     "tabDayClose": "Pagsara ng Araw",
     "tabShifts": "Mga Shift ng Kahera",
+    "denominationCalculator": "Kwentador ng Papel at Barya",
+    "bills": "Mga Salaping Papel",
+    "coins": "Mga Barya",
+    "applyCount": "Gamitin ang Kabuuan",
+    "clearCount": "Burahin Lahat",
+    "totalCalculated": "Kabuuang Nabilang na Pera",
     "exportCsv": "I-export sa CSV",
     "shiftsTitle": "Kasaysayan ng Shift ng Kahera",
     "noShifts": "Walang nakatalang shift ng kahera sa tindahang ito.",
@@ -1257,5 +1263,19 @@
         "warehouse": "bodega"
       }
     }
+  },
+  "barcodeLabels": {
+    "title": "Mag-print ng Barcode Labels",
+    "subtitle": "Bumuo at mag-print ng tag ng presyo sa istante o thermal barcode stickers",
+    "format": "Ayos ng Label",
+    "formatRoll": "Thermal Sticker Roll (50mm × 30mm)",
+    "formatSheet": "30-up Sheet (A4 / Letter 3x10 grid)",
+    "quantity": "Bilang ng Labels",
+    "includePrice": "Isama ang Presyo",
+    "includeStore": "Isama ang Pangalan ng Tindahan",
+    "includeSku": "Isama ang SKU",
+    "print": "I-print ang Labels",
+    "close": "Isara",
+    "preview": "Silipin Bago I-print"
   }
 }

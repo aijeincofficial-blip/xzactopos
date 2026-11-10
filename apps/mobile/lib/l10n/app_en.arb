@@ -1390,5 +1390,11 @@
     }
   },
   "stockLowStockBadge": "Low Stock",
-  "stockRequestTransfer": "Request Restock Transfer"
+  "stockRequestTransfer": "Request Restock Transfer",
+  "denominationCalculator": "Bills & Coins Counter",
+  "bills": "Banknotes",
+  "coins": "Coins",
+  "applyCount": "Use Count",
+  "clearCount": "Clear All",
+  "totalCalculated": "Total Cash Counted"
 }

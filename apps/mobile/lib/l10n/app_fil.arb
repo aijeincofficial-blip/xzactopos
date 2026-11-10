@@ -1390,5 +1390,11 @@
     }
   },
   "stockLowStockBadge": "Mababang Stock",
-  "stockRequestTransfer": "Humiling ng Transfer para sa Stock"
+  "stockRequestTransfer": "Humiling ng Transfer para sa Stock",
+  "denominationCalculator": "Kwentador ng Papel at Barya",
+  "bills": "Mga Salaping Papel",
+  "coins": "Mga Barya",
+  "applyCount": "Gamitin ang Bilang",
+  "clearCount": "Burahin Lahat",
+  "totalCalculated": "Kabuuang Nabilang na Pera"
 }

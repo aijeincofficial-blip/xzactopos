@@ -65,6 +65,8 @@ void main() {
       'Set a price for this product first',
     ]);
     expect(cam.feedback.map((f) => f.ok), [true, true, false, false]);
+    expect(cam.feedback[0].subtext, '1 item · ₱12.50');
+    expect(cam.feedback[1].subtext, '1 item · ₱25.00');
     expect(tester.widget<Text>(find.byKey(const Key('cart-total'))).data, '₱25.00', reason: 'two Kape, nothing else');
     await leave(tester);
   });

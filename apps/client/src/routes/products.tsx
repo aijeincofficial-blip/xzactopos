@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatMoney, money, toMajorNumber } from "@pos/core";
 import { Alert, Badge, Button, Card, Dialog, EmptyState, ErrorState, Field, Input, PageHeader, Select, useToast } from "../components/ui.tsx";
+import { BarcodeLabelsDialog } from "../components/barcode-labels-dialog.tsx";
 import { useSession } from "../lib/session.tsx";
 import { useActiveLocation } from "../lib/location-context.tsx";
 import { useErrorMessage } from "../lib/i18n-helpers.ts";
@@ -853,6 +854,7 @@ export function ProductsPage() {
   const [archiveError, setArchiveError] = useState<string | null>(null);
   const [categoryModal, setCategoryModal] = useState(false);
   const [importModal, setImportModal] = useState(false);
+  const [printingProduct, setPrintingProduct] = useState<ProductRow | null>(null);
 
   const categoriesQuery = useQuery({
     queryKey: ["categories"],
@@ -1023,6 +1025,19 @@ export function ProductsPage() {
           />
         ) : open ? (
           <>
+            <div className="flex items-center justify-between pb-1">
+              <span className="text-xs font-mono font-medium text-slate-500">
+                {open.sku}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                data-testid="print-barcode-btn"
+                onClick={() => setPrintingProduct(open)}
+              >
+                🏷️ {t("admin:barcodeLabels.title")}
+              </Button>
+            </div>
             <ProductForm
               key={open.variantId}
               row={open}
@@ -1069,6 +1084,15 @@ export function ProductsPage() {
         onOpenChange={setImportModal}
         locationId={store.id}
         categories={categories}
+      />
+
+      {/* Barcode Labels Dialog */}
+      <BarcodeLabelsDialog
+        open={Boolean(printingProduct)}
+        onClose={() => setPrintingProduct(null)}
+        product={printingProduct}
+        currency={currency}
+        storeName={store?.name ?? access.tenant?.name ?? "Store"}
       />
     </div>
   );
