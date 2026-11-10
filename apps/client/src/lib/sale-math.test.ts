@@ -125,6 +125,9 @@ describe("buildPayments", () => {
     expect(buildPayments(1000, { method: "ewallet", paidNow: null, tendered: null, wallet: "maya", reference: "R" })).toEqual([
       { method: "ewallet", amount: 1000, wallet: "maya", reference: "R" },
     ]);
+    expect(buildPayments(1000, { method: "card", paidNow: null, tendered: null, reference: "AUTH-123" })).toEqual([
+      { method: "card", amount: 1000, reference: "AUTH-123" },
+    ]);
   });
   it("puts the whole sale on utang, or only what is left unpaid", () => {
     expect(buildPayments(1000, { method: "utang", paidNow: null, tendered: null })).toEqual([{ method: "utang", amount: 1000 }]);
@@ -145,7 +148,7 @@ describe("buildPayments", () => {
     for (let i = 0; i < 2000; i++) {
       const total = Math.floor(r() * 500_000) + 1;
       const paidNow = r() < 0.3 ? null : Math.floor(r() * (total + 1));
-      const method = (["cash", "ewallet", "utang"] as const)[Math.floor(r() * 3)] ?? "cash";
+      const method = (["cash", "ewallet", "card", "utang"] as const)[Math.floor(r() * 4)] ?? "cash";
       const pays = buildPayments(total, { method, paidNow, tendered: null });
       expect(pays).not.toBeNull();
       expect((pays ?? []).reduce((a, p) => a + p.amount, 0), `${method} ${total} ${paidNow}`).toBe(total);

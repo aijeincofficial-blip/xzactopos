@@ -200,7 +200,7 @@ export interface SaleDetail {
   sale: SaleRow;
   customerName: string | null;
   items: Array<{ product_name: string; qty: number; unit_price: number; line_total: number }>;
-  payments: Array<{ method: string; amount: number; tendered: number | null; wallet: string | null }>;
+  payments: Array<{ method: string; amount: number; tendered: number | null; wallet: string | null; reference?: string | null }>;
 }
 
 const SALE_COLS = "id, sale_no, local_no, status, subtotal, discount, total, sold_at, customer_id, location_id";
@@ -215,7 +215,7 @@ export async function fetchSaleDetail(saleId: string): Promise<SaleDetail> {
   const [s, i, p] = await Promise.all([
     supabase.from("sales").select(SALE_COLS).eq("id", saleId).single(),
     supabase.from("sale_items").select("product_name, qty, unit_price, line_total").eq("sale_id", saleId).order("product_name"),
-    supabase.from("payments").select("method, amount, tendered, wallet").eq("sale_id", saleId).order("amount", { ascending: false }),
+    supabase.from("payments").select("method, amount, tendered, wallet, reference").eq("sale_id", saleId).order("amount", { ascending: false }),
   ]);
   if (s.error) throw fromRaw(s.error);
   if (i.error) throw fromRaw(i.error);

@@ -59,6 +59,7 @@ export function TodayPage() {
         <Stat id="today-owed" label={t("today.owed")} value={fmt(s.utang.owed)} />
         <Stat id="today-cash" label={t("today.cash")} value={fmt(s.totals.cash)} />
         <Stat id="today-ewallet" label={t("today.ewallet")} value={fmt(s.totals.ewallet)} />
+        <Stat id="today-card" label={t("today.card")} value={fmt(s.totals.card ?? 0)} />
         <Stat id="today-expenses" label={t("today.expenses")} value={fmt(s.expenses.total)} />
       </div>
       <Card data-testid="today-cash-after-expenses">

@@ -427,6 +427,7 @@ export function ReportsPage() {
                     <th className="px-3 py-2 text-right">{t("admin:reports.transactions")}</th>
                     <th className="px-3 py-2 text-right">{t("admin:reports.cash")}</th>
                     <th className="px-3 py-2 text-right">{t("admin:reports.ewallet")}</th>
+                    <th className="px-3 py-2 text-right">{t("admin:reports.card")}</th>
                     <th className="px-3 py-2 text-right">{t("admin:reports.utangCredit")}</th>
                   </tr>
                 </thead>
@@ -439,6 +440,7 @@ export function ReportsPage() {
                       <td className="px-3 py-2 text-right">{d.txns}</td>
                       <td className="px-3 py-2 text-right text-slate-500">{fmt(d.cash)}</td>
                       <td className="px-3 py-2 text-right text-slate-500">{fmt(d.ewallet)}</td>
+                      <td className="px-3 py-2 text-right text-slate-500">{fmt(d.card ?? 0)}</td>
                       <td className="px-3 py-2 text-right text-slate-500">{fmt(d.utang)}</td>
                     </tr>
                   ))}
@@ -506,6 +508,10 @@ export function ReportsPage() {
                   <div className="flex items-center justify-between">
                     <span className="font-medium text-slate-700">📱 {t("admin:reports.ewallet")}</span>
                     <span className="font-semibold text-slate-900">{fmt(rep.totals.ewallet)}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-slate-700">💳 {t("admin:reports.card")}</span>
+                    <span className="font-semibold text-slate-900">{fmt(rep.totals.card ?? 0)}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="font-medium text-slate-700">📒 {t("admin:reports.utangCredit")}</span>

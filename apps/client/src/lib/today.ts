@@ -2,7 +2,7 @@ import { rpc } from "./api.ts";
 
 /** The part of `report_summary` the Today screen reads. Amounts are integer minor units (centavos). */
 export interface DaySummary {
-  totals: { net: number; gross: number; discount: number; txns: number; cash: number; ewallet: number; utang: number };
+  totals: { net: number; gross: number; discount: number; txns: number; cash: number; ewallet: number; card?: number; utang: number };
   expenses: { total: number; cash: number };
   utang: { owed: number };
   top_items: Array<{ variant_id: string; name: string; qty: number; revenue: number }>;

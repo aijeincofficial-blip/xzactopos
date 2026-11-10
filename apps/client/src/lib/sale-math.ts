@@ -45,7 +45,7 @@ export function changeDue(tendered: number, amount: number): number {
   return Math.max(0, tendered - amount);
 }
 
-export type PayMethod = "cash" | "ewallet" | "utang";
+export type PayMethod = "cash" | "ewallet" | "utang" | "card";
 export type Wallet = "gcash" | "maya" | "other";
 
 export interface PaymentDraft {
@@ -159,6 +159,8 @@ export function buildPayments(total: number, c: PaymentChoice): PaymentDraft[] |
   if (paid > 0) {
     if (c.method === "cash") {
       out.push({ method: "cash", amount: paid, tendered: c.tendered && c.tendered > 0 ? c.tendered : paid });
+    } else if (c.method === "card") {
+      out.push({ method: "card", amount: paid, ...(c.reference ? { reference: c.reference } : {}) });
     } else {
       out.push({ method: "ewallet", amount: paid, ...(c.wallet ? { wallet: c.wallet } : {}), ...(c.reference ? { reference: c.reference } : {}) });
     }

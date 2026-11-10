@@ -167,7 +167,13 @@ export function SalesPage() {
               </div>
               {d.payments.map((p, k) => (
                 <div key={k} className="flex justify-between text-slate-600">
-                  <span>{p.method === "ewallet" && p.wallet ? `${t("sell.ewallet")} (${t(`sell.wallets.${p.wallet as "gcash" | "maya" | "other"}`)})` : t(`sell.${p.method as "cash" | "ewallet" | "utang"}`)}</span>
+                  <span>
+                    {p.method === "ewallet" && p.wallet
+                      ? `${t("sell.ewallet")} (${t(`sell.wallets.${p.wallet as "gcash" | "maya" | "other"}`)})`
+                      : p.method === "card"
+                        ? `${t("sell.card")}${p.reference ? ` (${p.reference})` : ""}`
+                        : t(`sell.${p.method as "cash" | "ewallet" | "card" | "utang"}`)}
+                  </span>
                   <span>{fmt(p.amount)}</span>
                 </div>
               ))}

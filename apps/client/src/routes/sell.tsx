@@ -17,6 +17,7 @@ import {
   lineTotal,
   parseAmount,
   type CartLine,
+  type PayMethod,
   type SaleDraft,
   type Wallet,
 } from "../lib/sale-math.ts";
@@ -48,7 +49,7 @@ export function SellPage() {
   const [search, setSearch] = useState("");
   const [cart, setCart] = useState<CartLine[]>([]);
   const [discountText, setDiscountText] = useState("");
-  const [method, setMethod] = useState<"cash" | "ewallet" | "utang">("cash");
+  const [method, setMethod] = useState<PayMethod>("cash");
   const [customerId, setCustomerId] = useState("");
   const [paidText, setPaidText] = useState("");
   const [newName, setNewName] = useState("");
@@ -327,9 +328,10 @@ export function SellPage() {
 
         <div className="grid gap-2 border-t border-slate-200 pt-3 text-sm">
           <span className="font-medium">{t("sell.payment")}</span>
-          <Select aria-label={t("sell.payment")} data-testid="pay-method" value={method} onChange={(e) => setMethod(e.target.value as "cash" | "ewallet" | "utang")}>
+          <Select aria-label={t("sell.payment")} data-testid="pay-method" value={method} onChange={(e) => setMethod(e.target.value as PayMethod)}>
             <option value="cash">{t("sell.cash")}</option>
             <option value="ewallet">{t("sell.ewallet")}</option>
+            <option value="card">{t("sell.card")}</option>
             <option value="utang">{t("sell.utang")}</option>
           </Select>
 
@@ -398,6 +400,9 @@ export function SellPage() {
               </Select>
               <Input placeholder={t("sell.reference")} value={reference} maxLength={64} onChange={(e) => setReference(e.target.value)} />
             </>
+          ) : null}
+          {method === "card" ? (
+            <Input data-testid="pay-card-ref" placeholder={t("sell.cardRefPlaceholder")} value={reference} maxLength={64} onChange={(e) => setReference(e.target.value)} />
           ) : null}
         </div>
         {problem ? <Alert>{problem}</Alert> : null}

@@ -375,7 +375,7 @@ function XReportDialog({
   cashUtang: number;
   cashExpenses: number;
   expectedCash: number;
-  totals: { gross: number; net: number; txns: number; ewallet: number; utang: number } | null;
+  totals: { gross: number; net: number; txns: number; ewallet: number; card?: number; utang: number } | null;
   onClose: () => void;
 }) {
   const { t } = useTranslation(["admin", "common"]);
@@ -439,6 +439,12 @@ function XReportDialog({
               <span>{t("dayClose.ewalletSales")}:</span>
               <span className="font-mono font-medium text-slate-900">{fmt(totals.ewallet)}</span>
             </div>
+            {totals.card !== undefined ? (
+              <div className="flex justify-between">
+                <span>{t("dayClose.cardSales")}:</span>
+                <span className="font-mono font-medium text-slate-900">{fmt(totals.card)}</span>
+              </div>
+            ) : null}
             <div className="flex justify-between">
               <span>{t("dayClose.utangSales")}:</span>
               <span className="font-mono font-medium text-slate-900">{fmt(totals.utang)}</span>

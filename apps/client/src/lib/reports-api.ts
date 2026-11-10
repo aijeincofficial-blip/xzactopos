@@ -9,6 +9,7 @@ export type ReportTotals = {
   txns: number;
   cash: number;
   ewallet: number;
+  card: number;
   utang: number;
   profit: number;
   margin_percent: number;
@@ -24,6 +25,7 @@ export type ReportDay = {
   txns: number;
   cash: number;
   ewallet: number;
+  card: number;
   utang: number;
   profit: number;
 };
@@ -150,7 +152,7 @@ function escapeCsvField(val: string | number): string {
 
 /** Exports daily sales trend to CSV. */
 export function exportDailySalesCsv(data: ReportMultiStoreResult, tenantName: string) {
-  const headers = ["Date", "Gross Sales", "Discounts", "Net Sales", "COGS", "Estimated Profit", "Transactions", "Cash", "E-Wallet", "Utang"];
+  const headers = ["Date", "Gross Sales", "Discounts", "Net Sales", "COGS", "Estimated Profit", "Transactions", "Cash", "E-Wallet", "Card", "Utang"];
   const rows = data.days.map((d) => [
     d.day,
     (d.gross / 100).toFixed(2),
@@ -161,6 +163,7 @@ export function exportDailySalesCsv(data: ReportMultiStoreResult, tenantName: st
     d.txns,
     (d.cash / 100).toFixed(2),
     (d.ewallet / 100).toFixed(2),
+    (d.card / 100).toFixed(2),
     (d.utang / 100).toFixed(2),
   ]);
 
