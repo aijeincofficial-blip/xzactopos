@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { formatMoney, money, uuidv7 } from "@pos/core";
@@ -62,8 +62,16 @@ export function PurchasingPage() {
 
 /* ------------------------------------------------------------------------------------------------ orders */
 
+export interface NewOrderInitialData {
+  warehouseId?: string;
+  supplierId?: string;
+  expectedAt?: string;
+  notes?: string;
+  lines?: PoLineDraft[];
+}
+
 type Modal =
-  | { kind: "new" }
+  | { kind: "new"; initialData?: NewOrderInitialData }
   | { kind: "walkin" }
   | { kind: "detail" | "receive" | "cancel" | "close" | "edit"; po: PurchaseOrder }
   | null;
@@ -83,6 +91,49 @@ function OrdersTab() {
   const [warehouseId, setWarehouseId] = useState("");
   const [modal, setModal] = useState<Modal>(null);
   const [notice, setNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    // 1. Check sessionStorage for draft PO (e.g. from low stock shortfall)
+    const draftJson = sessionStorage.getItem("xzactopos:draft-po");
+    if (draftJson) {
+      sessionStorage.removeItem("xzactopos:draft-po");
+      try {
+        const draft = JSON.parse(draftJson) as NewOrderInitialData;
+        setModal({ kind: "new", initialData: draft });
+        if (draft.warehouseId) {
+          setWarehouseId(draft.warehouseId);
+        }
+        return;
+      } catch {
+        // ignore parse error
+      }
+    }
+
+    // 2. Check URL search params: ?warehouseId=...&variantId=...&qty=...
+    const sp = new URLSearchParams(window.location.search);
+    const qWarehouse = sp.get("warehouseId");
+    const qVariant = sp.get("variantId");
+    const qQty = sp.get("qty");
+    if (qWarehouse || qVariant) {
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, "", newUrl);
+
+      const initLines: PoLineDraft[] = qVariant
+        ? [{ variantId: qVariant, qtyText: qQty ?? "1", costText: "" }]
+        : [blankLine()];
+
+      setModal({
+        kind: "new",
+        initialData: {
+          warehouseId: qWarehouse ?? undefined,
+          lines: initLines,
+        },
+      });
+      if (qWarehouse) {
+        setWarehouseId(qWarehouse);
+      }
+    }
+  }, []);
 
   const orders = useQuery({ queryKey: ["po", "orders"], queryFn: listPurchaseOrders });
   const rows = (orders.data ?? []).filter((p) => (!status || p.status === status) && (!warehouseId || p.warehouse_id === warehouseId));
@@ -211,7 +262,16 @@ function OrdersTab() {
         )}
       </Card>
 
-      {modal?.kind === "new" ? <NewOrderDialog onClose={() => setModal(null)} onDone={(m) => { handleDone(m); setModal(null); }} /> : null}
+      {modal?.kind === "new" ? (
+        <NewOrderDialog
+          initialData={modal.initialData}
+          onClose={() => setModal(null)}
+          onDone={(m) => {
+            handleDone(m);
+            setModal(null);
+          }}
+        />
+      ) : null}
       {modal?.kind === "edit" ? <EditOrderDialog po={modal.po} onClose={() => setModal(null)} onDone={(m) => { handleDone(m); setModal(null); }} /> : null}
       {modal?.kind === "walkin" ? <WalkInDialog onClose={() => setModal(null)} onDone={(m) => { handleDone(m); setModal(null); }} /> : null}
       {modal?.kind === "detail" ? <DetailDialog po={modal.po} onClose={() => setModal(null)} /> : null}
@@ -299,7 +359,15 @@ function LinesEditor({
 
 /* ------------------------------------------------------------------------------------------------ new order */
 
-function NewOrderDialog({ onClose, onDone }: { onClose: () => void; onDone: (message: string) => void }) {
+export function NewOrderDialog({
+  initialData,
+  onClose,
+  onDone,
+}: {
+  initialData?: NewOrderInitialData;
+  onClose: () => void;
+  onDone: (message: string) => void;
+}) {
   const { t } = useTranslation("admin");
   const { access } = useSession();
   const msg = useErrorMessage();
@@ -308,11 +376,17 @@ function NewOrderDialog({ onClose, onDone }: { onClose: () => void; onDone: (mes
   const suppliers = useQuery({ queryKey: ["po", "suppliers"], queryFn: listSuppliers });
   const variants = useQuery({ queryKey: ["po", "variants"], queryFn: listVariantOptions });
   const [id] = useState(() => uuidv7()); // one id per dialog, so a retry after a dropped connection is a replay
-  const [warehouseId, setWarehouseId] = useState(warehouses.length === 1 ? warehouses[0]!.id : "");
-  const [supplierId, setSupplierId] = useState("");
-  const [expectedAt, setExpectedAt] = useState("");
-  const [notes, setNotes] = useState("");
-  const [lines, setLines] = useState<PoLineDraft[]>([blankLine()]);
+  const [warehouseId, setWarehouseId] = useState(
+    initialData?.warehouseId || (warehouses.length === 1 ? warehouses[0]!.id : "")
+  );
+  const [supplierId, setSupplierId] = useState(initialData?.supplierId || "");
+  const [expectedAt, setExpectedAt] = useState(initialData?.expectedAt || "");
+  const [notes, setNotes] = useState(initialData?.notes || "");
+  const [lines, setLines] = useState<PoLineDraft[]>(
+    initialData?.lines && initialData.lines.length > 0
+      ? initialData.lines
+      : [blankLine()]
+  );
   const [formError, setFormError] = useState<string | null>(null);
   const [rowErrors, setRowErrors] = useState<Array<LineError | null>>([]);
   const currency = access.tenant.base_currency;

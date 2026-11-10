@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatMoney, money } from "@pos/core";
 import { Alert, Badge, Button, Card, Dialog, EmptyState, ErrorState, Field, Input, PageHeader, Select, useToast } from "../components/ui.tsx";
+import { CustomerStatementDialog } from "../components/customer-statement-dialog.tsx";
+import { downloadCsv, exportCustomerLedgerCsv, type CustomerLedgerExportItem } from "../lib/csv-helper.ts";
 import { useSession } from "../lib/session.tsx";
 import { useActiveLocation } from "../lib/location-context.tsx";
 import { useErrorMessage } from "../lib/i18n-helpers.ts";
@@ -56,6 +58,9 @@ export function UtangPage() {
   const [adjustAmount, setAdjustAmount] = useState("");
   const [adjustNote, setAdjustNote] = useState("");
   const [adjustError, setAdjustError] = useState<string | null>(null);
+
+  // Statement dialog
+  const [showStatement, setShowStatement] = useState(false);
 
   const customersQuery = useQuery({
     queryKey: ["customers-balances"],
@@ -398,7 +403,40 @@ export function UtangPage() {
 
             {/* Statement / Ledger History */}
             <Card className="grid gap-2" data-testid="customer-ledger-card">
-              <h4 className="text-sm font-semibold">{t("utang.history")}</h4>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h4 className="text-sm font-semibold">{t("utang.history")}</h4>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    data-testid="soa-open-btn"
+                    onClick={() => setShowStatement(true)}
+                  >
+                    {t("utang.printStatement")}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    data-testid="export-ledger-csv"
+                    disabled={!ledgerQuery.data || ledgerQuery.data.length === 0}
+                    onClick={() => {
+                      if (!selectedCustomer || !ledgerQuery.data) return;
+                      const items: CustomerLedgerExportItem[] = ledgerQuery.data.map((e) => ({
+                        date: e.occurred_at.slice(0, 10),
+                        kind: t(`utang.kind.${e.kind}`),
+                        description: e.note ?? (e.kind === "charge" ? t("utang.kind.charge") : t(`utang.kind.${e.kind}`)),
+                        method: e.method ?? undefined,
+                        amount: e.amount,
+                      }));
+                      const csv = exportCustomerLedgerCsv(selectedCustomer.name, items, currency);
+                      const safeName = selectedCustomer.name.toLowerCase().replace(/[^a-z0-9]/g, "_");
+                      downloadCsv(csv, `soa-${safeName}-${today}.csv`);
+                    }}
+                  >
+                    {t("utang.downloadCsv")}
+                  </Button>
+                </div>
+              </div>
               {ledgerQuery.isPending ? <p className="text-sm text-slate-500">{t("utang.loading")}</p> : null}
               {ledgerQuery.isError ? (
                 <ErrorState message={t("utang.error")} onRetry={() => void ledgerQuery.refetch()} retryLabel={t("common:actions.retry")} />
@@ -519,6 +557,18 @@ export function UtangPage() {
           </div>
         </Dialog>
       ) : null}
+
+      <CustomerStatementDialog
+        open={showStatement}
+        onClose={() => setShowStatement(false)}
+        customer={selectedCustomer}
+        entries={ledgerQuery.data ?? []}
+        currency={currency}
+        tenantName={access.tenant.name}
+        storeName={store?.name ?? ""}
+        preparedBy={access.full_name || access.username}
+        today={today}
+      />
     </div>
   );
 }

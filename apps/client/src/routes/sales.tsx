@@ -10,6 +10,7 @@ import { ApiError } from "../lib/api.ts";
 import { supabase } from "../lib/supabase.ts";
 import { fetchRecentSales, fetchSaleDetail, voidSale } from "../lib/sell-api.ts";
 import { SupervisorPinDialog } from "../components/supervisor-pin-dialog.tsx";
+import { ReceiptModal } from "../components/receipt-slip.tsx";
 import type { OfflineApprovalPayload } from "../lib/offline-pin-api.ts";
 
 /** Sales (Solo web): the store's latest sales, each as a receipt, with cancel (void) for those allowed to. */
@@ -31,6 +32,7 @@ export function SalesPage() {
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [showApprovalDialog, setShowApprovalDialog] = useState(false);
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [approvalId, setApprovalId] = useState<string | null>(null);
   const [offlineApproval, setOfflineApproval] = useState<OfflineApprovalPayload | null>(null);
 
@@ -179,28 +181,67 @@ export function SalesPage() {
               ))}
             </div>
 
-            {d.sale.status === "completed" && can("sale.void", d.sale.location_id) ? (
-              asking ? (
-                <div className="grid gap-2 rounded-md border border-red-200 p-3">
-                  <p className="text-sm">{t("sales.voidWarning")}</p>
-                  <Input data-testid="void-reason" placeholder={t("sales.reason")} value={reason} maxLength={200} onChange={(e) => setReason(e.target.value)} />
-                  {error ? <Alert>{error}</Alert> : null}
-                  <div className="flex gap-2">
-                    <Button variant="danger" data-testid="void-confirm" disabled={cancel.isPending} onClick={handleConfirmVoid}>
-                      {t("sales.confirmVoid")}
-                    </Button>
-                    <Button variant="ghost" onClick={() => setAsking(false)}>
-                      {t("sell.cancel")}
-                    </Button>
+            <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100 no-print">
+              <Button
+                variant="outline"
+                data-testid="print-receipt-btn"
+                onClick={() => setShowReceiptModal(true)}
+              >
+                🖨️ {t("sales.printReceipt")}
+              </Button>
+
+              {d.sale.status === "completed" && can("sale.void", d.sale.location_id) ? (
+                asking ? (
+                  <div className="grid gap-2 w-full rounded-md border border-red-200 p-3 mt-2">
+                    <p className="text-sm">{t("sales.voidWarning")}</p>
+                    <Input data-testid="void-reason" placeholder={t("sales.reason")} value={reason} maxLength={200} onChange={(e) => setReason(e.target.value)} />
+                    {error ? <Alert>{error}</Alert> : null}
+                    <div className="flex gap-2">
+                      <Button variant="danger" data-testid="void-confirm" disabled={cancel.isPending} onClick={handleConfirmVoid}>
+                        {t("sales.confirmVoid")}
+                      </Button>
+                      <Button variant="ghost" onClick={() => setAsking(false)}>
+                        {t("sell.cancel")}
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <Button variant="outline" data-testid="void-start" onClick={() => setAsking(true)}>
-                  {t("sales.voidSale")}
-                </Button>
-              )
-            ) : null}
+                ) : (
+                  <Button variant="outline" data-testid="void-start" onClick={() => setAsking(true)}>
+                    {t("sales.voidSale")}
+                  </Button>
+                )
+              ) : null}
+            </div>
           </Card>
+        ) : null}
+
+        {d ? (
+          <ReceiptModal
+            open={showReceiptModal}
+            onClose={() => setShowReceiptModal(false)}
+            receipt={{
+              tenantName: access.tenant.name,
+              storeName: store?.name ?? "",
+              storeCode: store?.code ?? "",
+              receiptNo: d.sale.sale_no ?? d.sale.local_no,
+              soldAt: d.sale.sold_at,
+              cashierName: access.full_name || access.username,
+              customerName: d.customerName,
+              items: d.items.map((i) => ({
+                product_name: i.product_name,
+                qty: i.qty,
+                unit_price: i.unit_price,
+                line_total: i.line_total,
+              })),
+              subtotal: d.sale.subtotal,
+              discount: d.sale.discount,
+              total: d.sale.total,
+              payments: d.payments,
+              currency,
+              timezone: access.tenant.timezone,
+              isVoided: d.sale.status === "voided",
+            }}
+          />
         ) : null}
 
         <SupervisorPinDialog

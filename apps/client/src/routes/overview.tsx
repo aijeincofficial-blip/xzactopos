@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { formatMoney, money } from "@pos/core";
 import { Alert, Badge, Button, Card, Dialog, EmptyState, ErrorState, Field, Input, PageHeader, Select, Table, Tabs, TabPanel, useToast } from "../components/ui.tsx";
@@ -63,10 +63,12 @@ function WarehouseFilter({
   warehouses,
   value,
   onChange,
+  children,
 }: {
   warehouses: Array<{ id: string; code: string; name: string }>;
   value: string;
   onChange: (v: string) => void;
+  children?: React.ReactNode;
 }) {
   const { t } = useTranslation("admin");
   return (
@@ -81,6 +83,7 @@ function WarehouseFilter({
           ))}
         </Select>
       </Field>
+      {children ? <div className="ml-auto flex items-center gap-2">{children}</div> : null}
     </Card>
   );
 }
@@ -89,6 +92,7 @@ function WarehouseFilter({
 
 function ReorderTab({ warehouses }: { warehouses: Array<{ id: string; code: string; name: string }> }) {
   const { t } = useTranslation(["admin", "common"]);
+  const navigate = useNavigate();
   const msg = useErrorMessage();
   const toast = useToast();
   const qc = useQueryClient();
@@ -106,6 +110,26 @@ function ReorderTab({ warehouses }: { warehouses: Array<{ id: string; code: stri
   });
   const rows: ReorderRow[] = (q.data?.pages ?? []).flat();
   const sum = reorderSummary(rows);
+  const needOrderRows = rows.filter((r) => reorderStatus(r) === "order");
+
+  const handleDraftPoAll = () => {
+    if (needOrderRows.length === 0) return;
+    const lines = needOrderRows.map((r) => ({
+      variantId: r.variant_id,
+      qtyText: String(Math.max(1, r.shortfall)),
+      costText: "",
+    }));
+    const targetWarehouse = warehouseId || (needOrderRows[0]?.location_id ?? "");
+    sessionStorage.setItem(
+      "xzactopos:draft-po",
+      JSON.stringify({
+        warehouseId: targetWarehouse,
+        lines,
+        notes: `Auto-drafted from low stock (${needOrderRows.length} items)`,
+      })
+    );
+    navigate({ to: "/app/purchasing" });
+  };
 
   const saveThresholdMut = useMutation({
     mutationFn: async (point: number | null) => {
@@ -131,7 +155,18 @@ function ReorderTab({ warehouses }: { warehouses: Array<{ id: string; code: stri
 
   return (
     <div className="grid gap-4">
-      <WarehouseFilter warehouses={warehouses} value={warehouseId} onChange={setWarehouseId} />
+      <WarehouseFilter warehouses={warehouses} value={warehouseId} onChange={setWarehouseId}>
+        {needOrderRows.length > 0 ? (
+          <Button
+            size="sm"
+            data-testid="draft-po-all-low-stock"
+            title={t("overview.reorder.draftPoAllDesc")}
+            onClick={handleDraftPoAll}
+          >
+            {t("overview.reorder.draftPoAll")}
+          </Button>
+        ) : null}
+      </WarehouseFilter>
       {q.isError ? <ErrorState message={msg(q.error)} onRetry={() => void q.refetch()} retryLabel={t("common:actions.retry")} /> : null}
       {rows.length > 0 ? (
         <p className="text-sm text-slate-700" data-testid="reorder-summary">
@@ -186,7 +221,26 @@ function ReorderTab({ warehouses }: { warehouses: Array<{ id: string; code: stri
                     <td className="px-3 py-2">
                       <div className="flex items-center gap-2">
                         {status !== "covered" && can("purchasing.manage", r.location_id) ? (
-                          <Link to="/app/purchasing" className="text-sm text-slate-700 underline">
+                          <Link
+                            to="/app/purchasing"
+                            className="text-sm text-slate-700 underline"
+                            data-testid={`new-order-${r.location_code}-${r.sku}`}
+                            onClick={() => {
+                              sessionStorage.setItem(
+                                "xzactopos:draft-po",
+                                JSON.stringify({
+                                  warehouseId: r.location_id,
+                                  lines: [
+                                    {
+                                      variantId: r.variant_id,
+                                      qtyText: String(Math.max(1, r.shortfall)),
+                                      costText: "",
+                                    },
+                                  ],
+                                })
+                              );
+                            }}
+                          >
                             {t("overview.reorder.newOrder")}
                           </Link>
                         ) : null}

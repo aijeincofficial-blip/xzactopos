@@ -24,6 +24,7 @@ import {
 import { createCustomer, fetchCustomers, fetchSellables, nextLocalNo, registerWebDevice, submitSale, webDevice, type Sellable, type SoldReceipt } from "../lib/sell-api.ts";
 import { supabase } from "../lib/supabase.ts";
 import { SupervisorPinDialog } from "../components/supervisor-pin-dialog.tsx";
+import { ReceiptSlipView, type ReceiptData } from "../components/receipt-slip.tsx";
 import type { OfflineApprovalPayload } from "../lib/offline-pin-api.ts";
 
 const WALLETS: Wallet[] = ["gcash", "maya", "other"];
@@ -32,6 +33,7 @@ interface Done extends SoldReceipt {
   total: number;
   change: number;
   onUtang: number;
+  receiptData?: ReceiptData;
 }
 
 /** Sell (Solo web): search, cart, cash or e-wallet payment, one `record_sale` op through `sync_push`. Online only. */
@@ -186,7 +188,37 @@ export function SellPage() {
         try {
           const r = await submitSale(draft, attempt.current.opId);
           const cash = payments.find((p) => p.method === "cash");
-          return { ...r, total, change: cash ? changeDue(cash.tendered ?? cash.amount, cash.amount) : 0, onUtang: payments.find((p) => p.method === "utang")?.amount ?? 0 };
+          const change = cash ? changeDue(cash.tendered ?? cash.amount, cash.amount) : 0;
+          const onUtang = payments.find((p) => p.method === "utang")?.amount ?? 0;
+          const receiptData: ReceiptData = {
+            tenantName: access.tenant.name,
+            storeName: store.name,
+            storeCode: store.code,
+            receiptNo: r.saleNo ?? r.localNo,
+            soldAt: new Date(),
+            cashierName: access.full_name || access.username,
+            customerName: (customers.data ?? []).find((c) => c.id === customerId)?.name || null,
+            items: cart.map((line) => ({
+              product_name: line.name,
+              qty: line.qty,
+              unit_price: line.unitPrice,
+              line_total: line.qty * line.unitPrice,
+            })),
+            subtotal,
+            discount,
+            total,
+            payments: payments.map((p) => ({
+              method: p.method,
+              amount: p.amount,
+              wallet: p.wallet,
+              reference: p.reference,
+            })),
+            change,
+            onUtang,
+            currency,
+            timezone: access.tenant.timezone,
+          };
+          return { ...r, total, change, onUtang, receiptData };
         } catch (e) {
           if (!(e instanceof ApiError && e.key === "duplicate_local_no" && n < 3)) throw e;
         }
@@ -226,26 +258,41 @@ export function SellPage() {
 
   if (done) {
     return (
-      <Card className="grid max-w-md gap-3" data-testid="sale-done">
-        <h2 className="text-lg font-semibold">{t("sell.done")}</h2>
-        <div className="text-sm text-slate-500">
-          {t("sell.receiptNo")} <span className="font-mono text-slate-900">{done.saleNo ?? done.localNo}</span>
-        </div>
-        <div className="text-2xl font-semibold">{fmt(done.total)}</div>
-        {done.onUtang > 0 ? (
-          <div className="text-sm">
-            {t("sell.onUtang")}: <strong>{fmt(done.onUtang)}</strong>
+      <div className="grid max-w-md gap-4">
+        <Card className="grid gap-3" data-testid="sale-done">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-emerald-700">✓ {t("sell.done")}</h2>
+            <div className="text-sm font-mono text-slate-500">
+              {t("sell.receiptNo")} <span className="font-bold text-slate-900">{done.saleNo ?? done.localNo}</span>
+            </div>
+          </div>
+          <div className="text-2xl font-bold text-slate-900">{fmt(done.total)}</div>
+          {done.onUtang > 0 ? (
+            <div className="text-sm text-amber-800">
+              {t("sell.onUtang")}: <strong>{fmt(done.onUtang)}</strong>
+            </div>
+          ) : null}
+          {done.change > 0 ? (
+            <div className="text-sm text-slate-600">
+              {t("sell.change")}: <strong>{fmt(done.change)}</strong>
+            </div>
+          ) : null}
+          <div className="flex gap-2 pt-2 border-t border-slate-100 no-print">
+            <Button variant="outline" data-testid="print-receipt-btn" onClick={() => window.print()} className="flex-1">
+              🖨️ {t("sell.printReceipt")}
+            </Button>
+            <Button data-testid="new-sale" onClick={() => setDone(null)} className="flex-1">
+              {t("sell.newSale")}
+            </Button>
+          </div>
+        </Card>
+
+        {done.receiptData ? (
+          <div className="bg-slate-50 p-2 rounded-lg border border-slate-200">
+            <ReceiptSlipView receipt={done.receiptData} />
           </div>
         ) : null}
-        {done.change > 0 ? (
-          <div className="text-sm">
-            {t("sell.change")}: <strong>{fmt(done.change)}</strong>
-          </div>
-        ) : null}
-        <Button data-testid="new-sale" onClick={() => setDone(null)}>
-          {t("sell.newSale")}
-        </Button>
-      </Card>
+      </div>
     );
   }
 

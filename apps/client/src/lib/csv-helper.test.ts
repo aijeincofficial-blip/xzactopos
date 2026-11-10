@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  exportCustomerLedgerCsv,
   exportDayClosesCsv,
   exportProductsCsv,
   exportShiftsCsv,
@@ -120,5 +121,36 @@ describe("csv-helper", () => {
     expect(csv).toContain("0.00");
     expect(csv).toContain("Owner Admin");
     expect(csv).toContain("Balanced drawer");
+  });
+
+  it("exports customer ledger to CSV with proper columns and formatting", () => {
+    const csv = exportCustomerLedgerCsv(
+      "Maria Santos",
+      [
+        {
+          date: "2026-11-08",
+          kind: "Charge (Sale)",
+          description: "Grocery purchase",
+          method: "—",
+          amount: 15000, // 150.00
+        },
+        {
+          date: "2026-11-09",
+          kind: "Payment",
+          description: "Partial cash payment",
+          method: "cash",
+          amount: -5000, // -50.00
+        },
+      ],
+      "PHP"
+    );
+
+    expect(csv).toContain("Date,Customer,Transaction Type");
+    expect(csv).toContain("Maria Santos");
+    expect(csv).toContain("Charge (Sale)");
+    expect(csv).toContain("Grocery purchase");
+    expect(csv).toContain("150.00");
+    expect(csv).toContain("-50.00");
+    expect(csv).toContain("cash");
   });
 });

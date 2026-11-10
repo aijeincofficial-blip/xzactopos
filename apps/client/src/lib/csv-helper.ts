@@ -163,6 +163,41 @@ export function exportDayClosesCsv(closes: DayCloseExportItem[]): string {
   return lines.join("\r\n");
 }
 
+export interface CustomerLedgerExportItem {
+  date: string;
+  kind: string;
+  description: string;
+  method?: string;
+  amount: number;
+}
+
+export function exportCustomerLedgerCsv(
+  customerName: string,
+  items: CustomerLedgerExportItem[],
+  currency = "PHP"
+): string {
+  const headers = [
+    "Date",
+    "Customer",
+    "Transaction Type",
+    "Description / Note",
+    "Payment Method",
+    `Amount (${currency})`,
+  ];
+  const lines = [headers.join(",")];
+  for (const item of items) {
+    lines.push([
+      escapeCsvField(item.date),
+      escapeCsvField(customerName),
+      escapeCsvField(item.kind),
+      escapeCsvField(item.description),
+      escapeCsvField(item.method || "—"),
+      escapeCsvField((item.amount / 100).toFixed(2)),
+    ].join(","));
+  }
+  return lines.join("\r\n");
+}
+
 /** Parses standard CSV text with quotes, escaped quotes (""), and commas. */
 export function parseCsv(text: string): string[][] {
   const rows: string[][] = [];
