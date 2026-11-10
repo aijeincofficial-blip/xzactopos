@@ -132,3 +132,51 @@ export async function cancelTransfer(transferId: string, reason?: string): Promi
     p_reason: reason || null,
   });
 }
+
+export interface PickListItem {
+  id: string;
+  pick_list_id: string;
+  variant_id: string;
+  sku: string;
+  product_name: string;
+  bin_id: string;
+  bin_code: string;
+  location_info: string;
+  qty_requested: number;
+  qty_picked: number;
+  short_reason: string | null;
+}
+
+export interface PickListSummary {
+  id: string;
+  warehouse_id: string;
+  transfer_id: string;
+  pick_list_no: string;
+  status: "pending" | "in_progress" | "completed" | "cancelled";
+  created_at: string;
+  items: PickListItem[];
+}
+
+export async function generatePickList(transferId: string): Promise<string> {
+  return await rpc<string>("generate_pick_list", { p_transfer_id: transferId });
+}
+
+export async function getPickListForTransfer(transferId: string): Promise<PickListSummary | null> {
+  return await rpc<PickListSummary | null>("get_pick_list_for_transfer", {
+    p_transfer_id: transferId,
+  });
+}
+
+export async function confirmPickItem(args: {
+  pickListId: string;
+  itemId: string;
+  qtyPicked: number;
+  shortReason?: string;
+}): Promise<void> {
+  await rpc("confirm_pick_item", {
+    p_pick_list_id: args.pickListId,
+    p_item_id: args.itemId,
+    p_qty_picked: args.qtyPicked,
+    p_short_reason: args.shortReason || null,
+  });
+}

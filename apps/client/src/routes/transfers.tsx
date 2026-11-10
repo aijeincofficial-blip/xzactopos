@@ -1,14 +1,17 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Alert, Badge, Button, Card, Dialog, ErrorState, Field, Input, PageHeader, Select, useToast } from "../components/ui.tsx";
+import { Alert, Badge, Button, Card, Dialog, ErrorState, Field, Input, PageHeader, Select, Table, useToast } from "../components/ui.tsx";
 import { useSession } from "../lib/session.tsx";
 import { useErrorMessage } from "../lib/i18n-helpers.ts";
 import { pullCatalog } from "../lib/sell-api.ts";
 import { listLocations } from "../lib/api.ts";
 import {
   cancelTransfer,
+  confirmPickItem,
   createTransfer,
+  generatePickList,
+  getPickListForTransfer,
   listTransfers,
   receiveTransfer,
   shipTransfer,
@@ -32,6 +35,12 @@ export function TransfersPage() {
   const [manifestTransfer, setManifestTransfer] = useState<TransferRow | null>(null);
   const [cancellingTransfer, setCancellingTransfer] = useState<TransferRow | null>(null);
   const [cancelReason, setCancelReason] = useState("");
+
+  // Pick list state
+  const [pickListTransfer, setPickListTransfer] = useState<TransferRow | null>(null);
+  const [pickingItemId, setPickingItemId] = useState<string | null>(null);
+  const [pickingQty, setPickingQty] = useState<string>("");
+  const [pickingShortReason, setPickingShortReason] = useState<string>("");
 
   // Create form state
   const [fromLocId, setFromLocId] = useState("");
@@ -65,6 +74,12 @@ export function TransfersPage() {
     queryKey: ["catalog-pull"],
     queryFn: pullCatalog,
     staleTime: 60_000,
+  });
+
+  const pickListQuery = useQuery({
+    queryKey: ["transfer-pick-list", pickListTransfer?.id],
+    queryFn: () => getPickListForTransfer(pickListTransfer!.id),
+    enabled: Boolean(pickListTransfer?.id),
   });
 
   // Prepare product options
@@ -140,6 +155,42 @@ export function TransfersPage() {
       toast.good(t("admin:transfers.cancelledSuccess", { defaultValue: "Transfer cancelled" }));
     },
     onError: (e) => toast.error(msg(e)),
+  });
+
+  const generatePickListMutation = useMutation({
+    mutationFn: () => generatePickList(pickListTransfer!.id),
+    onSuccess: async () => {
+      toast.good(t("admin:transfers.pickListGenerated", { defaultValue: "Pick list generated" }));
+      await qc.invalidateQueries({ queryKey: ["transfer-pick-list", pickListTransfer?.id] });
+    },
+    onError: (e) => {
+      toast.error(msg(e));
+    },
+  });
+
+  const confirmPickMutation = useMutation({
+    mutationFn: async () => {
+      if (!pickListQuery.data || !pickingItemId) throw new Error("no_item");
+      await confirmPickItem({
+        pickListId: pickListQuery.data.id,
+        itemId: pickingItemId,
+        qtyPicked: Number(pickingQty),
+        shortReason: pickingShortReason.trim() || undefined,
+      });
+    },
+    onSuccess: async () => {
+      toast.good(t("admin:transfers.itemPicked", { defaultValue: "Item pick confirmed" }));
+      setPickingItemId(null);
+      setPickingQty("");
+      setPickingShortReason("");
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["transfer-pick-list", pickListTransfer?.id] }),
+        qc.invalidateQueries({ queryKey: ["transfers"] }),
+      ]);
+    },
+    onError: (e) => {
+      toast.error(msg(e));
+    },
   });
 
   function resetCreateForm() {
@@ -396,6 +447,16 @@ export function TransfersPage() {
                         >
                           {t("admin:transfers.manifest")}
                         </Button>
+                        {trf.status === "draft" && trf.from_location?.type === "warehouse" && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setPickListTransfer(trf)}
+                            data-testid={`picklist-btn-${trf.transfer_no}`}
+                          >
+                            {t("admin:transfers.pickList", { defaultValue: "Pick List" })}
+                          </Button>
+                        )}
                         {canShip && (
                           <Button
                             variant="outline"
@@ -820,6 +881,182 @@ export function TransfersPage() {
               {cancelMutation.isPending
                 ? t("admin:transfers.saving")
                 : t("admin:transfers.confirmCancel")}
+            </Button>
+          </div>
+        </div>
+      </Dialog>
+
+      {/* Modal: Transfer Pick List */}
+      <Dialog
+        open={Boolean(pickListTransfer)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPickListTransfer(null);
+            setPickingItemId(null);
+            setPickingQty("");
+            setPickingShortReason("");
+          }
+        }}
+        title={`${t("admin:transfers.pickList", { defaultValue: "Pick List" })}: ${pickListTransfer?.transfer_no ?? ""}`}
+        closeLabel={t("common:actions.close", { defaultValue: "Close" })}
+      >
+        <div className="grid gap-4">
+          {pickListQuery.isLoading ? (
+            <p className="p-4 text-sm text-slate-500">{t("common:status.loading", { defaultValue: "Loading..." })}</p>
+          ) : pickListQuery.isError ? (
+            <ErrorState
+              message={msg(pickListQuery.error)}
+              onRetry={() => pickListQuery.refetch()}
+              retryLabel={t("common:actions.retry", { defaultValue: "Retry" })}
+            />
+          ) : !pickListQuery.data ? (
+            <Card className="grid gap-3 p-4 text-center">
+              <div className="text-sm text-slate-600">
+                {t(
+                  "admin:transfers.noPickListYet",
+                  { defaultValue: "No pick list has been generated yet for this draft transfer. Generate a walking-route pick list to guide warehouse item picking into staging." },
+                )}
+              </div>
+              <div className="pt-2">
+                <Button
+                  onClick={() => generatePickListMutation.mutate()}
+                  disabled={generatePickListMutation.isPending}
+                  data-testid="generate-picklist-btn"
+                >
+                  {generatePickListMutation.isPending
+                    ? t("admin:transfers.generating", { defaultValue: "Generating..." })
+                    : t("admin:transfers.generatePickList", { defaultValue: "Generate Walking-Route Pick List" })}
+                </Button>
+              </div>
+            </Card>
+          ) : (
+            <div className="grid gap-3">
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded bg-slate-50 p-2.5 text-xs text-slate-600">
+                <div>
+                  <span className="font-semibold text-slate-800">{pickListQuery.data.pick_list_no}</span>
+                  <span className="ml-2 font-mono text-slate-400">({pickListQuery.data.items.length} items)</span>
+                </div>
+                <Badge
+                  tone={
+                    pickListQuery.data.status === "completed"
+                      ? "good"
+                      : pickListQuery.data.status === "in_progress"
+                        ? "warn"
+                        : "neutral"
+                  }
+                >
+                  {pickListQuery.data.status}
+                </Badge>
+              </div>
+
+              <div className="max-h-80 overflow-y-auto rounded-md border border-slate-200">
+                <Table bare>
+                  <thead className="bg-slate-50 text-xs text-slate-500 uppercase">
+                    <tr>
+                      <th className="p-2 text-left">{t("admin:transfers.colBin", { defaultValue: "Bin / Location" })}</th>
+                      <th className="p-2 text-left">{t("admin:transfers.colItem", { defaultValue: "Item" })}</th>
+                      <th className="p-2 text-right">{t("admin:transfers.colRequested", { defaultValue: "Req" })}</th>
+                      <th className="p-2 text-right">{t("admin:transfers.colPicked", { defaultValue: "Picked" })}</th>
+                      <th className="p-2 text-center">{t("common:actions.actions", { defaultValue: "Actions" })}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pickListQuery.data.items.map((item) => {
+                      const isPickingThis = pickingItemId === item.id;
+                      const isComplete = item.qty_picked >= item.qty_requested;
+
+                      return (
+                        <tr key={item.id} className="border-t border-slate-100 text-xs">
+                          <td className="p-2 font-mono">
+                            <span className="font-semibold text-slate-900">{item.bin_code}</span>
+                            {item.location_info && item.location_info !== "---" ? (
+                              <div className="text-[10px] text-slate-400">{item.location_info}</div>
+                            ) : null}
+                          </td>
+                          <td className="p-2">
+                            <span className="font-medium text-slate-800">{item.product_name}</span>
+                            <div className="font-mono text-[10px] text-slate-400">{item.sku}</div>
+                          </td>
+                          <td className="p-2 text-right font-mono font-medium">{item.qty_requested}</td>
+                          <td className="p-2 text-right font-mono font-semibold text-slate-900">
+                            {item.qty_picked}
+                          </td>
+                          <td className="p-2 text-center">
+                            {isComplete ? (
+                              <Badge tone="good">✓ Picked</Badge>
+                            ) : isPickingThis ? (
+                              <div className="flex flex-col gap-1 items-end">
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  max={item.qty_requested}
+                                  step="any"
+                                  value={pickingQty}
+                                  onChange={(e) => setPickingQty(e.target.value)}
+                                  className="h-7 w-20 text-xs text-right"
+                                  placeholder="Qty"
+                                  data-testid="pick-qty-input"
+                                />
+                                {Number(pickingQty) < item.qty_requested ? (
+                                  <Input
+                                    value={pickingShortReason}
+                                    onChange={(e) => setPickingShortReason(e.target.value)}
+                                    placeholder="Short reason"
+                                    className="h-7 w-28 text-xs"
+                                    data-testid="pick-short-reason-input"
+                                  />
+                                ) : null}
+                                <div className="flex gap-1 pt-1">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setPickingItemId(null)}
+                                  >
+                                    ✕
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    disabled={confirmPickMutation.isPending || !pickingQty || Number(pickingQty) < 0}
+                                    onClick={() => confirmPickMutation.mutate()}
+                                    data-testid="save-pick-btn"
+                                  >
+                                    {confirmPickMutation.isPending ? "..." : "Confirm"}
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setPickingItemId(item.id);
+                                  setPickingQty(String(item.qty_requested - item.qty_picked));
+                                  setPickingShortReason("");
+                                }}
+                                data-testid={`pick-item-btn-${item.sku}`}
+                              >
+                                {t("admin:transfers.pick", { defaultValue: "Pick" })}
+                              </Button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </Table>
+              </div>
+            </div>
+          )}
+
+          <div className="flex justify-end gap-2 border-t border-slate-100 pt-3">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setPickListTransfer(null);
+                setPickingItemId(null);
+              }}
+            >
+              {t("common:actions.close", { defaultValue: "Close" })}
             </Button>
           </div>
         </div>

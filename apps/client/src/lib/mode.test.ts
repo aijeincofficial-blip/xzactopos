@@ -12,6 +12,10 @@ describe("tenantMode", () => {
   it("is solo for an owner with one store and no warehouse", () => {
     expect(tenantMode(base)).toBe("solo");
   });
+  it("prioritizes stored tenant mode if present", () => {
+    expect(tenantMode({ ...base, tenant: { mode: "full" } })).toBe("full");
+    expect(tenantMode({ ...base, modules: { ...base.modules, warehouse: true }, tenant: { mode: "solo" } })).toBe("solo");
+  });
   it("is full once the warehouse module is on", () => {
     expect(tenantMode({ ...base, modules: { ...base.modules, warehouse: true } })).toBe("full");
   });

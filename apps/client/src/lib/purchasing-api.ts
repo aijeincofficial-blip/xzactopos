@@ -186,6 +186,22 @@ export async function createPo(args: {
   });
 }
 
+export async function updatePo(args: {
+  poId: string;
+  supplierId: string;
+  expectedAt: string;
+  notes: string;
+  items: PoItemPayload[];
+}): Promise<string> {
+  return await rpc<string>("update_po", {
+    p_po_id: args.poId,
+    p_supplier_id: args.supplierId,
+    p_expected_at: args.expectedAt === "" ? null : args.expectedAt,
+    p_notes: orNull(args.notes),
+    p_items: args.items,
+  });
+}
+
 export async function submitPo(poId: string): Promise<string> {
   return await rpc<string>("submit_po", { p_po_id: poId });
 }

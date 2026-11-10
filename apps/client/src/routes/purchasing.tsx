@@ -30,6 +30,7 @@ import {
   receivePo,
   receiveWithoutPo,
   submitPo,
+  updatePo,
   upsertSupplier,
   type PurchaseOrder,
   type Supplier,
@@ -64,7 +65,7 @@ export function PurchasingPage() {
 type Modal =
   | { kind: "new" }
   | { kind: "walkin" }
-  | { kind: "detail" | "receive" | "cancel" | "close"; po: PurchaseOrder }
+  | { kind: "detail" | "receive" | "cancel" | "close" | "edit"; po: PurchaseOrder }
   | null;
 
 function useWarehouses() {
@@ -175,6 +176,11 @@ function OrdersTab() {
                         <Button size="sm" variant="ghost" onClick={() => setModal({ kind: "detail", po })}>
                           {t("purchasing.action.details")}
                         </Button>
+                        {po.status === "draft" ? (
+                          <Button size="sm" variant="outline" onClick={() => setModal({ kind: "edit", po })} data-testid={`edit-${po.po_no}`}>
+                            {t("purchasing.action.edit", "Edit")}
+                          </Button>
+                        ) : null}
                         {acts.submit ? (
                           <Button size="sm" variant="outline" disabled={submit.isPending} onClick={() => submit.mutate(po.id)} data-testid={`submit-${po.po_no}`}>
                             {t("purchasing.action.submit")}
@@ -206,6 +212,7 @@ function OrdersTab() {
       </Card>
 
       {modal?.kind === "new" ? <NewOrderDialog onClose={() => setModal(null)} onDone={(m) => { handleDone(m); setModal(null); }} /> : null}
+      {modal?.kind === "edit" ? <EditOrderDialog po={modal.po} onClose={() => setModal(null)} onDone={(m) => { handleDone(m); setModal(null); }} /> : null}
       {modal?.kind === "walkin" ? <WalkInDialog onClose={() => setModal(null)} onDone={(m) => { handleDone(m); setModal(null); }} /> : null}
       {modal?.kind === "detail" ? <DetailDialog po={modal.po} onClose={() => setModal(null)} /> : null}
       {modal?.kind === "receive" ? <ReceiveDialog po={modal.po} onClose={() => setModal(null)} onDone={(m) => { handleDone(m); setModal(null); }} /> : null}
@@ -231,21 +238,43 @@ function LinesEditor({
   errors: Array<LineError | null>;
 }) {
   const { t } = useTranslation("admin");
+  const [filter, setFilter] = useState("");
   const set = (i: number, patch: Partial<PoLineDraft>) => onChange(lines.map((l, j) => (j === i ? { ...l, ...patch } : l)));
+
+  const lineVariants = (selectedId: string) => {
+    const q = filter.trim().toLowerCase();
+    if (!q) return variants;
+    return variants.filter((v) => {
+      if (v.id === selectedId) return true;
+      const name = (v.product?.name ?? "").toLowerCase();
+      const sku = (v.sku ?? "").toLowerCase();
+      return name.includes(q) || sku.includes(q);
+    });
+  };
+
   return (
     <div className="grid gap-2">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="text-sm font-medium">{t("purchasing.form.lines")}</span>
-        <Button size="sm" variant="outline" onClick={() => onChange([...lines, blankLine()])} data-testid="add-line">
-          {t("purchasing.form.addLine")}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Input
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            placeholder={t("purchasing.form.filterProducts", "Filter products...")}
+            className="h-8 w-44 text-xs"
+            data-testid="filter-lines-product"
+          />
+          <Button size="sm" variant="outline" onClick={() => onChange([...lines, blankLine()])} data-testid="add-line">
+            {t("purchasing.form.addLine")}
+          </Button>
+        </div>
       </div>
       {lines.map((l, i) => (
         <div key={i} className="grid gap-1 rounded-md border border-slate-200 p-2" data-testid={`line-${i}`}>
           <div className="grid grid-cols-[1fr_5.5rem_6.5rem_auto] items-start gap-2">
             <Select aria-label={t("purchasing.form.product")} value={l.variantId} onChange={(e) => set(i, { variantId: e.target.value })} data-testid={`line-${i}-product`}>
               <option value="">{t("purchasing.form.selectProduct")}</option>
-              {variants.map((v) => (
+              {lineVariants(l.variantId).map((v) => (
                 <option key={v.id} value={v.id}>
                   {productLabel(v)}
                 </option>
@@ -352,6 +381,90 @@ function NewOrderDialog({ onClose, onDone }: { onClose: () => void; onDone: (mes
             {save.isPending ? t("purchasing.saving") : t("purchasing.form.saveDraft")}
           </Button>
           <Button disabled={save.isPending} onClick={() => save.mutate(true)} data-testid="place-now">
+            {t("purchasing.form.placeNow")}
+          </Button>
+        </div>
+      </div>
+    </Dialog>
+  );
+}
+
+function EditOrderDialog({ po, onClose, onDone }: { po: PurchaseOrder; onClose: () => void; onDone: (message: string) => void }) {
+  const { t } = useTranslation("admin");
+  const { access } = useSession();
+  const msg = useErrorMessage();
+  const qc = useQueryClient();
+  const suppliers = useQuery({ queryKey: ["po", "suppliers"], queryFn: listSuppliers });
+  const variants = useQuery({ queryKey: ["po", "variants"], queryFn: listVariantOptions });
+  const [supplierId, setSupplierId] = useState(po.supplier_id);
+  const [expectedAt, setExpectedAt] = useState(po.expected_at ?? "");
+  const [notes, setNotes] = useState(po.notes ?? "");
+  const [lines, setLines] = useState<PoLineDraft[]>(() =>
+    po.po_items.length > 0
+      ? po.po_items.map((i) => ({
+          variantId: i.variant_id,
+          qtyText: String(i.qty_ordered),
+          costText: i.unit_cost !== null && i.unit_cost !== undefined ? (i.unit_cost / 100).toFixed(2) : "",
+        }))
+      : [blankLine()]
+  );
+  const [formError, setFormError] = useState<string | null>(null);
+  const [rowErrors, setRowErrors] = useState<Array<LineError | null>>([]);
+  const currency = access.tenant.base_currency;
+
+  const save = useMutation({
+    mutationFn: async (placeNow: boolean) => {
+      const built = buildPoItems(lines, currency);
+      setRowErrors(built.rowErrors);
+      if (!supplierId) throw new Error("needSupplier");
+      if (built.empty) throw new Error("needLines");
+      if (!built.ok) throw new Error("rows");
+      await updatePo({ poId: po.id, supplierId, expectedAt, notes, items: built.items });
+      if (placeNow) await submitPo(po.id);
+      return po.id;
+    },
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["po"] });
+      onDone(t("purchasing.form.updated", "Purchase order updated"));
+    },
+    onError: (e) => {
+      const m = e instanceof Error ? e.message : "";
+      if (m === "needSupplier") setFormError(t("purchasing.form.needSupplier"));
+      else if (m === "needLines") setFormError(t("purchasing.form.needLines"));
+      else if (m === "rows") setFormError(null);
+      else setFormError(msg(e));
+    },
+  });
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()} title={`${t("purchasing.action.edit", "Edit")} ${po.po_no}`} closeLabel={t("purchasing.close")}>
+      <div className="grid gap-3">
+        <Field label={t("purchasing.form.warehouse")}>
+          <Input disabled value={po.warehouse ? `${po.warehouse.code} · ${po.warehouse.name}` : po.warehouse_id} />
+        </Field>
+        <Field label={t("purchasing.form.supplier")}>
+          <Select value={supplierId} onChange={(e) => setSupplierId(e.target.value)} data-testid="edit-supplier">
+            <option value="">{t("purchasing.form.selectSupplier")}</option>
+            {(suppliers.data ?? []).map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <Field label={t("purchasing.form.expectedOn")}>
+          <Input type="date" value={expectedAt} onChange={(e) => setExpectedAt(e.target.value)} data-testid="edit-expected" />
+        </Field>
+        <Field label={t("purchasing.form.notes")}>
+          <Input value={notes} placeholder={t("purchasing.form.notesPlaceholder")} onChange={(e) => setNotes(e.target.value)} data-testid="edit-notes" />
+        </Field>
+        <LinesEditor lines={lines} onChange={setLines} variants={variants.data ?? []} currency={currency} errors={rowErrors} />
+        {formError ? <Alert>{formError}</Alert> : null}
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" disabled={save.isPending} onClick={() => save.mutate(false)} data-testid="save-edit">
+            {save.isPending ? t("purchasing.saving") : t("purchasing.form.saveChanges", "Save Changes")}
+          </Button>
+          <Button disabled={save.isPending} onClick={() => save.mutate(true)} data-testid="edit-place-now">
             {t("purchasing.form.placeNow")}
           </Button>
         </div>

@@ -1,20 +1,23 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Badge, Button, Card, Dialog, EmptyState, ErrorState, Field, Input, PageHeader, Select, Table, useToast } from "../components/ui.tsx";
+import { Badge, Button, Card, Dialog, EmptyState, ErrorState, Field, Input, PageHeader, Select, Table, Tabs, TabPanel, useToast } from "../components/ui.tsx";
 import { useSession } from "../lib/session.tsx";
 import { useErrorMessage } from "../lib/i18n-helpers.ts";
 import { supabase } from "../lib/supabase.ts";
 import {
   checkBinStockInvariant,
   enableWarehouseBins,
+  executePutaway,
   listBinStock,
+  listReceivingStock,
   listWarehouseBins,
   moveBinStock,
   upsertWarehouseBin,
   upsertWarehouseZone,
   type BinStockItem,
   type BinType,
+  type ReceivingStockItem,
   type WarehouseBin,
   type ZoneType,
 } from "../lib/bins-api.ts";
@@ -34,6 +37,12 @@ export function BinsPage() {
     warehouses[0]?.id ?? "",
   );
   const [selectedZoneFilter, setSelectedZoneFilter] = useState<string>("");
+  const [tab, setTab] = useState<"bins" | "putaway">("bins");
+
+  // Put-away state
+  const [putawayItem, setPutawayItem] = useState<ReceivingStockItem | null>(null);
+  const [putawayTargetBinId, setPutawayTargetBinId] = useState<string>("");
+  const [putawayQty, setPutawayQty] = useState<string>("");
 
   // Modals state
   const [showAddZone, setShowAddZone] = useState(false);
@@ -120,6 +129,12 @@ export function BinsPage() {
     queryKey: ["source-bin-stock", moveFromBin],
     queryFn: () => listBinStock(moveFromBin),
     enabled: Boolean(moveFromBin),
+  });
+
+  const receivingStockQuery = useQuery({
+    queryKey: ["warehouse-receiving-stock", selectedWarehouseId],
+    queryFn: () => listReceivingStock(selectedWarehouseId),
+    enabled: Boolean(selectedWarehouseId) && isBinsEnabled,
   });
 
   // Mutations
@@ -221,6 +236,36 @@ export function BinsPage() {
     },
   });
 
+  const putawayMutation = useMutation({
+    mutationFn: async () => {
+      if (!putawayItem || !putawayTargetBinId) throw new Error("target_required");
+      const qty = Number(putawayQty);
+      if (qty <= 0 || qty > putawayItem.qty_on_hand) throw new Error("invalid_qty");
+      await executePutaway(
+        selectedWarehouseId,
+        putawayItem.bin_id,
+        putawayTargetBinId,
+        putawayItem.variant_id,
+        qty,
+      );
+    },
+    onSuccess: async () => {
+      toast.good(t("bins.putawaySuccess", "Stock moved to storage bin"));
+      setPutawayItem(null);
+      setPutawayTargetBinId("");
+      setPutawayQty("");
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["warehouse-receiving-stock", selectedWarehouseId] }),
+        qc.invalidateQueries({ queryKey: ["warehouse-bins", selectedWarehouseId] }),
+        qc.invalidateQueries({ queryKey: ["bin-invariant", selectedWarehouseId] }),
+      ]);
+    },
+    onError: (e) => {
+      const m = msg(e);
+      toast.error(m);
+    },
+  });
+
   if (warehouses.length === 0) {
     return (
       <EmptyState
@@ -290,8 +335,19 @@ export function BinsPage() {
           </div>
         </Card>
       ) : (
-        <>
-          {/* Invariant & Metrics Bar */}
+        <Tabs
+          value={tab}
+          onValueChange={(v) => setTab(v as "bins" | "putaway")}
+          label={t("bins.tabs.title", "Warehouse Bins")}
+          tabs={[
+            { value: "bins", label: t("bins.tabs.bins", "Bins & Inventory"), testId: "tab-bins" },
+            { value: "putaway", label: t("bins.tabs.putaway", "Put-away"), testId: "tab-putaway" },
+          ]}
+        >
+          <TabPanel value={tab}>
+            {tab === "bins" ? (
+              <>
+                {/* Invariant & Metrics Bar */}
           <div className="grid gap-3 sm:grid-cols-4">
             <Card className="p-4">
               <div className="text-xs text-slate-500 uppercase">{t("bins.totalBins", "Total Bins")}</div>
@@ -410,7 +466,83 @@ export function BinsPage() {
               </tbody>
             </Table>
           </Card>
-        </>
+              </>
+            ) : (
+              <div className="grid gap-4">
+                <Card className="p-4">
+                  <h3 className="text-base font-semibold">{t("bins.putaway.title", "Put-away from Receiving")}</h3>
+                  <p className="mb-4 text-xs text-slate-500">
+                    {t(
+                      "bins.putaway.desc",
+                      "Stock in receiving bins waiting to be sorted and placed into warehouse storage bins.",
+                    )}
+                  </p>
+
+                  {receivingStockQuery.isLoading ? (
+                    <p className="p-4 text-sm text-slate-500">{t("bins.loading", "Loading receiving stock...")}</p>
+                  ) : receivingStockQuery.isError ? (
+                    <ErrorState
+                      message={msg(receivingStockQuery.error)}
+                      onRetry={() => receivingStockQuery.refetch()}
+                      retryLabel={t("common:actions.retry", "Retry")}
+                    />
+                  ) : (receivingStockQuery.data ?? []).length === 0 ? (
+                    <EmptyState
+                      title={t("bins.putaway.emptyTitle", "No items waiting in receiving")}
+                      hint={t(
+                        "bins.putaway.emptyDesc",
+                        "When goods receipts arrive into receiving bins, they will appear here for guided put-away.",
+                      )}
+                    />
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <Table bare>
+                        <thead className="border-b border-slate-200 text-xs text-slate-500 uppercase">
+                          <tr>
+                            <th className="p-3 text-left">{t("bins.putaway.colReceivingBin", "Receiving Bin")}</th>
+                            <th className="p-3 text-left">{t("bins.putaway.colProduct", "Product / SKU")}</th>
+                            <th className="p-3 text-right">{t("bins.putaway.colQty", "Units Waiting")}</th>
+                            <th className="p-3 text-center">{t("common:actions.actions", "Actions")}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(receivingStockQuery.data ?? []).map((item) => (
+                            <tr key={`${item.bin_id}:${item.variant_id}`} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
+                              <td className="p-3 font-mono font-medium text-slate-900">
+                                {item.bin_code}
+                              </td>
+                              <td className="p-3">
+                                <span className="font-semibold text-slate-900">{item.product_name}</span>
+                                <span className="ml-2 font-mono text-xs text-slate-500">({item.sku})</span>
+                              </td>
+                              <td className="p-3 text-right font-mono font-bold text-slate-900">
+                                {item.qty_on_hand}
+                              </td>
+                              <td className="p-3 text-center">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setPutawayItem(item);
+                                    setPutawayQty(String(item.qty_on_hand));
+                                    setPutawayTargetBinId("");
+                                  }}
+                                  data-testid={`putaway-btn-${item.bin_code}-${item.sku}`}
+                                >
+                                  {t("bins.putaway.action", "Put away")}
+                                </Button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </Table>
+                    </div>
+                  )}
+                </Card>
+              </div>
+            )}
+          </TabPanel>
+        </Tabs>
       )}
 
       {/* Modal: View Bin Items */}
@@ -686,6 +818,85 @@ export function BinsPage() {
           </div>
         </form>
       </Dialog>
+
+      {/* Modal: Guided Put-away */}
+      {putawayItem ? (
+        <Dialog
+          open
+          onOpenChange={(open) => !open && setPutawayItem(null)}
+          title={`${t("bins.putaway.action", "Put away")} ${putawayItem.product_name}`}
+          closeLabel={t("common:actions.cancel", "Cancel")}
+        >
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              putawayMutation.mutate();
+            }}
+            className="grid gap-3"
+          >
+            <div className="rounded-md bg-slate-50 p-3 text-sm">
+              <div>
+                <span className="font-medium text-slate-700">{t("bins.product", "Product")}:</span> {putawayItem.product_name} ({putawayItem.sku})
+              </div>
+              <div className="mt-1">
+                <span className="font-medium text-slate-700">{t("bins.putaway.colReceivingBin", "Receiving Bin")}:</span> {putawayItem.bin_code}
+              </div>
+              <div className="mt-1">
+                <span className="font-medium text-slate-700">{t("bins.putaway.colQty", "Units Waiting")}:</span> {putawayItem.qty_on_hand}
+              </div>
+            </div>
+
+            <Field label={t("bins.putaway.targetBin", "Destination Storage Bin")}>
+              <Select
+                value={putawayTargetBinId}
+                onChange={(e) => setPutawayTargetBinId(e.target.value)}
+                required
+                data-testid="putaway-target-bin"
+              >
+                <option value="">{t("bins.putaway.selectDestination", "Select destination bin...")}</option>
+                {allBins
+                  .filter((b) => b.id !== putawayItem.bin_id && b.zone_type !== "receiving")
+                  .map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.code} ({b.zone_name ?? b.zone_code ?? "Storage"})
+                    </option>
+                  ))}
+              </Select>
+            </Field>
+
+            <Field label={t("bins.putaway.qty", "Quantity to put away")}>
+              <Input
+                type="number"
+                min="0.001"
+                max={putawayItem.qty_on_hand}
+                step="any"
+                value={putawayQty}
+                onChange={(e) => setPutawayQty(e.target.value)}
+                required
+                data-testid="putaway-qty"
+              />
+            </Field>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button type="button" variant="outline" onClick={() => setPutawayItem(null)}>
+                {t("common:actions.cancel", "Cancel")}
+              </Button>
+              <Button
+                type="submit"
+                disabled={
+                  !putawayTargetBinId ||
+                  Number(putawayQty) <= 0 ||
+                  Number(putawayQty) > putawayItem.qty_on_hand ||
+                  putawayMutation.isPending
+                }
+                data-testid="confirm-putaway-btn"
+              >
+                {putawayMutation.isPending ? t("common:status.moving", "Moving...") : t("bins.putaway.confirm", "Confirm Put-away")}
+              </Button>
+            </div>
+          </form>
+        </Dialog>
+      ) : null}
     </div>
   );
 }

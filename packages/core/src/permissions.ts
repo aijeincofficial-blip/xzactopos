@@ -186,7 +186,7 @@ export function can(ctx: AccessContext, key: PermissionKey, locationId?: string)
 /** Shape returned by the `get_my_access()` RPC. */
 export interface MyAccessPayload {
   role: Role;
-  tenant: { status: "active" | "suspended" | "archived" };
+  tenant: { status: "active" | "suspended" | "archived"; mode?: "solo" | "full" };
   modules: Record<ModuleName, boolean>;
   locations: Array<{ id: string; type: LocationType; position: Position | null }>;
 }

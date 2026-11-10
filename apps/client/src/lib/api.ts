@@ -54,11 +54,13 @@ export interface MyAccess extends MyAccessPayload {
     base_currency: string;
     timezone: string;
     setup_completed: boolean;
+    mode?: "solo" | "full";
   };
   locations: Array<MyAccessPayload["locations"][number] & { code: string; name: string }>;
 }
 
 export const getMyAccess = () => rpc<MyAccess>("get_my_access");
+export const setTenantMode = (mode: "solo" | "full") => rpc<void>("set_tenant_mode", { p_mode: mode });
 
 /** Cashiers sign in as <username>.<slug>@pos.invalid; invited users use their real email. */
 export function loginEmail(identifier: string, slug: string): string {

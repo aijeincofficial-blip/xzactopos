@@ -174,6 +174,7 @@ function OpenCount({ count, warehouse, onNotice }: { count: StockCount; warehous
   const [typed, setTyped] = useState<Record<string, string>>({});
   const [added, setAdded] = useState<Array<{ variantId: string; binId: string | null }>>([]);
   const [addVariant, setAddVariant] = useState("");
+  const [productSearch, setProductSearch] = useState("");
   const [addBin, setAddBin] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [rowErrors, setRowErrors] = useState<Record<string, string>>({});
@@ -194,6 +195,16 @@ function OpenCount({ count, warehouse, onNotice }: { count: StockCount; warehous
     const binCode = (r: CountRow) => (r.binId ? (binMap.get(r.binId)?.code ?? "") : "");
     return merged.sort((a, b) => label(a).localeCompare(label(b)) || binCode(a).localeCompare(binCode(b)));
   }, [systemQ.data, count, added, variantMap, binMap]);
+
+  const filteredVariants = useMemo(() => {
+    const q = productSearch.trim().toLowerCase();
+    if (!q) return variantsQ.data ?? [];
+    return (variantsQ.data ?? []).filter((v) => {
+      const name = (v.product?.name ?? "").toLowerCase();
+      const sku = (v.sku ?? "").toLowerCase();
+      return name.includes(q) || sku.includes(q);
+    });
+  }, [variantsQ.data, productSearch]);
 
   const hasTyped = Object.values(typed).some((v) => v.trim() !== "");
   const scopeLabel = count.bin ? t("counts.open.scopeBin", { code: count.bin.code }) : t("counts.open.scopeAll");
@@ -254,10 +265,19 @@ function OpenCount({ count, warehouse, onNotice }: { count: StockCount; warehous
       {count.notes ? <p className="text-sm text-slate-600">{count.notes}</p> : null}
 
       <div className="flex flex-wrap items-end gap-2 rounded-md bg-slate-50 p-3">
+        <Field label={t("counts.add.searchProduct", "Search product")}>
+          <Input
+            value={productSearch}
+            onChange={(e) => setProductSearch(e.target.value)}
+            placeholder={t("counts.add.searchPlaceholder", "Type name or SKU...")}
+            className="w-48"
+            data-testid="search-variant"
+          />
+        </Field>
         <Field label={t("counts.add.product")}>
           <Select value={addVariant} onChange={(e) => setAddVariant(e.target.value)} data-testid="add-variant">
             <option value="">{t("counts.add.selectProduct")}</option>
-            {(variantsQ.data ?? []).map((v) => (
+            {filteredVariants.map((v) => (
               <option key={v.id} value={v.id}>
                 {productLabel(v)}
               </option>

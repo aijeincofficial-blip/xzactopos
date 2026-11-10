@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { formatMoney, money } from "@pos/core";
-import { Badge, Button, Card, EmptyState, ErrorState, Field, PageHeader, Select, Table, Tabs, TabPanel } from "../components/ui.tsx";
+import { Badge, Button, Card, EmptyState, ErrorState, Field, Input, PageHeader, Select, Table, Tabs, TabPanel } from "../components/ui.tsx";
 import { useSession } from "../lib/session.tsx";
 import { useErrorMessage } from "../lib/i18n-helpers.ts";
 import { formatQty } from "../lib/product-math.ts";
@@ -328,7 +328,17 @@ function ProductTab() {
   const currency = access.tenant.base_currency;
   const fmt = (n: number) => formatMoney(money(n, currency), i18n.language);
   const [variantId, setVariantId] = useState("");
+  const [productSearch, setProductSearch] = useState("");
   const variants = useQuery({ queryKey: ["po", "variants"], queryFn: listVariantOptions });
+  const filteredVariants = useMemo(() => {
+    const q = productSearch.trim().toLowerCase();
+    if (!q) return variants.data ?? [];
+    return (variants.data ?? []).filter((v) => {
+      const name = (v.product?.name ?? "").toLowerCase();
+      const sku = (v.sku ?? "").toLowerCase();
+      return name.includes(q) || sku.includes(q);
+    });
+  }, [variants.data, productSearch]);
   const stock = useQuery({
     queryKey: ["overview", "stock", variantId],
     queryFn: () => warehouseStockByVariant(variantId),
@@ -340,10 +350,19 @@ function ProductTab() {
   return (
     <div className="grid gap-4">
       <Card className="flex flex-wrap items-end gap-3">
+        <Field label={t("overview.product.search", "Search product")}>
+          <Input
+            value={productSearch}
+            onChange={(e) => setProductSearch(e.target.value)}
+            placeholder={t("overview.product.searchPlaceholder", "Type name or SKU...")}
+            className="w-56"
+            data-testid="ov-search-variant"
+          />
+        </Field>
         <Field label={t("overview.product.product")}>
           <Select value={variantId} onChange={(e) => setVariantId(e.target.value)} data-testid="ov-variant">
             <option value="">{t("overview.product.choose")}</option>
-            {(variants.data ?? []).map((v) => (
+            {filteredVariants.map((v) => (
               <option key={v.id} value={v.id}>
                 {v.product?.name ?? v.sku} · {v.sku}
               </option>

@@ -153,3 +153,19 @@ export async function executePutaway(
     p_qty: qty,
   });
 }
+
+export interface ReceivingStockItem {
+  bin_id: string;
+  bin_code: string;
+  variant_id: string;
+  sku: string;
+  product_name: string;
+  qty_on_hand: number;
+  updated_at: string;
+}
+
+export async function listReceivingStock(warehouseId: string): Promise<ReceivingStockItem[]> {
+  return await rpc<ReceivingStockItem[]>("list_receiving_stock", {
+    p_warehouse_id: warehouseId,
+  });
+}
