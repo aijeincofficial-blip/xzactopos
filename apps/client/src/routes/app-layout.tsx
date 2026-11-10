@@ -27,6 +27,7 @@ import {
   Truck,
   Users,
   Warehouse,
+  WifiOff,
   X,
 } from "lucide-react";
 import { accessQuery } from "../lib/session.tsx";
@@ -39,6 +40,7 @@ import { useActiveLocation } from "../lib/location-context.tsx";
 import { applyTheme, nextTheme, readTheme, type ThemeChoice } from "../lib/theme.ts";
 import { Badge, Button, Card } from "../components/ui.tsx";
 import { LanguageSelect } from "../components/LanguageSelect.tsx";
+import { useOnlineStatus } from "../lib/network.ts";
 
 type NavGroup = "daily" | "stock" | "business";
 
@@ -81,6 +83,7 @@ export function AppLayout() {
   const { t, i18n } = useTranslation(["common", "admin"]);
   const { access, can } = useSession();
   const { activeStoreId, stores, setActiveStoreId } = useActiveLocation();
+  const isOnline = useOnlineStatus();
   const mode = tenantMode(access);
   const qc = useQueryClient();
   const navigate = useNavigate();
@@ -211,6 +214,16 @@ export function AppLayout() {
               </select>
             </div>
           ) : null}
+          {!isOnline ? (
+            <div data-testid="offline-badge">
+              <Badge tone="warn">
+                <span className="flex items-center gap-1">
+                  <WifiOff size={13} aria-hidden />
+                  <span>{t("common:offline.badge")}</span>
+                </span>
+              </Badge>
+            </div>
+          ) : null}
           <LanguageSelect onChoose={(l) => void chooseLocale(l)} />
           <Button
             variant="outline"
@@ -227,6 +240,20 @@ export function AppLayout() {
           </Button>
         </header>
         <main className="mx-auto grid max-w-6xl gap-4 px-4 py-6">
+          {!isOnline ? (
+            <div
+              role="status"
+              aria-live="polite"
+              data-testid="offline-banner"
+              className="flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 p-3.5 text-sm text-amber-900 shadow-xs dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200"
+            >
+              <WifiOff className="mt-0.5 size-5 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden />
+              <div>
+                <p className="font-semibold">{t("common:offline.bannerTitle")}</p>
+                <p className="mt-0.5 text-xs text-amber-800 dark:text-amber-300/90">{t("common:offline.bannerDescription")}</p>
+              </div>
+            </div>
+          ) : null}
           {access.tenant.status !== "active" ? (
             <p role="alert" className="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900">
               {t("admin:suspended")}

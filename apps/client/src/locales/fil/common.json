@@ -21,5 +21,10 @@
     "system": "Ayon sa device",
     "light": "Maliwanag",
     "dark": "Madilim"
+  },
+  "offline": {
+    "badge": "Offline",
+    "bannerTitle": "Kasalukuyang walang internet",
+    "bannerDescription": "Naka-pause ang cloud sync. Maaaring luma ang datos, at hindi mai-save ang mga pagbabago hanggang magbalik ang koneksyon."
   }
 }

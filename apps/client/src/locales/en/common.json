@@ -21,5 +21,10 @@
     "system": "Match device",
     "light": "Light",
     "dark": "Dark"
+  },
+  "offline": {
+    "badge": "Offline",
+    "bannerTitle": "You are currently offline",
+    "bannerDescription": "Cloud sync is paused. Back-office data may be outdated, and changes cannot be saved until internet connectivity is restored."
   }
 }
