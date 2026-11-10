@@ -22,6 +22,7 @@ String countErrorText(AppLocalizations t, String hint) => switch (hint) {
       'nothing_counted' => t.whCountErrNothing,
       'not_allowed' || 'location_denied' => t.whCountErrNotAllowed,
       'invalid_state' => t.whCountErrClosed,
+      'implausible_snapshot' => t.whCountErrSnapshot,
       _ => t.errGeneric,
     };
 
@@ -199,7 +200,12 @@ class _CountBodyState extends State<_CountBody> {
       setState(() => _error = t.whCountErrBinRequired);
       return;
     }
-    final ok = await _run(() => widget.api.recordCount(session.id, [CountEntry(variantId: p.variantId, qty: qty, binId: bin)]));
+    final store = CatalogScope.of(context).store;
+    final localSys = await store.warehouseStockFor(widget.warehouse.id, p.variantId, binId: bin);
+    final ok = await _run(() => widget.api.recordCount(
+          session.id,
+          [CountEntry(variantId: p.variantId, qty: qty, binId: bin, qtySystem: localSys)],
+        ));
     if (!ok) return;
     setState(() {
       _picked = null;

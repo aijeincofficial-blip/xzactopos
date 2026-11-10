@@ -3086,6 +3086,12 @@ abstract class AppLocalizations {
   /// **'This count is already closed or cancelled.'**
   String get whCountErrClosed;
 
+  /// No description provided for @whCountErrSnapshot.
+  ///
+  /// In en, this message translates to:
+  /// **'The counted stock could not be verified against inventory movements.'**
+  String get whCountErrSnapshot;
+
   /// No description provided for @whNoBinStock.
   ///
   /// In en, this message translates to:

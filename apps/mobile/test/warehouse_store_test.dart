@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:xzactopos_mobile/data/count_models.dart';
 import 'package:xzactopos_mobile/data/db.dart';
 import 'package:xzactopos_mobile/data/drift_store.dart';
 import 'package:xzactopos_mobile/data/local_store.dart';
@@ -736,6 +737,178 @@ void main() {
           // Windows may still hold the SQLite file for a moment; a leftover temp folder is harmless
         }
       }
+    });
+  });
+
+  group('offline stock counting (H7)', () {
+    test('warehouseStockFor returns base stock plus pending receipts', () async {
+      await loadBasics();
+      // Initially, rice has 40 in _w1
+      expect(await store.warehouseStockFor(_w1, _rice), 40.0);
+      expect(await store.warehouseStockFor(_w1, _oil), 0.0);
+
+      // Add a pending receipt
+      await store.receiveWithoutPo(
+        warehouseId: _w1,
+        lines: const [ReceiptLine(variantId: _rice, qty: 15)],
+        opId: 'op-rcv-1',
+      );
+      // Now rice in _w1 should be 40 + 15 = 55
+      expect(await store.warehouseStockFor(_w1, _rice), 55.0);
+    });
+
+    test('warehouseStockFor with bins checks bin stock and receiving pending', () async {
+      await loadBasics(bins: true);
+      // _binRcv has 40 of _rice, _binA has 0
+      expect(await store.warehouseStockFor(_w1, _rice, binId: _binRcv), 40.0);
+      expect(await store.warehouseStockFor(_w1, _rice, binId: _binA), 0.0);
+
+      // Add pending receipt (defaults to receiving bin)
+      await store.receiveWithoutPo(
+        warehouseId: _w1,
+        lines: const [ReceiptLine(variantId: _rice, qty: 10)],
+        opId: 'op-rcv-bin',
+      );
+      expect(await store.warehouseStockFor(_w1, _rice, binId: _binRcv), 50.0);
+      // _binA does not get receiving pending
+      expect(await store.warehouseStockFor(_w1, _rice, binId: _binA), 0.0);
+    });
+
+    test('startOfflineCount creates session and enqueues start_count', () async {
+      await loadBasics();
+      final countId = 'c1000000-0000-4000-8000-000000000001';
+      final session = await store.startOfflineCount(
+        id: countId,
+        warehouseId: _w1,
+        notes: 'Monthly inventory',
+      );
+
+      expect(session.id, countId);
+      expect(session.warehouseId, _w1);
+      expect(session.isLocal, true);
+      expect(session.notes, 'Monthly inventory');
+
+      // Verify localOpenCount retrieves it
+      final open = await store.localOpenCount(_w1);
+      expect(open, isNotNull);
+      expect(open!.id, countId);
+
+      // Verify op enqueued in outbox
+      final ops = await store.nextOps();
+      expect(ops.length, 1);
+      expect(ops[0].kind, 'start_count');
+      expect(ops[0].entityId, _w1);
+      expect(ops[0].payload['warehouse_id'], _w1);
+      expect(ops[0].payload['notes'], 'Monthly inventory');
+
+      // Starting another count in same warehouse throws count_in_progress
+      expect(
+        () => store.startOfflineCount(
+          id: 'c2000000-0000-4000-8000-000000000002',
+          warehouseId: _w1,
+        ),
+        throwsA(isA<CountException>().having((e) => e.hint, 'hint', 'count_in_progress')),
+      );
+
+      // Starting same count id is idempotent
+      final sameSession = await store.startOfflineCount(
+        id: countId,
+        warehouseId: _w1,
+      );
+      expect(sameSession.id, countId);
+    });
+
+    test('recordOfflineCount stores lines with device snapshot and enqueues record_count', () async {
+      await loadBasics();
+      final countId = 'c1000000-0000-4000-8000-000000000001';
+      await store.startOfflineCount(id: countId, warehouseId: _w1);
+
+      // Record count for rice: physical count 42 (system stock is 40)
+      await store.recordOfflineCount(countId, [
+        const CountEntry(variantId: _rice, qty: 42),
+      ]);
+
+      final open = await store.localOpenCount(_w1);
+      expect(open!.lines.length, 1);
+      expect(open.lines[0].variantId, _rice);
+      expect(open.lines[0].qtyCounted, 42.0);
+      expect(open.lines[0].qtySystem, 40.0); // automatically snapped from warehouseStockFor
+
+      final ops = await store.nextOps();
+      expect(ops.length, 2);
+      expect(ops[1].kind, 'record_count');
+      expect(ops[1].entityId, countId);
+      final items = ops[1].payload['items'] as List;
+      expect(items.length, 1);
+      expect(items[0]['variant_id'], _rice);
+      expect(items[0]['qty_counted'], 42.0);
+      expect(items[0]['qty_system'], 40.0);
+    });
+
+    test('closeOfflineCount computes variance, closes count and enqueues close_count', () async {
+      await loadBasics();
+      final countId = 'c1000000-0000-4000-8000-000000000001';
+      await store.startOfflineCount(id: countId, warehouseId: _w1);
+      await store.recordOfflineCount(countId, [
+        const CountEntry(variantId: _rice, qty: 45), // sys 40, diff +5
+      ]);
+
+      final res = await store.closeOfflineCount(countId);
+      expect(res.lines, 1);
+      expect(res.corrections, 1);
+      expect(res.netVariance, 5.0);
+
+      // localOpenCount should now be null since count is closed
+      final open = await store.localOpenCount(_w1);
+      expect(open, isNull);
+
+      final ops = await store.nextOps();
+      expect(ops.length, 3);
+      expect(ops[2].kind, 'close_count');
+      expect(ops[2].entityId, countId);
+      expect(ops[2].payload['count_id'], countId);
+
+      // Cannot close or record again
+      expect(() => store.closeOfflineCount(countId), throwsA(isA<CountException>()));
+      expect(() => store.recordOfflineCount(countId, [const CountEntry(variantId: _rice, qty: 50)]), throwsA(isA<CountException>()));
+    });
+
+    test('cancelOfflineCount cancels session and enqueues cancel_count', () async {
+      await loadBasics();
+      final countId = 'c1000000-0000-4000-8000-000000000001';
+      await store.startOfflineCount(id: countId, warehouseId: _w1);
+      await store.cancelOfflineCount(countId, reason: 'mistake');
+
+      final open = await store.localOpenCount(_w1);
+      expect(open, isNull);
+
+      final ops = await store.nextOps();
+      expect(ops.length, 2);
+      expect(ops[1].kind, 'cancel_count');
+      expect(ops[1].payload['reason'], 'mistake');
+    });
+
+    test('discardWarehouseOp removes count tables entries on discard', () async {
+      await loadBasics();
+      final countId = 'c1000000-0000-4000-8000-000000000001';
+      await store.startOfflineCount(id: countId, warehouseId: _w1);
+      await store.recordOfflineCount(countId, [const CountEntry(variantId: _rice, qty: 40)]);
+
+      // Discard countId
+      await store.discardWarehouseOp(countId);
+      expect(await store.localOpenCount(_w1), isNull);
+    });
+
+    test('warehouseOpApplied updates local count_no when confirmed by server', () async {
+      await loadBasics();
+      final countId = 'c1000000-0000-4000-8000-000000000001';
+      await store.startOfflineCount(id: countId, warehouseId: _w1);
+      var open = await store.localOpenCount(_w1);
+      expect(open!.countNo.startsWith('CNT-LOCAL-'), true);
+
+      await store.warehouseOpApplied(countId, '2026-11-10T10:00:00Z', result: {'count_no': 'CNT-202611-0001'});
+      open = await store.localOpenCount(_w1);
+      expect(open!.countNo, 'CNT-202611-0001');
     });
   });
 }

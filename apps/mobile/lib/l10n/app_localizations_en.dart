@@ -1829,6 +1829,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get whCountErrClosed => 'This count is already closed or cancelled.';
 
   @override
+  String get whCountErrSnapshot =>
+      'The counted stock could not be verified against inventory movements.';
+
+  @override
   String get whNoBinStock => 'No stock in any bin.';
 
   @override

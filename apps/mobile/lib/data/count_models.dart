@@ -26,7 +26,16 @@ class CountLine {
 
 /// The open count of a warehouse.
 class CountSession {
-  const CountSession({required this.id, required this.countNo, required this.warehouseId, this.binId, this.binCode, this.notes, required this.lines});
+  const CountSession({
+    required this.id,
+    required this.countNo,
+    required this.warehouseId,
+    this.binId,
+    this.binCode,
+    this.notes,
+    required this.lines,
+    this.isLocal = false,
+  });
   final String id;
   final String countNo;
   final String warehouseId;
@@ -36,6 +45,7 @@ class CountSession {
   final String? binCode;
   final String? notes;
   final List<CountLine> lines;
+  final bool isLocal;
 
   bool get wholeWarehouse => binId == null;
 
@@ -46,18 +56,25 @@ class CountSession {
         binId: j['bin_id'] as String?,
         binCode: (j['bin'] as Map?)?['code'] as String?,
         notes: j['notes'] as String?,
+        isLocal: (j['is_local'] as bool?) ?? false,
         lines: [for (final l in (j['stock_count_items'] as List? ?? const [])) CountLine.fromJson((l as Map).cast<String, dynamic>())],
       );
 }
 
-/// What one line of a record call says.
+/// What one line of a record call says, including the device snapshot of system quantity when offline.
 class CountEntry {
-  const CountEntry({required this.variantId, required this.qty, this.binId});
+  const CountEntry({required this.variantId, required this.qty, this.binId, this.qtySystem});
   final String variantId;
   final double qty;
   final String? binId;
+  final double? qtySystem;
 
-  Map<String, dynamic> toJson() => {'variant_id': variantId, 'qty_counted': qty, 'bin_id': ?binId};
+  Map<String, dynamic> toJson() => {
+        'variant_id': variantId,
+        'qty_counted': qty,
+        'bin_id': ?binId,
+        'qty_system': ?qtySystem,
+      };
 }
 
 class CountResult {

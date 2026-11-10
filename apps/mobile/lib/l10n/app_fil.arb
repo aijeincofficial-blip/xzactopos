@@ -1047,6 +1047,7 @@
   "whCountErrNothing": "Wala pang nabilang.",
   "whCountErrNotAllowed": "Hindi ka puwedeng magbilang dito.",
   "whCountErrClosed": "Sarado o kinansela na ang bilang na ito.",
+  "whCountErrSnapshot": "Hindi ma-verify ang binilang stock laban sa mga paggalaw ng imbentaryo.",
   "whNoBinStock": "Walang stock sa anumang bin.",
   "whCountDone": "Tapos na ang bilang. {count, plural, =0{Walang itinama.} =1{{count} ang itinama.} other{{count} ang itinama.}} Netong pagbabago: {net}",
   "@whCountDone": {

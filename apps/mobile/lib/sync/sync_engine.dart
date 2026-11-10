@@ -231,10 +231,15 @@ class SyncEngine {
     'void_service_txn', 'set_tingi_link', 'open_pack', 'void_open_pack', 'set_utang_due', 'set_expiry',
   };
 
-  /// Warehouse receipts (F-13h) ride the same batches. Their answer carries `grn_no` and the server's `applied_at`, and is
-  /// acknowledged through [LocalStore.warehouseOpApplied]: the receipt keeps counting on screen until a complete pull has
-  /// caught up with that time.
-  static const warehouseKinds = {'receive_po', 'receive_without_po'};
+  /// Warehouse receipts and counts (F-13h H7) ride the same batches.
+  static const warehouseKinds = {
+    'receive_po',
+    'receive_without_po',
+    'start_count',
+    'record_count',
+    'close_count',
+    'cancel_count',
+  };
 
   /// Cashier shifts (F-05m): opening and closing go through sync_push like any other op.
   static const shiftKinds = {'open_shift', 'close_shift'};

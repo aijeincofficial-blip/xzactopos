@@ -6,6 +6,8 @@
 /// or counts twice while a receipt is in flight.
 library;
 
+import 'count_models.dart';
+
 class WarehouseView {
   const WarehouseView({required this.id, required this.code, required this.name, required this.binsEnabled});
   final String id;
@@ -236,6 +238,31 @@ abstract class WarehouseStore {
     String? notes,
     required String opId,
   });
+
+  // ---- stock counts (H7 offline support) ----
+  /// The on-hand stock of [variantId] in [warehouseId] (or in [binId] if specified) on this device,
+  /// including any pending local receipts.
+  Future<double> warehouseStockFor(String warehouseId, String variantId, {String? binId});
+
+  /// The open count session on this device with its lines, or null when none is open.
+  Future<CountSession?> localOpenCount(String warehouseId);
+
+  /// Starts a count on the device and enqueues `start_count`.
+  Future<CountSession> startOfflineCount({
+    required String id,
+    required String warehouseId,
+    String? binId,
+    String? notes,
+  });
+
+  /// Records counted lines on the device with local snapshots and enqueues `record_count`.
+  Future<void> recordOfflineCount(String countId, List<CountEntry> items);
+
+  /// Closes a count on the device and enqueues `close_count`.
+  Future<CountResult> closeOfflineCount(String countId, {bool zeroUncounted = false});
+
+  /// Cancels a count on the device and enqueues `cancel_count`.
+  Future<void> cancelOfflineCount(String countId, {String? reason});
 
   // ---- sync ----
   /// Cursors of sync_pull_warehouse by table name (kept apart from the store pull's cursors).

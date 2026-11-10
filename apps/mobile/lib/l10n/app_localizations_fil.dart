@@ -1838,6 +1838,10 @@ class AppLocalizationsFil extends AppLocalizations {
   String get whCountErrClosed => 'Sarado o kinansela na ang bilang na ito.';
 
   @override
+  String get whCountErrSnapshot =>
+      'Hindi ma-verify ang binilang stock laban sa mga paggalaw ng imbentaryo.';
+
+  @override
   String get whNoBinStock => 'Walang stock sa anumang bin.';
 
   @override

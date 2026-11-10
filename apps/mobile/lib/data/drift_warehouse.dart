@@ -1,7 +1,9 @@
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
+import 'package:uuid/uuid.dart';
 
+import 'count_models.dart';
 import 'db.dart';
 import 'warehouse_models.dart';
 
@@ -399,10 +401,263 @@ mixin DriftWarehouse implements WarehouseStore {
     });
   }
 
+  // ---------------------------------------------------------------------------
+  // Stock counts (H7 offline support)
+  // ---------------------------------------------------------------------------
+
+  Future<void> _ensureCountTables() async {
+    await db.customStatement('''
+      create table if not exists wh_counts (
+        id text primary key,
+        count_no text not null,
+        warehouse_id text not null,
+        bin_id text,
+        bin_code text,
+        notes text,
+        status text not null default 'open',
+        created_at text not null,
+        closed_at text
+      );
+    ''');
+    await db.customStatement('''
+      create table if not exists wh_count_lines (
+        count_id text not null,
+        variant_id text not null,
+        bin_id text not null default '',
+        bin_code text,
+        qty_system real not null,
+        qty_counted real not null,
+        counted_at text not null,
+        primary key (count_id, variant_id, bin_id)
+      );
+    ''');
+  }
+
+  @override
+  Future<double> warehouseStockFor(String warehouseId, String variantId, {String? binId}) async {
+    double base = 0.0;
+    if (binId != null) {
+      final row = await (db.select(db.whBinStock)
+            ..where((s) => s.binId.equals(binId) & s.variantId.equals(variantId)))
+          .getSingleOrNull();
+      base = row?.qty ?? 0.0;
+      final bin = await (db.select(db.whBins)..where((b) => b.id.equals(binId))).getSingleOrNull();
+      if (bin?.code.toUpperCase() == 'RECEIVING') {
+        final pending = await _pendingInWarehouse(warehouseId);
+        base += pending[variantId] ?? 0.0;
+      }
+    } else {
+      final row = await (db.select(db.whStock)
+            ..where((s) => s.locationId.equals(warehouseId) & s.variantId.equals(variantId)))
+          .getSingleOrNull();
+      base = row?.qty ?? 0.0;
+      final pending = await _pendingInWarehouse(warehouseId);
+      base += pending[variantId] ?? 0.0;
+    }
+    return _r3(base);
+  }
+
+  @override
+  Future<CountSession?> localOpenCount(String warehouseId) async {
+    await _ensureCountTables();
+    final row = await db.customSelect(
+      "select id, count_no, warehouse_id, bin_id, bin_code, notes from wh_counts where warehouse_id = ? and status = 'open'",
+      variables: [Variable.withString(warehouseId)],
+    ).getSingleOrNull();
+    if (row == null) return null;
+
+    final id = row.read<String>('id');
+    final lineRows = await db.customSelect(
+      "select variant_id, bin_id, bin_code, qty_system, qty_counted from wh_count_lines where count_id = ?",
+      variables: [Variable.withString(id)],
+    ).get();
+
+    return CountSession(
+      id: id,
+      countNo: row.read<String>('count_no'),
+      warehouseId: warehouseId,
+      binId: row.readNullable<String>('bin_id'),
+      binCode: row.readNullable<String>('bin_code'),
+      notes: row.readNullable<String>('notes'),
+      isLocal: true,
+      lines: [
+        for (final l in lineRows)
+          CountLine(
+            variantId: l.read<String>('variant_id'),
+            binId: (l.readNullable<String>('bin_id')?.isEmpty ?? true) ? null : l.read<String>('bin_id'),
+            binCode: l.readNullable<String>('bin_code'),
+            qtySystem: l.read<double>('qty_system'),
+            qtyCounted: l.read<double>('qty_counted'),
+          ),
+      ],
+    );
+  }
+
+  @override
+  Future<CountSession> startOfflineCount({
+    required String id,
+    required String warehouseId,
+    String? binId,
+    String? notes,
+  }) async {
+    await _ensureCountTables();
+    final existing = await db.customSelect(
+      "select id from wh_counts where warehouse_id = ? and status = 'open'",
+      variables: [Variable.withString(warehouseId)],
+    ).getSingleOrNull();
+    if (existing != null) {
+      if (existing.read<String>('id') == id) {
+        return (await localOpenCount(warehouseId))!;
+      }
+      throw const CountException('count_in_progress');
+    }
+
+    String? binCode;
+    if (binId != null) {
+      final bin = await (db.select(db.whBins)..where((b) => b.id.equals(binId))).getSingleOrNull();
+      binCode = bin?.code;
+    }
+    final nowIso = _iso(DateTime.now());
+    final localCountNo = 'CNT-LOCAL-${id.substring(0, 8).toUpperCase()}';
+    await db.customStatement('''
+      insert into wh_counts (id, count_no, warehouse_id, bin_id, bin_code, notes, status, created_at)
+      values (?, ?, ?, ?, ?, ?, 'open', ?)
+    ''', [id, localCountNo, warehouseId, binId, binCode, notes, nowIso]);
+
+    await enqueue(id, 'start_count', warehouseId, {
+      'warehouse_id': warehouseId,
+      'bin_id': ?binId,
+      'notes': ?notes,
+    });
+
+    return CountSession(
+      id: id,
+      countNo: localCountNo,
+      warehouseId: warehouseId,
+      binId: binId,
+      binCode: binCode,
+      notes: notes,
+      lines: const [],
+      isLocal: true,
+    );
+  }
+
+  @override
+  Future<void> recordOfflineCount(String countId, List<CountEntry> items) async {
+    await _ensureCountTables();
+    final countRow = await db.customSelect(
+      "select warehouse_id, status from wh_counts where id = ?",
+      variables: [Variable.withString(countId)],
+    ).getSingleOrNull();
+    if (countRow == null) throw const CountException('not_found');
+    if (countRow.read<String>('status') != 'open') throw const CountException('invalid_state');
+    final whId = countRow.read<String>('warehouse_id');
+
+    final cleanItems = <CountEntry>[];
+    for (final i in items) {
+      final sys = i.qtySystem ?? await warehouseStockFor(whId, i.variantId, binId: i.binId);
+      String? binCode;
+      if (i.binId != null) {
+        final bin = await (db.select(db.whBins)..where((b) => b.id.equals(i.binId!))).getSingleOrNull();
+        binCode = bin?.code;
+      }
+      final nowIso = _iso(DateTime.now());
+      await db.customStatement('''
+        insert into wh_count_lines (count_id, variant_id, bin_id, bin_code, qty_system, qty_counted, counted_at)
+        values (?, ?, ?, ?, ?, ?, ?)
+        on conflict (count_id, variant_id, bin_id) do update set
+          qty_system = excluded.qty_system,
+          qty_counted = excluded.qty_counted,
+          counted_at = excluded.counted_at
+      ''', [countId, i.variantId, i.binId ?? '', binCode, sys, i.qty, nowIso]);
+
+      cleanItems.add(CountEntry(variantId: i.variantId, qty: i.qty, binId: i.binId, qtySystem: sys));
+    }
+
+    final opId = const Uuid().v7();
+    await enqueue(opId, 'record_count', countId, {
+      'count_id': countId,
+      'items': [for (final c in cleanItems) c.toJson()],
+    });
+  }
+
+  @override
+  Future<CountResult> closeOfflineCount(String countId, {bool zeroUncounted = false}) async {
+    await _ensureCountTables();
+    final countRow = await db.customSelect(
+      "select status from wh_counts where id = ?",
+      variables: [Variable.withString(countId)],
+    ).getSingleOrNull();
+    if (countRow == null) throw const CountException('not_found');
+    if (countRow.read<String>('status') != 'open') throw const CountException('invalid_state');
+
+    final lines = await db.customSelect(
+      "select qty_system, qty_counted from wh_count_lines where count_id = ?",
+      variables: [Variable.withString(countId)],
+    ).get();
+
+    final lineCount = lines.length;
+    var corrections = 0;
+    double netVariance = 0.0;
+    for (final l in lines) {
+      final sys = l.read<double>('qty_system');
+      final counted = l.read<double>('qty_counted');
+      final diff = counted - sys;
+      if (diff.abs() > 0.0001) {
+        corrections++;
+        netVariance += diff;
+      }
+    }
+
+    final nowIso = _iso(DateTime.now());
+    await db.customStatement(
+      "update wh_counts set status = 'closed', closed_at = ? where id = ?",
+      [nowIso, countId],
+    );
+
+    final opId = const Uuid().v7();
+    await enqueue(opId, 'close_count', countId, {
+      'count_id': countId,
+      'zero_uncounted': zeroUncounted,
+    });
+
+    return CountResult(
+      lines: lineCount,
+      corrections: corrections,
+      netVariance: _r3(netVariance),
+      zeroed: 0,
+    );
+  }
+
+  @override
+  Future<void> cancelOfflineCount(String countId, {String? reason}) async {
+    await _ensureCountTables();
+    final countRow = await db.customSelect(
+      "select status from wh_counts where id = ?",
+      variables: [Variable.withString(countId)],
+    ).getSingleOrNull();
+    if (countRow == null) throw const CountException('not_found');
+    if (countRow.read<String>('status') != 'open') throw const CountException('invalid_state');
+
+    await db.customStatement(
+      "update wh_counts set status = 'cancelled' where id = ?",
+      [countId],
+    );
+
+    final opId = const Uuid().v7();
+    await enqueue(opId, 'cancel_count', countId, {
+      'count_id': countId,
+      'reason': ?reason,
+    });
+  }
+
   /// A refused receipt that the user discarded: its record and effect go.
   Future<void> discardWarehouseOp(String opId) async {
     await (db.delete(db.whReceiptItems)..where((i) => i.opId.equals(opId))).go();
     await (db.delete(db.whReceipts)..where((r) => r.opId.equals(opId))).go();
+    await _ensureCountTables();
+    await db.customStatement("delete from wh_count_lines where count_id = ?", [opId]);
+    await db.customStatement("delete from wh_counts where id = ?", [opId]);
   }
 
   // ---------------------------------------------------------------------------
@@ -422,6 +677,11 @@ mixin DriftWarehouse implements WarehouseStore {
       confirmedAfter: Value(appliedAt ?? _iso(DateTime.now())),
       grnNo: grn is String && grn.isNotEmpty ? Value(grn) : const Value.absent(),
     ));
+    final countNo = result?['count_no'];
+    if (countNo is String && countNo.isNotEmpty) {
+      await _ensureCountTables();
+      await db.customStatement("update wh_counts set count_no = ? where id = ?", [countNo, opId]);
+    }
   }
 
   List<Map<String, dynamic>> _rows(Map<String, dynamic> response, String table) =>

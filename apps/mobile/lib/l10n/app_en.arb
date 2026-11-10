@@ -1047,6 +1047,7 @@
   "whCountErrNothing": "Nothing was counted yet.",
   "whCountErrNotAllowed": "You are not allowed to count here.",
   "whCountErrClosed": "This count is already closed or cancelled.",
+  "whCountErrSnapshot": "The counted stock could not be verified against inventory movements.",
   "whNoBinStock": "No stock in any bin.",
   "whCountDone": "Count finished. {count, plural, =0{No corrections.} =1{{count} correction made.} other{{count} corrections made.}} Net change: {net}",
   "@whCountDone": {
