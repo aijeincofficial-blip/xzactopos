@@ -99,3 +99,51 @@ class TransferHeader {
     );
   }
 }
+
+class TransferLocationRef {
+  const TransferLocationRef({
+    required this.id,
+    required this.code,
+    required this.name,
+    required this.type,
+    this.address,
+  });
+
+  final String id;
+  final String code;
+  final String name;
+  final String type; // 'store' or 'warehouse'
+  final String? address;
+
+  bool get isWarehouse => type == 'warehouse';
+  bool get isStore => type == 'store';
+
+  factory TransferLocationRef.fromJson(Map<String, dynamic> json) {
+    return TransferLocationRef(
+      id: json['id'] as String? ?? '',
+      code: json['code'] as String? ?? '',
+      name: json['name'] as String? ?? '',
+      type: json['type'] as String? ?? 'store',
+      address: json['address'] as String?,
+    );
+  }
+}
+
+class TransferDraftLine {
+  TransferDraftLine({
+    required this.variantId,
+    required this.sku,
+    required this.productName,
+    required this.unit,
+    required this.qty,
+    this.availableQty,
+  });
+
+  final String variantId;
+  final String sku;
+  final String productName;
+  final String unit;
+  double qty;
+  final double? availableQty;
+}
+

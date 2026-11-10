@@ -3691,6 +3691,168 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Scan item barcode to count'**
   String get transferScanItem;
+
+  /// No description provided for @putawayTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Put-Away'**
+  String get putawayTitle;
+
+  /// No description provided for @putawayAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Available'**
+  String get putawayAvailable;
+
+  /// No description provided for @putawayAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Put Away'**
+  String get putawayAction;
+
+  /// No description provided for @putawayDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Put Away Item to Bin'**
+  String get putawayDialogTitle;
+
+  /// No description provided for @putawayDestinationBin.
+  ///
+  /// In en, this message translates to:
+  /// **'Destination Storage Bin'**
+  String get putawayDestinationBin;
+
+  /// No description provided for @putawayScanBin.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan Bin'**
+  String get putawayScanBin;
+
+  /// No description provided for @putawayQuantity.
+  ///
+  /// In en, this message translates to:
+  /// **'Quantity to Put Away'**
+  String get putawayQuantity;
+
+  /// No description provided for @putawayConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Put-Away'**
+  String get putawayConfirm;
+
+  /// No description provided for @putawaySuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock put away successfully.'**
+  String get putawaySuccess;
+
+  /// No description provided for @putawayError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load put-away items.'**
+  String get putawayError;
+
+  /// No description provided for @putawayEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'All Stock Put Away'**
+  String get putawayEmptyTitle;
+
+  /// No description provided for @putawayEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'No items waiting in Receiving. All inventory is stored in bins.'**
+  String get putawayEmptyBody;
+
+  /// No description provided for @transferCreateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New Outbound Transfer'**
+  String get transferCreateTitle;
+
+  /// No description provided for @transferOrigin.
+  ///
+  /// In en, this message translates to:
+  /// **'Origin Location'**
+  String get transferOrigin;
+
+  /// No description provided for @transferDestination.
+  ///
+  /// In en, this message translates to:
+  /// **'Destination Location'**
+  String get transferDestination;
+
+  /// No description provided for @transferSelectDestination.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a destination'**
+  String get transferSelectDestination;
+
+  /// No description provided for @transferItemsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfer Items'**
+  String get transferItemsSection;
+
+  /// No description provided for @transferAddItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Product'**
+  String get transferAddItem;
+
+  /// No description provided for @transferEmptyItems.
+  ///
+  /// In en, this message translates to:
+  /// **'No items added yet. Tap Add Product or Scan Barcode.'**
+  String get transferEmptyItems;
+
+  /// No description provided for @transferSelectProduct.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Product to Transfer'**
+  String get transferSelectProduct;
+
+  /// No description provided for @transferNotesOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfer Notes (Optional)'**
+  String get transferNotesOptional;
+
+  /// No description provided for @transferNotesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason, driver, or special instructions'**
+  String get transferNotesHint;
+
+  /// No description provided for @transferShipAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Dispatch & Ship Transfer'**
+  String get transferShipAction;
+
+  /// No description provided for @transferNoItemsError.
+  ///
+  /// In en, this message translates to:
+  /// **'Add at least one item to ship'**
+  String get transferNoItemsError;
+
+  /// No description provided for @transferDestinationsError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load branches'**
+  String get transferDestinationsError;
+
+  /// No description provided for @transferCreatedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfer dispatched and shipped successfully.'**
+  String get transferCreatedSuccess;
+
+  /// No description provided for @transferNewAction.
+  ///
+  /// In en, this message translates to:
+  /// **'New Transfer'**
+  String get transferNewAction;
 }
 
 class _AppLocalizationsDelegate

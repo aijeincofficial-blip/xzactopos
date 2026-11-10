@@ -7,6 +7,7 @@ import 'package:xzactopos_mobile/app.dart';
 import 'package:xzactopos_mobile/backend.dart';
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
+import 'package:xzactopos_mobile/data/bin_models.dart';
 import 'package:xzactopos_mobile/data/db.dart';
 import 'package:xzactopos_mobile/data/drift_store.dart';
 import 'package:xzactopos_mobile/data/transfer_models.dart';
@@ -133,6 +134,29 @@ class FakeBackend implements Backend {
   Future<void> receiveTransfer({
     required String transferId,
     required List<Map<String, dynamic>> items,
+  }) async {}
+  @override
+  Future<List<TransferLocationRef>> fetchTransferDestinations(String currentBranchId) async => [];
+  @override
+  Future<String> createAndShipTransfer({
+    required String fromLocationId,
+    required String toLocationId,
+    required List<TransferDraftLine> items,
+    String? notes,
+    bool shipNow = true,
+  }) async => 'tr-mock-1';
+
+  @override
+  Future<List<ReceivingStockItem>> fetchReceivingStock(String warehouseId) async => [];
+  @override
+  Future<List<WarehouseBin>> fetchWarehouseBins(String warehouseId) async => [];
+  @override
+  Future<void> executePutaway({
+    required String warehouseId,
+    required String fromBinId,
+    required String toBinId,
+    required String variantId,
+    required double qty,
   }) async {}
 
   final pushed = <String>[];

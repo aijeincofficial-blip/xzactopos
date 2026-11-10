@@ -2178,4 +2178,89 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get transferScanItem => 'I-scan ang barcode ng aytem para mabilang';
+
+  @override
+  String get putawayTitle => 'Lipat sa Bin';
+
+  @override
+  String get putawayAvailable => 'Meron';
+
+  @override
+  String get putawayAction => 'Ilipat';
+
+  @override
+  String get putawayDialogTitle => 'Paglipat ng Item sa Bin';
+
+  @override
+  String get putawayDestinationBin => 'Patutunguhang Storage Bin';
+
+  @override
+  String get putawayScanBin => 'I-scan ang Bin';
+
+  @override
+  String get putawayQuantity => 'Dami na Ililipat';
+
+  @override
+  String get putawayConfirm => 'Kumpirmahin ang Paglipat';
+
+  @override
+  String get putawaySuccess => 'Matagumpay na nailipat ang stock sa bin.';
+
+  @override
+  String get putawayError => 'Nabigong i-load ang mga ililipat na stock.';
+
+  @override
+  String get putawayEmptyTitle => 'Lahat ng Stock ay Nailipat Na';
+
+  @override
+  String get putawayEmptyBody =>
+      'Walang stock na naghihintay sa Receiving. Lahat ay nakaimbak na sa mga bin.';
+
+  @override
+  String get transferCreateTitle => 'Bagong Paglilipat ng Stock';
+
+  @override
+  String get transferOrigin => 'Pinagmulang Lokasyon';
+
+  @override
+  String get transferDestination => 'Patutunguhang Lokasyon';
+
+  @override
+  String get transferSelectDestination => 'Pumili ng patutunguhang lokasyon';
+
+  @override
+  String get transferItemsSection => 'Mga Item na Ililipat';
+
+  @override
+  String get transferAddItem => 'Magdagdag ng Produkto';
+
+  @override
+  String get transferEmptyItems =>
+      'Wala pang item. Pindutin ang Magdagdag o I-scan ang Barcode.';
+
+  @override
+  String get transferSelectProduct => 'Pumili ng Item na Ililipat';
+
+  @override
+  String get transferNotesOptional => 'Tala sa Paglipat (Opsyonal)';
+
+  @override
+  String get transferNotesHint => 'Dahilan, drayber, o tagubilin';
+
+  @override
+  String get transferShipAction => 'Ipadala ang Paglilipat';
+
+  @override
+  String get transferNoItemsError =>
+      'Magdagdag ng kahit isang item para maipadala';
+
+  @override
+  String get transferDestinationsError => 'Nabigong i-load ang mga lokasyon';
+
+  @override
+  String get transferCreatedSuccess =>
+      'Matagumpay na naipadala ang paglilipat ng stock.';
+
+  @override
+  String get transferNewAction => 'Bagong Paglipat';
 }

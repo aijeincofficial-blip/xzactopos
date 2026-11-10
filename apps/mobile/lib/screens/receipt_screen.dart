@@ -4,9 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
+import '../backend.dart';
 import '../core/money.dart';
 import '../core/printer_config.dart';
 import '../core/receipt_printer.dart';
+import '../core/supervisor_pin_dialog.dart';
 import '../data/sales_models.dart';
 import '../l10n/app_localizations.dart';
 import '../sync/store_session.dart';
@@ -78,6 +80,22 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
       ),
     );
     if (yes != true) return;
+    if (!mounted) return;
+
+    if (scope.isCashier) {
+      final backend = (scope.engine.api is Backend) ? scope.engine.api as Backend : null;
+      if (backend != null) {
+        final approval = await showSupervisorPinDialog(
+          context,
+          backend: backend,
+          action: 'void_sale',
+          refId: widget.saleId,
+        );
+        if (approval == null) return;
+        if (!mounted) return;
+      }
+    }
+
     await scope.store.voidSale(widget.saleId, opId: const Uuid().v7());
     scope.engine.poke();
   }

@@ -6,6 +6,7 @@ import '../core/theme.dart';
 import '../core/ui.dart';
 import '../data/transfer_models.dart';
 import '../l10n/app_localizations.dart';
+import 'transfer_create_screen.dart';
 import 'transfer_receive_screen.dart';
 
 class TransfersScreen extends StatefulWidget {
@@ -169,6 +170,33 @@ class _TransfersScreenState extends State<TransfersScreen> with SingleTickerProv
             ),
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        key: const Key('transfers-new-btn'),
+        icon: const Icon(Icons.add_rounded),
+        label: Text(t.transferNewAction),
+        onPressed: () async {
+          final res = await Navigator.of(context).push<bool>(
+            MaterialPageRoute(
+              builder: (_) => TransferCreateScreen(
+                backend: widget.backend,
+                originLocationId: widget.locationId,
+                originName: t.transfersTitle,
+              ),
+            ),
+          );
+          if (res == true) {
+            _reload();
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(t.transferCreatedSuccess),
+                  backgroundColor: const Color(0xFF16A34A),
+                ),
+              );
+            }
+          }
+        },
       ),
     );
   }

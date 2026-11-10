@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'data/bin_models.dart';
 import 'data/count_models.dart';
 import 'data/shift_models.dart';
 import 'data/staff_models.dart';
@@ -83,6 +84,25 @@ abstract class Backend implements SyncApi {
     required String transferId,
     required List<Map<String, dynamic>> items,
   });
+  Future<List<TransferLocationRef>> fetchTransferDestinations(String currentBranchId);
+  Future<String> createAndShipTransfer({
+    required String fromLocationId,
+    required String toLocationId,
+    required List<TransferDraftLine> items,
+    String? notes,
+    bool shipNow = true,
+  });
+
+  // ---- warehouse bins & put-away (F-09) ----
+  Future<List<ReceivingStockItem>> fetchReceivingStock(String warehouseId);
+  Future<List<WarehouseBin>> fetchWarehouseBins(String warehouseId);
+  Future<void> executePutaway({
+    required String warehouseId,
+    required String fromBinId,
+    required String toBinId,
+    required String variantId,
+    required double qty,
+  });
 }
 
 abstract class TransferApi {
@@ -91,6 +111,26 @@ abstract class TransferApi {
   Future<void> receiveTransfer({
     required String transferId,
     required List<Map<String, dynamic>> items,
+  });
+  Future<List<TransferLocationRef>> fetchTransferDestinations(String currentBranchId);
+  Future<String> createAndShipTransfer({
+    required String fromLocationId,
+    required String toLocationId,
+    required List<TransferDraftLine> items,
+    String? notes,
+    bool shipNow = true,
+  });
+}
+
+abstract class BinApi {
+  Future<List<ReceivingStockItem>> fetchReceivingStock(String warehouseId);
+  Future<List<WarehouseBin>> fetchWarehouseBins(String warehouseId);
+  Future<void> executePutaway({
+    required String warehouseId,
+    required String fromBinId,
+    required String toBinId,
+    required String variantId,
+    required double qty,
   });
 }
 
@@ -146,7 +186,7 @@ const pinRefusalHints = {
   'location_denied', 'module_disabled',
 };
 
-class SupabaseBackend implements Backend, DeviceApi, WarehouseApi, CountApi, ShiftApi, StaffApi, TransferApi {
+class SupabaseBackend implements Backend, DeviceApi, WarehouseApi, CountApi, ShiftApi, StaffApi, TransferApi, BinApi {
   SupabaseClient get _c => Supabase.instance.client;
 
   @override
@@ -577,6 +617,80 @@ class SupabaseBackend implements Backend, DeviceApi, WarehouseApi, CountApi, Shi
     await _op(() => _c.rpc('receive_transfer', params: {
           'p_transfer_id': transferId,
           'p_items': items,
+        }));
+  }
+
+  @override
+  Future<List<TransferLocationRef>> fetchTransferDestinations(String currentBranchId) async {
+    final res = await _auth(() => _c
+        .from('locations')
+        .select('id, code, name, type, address')
+        .eq('active', true)
+        .neq('id', currentBranchId)
+        .order('name'));
+    return (res as List<dynamic>)
+        .map((r) => TransferLocationRef.fromJson(r as Map<String, dynamic>))
+        .toList();
+  }
+
+  @override
+  Future<String> createAndShipTransfer({
+    required String fromLocationId,
+    required String toLocationId,
+    required List<TransferDraftLine> items,
+    String? notes,
+    bool shipNow = true,
+  }) async {
+    final itemsJson = items
+        .map((i) => {
+              'variant_id': i.variantId,
+              'qty': i.qty,
+            })
+        .toList();
+    final res = await _auth(() => _c.rpc('create_transfer', params: {
+          'p_from_location_id': fromLocationId,
+          'p_to_location_id': toLocationId,
+          'p_notes': notes,
+          'p_items': itemsJson,
+          'p_ship_now': shipNow,
+        }));
+    return res as String;
+  }
+
+  @override
+  Future<List<ReceivingStockItem>> fetchReceivingStock(String warehouseId) async {
+    final res = await _auth(() => _c.rpc('list_receiving_stock', params: {
+          'p_warehouse_id': warehouseId,
+        }));
+    return (res as List<dynamic>)
+        .map((r) => ReceivingStockItem.fromJson(r as Map<String, dynamic>))
+        .toList();
+  }
+
+  @override
+  Future<List<WarehouseBin>> fetchWarehouseBins(String warehouseId) async {
+    final res = await _auth(() => _c.rpc('list_warehouse_bins', params: {
+          'p_warehouse_id': warehouseId,
+        }));
+    return (res as List<dynamic>)
+        .map((r) => WarehouseBin.fromJson(r as Map<String, dynamic>))
+        .toList();
+  }
+
+  @override
+  Future<void> executePutaway({
+    required String warehouseId,
+    required String fromBinId,
+    required String toBinId,
+    required String variantId,
+    required double qty,
+  }) async {
+    await _op(() => _c.rpc('execute_putaway', params: {
+          'p_warehouse_id': warehouseId,
+          'p_from_bin_id': fromBinId,
+          'p_to_bin_id': toBinId,
+          'p_variant_id': variantId,
+          'p_qty': qty,
         }));
   }
 

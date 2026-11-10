@@ -8,6 +8,7 @@ import '../data/warehouse_models.dart';
 import '../l10n/app_localizations.dart';
 import '../sync/store_session.dart';
 import '../sync/sync_badge.dart';
+import 'putaway_screen.dart';
 import 'settings_screen.dart';
 import 'transfers_screen.dart';
 import 'warehouse_count.dart';
@@ -398,6 +399,24 @@ class _MoreTab extends StatelessWidget {
               if (context.mounted) await showWarehousePicker(context, store, all, active);
             },
           );
+        },
+      ),
+      ListTile(
+        key: const Key('more-putaway'),
+        leading: const Icon(Icons.move_to_inbox_rounded),
+        title: Text(t.putawayTitle),
+        onTap: () async {
+          final wh = await store.activeWarehouse();
+          if (wh != null && context.mounted) {
+            Navigator.of(context).push(_scoped(
+              context,
+              PutawayScreen(
+                backend: backend,
+                warehouseId: wh.id,
+                warehouseName: wh.name,
+              ),
+            ));
+          }
         },
       ),
       ListTile(

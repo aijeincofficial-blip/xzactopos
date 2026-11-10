@@ -2168,4 +2168,88 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get transferScanItem => 'Scan item barcode to count';
+
+  @override
+  String get putawayTitle => 'Put-Away';
+
+  @override
+  String get putawayAvailable => 'Available';
+
+  @override
+  String get putawayAction => 'Put Away';
+
+  @override
+  String get putawayDialogTitle => 'Put Away Item to Bin';
+
+  @override
+  String get putawayDestinationBin => 'Destination Storage Bin';
+
+  @override
+  String get putawayScanBin => 'Scan Bin';
+
+  @override
+  String get putawayQuantity => 'Quantity to Put Away';
+
+  @override
+  String get putawayConfirm => 'Confirm Put-Away';
+
+  @override
+  String get putawaySuccess => 'Stock put away successfully.';
+
+  @override
+  String get putawayError => 'Failed to load put-away items.';
+
+  @override
+  String get putawayEmptyTitle => 'All Stock Put Away';
+
+  @override
+  String get putawayEmptyBody =>
+      'No items waiting in Receiving. All inventory is stored in bins.';
+
+  @override
+  String get transferCreateTitle => 'New Outbound Transfer';
+
+  @override
+  String get transferOrigin => 'Origin Location';
+
+  @override
+  String get transferDestination => 'Destination Location';
+
+  @override
+  String get transferSelectDestination => 'Please select a destination';
+
+  @override
+  String get transferItemsSection => 'Transfer Items';
+
+  @override
+  String get transferAddItem => 'Add Product';
+
+  @override
+  String get transferEmptyItems =>
+      'No items added yet. Tap Add Product or Scan Barcode.';
+
+  @override
+  String get transferSelectProduct => 'Select Product to Transfer';
+
+  @override
+  String get transferNotesOptional => 'Transfer Notes (Optional)';
+
+  @override
+  String get transferNotesHint => 'Reason, driver, or special instructions';
+
+  @override
+  String get transferShipAction => 'Dispatch & Ship Transfer';
+
+  @override
+  String get transferNoItemsError => 'Add at least one item to ship';
+
+  @override
+  String get transferDestinationsError => 'Failed to load branches';
+
+  @override
+  String get transferCreatedSuccess =>
+      'Transfer dispatched and shipped successfully.';
+
+  @override
+  String get transferNewAction => 'New Transfer';
 }
