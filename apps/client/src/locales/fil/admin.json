@@ -1135,6 +1135,11 @@
       "shortfall": "Kulang pa",
       "none": "Walang kailangang i-order.",
       "newOrder": "Bagong order",
+      "customOverride": "Naiiba",
+      "editThreshold": "Baguhin ang antas",
+      "editThresholdTitle": "Itakda ang antas ng reorder para sa {{product}} ({{warehouse}})",
+      "editThresholdDesc": "Magtakda ng natatanging antas ng reorder para sa bodegang ito, o burahin para gamitin ang default.",
+      "revertDefault": "Gamitin ang default na antas",
       "legend": "Saklaw na ang isang linya kapag ang nasa kamay at ang paparating ay higit sa antas ng pag-order.",
       "statusLabel": {
         "covered": "Paparating na",

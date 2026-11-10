@@ -205,6 +205,11 @@ select w.who, t.tbl, case when w.who in ('superadmin', 'warehouse') then 1 else 
 from (values ('superadmin'), ('admin'), ('cashier'), ('warehouse'), ('inactive')) w(who)
 cross join (values ('stock_counts'), ('stock_count_items')) t(tbl);
 
+-- location_reorder_points: owner and warehouse staff of W01 only (1 row per tenant seeded at W01)
+insert into expected (who, tbl, own_rows, own_updated)
+select w.who, 'location_reorder_points', case when w.who in ('superadmin', 'warehouse') then 1 else 0 end, -1
+from (values ('superadmin'), ('admin'), ('cashier'), ('warehouse'), ('inactive')) w(who);
+
 -- 2 tenants x (who, table) pairs x 5 metrics, plus 8 targeted checks
 select plan((select count(*)::int * 2 * 5 from expected) + 8);
 
@@ -369,6 +374,8 @@ begin
     insert into public.stock_count_items (id, tenant_id, count_id, variant_id, qty_system, qty_counted) values
       (md5('cnti:' || t.label || ':1')::uuid, pg_temp.tid(t.label), md5('cnt:' || t.label || ':1')::uuid,
        md5('var:' || t.label || ':1')::uuid, 10, 9);
+    insert into public.location_reorder_points (tenant_id, location_id, variant_id, reorder_point) values
+      (pg_temp.tid(t.label), pg_temp.lid(t.label, 'W01'), md5('var:' || t.label || ':1')::uuid, 25);
   end loop;
 end;
 $$;
@@ -453,7 +460,8 @@ begin
     ('goods_receipts',    'tenant_id', 'notes = notes'),
     ('goods_receipt_items', 'tenant_id', 'qty = qty'),
     ('stock_counts',      'tenant_id', 'notes = notes'),
-    ('stock_count_items', 'tenant_id', 'qty_counted = qty_counted')
+    ('stock_count_items', 'tenant_id', 'qty_counted = qty_counted'),
+    ('location_reorder_points', 'tenant_id', 'reorder_point = reorder_point')
   ) v(tbl, tcol, upd) loop
     begin
       execute format(

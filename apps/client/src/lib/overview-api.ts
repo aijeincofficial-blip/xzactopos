@@ -27,6 +27,7 @@ export interface ReorderRow {
   on_order_qty: number;
   covered: boolean;
   shortfall: number;
+  is_override: boolean;
 }
 
 export interface TransitRow {
@@ -101,7 +102,21 @@ export async function warehouseReorderList(args: {
     on_order_qty: num(r.on_order_qty),
     covered: Boolean(r.covered),
     shortfall: num(r.shortfall),
+    is_override: Boolean(r.is_override),
   }));
+}
+
+export async function setLocationReorderPoint(args: {
+  locationId: string;
+  variantId: string;
+  reorderPoint: number | null;
+}): Promise<number> {
+  const effective = await rpc<number>("set_location_reorder_point", {
+    p_location_id: args.locationId,
+    p_variant_id: args.variantId,
+    p_reorder_point: args.reorderPoint,
+  });
+  return num(effective);
 }
 
 export async function warehouseTransfersInTransit(args: {

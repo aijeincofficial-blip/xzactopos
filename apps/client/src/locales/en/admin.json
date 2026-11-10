@@ -1135,6 +1135,11 @@
       "shortfall": "Still short",
       "none": "Nothing needs reordering.",
       "newOrder": "New order",
+      "customOverride": "Custom",
+      "editThreshold": "Edit threshold",
+      "editThresholdTitle": "Set reorder point for {{product}} ({{warehouse}})",
+      "editThresholdDesc": "Set a custom reorder point for this warehouse, or clear to use the default product threshold.",
+      "revertDefault": "Use default threshold",
       "legend": "A line is covered when what is on hand plus what is on its way is above the reorder point.",
       "statusLabel": {
         "covered": "On its way",

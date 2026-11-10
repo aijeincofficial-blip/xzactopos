@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { formatMoney, money } from "@pos/core";
-import { Badge, Button, Card, EmptyState, ErrorState, Field, Input, PageHeader, Select, Table, Tabs, TabPanel } from "../components/ui.tsx";
+import { Alert, Badge, Button, Card, Dialog, EmptyState, ErrorState, Field, Input, PageHeader, Select, Table, Tabs, TabPanel, useToast } from "../components/ui.tsx";
 import { useSession } from "../lib/session.tsx";
 import { useErrorMessage } from "../lib/i18n-helpers.ts";
 import { formatQty } from "../lib/product-math.ts";
@@ -21,6 +21,7 @@ import {
 import {
   PAGE_SIZE,
   negativeStockList,
+  setLocationReorderPoint,
   warehouseReorderList,
   warehouseStockByVariant,
   warehouseTransfersInTransit,
@@ -89,8 +90,14 @@ function WarehouseFilter({
 function ReorderTab({ warehouses }: { warehouses: Array<{ id: string; code: string; name: string }> }) {
   const { t } = useTranslation(["admin", "common"]);
   const msg = useErrorMessage();
-  const { can } = useSession();
+  const toast = useToast();
+  const qc = useQueryClient();
+  const { can, access } = useSession();
   const [warehouseId, setWarehouseId] = useState("");
+  const [editingRow, setEditingRow] = useState<ReorderRow | null>(null);
+  const [editPoint, setEditPoint] = useState("");
+  const [editError, setEditError] = useState<string | null>(null);
+
   const q = useInfiniteQuery({
     queryKey: ["overview", "reorder", warehouseId],
     initialPageParam: null as { location: string; variant: string } | null,
@@ -99,6 +106,28 @@ function ReorderTab({ warehouses }: { warehouses: Array<{ id: string; code: stri
   });
   const rows: ReorderRow[] = (q.data?.pages ?? []).flat();
   const sum = reorderSummary(rows);
+
+  const saveThresholdMut = useMutation({
+    mutationFn: async (point: number | null) => {
+      if (!editingRow) return;
+      await setLocationReorderPoint({
+        locationId: editingRow.location_id,
+        variantId: editingRow.variant_id,
+        reorderPoint: point,
+      });
+    },
+    onSuccess: async () => {
+      setEditingRow(null);
+      setEditError(null);
+      toast.good(t("common:saved"));
+      await qc.invalidateQueries({ queryKey: ["overview", "reorder"] });
+    },
+    onError: (e) => {
+      const err = msg(e);
+      setEditError(err);
+      toast.error(err);
+    },
+  });
 
   return (
     <div className="grid gap-4">
@@ -138,7 +167,16 @@ function ReorderTab({ warehouses }: { warehouses: Array<{ id: string; code: stri
                       {r.product_name} · {r.sku}
                     </td>
                     <td className="px-3 py-2">{formatQty(r.qty_on_hand)}</td>
-                    <td className="px-3 py-2">{formatQty(r.reorder_point)}</td>
+                    <td className="px-3 py-2">
+                      <div className="flex items-center gap-1.5">
+                        <span>{formatQty(r.reorder_point)}</span>
+                        {r.is_override ? (
+                          <Badge tone="neutral">
+                            {t("overview.reorder.customOverride")}
+                          </Badge>
+                        ) : null}
+                      </div>
+                    </td>
                     <td className="px-3 py-2">{formatQty(r.incoming_qty)}</td>
                     <td className="px-3 py-2">{formatQty(r.on_order_qty)}</td>
                     <td className="px-3 py-2">
@@ -146,11 +184,27 @@ function ReorderTab({ warehouses }: { warehouses: Array<{ id: string; code: stri
                     </td>
                     <td className="px-3 py-2">{status === "order" ? formatQty(r.shortfall) : "—"}</td>
                     <td className="px-3 py-2">
-                      {status !== "covered" && can("purchasing.manage", r.location_id) ? (
-                        <Link to="/app/purchasing" className="text-sm text-slate-700 underline">
-                          {t("overview.reorder.newOrder")}
-                        </Link>
-                      ) : null}
+                      <div className="flex items-center gap-2">
+                        {status !== "covered" && can("purchasing.manage", r.location_id) ? (
+                          <Link to="/app/purchasing" className="text-sm text-slate-700 underline">
+                            {t("overview.reorder.newOrder")}
+                          </Link>
+                        ) : null}
+                        {(can("purchasing.manage", r.location_id) || access.role === "superadmin") ? (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            data-testid={`edit-threshold-${r.location_code}-${r.sku}`}
+                            onClick={() => {
+                              setEditingRow(r);
+                              setEditPoint(String(r.reorder_point));
+                              setEditError(null);
+                            }}
+                          >
+                            {t("overview.reorder.editThreshold")}
+                          </Button>
+                        ) : null}
+                      </div>
                     </td>
                   </tr>
                 );
@@ -166,6 +220,77 @@ function ReorderTab({ warehouses }: { warehouses: Array<{ id: string; code: stri
             {q.isFetchingNextPage ? t("overview.loading") : t("overview.showMore")}
           </Button>
         </div>
+      ) : null}
+
+      {editingRow ? (
+        <Dialog
+          open
+          onOpenChange={(o) => {
+            if (!o) {
+              setEditingRow(null);
+              setEditError(null);
+            }
+          }}
+          title={t("overview.reorder.editThresholdTitle", { product: editingRow.product_name, warehouse: editingRow.location_code })}
+          closeLabel={t("common:actions.close")}
+        >
+          <div className="grid gap-4 py-2">
+            <p className="text-sm text-slate-600">{t("overview.reorder.editThresholdDesc")}</p>
+            <div className="text-sm text-slate-700">
+              <span className="font-medium">{t("overview.reorder.onHand")}: </span>
+              {formatQty(editingRow.qty_on_hand)}
+            </div>
+
+            <Field label={t("overview.reorder.point")}>
+              <Input
+                data-testid="reorder-point-input"
+                type="number"
+                min="0"
+                step="any"
+                autoFocus
+                value={editPoint}
+                onChange={(e) => setEditPoint(e.target.value)}
+              />
+            </Field>
+
+            {editError ? <Alert tone="error">{editError}</Alert> : null}
+
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
+              {editingRow.is_override ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  data-testid="revert-default-btn"
+                  disabled={saveThresholdMut.isPending}
+                  onClick={() => saveThresholdMut.mutate(null)}
+                >
+                  {t("overview.reorder.revertDefault")}
+                </Button>
+              ) : <div />}
+
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => {
+                    setEditingRow(null);
+                    setEditError(null);
+                  }}
+                >
+                  {t("common:actions.cancel")}
+                </Button>
+                <Button
+                  type="button"
+                  data-testid="save-threshold-btn"
+                  disabled={saveThresholdMut.isPending || !editPoint.trim() || Number(editPoint) < 0}
+                  onClick={() => saveThresholdMut.mutate(Number(editPoint))}
+                >
+                  {t("common:actions.save")}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </Dialog>
       ) : null}
     </div>
   );
