@@ -5,6 +5,7 @@ import { RouterProvider } from "@tanstack/react-router";
 import { initI18n } from "./i18n/index.ts";
 import { makeRouter } from "./router.tsx";
 import { applyTheme, readTheme } from "./lib/theme.ts";
+import { ToastProvider } from "./components/ui.tsx";
 import "./index.css";
 
 const queryClient = new QueryClient({
@@ -18,7 +19,9 @@ void initI18n().then(() => {
   createRoot(document.getElementById("root")!).render(
     <StrictMode>
       <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router} />
+        <ToastProvider>
+          <RouterProvider router={router} />
+        </ToastProvider>
       </QueryClientProvider>
     </StrictMode>,
   );

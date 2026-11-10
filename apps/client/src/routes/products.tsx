@@ -1,8 +1,8 @@
-import { useState, type ChangeEvent, type ReactNode } from "react";
+import { useState, type ChangeEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatMoney, money, toMajorNumber } from "@pos/core";
-import { Alert, Badge, Button, Card, Dialog, Input, Select } from "../components/ui.tsx";
+import { Alert, Badge, Button, Card, Dialog, EmptyState, ErrorState, Field, Input, PageHeader, Select, useToast } from "../components/ui.tsx";
 import { useSession } from "../lib/session.tsx";
 import { useActiveLocation } from "../lib/location-context.tsx";
 import { useErrorMessage } from "../lib/i18n-helpers.ts";
@@ -31,15 +31,6 @@ import { downloadCsv, exportProductsCsv, parseAndValidateImport, type ParsedProd
 
 type ProblemKey = "name" | "price" | "cost" | "tax" | "reorder" | "opening" | "qty" | "count";
 
-function Labeled({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <label className="grid gap-1 text-sm">
-      <span className="font-medium">{label}</span>
-      {children}
-    </label>
-  );
-}
-
 /** "12.50" for the form from minor units, without a currency symbol. */
 function majorText(minor: number, currency: string): string {
   return minor === 0 ? "" : String(toMajorNumber(money(minor, currency)));
@@ -60,6 +51,7 @@ function ProductForm({ row, currency, onSaved, onCancel, locationId, categories,
   const { t } = useTranslation("admin");
   const msg = useErrorMessage();
   const qc = useQueryClient();
+  const toast = useToast();
   const [name, setName] = useState(row?.name ?? "");
   const [price, setPrice] = useState(row?.price != null ? majorText(row.price, currency) : "");
   const [cost, setCost] = useState(row ? majorText(row.cost, currency) : "");
@@ -128,12 +120,15 @@ function ProductForm({ row, currency, onSaved, onCancel, locationId, categories,
       if (!saved) return;
       setError(null);
       setSaved(true);
+      toast.good(t("products.saved"));
       await Promise.all([qc.invalidateQueries({ queryKey: ["products"] }), qc.invalidateQueries({ queryKey: ["sellables"] })]);
       onSaved();
     },
     onError: (e) => {
       setSaved(false);
-      setError(msg(e));
+      const m = msg(e);
+      setError(m);
+      toast.error(m);
     },
   });
 
@@ -141,10 +136,10 @@ function ProductForm({ row, currency, onSaved, onCancel, locationId, categories,
     <Card className="grid gap-3" data-testid="product-form">
       <h3 className="font-medium">{row ? t("products.edit") : t("products.add")}</h3>
       <div className="grid gap-3 sm:grid-cols-2">
-        <Labeled label={t("products.name")}>
+        <Field label={t("products.name")}>
           <Input data-testid="pf-name" value={name} maxLength={120} onChange={(e) => setName(e.target.value)} />
-        </Labeled>
-        <Labeled label={t("products.category")}>
+        </Field>
+        <Field label={t("products.category")}>
           <Select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
             <option value="">{t("products.noCategory")}</option>
             {categories.map((c) => (
@@ -153,32 +148,32 @@ function ProductForm({ row, currency, onSaved, onCancel, locationId, categories,
               </option>
             ))}
           </Select>
-        </Labeled>
-        <Labeled label={t("products.price")}>
+        </Field>
+        <Field label={t("products.price")}>
           <Input data-testid="pf-price" inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} />
-        </Labeled>
-        <Labeled label={t("products.cost")}>
+        </Field>
+        <Field label={t("products.cost")}>
           <Input data-testid="pf-cost" inputMode="decimal" value={cost} onChange={(e) => setCost(e.target.value)} />
-        </Labeled>
-        <Labeled label={t("products.unit")}>
+        </Field>
+        <Field label={t("products.unit")}>
           <Input value={unit} maxLength={16} onChange={(e) => setUnit(e.target.value)} />
-        </Labeled>
-        <Labeled label={t("products.tax")}>
+        </Field>
+        <Field label={t("products.tax")}>
           <Input inputMode="decimal" value={tax} onChange={(e) => setTax(e.target.value)} />
-        </Labeled>
-        <Labeled label={t("products.reorder")}>
+        </Field>
+        <Field label={t("products.reorder")}>
           <Input inputMode="decimal" value={reorder} onChange={(e) => setReorder(e.target.value)} />
-        </Labeled>
-        <Labeled label={t("products.sku")}>
+        </Field>
+        <Field label={t("products.sku")}>
           <Input value={sku} maxLength={40} placeholder={t("products.skuAuto")} onChange={(e) => setSku(e.target.value)} />
-        </Labeled>
-        <Labeled label={t("products.barcode")}>
+        </Field>
+        <Field label={t("products.barcode")}>
           <Input value={barcode} maxLength={64} onChange={(e) => setBarcode(e.target.value)} />
-        </Labeled>
+        </Field>
         {!row ? (
-          <Labeled label={t("products.opening")}>
+          <Field label={t("products.opening")}>
             <Input data-testid="pf-opening" inputMode="decimal" value={opening} onChange={(e) => setOpening(e.target.value)} />
-          </Labeled>
+          </Field>
         ) : null}
       </div>
 
@@ -190,7 +185,7 @@ function ProductForm({ row, currency, onSaved, onCancel, locationId, categories,
         </label>
         {isPack ? (
           <div className="grid gap-2 sm:grid-cols-2 pt-1">
-            <Labeled label={t("products.breaksIntoPiece")}>
+            <Field label={t("products.breaksIntoPiece")}>
               <Select value={pieceVariantId} onChange={(e) => setPieceVariantId(e.target.value)}>
                 <option value="">{t("products.selectPiece")}</option>
                 {availablePieces
@@ -201,8 +196,8 @@ function ProductForm({ row, currency, onSaved, onCancel, locationId, categories,
                     </option>
                   ))}
               </Select>
-            </Labeled>
-            <Labeled label={t("products.piecesPerPack")}>
+            </Field>
+            <Field label={t("products.piecesPerPack")}>
               <Input
                 type="number"
                 min="1"
@@ -210,7 +205,7 @@ function ProductForm({ row, currency, onSaved, onCancel, locationId, categories,
                 value={piecesPerPack}
                 onChange={(e) => setPiecesPerPack(e.target.value)}
               />
-            </Labeled>
+            </Field>
           </div>
         ) : null}
       </div>
@@ -257,6 +252,7 @@ function StockPanel({
   const { t } = useTranslation("admin");
   const msg = useErrorMessage();
   const qc = useQueryClient();
+  const toast = useToast();
   const [inQty, setInQty] = useState("");
   const [inCost, setInCost] = useState("");
   const [inExpiry, setInExpiry] = useState("");
@@ -298,10 +294,16 @@ function StockPanel({
       setInQty("");
       setInCost("");
       setInExpiry("");
-      setNote({ tone: "info", text: t("products.received") });
+      const successText = t("products.received");
+      setNote({ tone: "info", text: successText });
+      toast.good(successText);
       await refresh();
     },
-    onError: (e) => setNote({ tone: "error", text: msg(e) }),
+    onError: (e) => {
+      const m = msg(e);
+      setNote({ tone: "error", text: m });
+      toast.error(m);
+    },
   });
 
   const count = useMutation({
@@ -316,19 +318,31 @@ function StockPanel({
     onSuccess: async (r) => {
       if (!r) return;
       setCounted("");
-      setNote({ tone: "info", text: t("products.counted", { delta: formatQty(r.delta) }) });
+      const successText = t("products.counted", { delta: formatQty(r.delta) });
+      setNote({ tone: "info", text: successText });
+      toast.good(successText);
       await refresh();
     },
-    onError: (e) => setNote({ tone: "error", text: msg(e) }),
+    onError: (e) => {
+      const m = msg(e);
+      setNote({ tone: "error", text: m });
+      toast.error(m);
+    },
   });
 
   const expiryMutation = useMutation({
     mutationFn: (newDate: string | null) => setExpiry(row.variantId, newDate, locationId),
     onSuccess: async () => {
-      setNote({ tone: "info", text: t("products.expirySaved") });
+      const successText = t("products.expirySaved");
+      setNote({ tone: "info", text: successText });
+      toast.good(successText);
       await refresh();
     },
-    onError: (e) => setNote({ tone: "error", text: msg(e) }),
+    onError: (e) => {
+      const m = msg(e);
+      setNote({ tone: "error", text: m });
+      toast.error(m);
+    },
   });
 
   const openPackMutation = useMutation({
@@ -340,24 +354,36 @@ function StockPanel({
     onSuccess: async (res) => {
       if (!res) return;
       const piecesTotal = parseInt(openPacksCount, 10) * (row.breaksIntoQty ?? 1);
+      const successText = t("products.openPackSuccess", { packs: openPacksCount, pieces: piecesTotal });
       setNote({
         tone: "info",
-        text: t("products.openPackSuccess", { packs: openPacksCount, pieces: piecesTotal }),
+        text: successText,
       });
+      toast.good(successText);
       setOpenPacksCount("1");
       setOpenPackNote("");
       await refresh();
     },
-    onError: (e) => setNote({ tone: "error", text: msg(e) }),
+    onError: (e) => {
+      const m = msg(e);
+      setNote({ tone: "error", text: m });
+      toast.error(m);
+    },
   });
 
   const voidOpeningMutation = useMutation({
     mutationFn: (convId: string) => voidOpenPack(convId, "User requested void"),
     onSuccess: async () => {
-      setNote({ tone: "info", text: t("products.voidOpeningSuccess") });
+      const successText = t("products.voidOpeningSuccess");
+      setNote({ tone: "info", text: successText });
+      toast.good(successText);
       await refresh();
     },
-    onError: (e) => setNote({ tone: "error", text: msg(e) }),
+    onError: (e) => {
+      const m = msg(e);
+      setNote({ tone: "error", text: m });
+      toast.error(m);
+    },
   });
 
   if (!row.tracked) return <Card className="text-sm text-slate-600">{t("products.notTracked")}</Card>;
@@ -390,15 +416,15 @@ function StockPanel({
 
       {/* Receive Stock */}
       <div className="grid gap-2 sm:grid-cols-[1fr_1fr_1fr_auto] sm:items-end">
-        <Labeled label={t("products.receiveQty")}>
+        <Field label={t("products.receiveQty")}>
           <Input data-testid="receive-qty" inputMode="decimal" value={inQty} onChange={(e) => setInQty(e.target.value)} />
-        </Labeled>
-        <Labeled label={t("products.receiveCost")}>
+        </Field>
+        <Field label={t("products.receiveCost")}>
           <Input data-testid="receive-cost" inputMode="decimal" value={inCost} onChange={(e) => setInCost(e.target.value)} />
-        </Labeled>
-        <Labeled label={t("products.expiryDateOptional")}>
+        </Field>
+        <Field label={t("products.expiryDateOptional")}>
           <Input type="date" value={inExpiry} onChange={(e) => setInExpiry(e.target.value)} />
-        </Labeled>
+        </Field>
         <Button data-testid="receive-go" disabled={receive.isPending} onClick={() => receive.mutate()}>
           {t("products.receive")}
         </Button>
@@ -406,9 +432,9 @@ function StockPanel({
 
       {/* Set Expiry Date Directly */}
       <div className="grid gap-2 sm:grid-cols-[1fr_auto_auto] sm:items-end border-t border-slate-100 pt-2">
-        <Labeled label={t("products.expiresOn")}>
+        <Field label={t("products.expiresOn")}>
           <Input type="date" value={expiryEdit} onChange={(e) => setExpiryEdit(e.target.value)} />
-        </Labeled>
+        </Field>
         <Button
           variant="outline"
           disabled={expiryMutation.isPending || !expiryEdit}
@@ -432,16 +458,16 @@ function StockPanel({
 
       {/* Count Stock */}
       <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto] sm:items-end border-t border-slate-100 pt-2">
-        <Labeled label={t("products.countedQty")}>
+        <Field label={t("products.countedQty")}>
           <Input data-testid="count-qty" inputMode="decimal" value={counted} onChange={(e) => setCounted(e.target.value)} />
-        </Labeled>
-        <Labeled label={t("products.reason")}>
+        </Field>
+        <Field label={t("products.reason")}>
           <Select value={reason} onChange={(e) => setReason(e.target.value as "counted" | "damage" | "other")}>
             <option value="counted">{t("products.reasons.counted")}</option>
             <option value="damage">{t("products.reasons.damage")}</option>
             <option value="other">{t("products.reasons.other")}</option>
           </Select>
-        </Labeled>
+        </Field>
         <Button variant="outline" data-testid="count-go" disabled={count.isPending} onClick={() => count.mutate()}>
           {t("products.setCount")}
         </Button>
@@ -460,7 +486,7 @@ function StockPanel({
           </div>
           <p className="text-xs text-slate-600">{t("products.openPackHint")}</p>
           <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
-            <Labeled label={t("products.packsToOpen")}>
+            <Field label={t("products.packsToOpen")}>
               <Input
                 type="number"
                 min="1"
@@ -468,12 +494,12 @@ function StockPanel({
                 value={openPacksCount}
                 onChange={(e) => setOpenPacksCount(e.target.value)}
               />
-            </Labeled>
-            <Labeled label={t("products.piecesProduced")}>
+            </Field>
+            <Field label={t("products.piecesProduced")}>
               <div className="h-9 px-3 flex items-center font-bold text-brand-text bg-white border border-slate-200 rounded-md text-sm">
                 {(parseInt(openPacksCount, 10) || 0) * row.breaksIntoQty} {piece?.unit ?? "pcs"}
               </div>
-            </Labeled>
+            </Field>
             <Button
               disabled={openPackMutation.isPending}
               onClick={() => openPackMutation.mutate()}
@@ -532,6 +558,7 @@ function CategoryDialog({
   const { t } = useTranslation(["admin", "common"]);
   const msg = useErrorMessage();
   const qc = useQueryClient();
+  const toast = useToast();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [parentId, setParentId] = useState("");
@@ -548,21 +575,33 @@ function CategoryDialog({
       setName("");
       setParentId("");
       setEditingId(null);
-      setAlert({ tone: "info", text: t("products.categorySaved") });
+      const successText = t("products.categorySaved");
+      setAlert({ tone: "info", text: successText });
+      toast.good(successText);
       await qc.invalidateQueries({ queryKey: ["categories"] });
       await qc.invalidateQueries({ queryKey: ["products"] });
     },
-    onError: (e) => setAlert({ tone: "error", text: msg(e) }),
+    onError: (e) => {
+      const m = msg(e);
+      setAlert({ tone: "error", text: m });
+      toast.error(m);
+    },
   });
 
   const archive = useMutation({
     mutationFn: (id: string) => archiveCategory(id),
     onSuccess: async () => {
-      setAlert({ tone: "info", text: t("products.categoryArchived") });
+      const successText = t("products.categoryArchived");
+      setAlert({ tone: "info", text: successText });
+      toast.good(successText);
       await qc.invalidateQueries({ queryKey: ["categories"] });
       await qc.invalidateQueries({ queryKey: ["products"] });
     },
-    onError: (e) => setAlert({ tone: "error", text: msg(e) }),
+    onError: (e) => {
+      const m = msg(e);
+      setAlert({ tone: "error", text: m });
+      toast.error(m);
+    },
   });
 
   return (
@@ -573,10 +612,10 @@ function CategoryDialog({
           <h4 className="font-semibold text-sm">
             {editingId ? t("products.editCategory") : t("products.addCategory")}
           </h4>
-          <Labeled label={t("products.categoryName")}>
+          <Field label={t("products.categoryName")}>
             <Input value={name} maxLength={80} onChange={(e) => setName(e.target.value)} />
-          </Labeled>
-          <Labeled label={t("products.parentCategory")}>
+          </Field>
+          <Field label={t("products.parentCategory")}>
             <Select value={parentId} onChange={(e) => setParentId(e.target.value)}>
               <option value="">{t("products.noParent")}</option>
               {categories
@@ -587,7 +626,7 @@ function CategoryDialog({
                   </option>
                 ))}
             </Select>
-          </Labeled>
+          </Field>
           <div className="flex gap-2 mt-1">
             <Button disabled={save.isPending || !name.trim()} onClick={() => save.mutate()}>
               {t("products.save")}
@@ -671,6 +710,7 @@ function ImportDialog({
 }) {
   const { t } = useTranslation(["admin", "common"]);
   const qc = useQueryClient();
+  const toast = useToast();
   const [parsed, setParsed] = useState<{ valid: ParsedProductImport[]; errors: string[] } | null>(null);
   const [importing, setImporting] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -728,7 +768,9 @@ function ImportDialog({
     }
 
     setImporting(false);
-    setDoneMsg(t("products.importSuccess", { count }));
+    const successMsg = t("products.importSuccess", { count });
+    setDoneMsg(successMsg);
+    toast.good(successMsg);
     await Promise.all([qc.invalidateQueries({ queryKey: ["products"] }), qc.invalidateQueries({ queryKey: ["sellables"] })]);
   };
 
@@ -737,14 +779,14 @@ function ImportDialog({
       <div className="grid gap-3">
         <p className="text-xs text-slate-500">{t("products.importDialogDesc")}</p>
 
-        <Labeled label={t("products.importFileLabel")}>
+        <Field label={t("products.importFileLabel")}>
           <input
             type="file"
             accept=".csv"
             onChange={handleFile}
             className="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-slate-100 hover:file:bg-slate-200"
           />
-        </Labeled>
+        </Field>
 
         {parsed ? (
           <div className="grid gap-2 text-xs">
@@ -792,10 +834,11 @@ function ImportDialog({
 
 /** Products and stock: catalog, categories, tingi repack, expiry dates, and CSV import/export. */
 export function ProductsPage() {
-  const { t, i18n } = useTranslation("admin");
+  const { t, i18n } = useTranslation(["admin", "common"]);
   const msg = useErrorMessage();
   const { access, can } = useSession();
   const qc = useQueryClient();
+  const toast = useToast();
   const currency = access.tenant.base_currency;
   const fmt = (n: number) => formatMoney(money(n, currency), i18n.language);
   const { activeStore } = useActiveLocation();
@@ -827,15 +870,20 @@ export function ProductsPage() {
     onSuccess: async () => {
       setOpenId(null);
       setArchiveError(null);
+      toast.good(t("admin:products.saved"));
       await Promise.all([qc.invalidateQueries({ queryKey: ["products"] }), qc.invalidateQueries({ queryKey: ["sellables"] })]);
     },
-    onError: (e) => setArchiveError(msg(e)),
+    onError: (e) => {
+      const m = msg(e);
+      setArchiveError(m);
+      toast.error(m);
+    },
   });
 
   if (!store) {
     return (
       <Card>
-        <p>{t("sell.noStore")}</p>
+        <p>{t("admin:sell.noStore")}</p>
       </Card>
     );
   }
@@ -863,28 +911,30 @@ export function ProductsPage() {
   return (
     <div className="grid gap-4 lg:grid-cols-[1fr_440px]">
       <section className="grid content-start gap-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h1 className="text-xl font-semibold tracking-tight">{t("products.title")}</h1>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setCategoryModal(true)}>
-              📁 {t("products.categories")}
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleExportCsv} disabled={!q.data?.length}>
-              ⬇️ {t("products.exportCsv")}
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => setImportModal(true)}>
-              ⬆️ {t("products.importCsv")}
-            </Button>
-            <Button size="sm" data-testid="add-product" onClick={() => { setAdding(true); setOpenId(null); }}>
-              + {t("products.add")}
-            </Button>
-          </div>
-        </div>
+        <PageHeader
+          title={t("admin:products.title")}
+          actions={
+            <>
+              <Button variant="outline" size="sm" onClick={() => setCategoryModal(true)}>
+                📁 {t("admin:products.categories")}
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleExportCsv} disabled={!q.data?.length}>
+                ⬇️ {t("admin:products.exportCsv")}
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setImportModal(true)}>
+                ⬆️ {t("admin:products.importCsv")}
+              </Button>
+              <Button size="sm" data-testid="add-product" onClick={() => { setAdding(true); setOpenId(null); }}>
+                + {t("admin:products.add")}
+              </Button>
+            </>
+          }
+        />
 
         <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
-          <Input data-testid="products-search" placeholder={t("sell.search")} value={search} onChange={(e) => setSearch(e.target.value)} />
+          <Input data-testid="products-search" placeholder={t("admin:sell.search")} value={search} onChange={(e) => setSearch(e.target.value)} />
           <Select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} className="sm:w-48">
-            <option value="">{t("products.allCategories")}</option>
+            <option value="">{t("admin:products.allCategories")}</option>
             {categories.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
@@ -896,48 +946,58 @@ export function ProductsPage() {
         <div className="flex flex-wrap items-center gap-4 text-sm">
           <label className="flex items-center gap-2">
             <input type="checkbox" checked={onlyLow} onChange={(e) => setOnlyLow(e.target.checked)} />
-            {t("products.onlyLow")}
+            {t("admin:products.onlyLow")}
           </label>
           <label className="flex items-center gap-2">
             <input type="checkbox" checked={onlyExpiring} onChange={(e) => setOnlyExpiring(e.target.checked)} />
-            {t("products.onlyExpiring")}
+            {t("admin:products.onlyExpiring")}
           </label>
         </div>
 
-        {q.isPending ? <Card>{t("sell.loading")}</Card> : null}
-        {q.isError ? <Alert>{t("sell.loadError")}</Alert> : null}
-        {q.data && q.data.length === 0 ? <Card>{t("products.empty")}</Card> : null}
+        {q.isPending ? <Card className="p-8 text-center text-sm text-slate-500">{t("admin:sell.loading")}</Card> : null}
+        {q.isError ? <ErrorState message={t("admin:sell.loadError")} onRetry={() => q.refetch()} retryLabel={t("common:actions.retry")} /> : null}
+        {q.data && q.data.length === 0 ? (
+          <EmptyState
+            title={t("admin:products.empty")}
+            action={
+              <Button size="sm" onClick={() => { setAdding(true); setOpenId(null); }}>
+                + {t("admin:products.add")}
+              </Button>
+            }
+          />
+        ) : null}
 
         <ul className="grid gap-2">
           {rows.map((r) => {
             const status = stockStatus(r);
             const expiry = getExpiryStatus(r.expiresOn);
+            const isSelected = r.variantId === openId;
             return (
               <li key={r.variantId}>
                 <button
                   type="button"
                   data-testid={`row-${r.sku}`}
                   onClick={() => { setOpenId(r.variantId); setAdding(false); setArchiveError(null); }}
-                  className={`flex w-full items-center justify-between gap-2 rounded-md border bg-white px-3 py-2 text-left text-sm hover:bg-slate-50 ${r.variantId === openId ? "border-slate-900" : "border-slate-200"}`}
+                  className={`flex w-full items-center justify-between gap-3 rounded-lg border bg-white p-3 text-left text-sm transition-all hover:bg-slate-50 ${isSelected ? "border-brand-600 ring-2 ring-brand-600/20 bg-brand-50/20" : "border-slate-200"}`}
                 >
-                  <span>
-                    <span className="block font-medium">{r.name}</span>
-                    <span className="flex flex-wrap items-center gap-2 text-xs text-slate-500 mt-0.5">
-                      <span>{r.sku}</span>
-                      {r.categoryName ? <span className="bg-slate-100 text-slate-700 px-1.5 py-0.2 rounded font-medium">{r.categoryName}</span> : null}
+                  <span className="min-w-0">
+                    <span className="block font-medium truncate text-slate-900">{r.name}</span>
+                    <span className="flex flex-wrap items-center gap-1.5 text-xs text-slate-500 mt-1">
+                      <span className="font-mono">{r.sku}</span>
+                      {r.categoryName ? <span className="bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-medium">{r.categoryName}</span> : null}
                       {r.breaksIntoVariantId ? <span className="text-brand-text font-medium">📦 Pack (1→{r.breaksIntoQty})</span> : null}
-                      {r.active ? "" : <span className="text-slate-400">· {t("products.inactive")}</span>}
+                      {r.active ? "" : <span className="text-slate-400">· {t("admin:products.inactive")}</span>}
                     </span>
                   </span>
-                  <span className="flex items-center gap-2">
-                    {expiry === "expired" ? <Badge tone="warn">⚠️ {t("products.expired")}</Badge> : null}
-                    {expiry === "expiring_soon" ? <Badge tone="warn">⏳ {t("products.expiringSoon")}</Badge> : null}
-                    {status === "out" ? <Badge tone="warn">{t("products.out")}</Badge> : null}
-                    {status === "low" ? <Badge tone="warn">{t("products.low")}</Badge> : null}
+                  <span className="flex shrink-0 items-center gap-2">
+                    {expiry === "expired" ? <Badge tone="warn">⚠️ {t("admin:products.expired")}</Badge> : null}
+                    {expiry === "expiring_soon" ? <Badge tone="warn">⏳ {t("admin:products.expiringSoon")}</Badge> : null}
+                    {status === "out" ? <Badge tone="warn">{t("admin:products.out")}</Badge> : null}
+                    {status === "low" ? <Badge tone="warn">{t("admin:products.low")}</Badge> : null}
                     <span className="text-right">
-                      <span className="block font-semibold">{r.price === null ? t("products.noPrice") : fmt(r.price)}</span>
+                      <span className="block font-semibold tabular-nums">{r.price === null ? t("admin:products.noPrice") : fmt(r.price)}</span>
                       {r.tracked ? (
-                        <span className="text-xs text-slate-500">
+                        <span className="text-xs text-slate-500 tabular-nums">
                           {formatQty(r.qty)} {r.unit}
                         </span>
                       ) : null}
