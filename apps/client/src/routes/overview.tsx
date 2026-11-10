@@ -3,7 +3,7 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { formatMoney, money } from "@pos/core";
-import { Alert, Badge, Button, Card, EmptyState, ErrorState, Field, PageHeader, Select, Table, Tabs, TabPanel } from "../components/ui.tsx";
+import { Badge, Button, Card, EmptyState, ErrorState, Field, PageHeader, Select, Table, Tabs, TabPanel } from "../components/ui.tsx";
 import { useSession } from "../lib/session.tsx";
 import { useErrorMessage } from "../lib/i18n-helpers.ts";
 import { formatQty } from "../lib/product-math.ts";

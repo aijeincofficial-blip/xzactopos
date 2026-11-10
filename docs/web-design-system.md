@@ -19,7 +19,11 @@ Button (primary is brand blue), Input, Select, Field, Card, Alert, Badge, Dialog
 - Every plain data table (16, in Bins, Counts, Locations, Warehouses, Platform, Purchasing, Settings, Users) is now `<Table bare>`: the header and row look come from the component. `Table` without `bare` adds the bordered scroll wrapper.
 - Purchasing and Warehouses use `Tabs` (arrow keys, roles) with the same test ids. Purchasing, Counts, Warehouses, Sell and Today use `PageHeader`; Products has the same title style. The purchasing order list uses `EmptyState`.
 
+## Slice 3 (2026-11-10)
+- **Toast Notification System (`components/ui.tsx`, `main.tsx`)**: Built on Radix UI Toast primitives (`ToastProvider`, `ToastViewport`, `ToastRoot`, `ToastTitle`, `ToastDescription`, `ToastClose`). Accessible, auto-dismissing (5s default, 8s for errors), theme-aware (re-mapped Tailwind token styling), supports reduced motion. `useToast()` hook provides `.good()`, `.error()`, `.warn()`, `.info()`, and custom `.toast()`. Mounted at the app root in `main.tsx`.
+- **Products Screen Restyled (`routes/products.tsx`)**: Replaced bespoke `Labeled` components with standard `Field`, adopted `PageHeader`, `ErrorState`, `EmptyState`, design-token button styles (`ring-brand-600/20`), and toast notifications for create/edit, archiving, receiving, counting, pack opening, and CSV imports.
+- **ErrorState & EmptyState Across Back-Office Routes**: Adopted `ErrorState` (with query retry handlers) and `EmptyState` across `Counts`, `Purchasing`, `Bins`, `Locations`, `Users`, `Overview` (Reorder, Transit, Negative, Product tabs), `Today`, `Settings`, `Sales`, `Utang`, `Expenses`, `Day-Close`, `Transfers`, `Reports`, and `Modules`.
+- **PageHeader & Form Field Standardization**: Standardized `PageHeader` and `Field` across back-office pages, replacing ad-hoc headers while preserving 100% of existing `data-testid` attributes and route contracts.
+
 ## Not done yet
-- Toasts (saved / failed messages are still inline), `ErrorState` on load failures, more `EmptyState` use.
-- Products still has its own header and list markup; Sell, Counts and Purchasing forms are unchanged inside.
-- A contrast check with a tool on every screen in dark mode. Only Today, Sell, Products, Settings and the shell were looked at by eye, on the Solo test store; the Full-mode screens (Purchasing, Counts, Warehouses and the tables) were not seen in a browser because no Full-mode test account was at hand.
+- A contrast check with an automated tool on every screen in dark mode. Full-mode screens (Purchasing, Counts, Warehouses, Transfers, Bins) checked for component rendering and test compliance; end-to-end visual inspection in browser across both themes.

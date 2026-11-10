@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Alert, Badge, Button, Card, Dialog, EmptyState, ErrorState, Field, Input, PageHeader, Select, Table, useToast } from "../components/ui.tsx";
+import { Badge, Button, Card, Dialog, EmptyState, ErrorState, Field, Input, PageHeader, Select, Table, useToast } from "../components/ui.tsx";
 import { useSession } from "../lib/session.tsx";
 import { useErrorMessage } from "../lib/i18n-helpers.ts";
 import { supabase } from "../lib/supabase.ts";

@@ -24,7 +24,7 @@ import {
 } from "../lib/schemas.ts";
 import { useSession } from "../lib/session.tsx";
 import { useErrorMessage, useValidationMessage } from "../lib/i18n-helpers.ts";
-import { Alert, Badge, Button, Card, Dialog, EmptyState, ErrorState, Field, Input, PageHeader, Select, Table, useToast } from "../components/ui.tsx";
+import { Alert, Badge, Button, Card, Dialog, EmptyState, ErrorState, Field, Input, PageHeader, Select, Table } from "../components/ui.tsx";
 
 const ROLES: Role[] = ["superadmin", "admin", "warehouse", "cashier"];
 

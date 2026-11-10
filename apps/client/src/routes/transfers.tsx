@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Alert, Badge, Button, Card, Dialog, EmptyState, ErrorState, Field, Input, PageHeader, Select, useToast } from "../components/ui.tsx";
+import { Alert, Badge, Button, Card, Dialog, ErrorState, Field, Input, PageHeader, Select, useToast } from "../components/ui.tsx";
 import { useSession } from "../lib/session.tsx";
 import { useErrorMessage } from "../lib/i18n-helpers.ts";
 import { pullCatalog } from "../lib/sell-api.ts";
