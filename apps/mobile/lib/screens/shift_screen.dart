@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 import '../backend.dart';
 import '../core/export.dart';
 import '../core/money.dart';
+import '../core/shift_printer.dart';
 import '../core/theme.dart';
 import '../core/ui.dart';
 import '../data/shift_models.dart';
@@ -143,6 +144,7 @@ class _ShiftScreenState extends State<ShiftScreen> {
     final locale = Localizations.localeOf(context).languageCode;
     final ccy = scope.store.baseCurrency;
     String money(int a) => Money(a, ccy).format(locale);
+    String when(DateTime d) => DateFormat.yMMMd(locale).add_jm().format(d);
 
     return Scaffold(
       appBar: AppBar(title: Text(t.shiftTitle), actions: const [SyncBadge()]),
@@ -236,51 +238,125 @@ class _ShiftScreenState extends State<ShiftScreen> {
                       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                         FilledButton(key: const Key('shift-close'), onPressed: () => _close(shift, x), child: Text(t.shiftClose)),
                         const SizedBox(height: Gap.s),
-                        OutlinedButton(
-                          key: const Key('shift-share-x'),
-                          onPressed: () => textSharer.shareText(shiftSlipText(t, widget.storeName, ccy, locale, shift, x)),
-                          child: Text(t.shiftShareX),
-                        ),
+                        Row(children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              key: const Key('shift-share-x'),
+                              onPressed: () => textSharer.shareText(shiftSlipText(t, widget.storeName, ccy, locale, shift, x)),
+                              child: Text(t.shiftShareX),
+                            ),
+                          ),
+                          if (shiftPrinter.available) ...[
+                            const SizedBox(width: Gap.s),
+                            IconButton.outlined(
+                              key: const Key('shift-print-x'),
+                              tooltip: t.shiftPrint,
+                              icon: const Icon(Icons.print_outlined),
+                              onPressed: () => shiftPrinter.printShift(
+                                storeName: widget.storeName,
+                                currency: ccy,
+                                locale: locale,
+                                shift: shift,
+                                xReading: x,
+                                t: t,
+                              ),
+                            ),
+                            const SizedBox(width: Gap.xs),
+                            IconButton.outlined(
+                              key: const Key('shift-pdf-x'),
+                              tooltip: t.shiftPrintPdf,
+                              icon: const Icon(Icons.picture_as_pdf_outlined),
+                              onPressed: () => shiftPrinter.shareShiftPdf(
+                                storeName: widget.storeName,
+                                currency: ccy,
+                                locale: locale,
+                                shift: shift,
+                                xReading: x,
+                                t: t,
+                              ),
+                            ),
+                          ],
+                        ]),
                       ]),
                     ),
                   ]);
                 },
               ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(Gap.xl, Gap.xl, Gap.xl, Gap.s),
-              child: Text(t.shiftHistory, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-            ),
             StreamBuilder<List<ShiftView>>(
               stream: scope.store.watchShifts(),
               builder: (context, hs) {
                 // a cashier sees their own shifts only (the phone may hold someone else's from a shared till); the owner and admins see all
                 final all = scope.isAdminOrSuperadmin;
-                final list = [for (final s in hs.data ?? const <ShiftView>[]) if (!s.isOpen && (all || s.cashierId == _user)) s];
-                if (list.isEmpty) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: Gap.xl),
-                    child: Text(t.shiftNoHistory, key: const Key('shift-no-history'), style: TextStyle(color: scheme.outline)),
-                  );
-                }
-                return Column(children: [
-                  for (final s in list)
-                    ListTile(
-                      key: Key('shift-row-${s.id}'),
-                      title: Text(DateFormat.yMMMd(locale).add_jm().format(s.openedAt)),
-                      subtitle: Text('${t.dayCloseCounted}: ${money(s.countedCash ?? 0)}'),
-                      trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-                        if (s.pending) Icon(Icons.cloud_upload_outlined, size: 18, color: scheme.primary, semanticLabel: t.notSentYet),
-                        const SizedBox(width: Gap.s),
-                        Text(
-                          (s.difference ?? 0) == 0 ? '0' : ((s.difference ?? 0) > 0 ? '+' : '') + money(s.difference ?? 0),
-                          style: TextStyle(
-                            fontWeight: FontWeight.w800,
-                            color: (s.difference ?? 0) == 0 ? scheme.success : ((s.difference ?? 0) < 0 ? scheme.error : scheme.payUtang),
-                          ),
-                        ),
-                      ]),
-                      onTap: () => _openSlip(s.id),
+                final shifts = hs.data ?? const <ShiftView>[];
+                final otherOpen = [for (final s in shifts) if (s.isOpen && s.cashierId != _user && all) s];
+                final list = [for (final s in shifts) if (!s.isOpen && (all || s.cashierId == _user)) s];
+
+                return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                  if (otherOpen.isNotEmpty) ...[
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(Gap.xl, Gap.l, Gap.xl, Gap.s),
+                      child: Text(t.shiftOtherOpen, key: const Key('shift-other-open-header'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
                     ),
+                    for (final s in otherOpen)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: Gap.xl, vertical: Gap.xs),
+                        child: AppCard(
+                          key: Key('shift-open-card-${s.id}'),
+                          child: Row(children: [
+                            Expanded(
+                              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                Text(t.shiftCashierLabel(s.cashierId?.substring(0, 8) ?? '...'), style: const TextStyle(fontWeight: FontWeight.w700)),
+                                const SizedBox(height: 2),
+                                Text(
+                                  '${t.shiftOpenedLine(when(s.openedAt))} · ${money(s.openingCash)}',
+                                  style: TextStyle(color: scheme.outline, fontSize: 13),
+                                ),
+                              ]),
+                            ),
+                            FilledButton.tonal(
+                              key: Key('shift-supervisor-close-${s.id}'),
+                              onPressed: () async {
+                                final x = await scope.store.watchXReading(s.id).first;
+                                if (x != null && mounted) {
+                                  await _close(s, x);
+                                }
+                              },
+                              child: Text(t.shiftClose),
+                            ),
+                          ]),
+                        ),
+                      ),
+                  ],
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(Gap.xl, Gap.xl, Gap.xl, Gap.s),
+                    child: Text(t.shiftHistory, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+                  ),
+                  if (list.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: Gap.xl),
+                      child: Text(t.shiftNoHistory, key: const Key('shift-no-history'), style: TextStyle(color: scheme.outline)),
+                    )
+                  else
+                    Column(children: [
+                      for (final s in list)
+                        ListTile(
+                          key: Key('shift-row-${s.id}'),
+                          title: Text(DateFormat.yMMMd(locale).add_jm().format(s.openedAt)),
+                          subtitle: Text('${t.dayCloseCounted}: ${money(s.countedCash ?? 0)}'),
+                          trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                            if (s.pending) Icon(Icons.cloud_upload_outlined, size: 18, color: scheme.primary, semanticLabel: t.notSentYet),
+                            const SizedBox(width: Gap.s),
+                            Text(
+                              (s.difference ?? 0) == 0 ? '0' : ((s.difference ?? 0) > 0 ? '+' : '') + money(s.difference ?? 0),
+                              style: TextStyle(
+                                fontWeight: FontWeight.w800,
+                                color: (s.difference ?? 0) == 0 ? scheme.success : ((s.difference ?? 0) < 0 ? scheme.error : scheme.payUtang),
+                              ),
+                            ),
+                          ]),
+                          onTap: () => _openSlip(s.id),
+                        ),
+                    ]),
                 ]);
               },
             ),
@@ -473,11 +549,45 @@ class ShiftSlipScreen extends StatelessWidget {
               ]),
             ),
             const SizedBox(height: Gap.l),
-            OutlinedButton(
-              key: const Key('z-share'),
-              onPressed: () => textSharer.shareText(shiftSlipText(t, storeName, ccy, locale, s, null)),
-              child: Text(t.shiftShareX),
-            ),
+            Row(children: [
+              Expanded(
+                child: OutlinedButton(
+                  key: const Key('z-share'),
+                  onPressed: () => textSharer.shareText(shiftSlipText(t, storeName, ccy, locale, s, null)),
+                  child: Text(t.shiftShareX),
+                ),
+              ),
+              if (shiftPrinter.available) ...[
+                const SizedBox(width: Gap.s),
+                IconButton.outlined(
+                  key: const Key('z-print'),
+                  tooltip: t.shiftPrint,
+                  icon: const Icon(Icons.print_outlined),
+                  onPressed: () => shiftPrinter.printShift(
+                    storeName: storeName,
+                    currency: ccy,
+                    locale: locale,
+                    shift: s,
+                    xReading: null,
+                    t: t,
+                  ),
+                ),
+                const SizedBox(width: Gap.xs),
+                IconButton.outlined(
+                  key: const Key('z-pdf'),
+                  tooltip: t.shiftPrintPdf,
+                  icon: const Icon(Icons.picture_as_pdf_outlined),
+                  onPressed: () => shiftPrinter.shareShiftPdf(
+                    storeName: storeName,
+                    currency: ccy,
+                    locale: locale,
+                    shift: s,
+                    xReading: null,
+                    t: t,
+                  ),
+                ),
+              ],
+            ]),
           ]);
         },
       ),

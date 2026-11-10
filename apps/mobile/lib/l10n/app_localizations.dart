@@ -3463,6 +3463,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Staff: username.storecode'**
   String get loginHelper;
+
+  /// No description provided for @shiftPrint.
+  ///
+  /// In en, this message translates to:
+  /// **'Print slip'**
+  String get shiftPrint;
+
+  /// No description provided for @shiftPrintPdf.
+  ///
+  /// In en, this message translates to:
+  /// **'PDF slip'**
+  String get shiftPrintPdf;
+
+  /// No description provided for @shiftOtherOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open shifts of other cashiers'**
+  String get shiftOtherOpen;
+
+  /// No description provided for @shiftSupervisorClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close shift (Supervisor)'**
+  String get shiftSupervisorClose;
+
+  /// No description provided for @shiftCashierLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cashier: {name}'**
+  String shiftCashierLabel(String name);
 }
 
 class _AppLocalizationsDelegate

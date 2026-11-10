@@ -6,9 +6,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:xzactopos_mobile/app.dart';
 import 'package:xzactopos_mobile/core/export.dart';
+import 'package:xzactopos_mobile/core/shift_printer.dart';
 import 'package:xzactopos_mobile/data/db.dart';
 import 'package:xzactopos_mobile/data/drift_store.dart';
 import 'package:xzactopos_mobile/data/shift_models.dart';
+import 'package:xzactopos_mobile/l10n/app_localizations.dart';
 
 import 'widget_test.dart' show FakeBackend;
 
@@ -20,6 +22,38 @@ class FakeText implements TextSharer {
   final texts = <String>[];
   @override
   Future<void> shareText(String text) async => texts.add(text);
+}
+
+class FakeShiftPrinter implements ShiftPrinter {
+  final printed = <String>[];
+  final shared = <String>[];
+
+  @override
+  bool get available => true;
+
+  @override
+  Future<void> printShift({
+    required String storeName,
+    required String currency,
+    required String locale,
+    required ShiftView shift,
+    XReading? xReading,
+    required AppLocalizations t,
+  }) async {
+    printed.add(shift.id);
+  }
+
+  @override
+  Future<void> shareShiftPdf({
+    required String storeName,
+    required String currency,
+    required String locale,
+    required ShiftView shift,
+    XReading? xReading,
+    required AppLocalizations t,
+  }) async {
+    shared.add(shift.id);
+  }
 }
 
 /// A backend that can say what the server thinks the shift's cash should be.
@@ -71,6 +105,16 @@ Future<void> leave(WidgetTester tester) async {
 
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
+  late FakeShiftPrinter fakePrinter;
+
+  setUp(() {
+    fakePrinter = FakeShiftPrinter();
+    shiftPrinter = fakePrinter;
+  });
+
+  tearDown(() {
+    shiftPrinter = const PdfShiftPrinter();
+  });
 
   testWidgets('the owner and a cashier both find Shift under More; the Sell screen shows whether one is open', (tester) async {
     await openApp(tester);
@@ -279,6 +323,83 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Isara ang shift'), findsOneWidget);
     expect(tester.takeException(), isNull);
+    await leave(tester);
+  });
+
+  testWidgets('print and PDF buttons are present on X and Z readings and trigger ShiftPrinter', (tester) async {
+    final store = await openApp(tester);
+    await store.startShift(id: 'sh-1', cashierId: 'u1', openingCash: 1000, opId: 'op-open');
+    await store.opDone('op-open');
+    await openShiftScreen(tester);
+
+    // Verify Print and PDF buttons on X reading
+    expect(find.byKey(const Key('shift-print-x')), findsOneWidget);
+    expect(find.byKey(const Key('shift-pdf-x')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('shift-print-x')));
+    await tester.pumpAndSettle();
+    expect(fakePrinter.printed, contains('sh-1'));
+
+    await tester.tap(find.byKey(const Key('shift-pdf-x')));
+    await tester.pumpAndSettle();
+    expect(fakePrinter.shared, contains('sh-1'));
+
+    // Close the shift
+    await tester.tap(find.byKey(const Key('shift-close')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('close-sheet-counted')), '10.00');
+    await tester.tap(find.byKey(const Key('close-sheet-confirm')));
+    await tester.pumpAndSettle();
+
+    // Now on ShiftSlipScreen (Z report)
+    expect(find.byKey(const Key('z-print')), findsOneWidget);
+    expect(find.byKey(const Key('z-pdf')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('z-print')));
+    await tester.pumpAndSettle();
+    expect(fakePrinter.printed, contains('sh-1'));
+
+    await tester.tap(find.byKey(const Key('z-pdf')));
+    await tester.pumpAndSettle();
+    expect(fakePrinter.shared, contains('sh-1'));
+
+    await leave(tester);
+  });
+
+  testWidgets('admin sees other open cashier shifts and can close them as supervisor', (tester) async {
+    final store = await openApp(tester, role: 'admin');
+    // Start an open shift for someone else
+    await store.startShift(
+      id: 'sh-other',
+      cashierId: 'cashier-maria',
+      openingCash: 5000,
+      opId: 'op-other',
+      at: DateTime.now().subtract(const Duration(hours: 3)),
+    );
+    await store.opDone('op-other');
+
+    await openShiftScreen(tester);
+
+    // Admin sees the other cashier's open shift
+    expect(find.byKey(const Key('shift-other-open-header')), findsOneWidget);
+    expect(find.byKey(const Key('shift-open-card-sh-other')), findsOneWidget);
+    expect(find.byKey(const Key('shift-supervisor-close-sh-other')), findsOneWidget);
+
+    // Admin can tap close to close the cashier's shift
+    await tester.tap(find.byKey(const Key('shift-supervisor-close-sh-other')));
+    await tester.pumpAndSettle();
+
+    // The close sheet opens for sh-other
+    expect(find.byKey(const Key('close-sheet-counted')), findsOneWidget);
+    await tester.enterText(find.byKey(const Key('close-sheet-counted')), '50.00');
+    await tester.enterText(find.byKey(const Key('close-sheet-note')), 'Supervisor closed end of day');
+    await tester.tap(find.byKey(const Key('close-sheet-confirm')));
+    await tester.pumpAndSettle();
+
+    // Lands on Z report
+    expect(find.byKey(const Key('z-diff')), findsOneWidget);
+    expect(find.text('Supervisor closed end of day'), findsOneWidget);
+
     await leave(tester);
   });
 }

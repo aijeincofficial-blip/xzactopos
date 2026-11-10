@@ -1184,5 +1184,17 @@
   "staffErrDenied": "Hindi mo ito magagawa.",
   "staffErrSelf": "Hindi mo maaaring i-off ang sarili mo.",
   "staffErrLimit": "Walang espasyo para sa dagdag na user sa planong ito.",
-  "loginHelper": "Tauhan: username.storecode"
+  "loginHelper": "Tauhan: username.storecode",
+  "shiftPrint": "I-print ang slip",
+  "shiftPrintPdf": "PDF na slip",
+  "shiftOtherOpen": "Iba pang nakabukas na shift",
+  "shiftSupervisorClose": "Isara ang shift (Superbisor)",
+  "shiftCashierLabel": "Kahera: {name}",
+  "@shiftCashierLabel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  }
 }

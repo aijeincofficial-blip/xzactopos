@@ -2045,4 +2045,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get loginHelper => 'Staff: username.storecode';
+
+  @override
+  String get shiftPrint => 'Print slip';
+
+  @override
+  String get shiftPrintPdf => 'PDF slip';
+
+  @override
+  String get shiftOtherOpen => 'Open shifts of other cashiers';
+
+  @override
+  String get shiftSupervisorClose => 'Close shift (Supervisor)';
+
+  @override
+  String shiftCashierLabel(String name) {
+    return 'Cashier: $name';
+  }
 }

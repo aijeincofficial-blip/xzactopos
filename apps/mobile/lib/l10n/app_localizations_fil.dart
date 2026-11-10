@@ -2055,4 +2055,21 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get loginHelper => 'Tauhan: username.storecode';
+
+  @override
+  String get shiftPrint => 'I-print ang slip';
+
+  @override
+  String get shiftPrintPdf => 'PDF na slip';
+
+  @override
+  String get shiftOtherOpen => 'Iba pang nakabukas na shift';
+
+  @override
+  String get shiftSupervisorClose => 'Isara ang shift (Superbisor)';
+
+  @override
+  String shiftCashierLabel(String name) {
+    return 'Kahera: $name';
+  }
 }

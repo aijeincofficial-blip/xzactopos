@@ -1184,5 +1184,17 @@
   "staffErrDenied": "You cannot do this.",
   "staffErrSelf": "You cannot switch yourself off.",
   "staffErrLimit": "This plan has no room for more users.",
-  "loginHelper": "Staff: username.storecode"
+  "loginHelper": "Staff: username.storecode",
+  "shiftPrint": "Print slip",
+  "shiftPrintPdf": "PDF slip",
+  "shiftOtherOpen": "Open shifts of other cashiers",
+  "shiftSupervisorClose": "Close shift (Supervisor)",
+  "shiftCashierLabel": "Cashier: {name}",
+  "@shiftCashierLabel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  }
 }
