@@ -1359,5 +1359,36 @@
   "shiftCashDropShare": "Ibahagi ang Slip",
   "shiftCashDropPrint": "I-print ang Slip",
   "shiftCashDropErrAmount": "Maglagay ng wastong halaga na higit sa zero",
-  "shiftCashDropErrExceeds": "Hindi maaaring lumampas ang drop sa inaasahang laman ng drawer"
+  "shiftCashDropErrExceeds": "Hindi maaaring lumampas ang drop sa inaasahang laman ng drawer",
+  "payCard": "Kard",
+  "payCardRef": "Trace o approval code ng kard",
+  "payCardRefHint": "hal. 123456",
+  "payCardSuccess": "Naitala ang bayad gamit ang kard",
+  "payCardReceived": "Halaga sa kard",
+  "cartLineDiscount": "Bawas sa presyo ng item",
+  "cartLineDiscountHint": "Halaga ng bawas (₱)",
+  "cartEditItem": "Baguhin ang item",
+  "cartLineDiscountShort": "-{amount} bawas",
+  "@cartLineDiscountShort": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "cartUnitPrice": "Presyo bawat piraso",
+  "cartUnitPriceOverride": "Palitan ang presyo",
+  "stockReorderAlert": "Mababa sa reorder point ({current} / min {min})",
+  "@stockReorderAlert": {
+    "placeholders": {
+      "current": {
+        "type": "String"
+      },
+      "min": {
+        "type": "String"
+      }
+    }
+  },
+  "stockLowStockBadge": "Mababang Stock",
+  "stockRequestTransfer": "Humiling ng Transfer para sa Stock"
 }

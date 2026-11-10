@@ -2404,4 +2404,50 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get shiftCashDropErrExceeds =>
       'Drop amount cannot exceed expected drawer cash';
+
+  @override
+  String get payCard => 'Card';
+
+  @override
+  String get payCardRef => 'Card trace / approval code';
+
+  @override
+  String get payCardRefHint => 'e.g. 123456';
+
+  @override
+  String get payCardSuccess => 'Card payment recorded';
+
+  @override
+  String get payCardReceived => 'Card amount';
+
+  @override
+  String get cartLineDiscount => 'Item discount';
+
+  @override
+  String get cartLineDiscountHint => 'Amount off (₱)';
+
+  @override
+  String get cartEditItem => 'Edit item';
+
+  @override
+  String cartLineDiscountShort(String amount) {
+    return '-$amount off';
+  }
+
+  @override
+  String get cartUnitPrice => 'Unit price';
+
+  @override
+  String get cartUnitPriceOverride => 'Override price';
+
+  @override
+  String stockReorderAlert(String current, String min) {
+    return 'Below reorder threshold ($current / min $min)';
+  }
+
+  @override
+  String get stockLowStockBadge => 'Low Stock';
+
+  @override
+  String get stockRequestTransfer => 'Request Restock Transfer';
 }

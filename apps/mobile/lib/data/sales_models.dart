@@ -10,6 +10,7 @@ class SaleLine {
     this.unitCost = 0,
     this.taxRate = 0,
     this.tracked = true,
+    this.discount = 0,
   });
 
   final String variantId;
@@ -24,8 +25,17 @@ class SaleLine {
   /// The product keeps a stock count (a sale takes qty from it).
   final bool tracked;
 
-  /// qty x price, rounded half up, computed in thousandths so no floating noise can differ from the server.
-  int get lineTotal => (milli(qty) * unitPrice + 500) ~/ 1000;
+  /// Line-item discount in integer centavos.
+  final int discount;
+
+  /// Gross line total before discount: qty x price rounded half up.
+  int get grossTotal => (milli(qty) * unitPrice + 500) ~/ 1000;
+
+  /// Net line total: grossTotal - discount (never negative).
+  int get lineTotal {
+    final t = grossTotal - discount;
+    return t < 0 ? 0 : t;
+  }
 
   /// Tax contained in the line price: total x rate / (1 + rate), in whole centavos.
   int get lineTax {
@@ -40,7 +50,7 @@ class SaleLine {
 class PaymentDraft {
   const PaymentDraft(this.method, this.amount, {this.tendered, this.reference, this.wallet});
 
-  /// cash | utang | ewallet
+  /// cash | utang | ewallet | card
   final String method;
 
   /// The part of the sale this payment covers (change given back is not included).
@@ -79,7 +89,9 @@ class SaleDraft {
   final String? approvalId;
   final Map<String, dynamic>? offlineApproval;
 
+  int get grossSubtotal => lines.fold(0, (a, l) => a + l.grossTotal);
   int get subtotal => lines.fold(0, (a, l) => a + l.lineTotal);
+  int get totalDiscount => discount + lines.fold(0, (a, l) => a + l.discount);
   int get total => subtotal - discount;
   int get utang => payments.where((p) => p.method == 'utang').fold(0, (a, p) => a + p.amount);
 }
@@ -127,11 +139,12 @@ class SaleSummary {
 }
 
 class SaleItemView {
-  const SaleItemView(this.name, this.qty, this.unitPrice, this.lineTotal);
+  const SaleItemView(this.name, this.qty, this.unitPrice, this.lineTotal, {this.discount = 0});
   final String name;
   final double qty;
   final int unitPrice;
   final int lineTotal;
+  final int discount;
 }
 
 class SalePaymentView {

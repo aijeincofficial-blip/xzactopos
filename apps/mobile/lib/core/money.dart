@@ -99,6 +99,9 @@ class Money {
     return '${neg ? '-' : ''}$whole${exp > 0 ? '.$frac' : ''}';
   }
 
+  /// Currency symbol according to locale or currency name, e.g. ₱, $, €.
+  String get currencySymbol => NumberFormat.simpleCurrency(name: currency).currencySymbol;
+
   void _same(Money other) {
     if (other.currency != currency) {
       throw ArgumentError('Currency mismatch: $currency vs ${other.currency}');

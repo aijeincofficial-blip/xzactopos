@@ -206,6 +206,108 @@ class _SellScreenState extends State<SellScreen> {
     if (value != null && value >= 0 && i < _cart!.lines.length) _cart!.setQty(i, value);
   }
 
+  String get _ccy => CatalogScope.of(context).store.baseCurrency;
+
+  Future<void> _editLine(int i) async {
+    final t = AppLocalizations.of(context);
+    final line = _cart!.lines[i];
+    final qtyCtrl = TextEditingController(text: _fmtQty(line.qty));
+    final discCtrl = TextEditingController(
+      text: line.discount > 0 ? Money(line.discount, _ccy).toDecimalString() : '',
+    );
+    final priceCtrl = TextEditingController(
+      text: Money(line.unitPrice, _ccy).toDecimalString(),
+    );
+
+    final updated = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(line.product.name),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                key: const Key('line-qty-field'),
+                controller: qtyCtrl,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(labelText: t.sellQuantity),
+              ),
+              const SizedBox(height: Gap.s),
+              TextField(
+                key: const Key('line-price-field'),
+                controller: priceCtrl,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(
+                  labelText: t.cartUnitPriceOverride,
+                  prefixText: '${Money(0, _ccy).currencySymbol} ',
+                ),
+              ),
+              const SizedBox(height: Gap.s),
+              TextField(
+                key: const Key('line-discount-field'),
+                controller: discCtrl,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(
+                  labelText: t.cartLineDiscountHint,
+                  prefixText: '${Money(0, _ccy).currencySymbol} ',
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            key: const Key('line-remove-btn'),
+            style: TextButton.styleFrom(foregroundColor: Theme.of(ctx).colorScheme.error),
+            onPressed: () {
+              Navigator.pop(ctx, false);
+              _cart!.remove(i);
+            },
+            child: Text(t.clear),
+          ),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(t.cancel)),
+          FilledButton(
+            key: const Key('line-edit-save'),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(t.ok),
+          ),
+        ],
+      ),
+    );
+
+    if (updated == true && i < _cart!.lines.length) {
+      final newQty = double.tryParse(qtyCtrl.text.replaceAll(',', '.')) ?? line.qty;
+      if (newQty <= 0) {
+        _cart!.remove(i);
+        return;
+      }
+      _cart!.setQty(i, newQty);
+
+      final newPriceVal = priceCtrl.text.trim();
+      if (newPriceVal.isNotEmpty) {
+        try {
+          final newPrice = Money.parse(newPriceVal, _ccy).amount;
+          if (newPrice >= 0) {
+            _cart!.setUnitPrice(i, newPrice);
+          }
+        } catch (_) {}
+      }
+
+      final discVal = discCtrl.text.trim();
+      if (discVal.isEmpty) {
+        _cart!.setDiscount(i, 0);
+      } else {
+        try {
+          final disc = Money.parse(discVal, _ccy).amount;
+          if (disc >= 0) {
+            _cart!.setDiscount(i, disc);
+          }
+        } catch (_) {}
+      }
+    }
+  }
+
   Future<void> _confirmClear() async {
     final t = AppLocalizations.of(context);
     final yes = await showDialog<bool>(
@@ -295,6 +397,7 @@ class _SellScreenState extends State<SellScreen> {
                 cart: cart,
                 money: _money,
                 onEditQty: _editQty,
+                onEditLine: _editLine,
                 onPay: cart.isEmpty ? null : () => _pay(cart),
               ),
             ),
@@ -584,10 +687,17 @@ class _Tile extends StatelessWidget {
 }
 
 class _CartPanel extends StatelessWidget {
-  const _CartPanel({required this.cart, required this.money, required this.onEditQty, required this.onPay});
+  const _CartPanel({
+    required this.cart,
+    required this.money,
+    required this.onEditQty,
+    required this.onEditLine,
+    required this.onPay,
+  });
   final Cart cart;
   final String Function(int) money;
   final void Function(int) onEditQty;
+  final void Function(int) onEditLine;
   final VoidCallback? onPay;
 
   @override
@@ -622,11 +732,30 @@ class _CartPanel extends StatelessWidget {
                       child: Row(
                         children: [
                           Expanded(
-                            child: Text(
-                              l.product.name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontSize: 16),
+                            child: InkWell(
+                              key: Key('edit-line-$i'),
+                              onTap: () => onEditLine(i),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    l.product.name,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(fontSize: 16),
+                                  ),
+                                  if (l.discount > 0)
+                                    Text(
+                                      t.cartLineDiscountShort(money(l.discount)),
+                                      key: Key('line-discount-$i'),
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: scheme.success,
+                                      ),
+                                    ),
+                                ],
+                              ),
                             ),
                           ),
                           IconButton(
@@ -675,10 +804,17 @@ class _CartPanel extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          t.sellItems(cart.itemCount),
-                          style: TextStyle(color: scheme.outline, fontWeight: FontWeight.w600, fontSize: 13),
-                        ),
+                        if (cart.totalDiscount > 0)
+                          Text(
+                            t.cartLineDiscountShort(money(cart.totalDiscount)),
+                            key: const Key('cart-total-discount'),
+                            style: TextStyle(color: scheme.success, fontWeight: FontWeight.w700, fontSize: 13),
+                          )
+                        else
+                          Text(
+                            t.sellItems(cart.itemCount),
+                            style: TextStyle(color: scheme.outline, fontWeight: FontWeight.w600, fontSize: 13),
+                          ),
                         const SizedBox(height: 2),
                         Text(
                           money(cart.subtotal),

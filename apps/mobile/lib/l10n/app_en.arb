@@ -1359,5 +1359,36 @@
   "shiftCashDropShare": "Share Slip",
   "shiftCashDropPrint": "Print Slip",
   "shiftCashDropErrAmount": "Enter a valid drop amount greater than zero",
-  "shiftCashDropErrExceeds": "Drop amount cannot exceed expected drawer cash"
+  "shiftCashDropErrExceeds": "Drop amount cannot exceed expected drawer cash",
+  "payCard": "Card",
+  "payCardRef": "Card trace / approval code",
+  "payCardRefHint": "e.g. 123456",
+  "payCardSuccess": "Card payment recorded",
+  "payCardReceived": "Card amount",
+  "cartLineDiscount": "Item discount",
+  "cartLineDiscountHint": "Amount off (₱)",
+  "cartEditItem": "Edit item",
+  "cartLineDiscountShort": "-{amount} off",
+  "@cartLineDiscountShort": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "cartUnitPrice": "Unit price",
+  "cartUnitPriceOverride": "Override price",
+  "stockReorderAlert": "Below reorder threshold ({current} / min {min})",
+  "@stockReorderAlert": {
+    "placeholders": {
+      "current": {
+        "type": "String"
+      },
+      "min": {
+        "type": "String"
+      }
+    }
+  },
+  "stockLowStockBadge": "Low Stock",
+  "stockRequestTransfer": "Request Restock Transfer"
 }

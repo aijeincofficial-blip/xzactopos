@@ -4123,6 +4123,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Drop amount cannot exceed expected drawer cash'**
   String get shiftCashDropErrExceeds;
+
+  /// No description provided for @payCard.
+  ///
+  /// In en, this message translates to:
+  /// **'Card'**
+  String get payCard;
+
+  /// No description provided for @payCardRef.
+  ///
+  /// In en, this message translates to:
+  /// **'Card trace / approval code'**
+  String get payCardRef;
+
+  /// No description provided for @payCardRefHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 123456'**
+  String get payCardRefHint;
+
+  /// No description provided for @payCardSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Card payment recorded'**
+  String get payCardSuccess;
+
+  /// No description provided for @payCardReceived.
+  ///
+  /// In en, this message translates to:
+  /// **'Card amount'**
+  String get payCardReceived;
+
+  /// No description provided for @cartLineDiscount.
+  ///
+  /// In en, this message translates to:
+  /// **'Item discount'**
+  String get cartLineDiscount;
+
+  /// No description provided for @cartLineDiscountHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount off (₱)'**
+  String get cartLineDiscountHint;
+
+  /// No description provided for @cartEditItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit item'**
+  String get cartEditItem;
+
+  /// No description provided for @cartLineDiscountShort.
+  ///
+  /// In en, this message translates to:
+  /// **'-{amount} off'**
+  String cartLineDiscountShort(String amount);
+
+  /// No description provided for @cartUnitPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Unit price'**
+  String get cartUnitPrice;
+
+  /// No description provided for @cartUnitPriceOverride.
+  ///
+  /// In en, this message translates to:
+  /// **'Override price'**
+  String get cartUnitPriceOverride;
+
+  /// No description provided for @stockReorderAlert.
+  ///
+  /// In en, this message translates to:
+  /// **'Below reorder threshold ({current} / min {min})'**
+  String stockReorderAlert(String current, String min);
+
+  /// No description provided for @stockLowStockBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Low Stock'**
+  String get stockLowStockBadge;
+
+  /// No description provided for @stockRequestTransfer.
+  ///
+  /// In en, this message translates to:
+  /// **'Request Restock Transfer'**
+  String get stockRequestTransfer;
 }
 
 class _AppLocalizationsDelegate

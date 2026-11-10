@@ -6,11 +6,18 @@ import '../data/local_store.dart';
 import '../data/sales_models.dart';
 
 class CartLine {
-  CartLine(this.product, this.qty);
+  CartLine(this.product, this.qty, {this.discount = 0});
   final ProductView product;
   double qty;
+  int discount;
 
   int get unitPrice => product.price ?? 0;
+  int get grossTotal => (SaleLine.milli(qty) * unitPrice + 500) ~/ 1000;
+  int get lineTotal {
+    final t = grossTotal - discount;
+    return t < 0 ? 0 : t;
+  }
+
   SaleLine toSaleLine() => SaleLine(
         variantId: product.variantId,
         name: product.name,
@@ -19,8 +26,8 @@ class CartLine {
         unitCost: product.cost,
         taxRate: product.taxRate,
         tracked: product.trackStock,
+        discount: discount,
       );
-  int get lineTotal => toSaleLine().lineTotal;
 }
 
 /// The sale being rung up. Kept on the device after every change, so a phone call or a restart does not lose it.
@@ -35,6 +42,8 @@ class Cart extends ChangeNotifier {
   final lines = <CartLine>[];
 
   bool get isEmpty => lines.isEmpty;
+  int get grossSubtotal => lines.fold(0, (a, l) => a + l.grossTotal);
+  int get totalDiscount => lines.fold(0, (a, l) => a + l.discount);
   int get subtotal => lines.fold(0, (a, l) => a + l.lineTotal);
   int get itemCount => lines.length;
 
@@ -67,6 +76,24 @@ class Cart extends ChangeNotifier {
       lines[index].qty = qty;
     }
     _changed();
+  }
+
+  void setDiscount(int index, int discount) {
+    if (index >= 0 && index < lines.length) {
+      lines[index].discount = discount < 0 ? 0 : discount;
+      _changed();
+    }
+  }
+
+  void setUnitPrice(int index, int price) {
+    if (index >= 0 && index < lines.length) {
+      lines[index] = CartLine(
+        lines[index].product.withPrice(price),
+        lines[index].qty,
+        discount: lines[index].discount,
+      );
+      _changed();
+    }
   }
 
   void remove(int index) {
@@ -112,6 +139,7 @@ class Cart extends ChangeNotifier {
         'taxRate': l.product.taxRate,
         'cost': l.product.cost,
         'qty': l.qty,
+        'discount': l.discount,
       };
 
   CartLine _decode(Map<String, dynamic> m) => CartLine(
@@ -132,5 +160,6 @@ class Cart extends ChangeNotifier {
           cost: m['cost'] as int,
         ),
         (m['qty'] as num).toDouble(),
+        discount: (m['discount'] as num?)?.toInt() ?? 0,
       );
 }

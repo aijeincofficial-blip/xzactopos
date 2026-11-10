@@ -107,6 +107,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
     total: t.payTotal,
     cashReceived: t.receiptCashReceived,
     ewallet: t.payEwallet,
+    card: t.payCard,
     change: t.payChange,
     onUtang: t.receiptOnUtang,
     cancelled: t.receiptCancelled,
@@ -194,6 +195,9 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
           final ewallet = d.payments
               .where((p) => p.method == 'ewallet')
               .fold<int>(0, (a, p) => a + p.amount);
+          final card = d.payments
+              .where((p) => p.method == 'card')
+              .fold<int>(0, (a, p) => a + p.amount);
 
           return StreamBuilder<TodayTotals>(
             stream: _today,
@@ -263,6 +267,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                                             .trim()
                                             .toLowerCase()],
                                     moneyText: money(item.lineTotal),
+                                    discountText: item.discount > 0 ? money(item.discount) : null,
                                   ),
                                 ],
                                 const SizedBox(height: 14),
@@ -307,6 +312,14 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                                         ? 'Ibinayad (E-Wallet):'
                                         : 'Paid via E-Wallet:',
                                     value: money(ewallet),
+                                  ),
+                                if (card > 0)
+                                  _buildSummaryRow(
+                                    label: locale == 'fil'
+                                        ? 'Ibinayad (Kard):'
+                                        : 'Paid via Card:',
+                                    value: money(card),
+                                    key: const Key('receipt-card'),
                                   ),
                                 if (d.change > 0)
                                   _buildSummaryRow(
@@ -662,6 +675,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
     required SaleItemView item,
     StockRow? stockRow,
     required String moneyText,
+    String? discountText,
   }) {
     final qtyLeft = stockRow?.qty;
     final stockText = qtyLeft != null ? '(${qtyLeft.toInt()} left)' : null;
@@ -687,6 +701,15 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
+                if (discountText != null)
+                  Text(
+                    '-$discountText off',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF10B981),
+                    ),
+                  ),
                 if (stockText != null) ...[
                   const SizedBox(height: 1),
                   Text(

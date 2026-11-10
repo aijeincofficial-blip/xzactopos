@@ -192,7 +192,7 @@ Uint8List encodeReceipt(
     enc.column2(labels.ewallet, _escPosFmt(ewallet, currency, locale));
   }
   if (card > 0) {
-    enc.column2('Card', _escPosFmt(card, currency, locale));
+    enc.column2(labels.card, _escPosFmt(card, currency, locale));
   }
   if (sale.utang > 0) {
     enc.column2(labels.onUtang, _escPosFmt(sale.utang, currency, locale));

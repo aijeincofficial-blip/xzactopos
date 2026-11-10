@@ -2417,4 +2417,50 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String get shiftCashDropErrExceeds =>
       'Hindi maaaring lumampas ang drop sa inaasahang laman ng drawer';
+
+  @override
+  String get payCard => 'Kard';
+
+  @override
+  String get payCardRef => 'Trace o approval code ng kard';
+
+  @override
+  String get payCardRefHint => 'hal. 123456';
+
+  @override
+  String get payCardSuccess => 'Naitala ang bayad gamit ang kard';
+
+  @override
+  String get payCardReceived => 'Halaga sa kard';
+
+  @override
+  String get cartLineDiscount => 'Bawas sa presyo ng item';
+
+  @override
+  String get cartLineDiscountHint => 'Halaga ng bawas (₱)';
+
+  @override
+  String get cartEditItem => 'Baguhin ang item';
+
+  @override
+  String cartLineDiscountShort(String amount) {
+    return '-$amount bawas';
+  }
+
+  @override
+  String get cartUnitPrice => 'Presyo bawat piraso';
+
+  @override
+  String get cartUnitPriceOverride => 'Palitan ang presyo';
+
+  @override
+  String stockReorderAlert(String current, String min) {
+    return 'Mababa sa reorder point ($current / min $min)';
+  }
+
+  @override
+  String get stockLowStockBadge => 'Mababang Stock';
+
+  @override
+  String get stockRequestTransfer => 'Humiling ng Transfer para sa Stock';
 }

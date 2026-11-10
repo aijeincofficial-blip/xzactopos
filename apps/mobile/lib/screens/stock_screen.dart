@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
+import '../backend.dart';
 import '../core/money.dart';
 import '../data/sales_models.dart';
+import '../data/transfer_models.dart';
 import '../core/theme.dart';
 import '../core/ui.dart';
 import '../l10n/app_localizations.dart';
@@ -11,6 +13,7 @@ import '../sync/store_session.dart';
 import '../sync/sync_badge.dart';
 import 'product_thumb.dart';
 import 'restock_screen.dart';
+import 'transfer_create_screen.dart';
 
 /// Counted stock on the shelf whose expiry date is within a week (or already past).
 bool isExpiringRow(StockRow r, DateTime today) {
@@ -39,7 +42,43 @@ class _StockScreenState extends State<StockScreen> {
     final soon = isExpiringRow(r, today);
     if (!r.low && left == null) return null;
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      if (r.low) Text(t.stockRunningLow, style: TextStyle(color: scheme.error)),
+      if (r.low) ...[
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              key: Key('low-stock-badge-${r.product.id}'),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: scheme.errorContainer,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                t.stockLowStockBadge,
+                style: TextStyle(
+                  color: scheme.onErrorContainer,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                t.stockRunningLow,
+                style: TextStyle(color: scheme.error, fontSize: 12, fontWeight: FontWeight.w600),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+        if (r.reorderPoint > 0)
+          Text(
+            t.stockReorderAlert(fmtQty(r.qty ?? 0), fmtQty(r.reorderPoint)),
+            key: Key('reorder-alert-${r.product.id}'),
+            style: TextStyle(color: scheme.error, fontSize: 11, fontWeight: FontWeight.w500),
+          ),
+      ],
       if (left != null)
         Text(
           left < 0 ? t.stockExpiredAgo(-left) : t.stockExpiresIn(left),
@@ -199,6 +238,42 @@ class _ActionSheet extends StatelessWidget {
           Text(row.product.name, style: Theme.of(context).textTheme.titleLarge),
           Text(row.counted ? t.stockNow(fmtQty(row.qty!)) : t.stockNotCounted),
           const SizedBox(height: 16),
+          if (row.low) ...[
+            FilledButton.tonalIcon(
+              key: const Key('action-request-transfer'),
+              style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
+              icon: const Icon(Icons.swap_horiz_rounded),
+              label: Text(t.stockRequestTransfer),
+              onPressed: () async {
+                final locId = (await scope.store.activeStoreNow()) ?? 'default-store';
+                final backend = (scope.engine.api is Backend) ? scope.engine.api as Backend : null;
+                if (!context.mounted) return;
+                Navigator.pop(context);
+                if (backend != null) {
+                  await Navigator.of(context).push(MaterialPageRoute<void>(
+                    builder: (_) => scope.wrap(
+                      TransferCreateScreen(
+                        backend: backend,
+                        originLocationId: locId,
+                        originName: t.stockTitle,
+                        initialLine: TransferDraftLine(
+                          variantId: row.product.variantId,
+                          sku: row.product.sku,
+                          productName: row.product.name,
+                          unit: row.product.unit,
+                          qty: row.reorderPoint > (row.qty ?? 0)
+                              ? (row.reorderPoint - (row.qty ?? 0))
+                              : 1.0,
+                          availableQty: row.qty,
+                        ),
+                      ),
+                    ),
+                  ));
+                }
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
           FilledButton.icon(
             key: const Key('action-stock-in'),
             style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(56), textStyle: const TextStyle(fontSize: 20)),

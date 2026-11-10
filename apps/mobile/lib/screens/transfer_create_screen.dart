@@ -14,11 +14,13 @@ class TransferCreateScreen extends StatefulWidget {
     required this.backend,
     required this.originLocationId,
     required this.originName,
+    this.initialLine,
   });
 
   final Backend backend;
   final String originLocationId;
   final String originName;
+  final TransferDraftLine? initialLine;
 
   @override
   State<TransferCreateScreen> createState() => _TransferCreateScreenState();
@@ -38,6 +40,9 @@ class _TransferCreateScreenState extends State<TransferCreateScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialLine != null) {
+      _lines.add(widget.initialLine!);
+    }
     _loadDestinations();
   }
 
@@ -304,18 +309,21 @@ class _TransferCreateScreenState extends State<TransferCreateScreen> {
                         // Line Items Section Header
                         Row(
                           children: [
-                            Text(
-                              t.transferItemsSection.toUpperCase(),
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w900,
-                                color: scheme.outline,
-                                letterSpacing: 0.5,
+                            Expanded(
+                              child: Text(
+                                t.transferItemsSection.toUpperCase(),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w900,
+                                  color: scheme.outline,
+                                  letterSpacing: 0.5,
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            const Spacer(),
                             IconButton.filledTonal(
                               key: const Key('transfer-scan-item-btn'),
+                              visualDensity: VisualDensity.compact,
                               icon: const Icon(
                                 Icons.qr_code_scanner_rounded,
                                 size: 18,
@@ -326,6 +334,10 @@ class _TransferCreateScreenState extends State<TransferCreateScreen> {
                             const SizedBox(width: Gap.xs),
                             FilledButton.tonalIcon(
                               key: const Key('transfer-add-item-btn'),
+                              style: FilledButton.styleFrom(
+                                visualDensity: VisualDensity.compact,
+                                padding: const EdgeInsets.symmetric(horizontal: 10),
+                              ),
                               icon: const Icon(Icons.add_rounded, size: 16),
                               label: Text(
                                 t.transferAddItem,

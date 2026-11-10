@@ -17,6 +17,7 @@ class ReceiptLabels {
     required this.total,
     required this.cashReceived,
     required this.ewallet,
+    this.card = 'Card',
     required this.change,
     required this.onUtang,
     required this.cancelled,
@@ -30,6 +31,7 @@ class ReceiptLabels {
   final String total;
   final String cashReceived;
   final String ewallet;
+  final String card;
   final String change;
   final String onUtang;
   final String cancelled;

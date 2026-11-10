@@ -208,6 +208,7 @@ mixin DriftSales implements SalesStore {
               qty: l.qty,
               unitPrice: l.unitPrice,
               unitCost: Value(costOf(l)),
+              discount: Value(l.discount),
               tax: Value(l.lineTax),
               lineTotal: l.lineTotal,
               tracked: Value(l.tracked),
@@ -261,6 +262,7 @@ mixin DriftSales implements SalesStore {
               'name': l.name,
               'qty': l.qty,
               'unit_price': l.unitPrice,
+              if (l.discount > 0) 'discount': l.discount,
               'unit_cost': costOf(l),
               'tax': l.lineTax,
               'line_total': l.lineTotal,
@@ -571,7 +573,7 @@ mixin DriftSales implements SalesStore {
       discount: s.discount,
       tax: s.tax,
       customerId: s.customerId,
-      items: [for (final i in items) SaleItemView(i.name, i.qty, i.unitPrice, i.lineTotal)],
+      items: [for (final i in items) SaleItemView(i.name, i.qty, i.unitPrice, i.lineTotal, discount: i.discount)],
       payments: [for (final p in pays) SalePaymentView(p.method, p.amount, p.tendered, p.reference, wallet: p.wallet)],
     );
   }

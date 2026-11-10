@@ -32,7 +32,8 @@ class _PayScreenState extends State<PayScreen> {
   final _opId = const Uuid().v7();
   final _received = TextEditingController();
   final _discount = TextEditingController();
-  String _method = 'cash'; // cash | ewallet
+  final _cardRef = TextEditingController();
+  String _method = 'cash'; // cash | ewallet | card
   final _utangKey = GlobalKey();
   bool _utangShown = false;
   String _wallet = 'gcash'; // which wallet an e-wallet payment went to
@@ -44,6 +45,7 @@ class _PayScreenState extends State<PayScreen> {
   void dispose() {
     _received.dispose();
     _discount.dispose();
+    _cardRef.dispose();
     super.dispose();
   }
 
@@ -84,6 +86,9 @@ class _PayScreenState extends State<PayScreen> {
     if (c != null && mounted) setState(() => _customer = c);
   }
 
+  int get _totalDiscount =>
+      widget.cart.lines.fold<int>(0, (a, l) => a + l.discount) + _discountAmt;
+
   Future<bool> _requestSupervisorApproval() async {
     final scope = CatalogScope.of(context);
     final backend = (scope.engine.api is Backend) ? scope.engine.api as Backend : null;
@@ -95,7 +100,7 @@ class _PayScreenState extends State<PayScreen> {
       action: 'sale_discount',
       refId: _saleId,
       title: t.supervisorPinDiscountTitle,
-      subtitle: t.supervisorPinDiscountSubtitle(_money(_discountAmt)),
+      subtitle: t.supervisorPinDiscountSubtitle(_money(_totalDiscount)),
     );
     if (!mounted) return false;
     if (res != null) {
@@ -108,7 +113,7 @@ class _PayScreenState extends State<PayScreen> {
   Future<void> _finish() async {
     if (!_valid || _saving) return;
     final scope = CatalogScope.of(context);
-    if (scope.isCashier && _discountAmt > 0 && _approvalResult == null) {
+    if (scope.isCashier && _totalDiscount > 0 && _approvalResult == null) {
       final approved = await _requestSupervisorApproval();
       if (!approved) return;
       if (!mounted) return;
@@ -130,6 +135,9 @@ class _PayScreenState extends State<PayScreen> {
               _applied,
               tendered: _method == 'cash' ? _receivedAmt : null,
               wallet: _method == 'ewallet' ? _wallet : null,
+              reference: _method == 'card' && _cardRef.text.trim().isNotEmpty
+                  ? _cardRef.text.trim()
+                  : null,
             ),
           if (_utang > 0) PaymentDraft('utang', _utang),
         ],
@@ -223,7 +231,9 @@ class _PayScreenState extends State<PayScreen> {
             child: Row(
               children: [
                 CoinBadge(
-                  icon: _method == 'cash' ? Icons.payments_rounded : Icons.phone_android_rounded,
+                  icon: _method == 'cash'
+                      ? Icons.payments_rounded
+                      : (_method == 'card' ? Icons.credit_card_rounded : Icons.phone_android_rounded),
                   color: scheme.payCash,
                   size: 40,
                 ),
@@ -250,7 +260,9 @@ class _PayScreenState extends State<PayScreen> {
                   ),
                 ),
                 StatusPill(
-                  label: _method == 'cash' ? t.payCash : t.payEwallet,
+                  label: _method == 'cash'
+                      ? t.payCash
+                      : (_method == 'card' ? t.payCard : t.payEwallet),
                   color: scheme.obsidian,
                   textColor: Colors.white,
                 ),
@@ -268,6 +280,11 @@ class _PayScreenState extends State<PayScreen> {
                 value: 'ewallet',
                 label: Text(t.payEwallet),
                 icon: const Icon(Icons.phone_android_rounded, size: 18),
+              ),
+              ButtonSegment(
+                value: 'card',
+                label: Text(t.payCard),
+                icon: const Icon(Icons.credit_card_rounded, size: 18),
               ),
             ],
             selected: {_method},
@@ -290,6 +307,19 @@ class _PayScreenState extends State<PayScreen> {
               ],
             ),
           ],
+          if (_method == 'card') ...[
+            const SizedBox(height: Gap.s),
+            TextField(
+              key: const Key('pay-card-ref'),
+              controller: _cardRef,
+              decoration: InputDecoration(
+                isDense: true,
+                prefixIcon: const Icon(Icons.pin_outlined),
+                labelText: t.payCardRef,
+                hintText: t.payCardRefHint,
+              ),
+            ),
+          ],
           const SizedBox(height: Gap.m),
 
           // Amount received: typed with the pad below (no system keyboard)
@@ -302,7 +332,9 @@ class _PayScreenState extends State<PayScreen> {
             style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w900, letterSpacing: -0.5),
             decoration: InputDecoration(
               isDense: true,
-              labelText: _method == 'cash' ? t.payReceivedCash : t.payReceivedEwallet,
+              labelText: _method == 'cash'
+                  ? t.payReceivedCash
+                  : (_method == 'card' ? t.payCardReceived : t.payReceivedEwallet),
               hintText: Money(_total, _ccy).toDecimalString(),
               prefixText:
                   '${NumberFormat.simpleCurrency(locale: Localizations.localeOf(context).languageCode, name: _ccy).currencySymbol} ',
