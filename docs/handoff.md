@@ -8,7 +8,7 @@ Updated at the end of every task. Read this first in a fresh session. New sessio
 | Agent | Branch and worktree | Working on | Status |
 | --- | --- | --- | --- |
 | Claude | `claude/phase3-sell-8261d3`, `.claude/worktrees/phase3-sell-8261d3` | Priority 3: cashier shifts and X/Z on the phone done (`docs/tasks/F-05m-cashier-shifts.md`); staff on the phone done (`docs/tasks/F-04m-phone-staff.md`); priority 4 (web design system) started: tokens, dark mode, sidebar, components (`docs/web-design-system.md`). | stopped (owner switched to Antigravity 2026-11-10; branch equals main, clean) |
-| Antigravity | `ag/work`, `.claude/worktrees/ag-work` | Option 1: Mobile Card Payments Tender (F-07); Option 2: Mobile Line-Item Discounts & Price Overrides (F-06/F-07); Option 3: Mobile Low-Stock & Reorder Point Alerts (F-08/F-09) | done |
+| Antigravity | `ag/work`, `.claude/worktrees/ag-work` | Option 1: Web POS Thermal Receipt & Reprint Engine (sell.tsx & sales.tsx); Option 2: Web Customer Statement of Account (SOA) Printout & CSV Export (utang.tsx); Option 3: Web Reorder-to-PO Seamless Flow (overview.tsx & purchasing.tsx) | in progress |
 | Owner | merges branches into `main`; makes the git remote and the keystore | | |
 
 Row status words: `waiting`, `in progress`, `done`, `stopped` / `limit reached` (the other agent may take over, see `docs/START-HERE-antigravity.md` "Working together").
