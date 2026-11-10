@@ -27,6 +27,14 @@ import { SupervisorPinDialog } from "../components/supervisor-pin-dialog.tsx";
 import { ReceiptSlipView, type ReceiptData } from "../components/receipt-slip.tsx";
 import type { OfflineApprovalPayload } from "../lib/offline-pin-api.ts";
 
+import {
+  getStoredPinned,
+  saveStoredPinned,
+  resolveFastKeyProducts,
+  isSkuPinned,
+  togglePinnedSku,
+} from "../lib/fast-keys.ts";
+
 const WALLETS: Wallet[] = ["gcash", "maya", "other"];
 
 interface Done extends SoldReceipt {
@@ -109,6 +117,23 @@ export function SellPage() {
     const all = catalog.data ?? [];
     return (q ? all.filter((s) => s.name.toLowerCase().includes(q) || s.sku.toLowerCase().includes(q) || s.barcode?.toLowerCase() === q) : all).slice(0, 60);
   }, [catalog.data, search]);
+
+  const [customPinned, setCustomPinned] = useState<string[] | null>(() => getStoredPinned());
+
+  const fastKeyProducts = useMemo(
+    () => resolveFastKeyProducts(catalog.data ?? [], customPinned),
+    [catalog.data, customPinned],
+  );
+
+  function isPinned(sku: string): boolean {
+    return isSkuPinned(sku, catalog.data ?? [], customPinned);
+  }
+
+  function togglePin(sku: string) {
+    const next = togglePinnedSku(sku, catalog.data ?? [], customPinned);
+    setCustomPinned(next);
+    saveStoredPinned(next);
+  }
 
   function add(s: Sellable, qty = 1) {
     setProblem(null);
@@ -309,6 +334,44 @@ export function SellPage() {
           onChange={(e) => setSearch(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && onSearchEnter()}
         />
+        {/* Fast-Keys Quick Bar */}
+        {fastKeyProducts.length > 0 || (customPinned !== null && customPinned.length === 0) ? (
+          <div data-testid="fast-keys-bar" className="grid gap-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                {t("sell.fastKeys")}
+              </span>
+            </div>
+            {fastKeyProducts.length === 0 ? (
+              <p className="text-xs text-slate-400 py-1">{t("sell.fastKeysEmpty")}</p>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
+                {fastKeyProducts.map((s) => (
+                  <button
+                    key={s.variantId}
+                    type="button"
+                    data-testid={`fast-key-${s.sku}`}
+                    onClick={() => add(s)}
+                    className="flex flex-col justify-between p-2 rounded-md border border-slate-200 bg-white text-left hover:border-slate-300 hover:bg-slate-50 transition-colors shadow-xs"
+                  >
+                    <div className="w-full">
+                      <span className="block text-xs font-semibold text-slate-900 truncate" title={s.name}>
+                        {s.name}
+                      </span>
+                      <span className="block text-[11px] text-slate-500 font-mono truncate">{s.sku}</span>
+                    </div>
+                    <div className="mt-2">
+                      <span className="inline-block rounded bg-slate-100 px-1.5 py-0.5 text-xs font-semibold text-slate-800">
+                        {fmt(s.price)}
+                      </span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : null}
+
         {catalog.isPending ? (
           <ul className="grid gap-2 sm:grid-cols-2">
             {Array.from({ length: 6 }).map((_, i) => (
@@ -320,22 +383,39 @@ export function SellPage() {
         {catalog.data && catalog.data.length === 0 ? <Card>{t("sell.noProducts")}</Card> : null}
         {catalog.data && catalog.data.length > 0 && shown.length === 0 ? <Card>{t("sell.noMatch")}</Card> : null}
         <ul className="grid gap-2 sm:grid-cols-2">
-          {shown.map((s) => (
-            <li key={s.variantId}>
-              <button
-                type="button"
-                data-testid={`product-${s.sku}`}
-                onClick={() => add(s)}
-                className="flex w-full items-center justify-between gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-left text-sm hover:bg-slate-50"
-              >
-                <span>
-                  <span className="block font-semibold">{s.name}</span>
-                  <span className="text-xs text-slate-500">{s.sku}</span>
-                </span>
-                <span className="font-semibold">{fmt(s.price)}</span>
-              </button>
-            </li>
-          ))}
+          {shown.map((s) => {
+            const pinned = isPinned(s.sku);
+            return (
+              <li key={s.variantId} className="flex items-stretch gap-1">
+                <button
+                  type="button"
+                  data-testid={`product-${s.sku}`}
+                  onClick={() => add(s)}
+                  className="flex flex-1 items-center justify-between gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-left text-sm hover:bg-slate-50 focus:outline-none"
+                >
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-semibold truncate">{s.name}</span>
+                    <span className="text-xs text-slate-500 font-mono">{s.sku}</span>
+                  </span>
+                  <span className="font-semibold whitespace-nowrap">{fmt(s.price)}</span>
+                </button>
+                <button
+                  type="button"
+                  data-testid={`pin-toggle-${s.sku}`}
+                  title={pinned ? t("sell.unpinFromFastKeys") : t("sell.pinToFastKeys")}
+                  aria-label={pinned ? t("sell.unpinFromFastKeys") : t("sell.pinToFastKeys")}
+                  onClick={() => togglePin(s.sku)}
+                  className={`flex items-center justify-center w-9 rounded-md border text-sm transition-colors ${
+                    pinned
+                      ? "border-amber-300 bg-amber-50 text-amber-600 hover:bg-amber-100"
+                      : "border-slate-200 bg-white text-slate-400 hover:text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  ★
+                </button>
+              </li>
+            );
+          })}
         </ul>
       </section>
 

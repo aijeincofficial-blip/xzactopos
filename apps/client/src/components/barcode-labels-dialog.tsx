@@ -14,37 +14,71 @@ export interface BarcodeProduct {
 export interface BarcodeLabelsDialogProps {
   open: boolean;
   onClose: () => void;
-  product: BarcodeProduct | null;
+  product?: BarcodeProduct | null;
+  products?: BarcodeProduct[] | null;
   currency: string;
   storeName?: string;
+}
+
+export function buildPrintItems(
+  items: BarcodeProduct[],
+  copies: number,
+  currency: string,
+  locale = "en",
+): { product: BarcodeProduct; code: string; priceDisplay: string }[] {
+  const result: { product: BarcodeProduct; code: string; priceDisplay: string }[] = [];
+  const safeCopies = Math.max(1, copies);
+  for (const item of items) {
+    const code = item.barcode?.trim() || item.sku;
+    const priceDisplay =
+      item.price != null ? formatMoney(money(item.price, currency), locale) : "";
+    for (let i = 0; i < safeCopies; i++) {
+      result.push({ product: item, code, priceDisplay });
+    }
+  }
+  return result;
 }
 
 export function BarcodeLabelsDialog({
   open,
   onClose,
   product,
+  products,
   currency,
   storeName = "Store",
 }: BarcodeLabelsDialogProps) {
   const { t, i18n } = useTranslation("admin");
   const [quantity, setQuantity] = useState(1);
+  const [copies, setCopies] = useState(1);
   const [format, setFormat] = useState<"roll" | "sheet">("roll");
   const [includePrice, setIncludePrice] = useState(true);
   const [includeStore, setIncludeStore] = useState(true);
   const [includeSku, setIncludeSku] = useState(true);
+  const [previewIdx, setPreviewIdx] = useState(0);
 
-  if (!open || !product) return null;
+  const items: BarcodeProduct[] =
+    products && products.length > 0 ? products : product ? [product] : [];
 
-  const code = product.barcode?.trim() || product.sku;
-  const priceDisplay =
-    product.price != null ? formatMoney(money(product.price, currency), i18n.language) : "";
+  if (!open || items.length === 0) return null;
+
+  const isBatch = items.length > 1;
+  const currentPreview = items[Math.min(previewIdx, items.length - 1)] ?? items[0]!;
+  const previewCode = currentPreview.barcode?.trim() || currentPreview.sku;
+  const previewPriceDisplay =
+    currentPreview.price != null
+      ? formatMoney(money(currentPreview.price, currency), i18n.language)
+      : "";
 
   const handlePrint = () => {
     window.print();
   };
 
-  const labelCount = Math.max(1, Math.min(quantity, 200));
-  const printItems = Array.from({ length: labelCount }, (_, i) => i);
+  const count = isBatch ? copies : quantity;
+  const printItems = buildPrintItems(items, count, currency, i18n.language);
+
+  const dialogTitle = isBatch
+    ? t("barcodeLabels.batchTitle", { count: items.length })
+    : t("barcodeLabels.title");
 
   return (
     <>
@@ -53,7 +87,7 @@ export function BarcodeLabelsDialog({
         onOpenChange={(isOpen) => {
           if (!isOpen) onClose();
         }}
-        title={t("barcodeLabels.title")}
+        title={dialogTitle}
         closeLabel={t("barcodeLabels.close")}
       >
         <div className="space-y-6 pt-1" data-testid="barcode-labels-dialog">
@@ -74,19 +108,35 @@ export function BarcodeLabelsDialog({
               </Select>
             </Field>
 
-            <Field label={t("barcodeLabels.quantity")}>
-              <Input
-                type="number"
-                min={1}
-                max={200}
-                value={quantity}
-                onChange={(e) => {
-                  const val = parseInt(e.target.value, 10);
-                  setQuantity(isNaN(val) ? 1 : Math.max(1, Math.min(val, 200)));
-                }}
-                data-testid="barcode-qty-input"
-              />
-            </Field>
+            {isBatch ? (
+              <Field label={t("barcodeLabels.copiesPerProduct")}>
+                <Input
+                  type="number"
+                  min={1}
+                  max={50}
+                  value={copies}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value, 10);
+                    setCopies(isNaN(val) ? 1 : Math.max(1, Math.min(val, 50)));
+                  }}
+                  data-testid="barcode-copies-input"
+                />
+              </Field>
+            ) : (
+              <Field label={t("barcodeLabels.quantity")}>
+                <Input
+                  type="number"
+                  min={1}
+                  max={200}
+                  value={quantity}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value, 10);
+                    setQuantity(isNaN(val) ? 1 : Math.max(1, Math.min(val, 200)));
+                  }}
+                  data-testid="barcode-qty-input"
+                />
+              </Field>
+            )}
           </div>
 
           {/* Label Options */}
@@ -127,9 +177,37 @@ export function BarcodeLabelsDialog({
 
           {/* Preview Section */}
           <div className="space-y-2">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-              {t("barcodeLabels.preview")}
-            </span>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                {t("barcodeLabels.preview")}
+              </span>
+              {isBatch ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-slate-500">
+                    {previewIdx + 1} / {items.length}
+                  </span>
+                  <div className="flex gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={previewIdx <= 0}
+                      onClick={() => setPreviewIdx((i) => Math.max(0, i - 1))}
+                    >
+                      ←
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={previewIdx >= items.length - 1}
+                      onClick={() => setPreviewIdx((i) => Math.min(items.length - 1, i + 1))}
+                    >
+                      →
+                    </Button>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+
             <div className="flex justify-center p-4 bg-slate-100 rounded-[10px] border border-slate-200">
               <div
                 className="bg-white text-slate-900 border border-slate-300 rounded-[6px] shadow-sm flex flex-col justify-between items-center text-center p-3 select-none"
@@ -143,21 +221,21 @@ export function BarcodeLabelsDialog({
                 ) : null}
 
                 <span className="text-xs font-semibold text-slate-900 max-w-[200px] truncate">
-                  {product.name}
+                  {currentPreview.name}
                 </span>
 
                 <div className="w-full my-1 flex justify-center">
                   <BarcodeSvg
-                    value={code}
+                    value={previewCode}
                     height={30}
                     showText={includeSku}
                     className="text-black"
                   />
                 </div>
 
-                {includePrice && priceDisplay ? (
+                {includePrice && previewPriceDisplay ? (
                   <span className="text-base font-bold text-slate-950 tabular-nums">
-                    {priceDisplay}
+                    {previewPriceDisplay}
                   </span>
                 ) : null}
               </div>
@@ -165,21 +243,26 @@ export function BarcodeLabelsDialog({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center justify-end gap-3 pt-2">
-            <Button
-              variant="outline"
-              onClick={onClose}
-              data-testid="close-barcode-dialog"
-            >
-              {t("barcodeLabels.close")}
-            </Button>
-            <Button
-              variant="primary"
-              onClick={handlePrint}
-              data-testid="print-labels-action"
-            >
-              {t("barcodeLabels.print")}
-            </Button>
+          <div className="flex items-center justify-between pt-2">
+            <span className="text-xs text-slate-500 tabular-nums">
+              {printItems.length} {printItems.length === 1 ? "label" : "labels"} total
+            </span>
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                onClick={onClose}
+                data-testid="close-barcode-dialog"
+              >
+                {t("barcodeLabels.close")}
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handlePrint}
+                data-testid="print-labels-action"
+              >
+                {t("barcodeLabels.print")}
+              </Button>
+            </div>
           </div>
         </div>
       </Dialog>
@@ -189,7 +272,7 @@ export function BarcodeLabelsDialog({
         className={`printable-barcode-labels format-${format}`}
         aria-hidden="true"
       >
-        {printItems.map((idx) => (
+        {printItems.map((pItem, idx) => (
           <div key={idx} className="barcode-label-item">
             {includeStore ? (
               <div style={{ fontSize: "8pt", fontWeight: 600, letterSpacing: "0.5px", textTransform: "uppercase" }}>
@@ -198,21 +281,21 @@ export function BarcodeLabelsDialog({
             ) : null}
 
             <div style={{ fontSize: "9pt", fontWeight: 700, margin: "1mm 0" }}>
-              {product.name}
+              {pItem.product.name}
             </div>
 
             <div style={{ width: "90%", margin: "1mm auto" }}>
               <BarcodeSvg
-                value={code}
+                value={pItem.code}
                 height={26}
                 showText={includeSku}
                 className="text-black"
               />
             </div>
 
-            {includePrice && priceDisplay ? (
+            {includePrice && pItem.priceDisplay ? (
               <div style={{ fontSize: "12pt", fontWeight: 800, marginTop: "1mm" }}>
-                {priceDisplay}
+                {pItem.priceDisplay}
               </div>
             ) : null}
           </div>

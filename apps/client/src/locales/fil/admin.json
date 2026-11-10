@@ -86,6 +86,10 @@
     "change": "Sukli",
     "charge": "Singilin ang {{total}}",
     "charging": "Sine-save ang benta...",
+    "fastKeys": "Mabilisang Pindot",
+    "fastKeysEmpty": "Wala pang naka-pin na mabilisang pindot",
+    "pinToFastKeys": "I-pin sa Mabilisang Pindot",
+    "unpinFromFastKeys": "Alisin sa Mabilisang Pindot",
     "clear": "I-clear ang cart",
     "done": "Na-save ang benta",
     "receiptNo": "Resibo",
@@ -1266,16 +1270,22 @@
   },
   "barcodeLabels": {
     "title": "Mag-print ng Barcode Labels",
+    "batchTitle": "Mag-print ng Barcode Labels ({{count}} produkto)",
     "subtitle": "Bumuo at mag-print ng tag ng presyo sa istante o thermal barcode stickers",
     "format": "Ayos ng Label",
     "formatRoll": "Thermal Sticker Roll (50mm × 30mm)",
     "formatSheet": "30-up Sheet (A4 / Letter 3x10 grid)",
     "quantity": "Bilang ng Labels",
+    "copiesPerProduct": "Kopya bawat Produkto",
     "includePrice": "Isama ang Presyo",
     "includeStore": "Isama ang Pangalan ng Tindahan",
     "includeSku": "Isama ang SKU",
     "print": "I-print ang Labels",
     "close": "Isara",
-    "preview": "Silipin Bago I-print"
+    "preview": "Silipin Bago I-print",
+    "selectAll": "Piliin Lahat",
+    "deselectAll": "Alisin ang Pagkapili",
+    "selectedCount": "{{count}} produkto ang napili",
+    "clearSelection": "Alisin ang Pili"
   }
 }

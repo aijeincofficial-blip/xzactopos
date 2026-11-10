@@ -229,6 +229,33 @@ void main() {
     await leave(tester);
   });
 
+  testWidgets('without a connection the clerk can start an offline count and record lines', (tester) async {
+    await open(tester, spinnerOk: true, makeBackend: () => CountServer()..downFlag = true);
+    await tab(tester, 'tab-count');
+    await settle(tester);
+    expect(find.byKey(const Key('count-offline')), findsOneWidget);
+    expect(find.byKey(const Key('count-start-offline')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('count-start-offline')));
+    await settle(tester);
+
+    expect(find.byKey(const Key('count-header')), findsOneWidget);
+    expect(find.byKey(const Key('count-offline-banner')), findsOneWidget);
+    expect(find.textContaining('CNT-LOCAL-'), findsOneWidget);
+
+    await countProduct(tester, 'rice', _rice, '15');
+    expect(find.byKey(const Key('count-line-$_rice')), findsOneWidget);
+    expect(find.text('15'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('count-finish')));
+    await settle(tester);
+    await tester.tap(find.byKey(const Key('count-confirm')));
+    await settle(tester);
+    expect(find.byKey(const Key('count-result')), findsOneWidget);
+
+    await leave(tester);
+  });
+
   testWidgets('losing the connection while saving keeps the clerk on the product with a message', (tester) async {
     final server = await openCount(tester);
     await startCount(tester);

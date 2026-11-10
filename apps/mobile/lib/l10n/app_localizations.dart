@@ -2942,6 +2942,24 @@ abstract class AppLocalizations {
   /// **'Try again'**
   String get whCountRetry;
 
+  /// No description provided for @whCountStartOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Start offline count'**
+  String get whCountStartOffline;
+
+  /// No description provided for @whCountOfflineBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline count · Saved locally, will sync when connected'**
+  String get whCountOfflineBanner;
+
+  /// No description provided for @whCountOfflineDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Count finished offline and saved to device. It will sync automatically when connected.'**
+  String get whCountOfflineDone;
+
   /// No description provided for @whCountNone.
   ///
   /// In en, this message translates to:

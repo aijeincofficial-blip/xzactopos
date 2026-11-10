@@ -1752,6 +1752,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get whCountRetry => 'Try again';
 
   @override
+  String get whCountStartOffline => 'Start offline count';
+
+  @override
+  String get whCountOfflineBanner =>
+      'Offline count · Saved locally, will sync when connected';
+
+  @override
+  String get whCountOfflineDone =>
+      'Count finished offline and saved to device. It will sync automatically when connected.';
+
+  @override
   String get whCountNone => 'No count in progress.';
 
   @override

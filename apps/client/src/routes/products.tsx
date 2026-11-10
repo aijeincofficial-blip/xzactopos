@@ -855,6 +855,8 @@ export function ProductsPage() {
   const [categoryModal, setCategoryModal] = useState(false);
   const [importModal, setImportModal] = useState(false);
   const [printingProduct, setPrintingProduct] = useState<ProductRow | null>(null);
+  const [selectedSkus, setSelectedSkus] = useState<Set<string>>(new Set());
+  const [batchPrinting, setBatchPrinting] = useState<ProductRow[] | null>(null);
 
   const categoriesQuery = useQuery({
     queryKey: ["categories"],
@@ -945,16 +947,69 @@ export function ProductsPage() {
           </Select>
         </div>
 
-        <div className="flex flex-wrap items-center gap-4 text-sm">
-          <label className="flex items-center gap-2">
-            <input type="checkbox" checked={onlyLow} onChange={(e) => setOnlyLow(e.target.checked)} />
-            {t("admin:products.onlyLow")}
-          </label>
-          <label className="flex items-center gap-2">
-            <input type="checkbox" checked={onlyExpiring} onChange={(e) => setOnlyExpiring(e.target.checked)} />
-            {t("admin:products.onlyExpiring")}
-          </label>
+        <div className="flex flex-wrap items-center justify-between gap-4 text-sm">
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2">
+              <input type="checkbox" checked={onlyLow} onChange={(e) => setOnlyLow(e.target.checked)} />
+              {t("admin:products.onlyLow")}
+            </label>
+            <label className="flex items-center gap-2">
+              <input type="checkbox" checked={onlyExpiring} onChange={(e) => setOnlyExpiring(e.target.checked)} />
+              {t("admin:products.onlyExpiring")}
+            </label>
+          </div>
+          {rows.length > 0 ? (
+            <Button
+              size="sm"
+              variant="ghost"
+              data-testid="toggle-select-all"
+              onClick={() => {
+                if (rows.every((r) => selectedSkus.has(r.sku))) {
+                  setSelectedSkus(new Set());
+                } else {
+                  setSelectedSkus(new Set(rows.map((r) => r.sku)));
+                }
+              }}
+            >
+              {rows.every((r) => selectedSkus.has(r.sku))
+                ? t("admin:barcodeLabels.deselectAll")
+                : t("admin:barcodeLabels.selectAll")}
+            </Button>
+          ) : null}
         </div>
+
+        {selectedSkus.size > 0 ? (
+          <div
+            className="flex items-center justify-between p-3 rounded-[6px] bg-slate-900 text-white shadow-md text-sm"
+            data-testid="batch-action-bar"
+          >
+            <span className="font-medium">
+              {t("admin:barcodeLabels.selectedCount", { count: selectedSkus.size })}
+            </span>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-slate-700 bg-slate-800 text-white hover:bg-slate-700"
+                data-testid="clear-selection-btn"
+                onClick={() => setSelectedSkus(new Set())}
+              >
+                {t("admin:barcodeLabels.clearSelection")}
+              </Button>
+              <Button
+                size="sm"
+                variant="primary"
+                data-testid="batch-print-barcode-btn"
+                onClick={() => {
+                  const chosen = (q.data ?? []).filter((r) => selectedSkus.has(r.sku));
+                  setBatchPrinting(chosen);
+                }}
+              >
+                🏷️ {t("admin:barcodeLabels.print")}
+              </Button>
+            </div>
+          </div>
+        ) : null}
 
         {q.isPending ? <Card className="p-8 text-center text-sm text-slate-500">{t("admin:sell.loading")}</Card> : null}
         {q.isError ? <ErrorState message={t("admin:sell.loadError")} onRetry={() => q.refetch()} retryLabel={t("common:actions.retry")} /> : null}
@@ -976,36 +1031,57 @@ export function ProductsPage() {
             const isSelected = r.variantId === openId;
             return (
               <li key={r.variantId}>
-                <button
-                  type="button"
-                  data-testid={`row-${r.sku}`}
-                  onClick={() => { setOpenId(r.variantId); setAdding(false); setArchiveError(null); }}
+                <div
                   className={`flex w-full items-center justify-between gap-3 rounded-lg border bg-white p-3 text-left text-sm transition-all hover:bg-slate-100/70 hover:border-slate-300 ${isSelected ? "border-brand-600 ring-2 ring-brand-600/20 bg-brand-50/20" : "border-slate-200"}`}
                 >
-                  <span className="min-w-0">
-                    <span className="block font-medium truncate text-slate-900">{r.name}</span>
-                    <span className="flex flex-wrap items-center gap-1.5 text-xs text-slate-500 mt-1">
-                      <span className="font-mono">{r.sku}</span>
-                      {r.categoryName ? <span className="bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-medium">{r.categoryName}</span> : null}
-                      {r.breaksIntoVariantId ? <span className="text-brand-text font-medium">📦 Pack (1→{r.breaksIntoQty})</span> : null}
-                      {r.active ? "" : <span className="text-slate-400">· {t("admin:products.inactive")}</span>}
+                  <label className="flex items-center cursor-pointer p-0.5" onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="checkbox"
+                      data-testid={`select-product-${r.sku}`}
+                      checked={selectedSkus.has(r.sku)}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        setSelectedSkus((prev) => {
+                          const next = new Set(prev);
+                          if (next.has(r.sku)) next.delete(r.sku);
+                          else next.add(r.sku);
+                          return next;
+                        });
+                      }}
+                      className="h-4 w-4 rounded-[4px] border-slate-300 text-brand-600 focus:ring-brand-500 cursor-pointer"
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    data-testid={`row-${r.sku}`}
+                    onClick={() => { setOpenId(r.variantId); setAdding(false); setArchiveError(null); }}
+                    className="flex flex-1 items-center justify-between gap-3 text-left"
+                  >
+                    <span className="min-w-0">
+                      <span className="block font-medium truncate text-slate-900">{r.name}</span>
+                      <span className="flex flex-wrap items-center gap-1.5 text-xs text-slate-500 mt-1">
+                        <span className="font-mono">{r.sku}</span>
+                        {r.categoryName ? <span className="bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-medium">{r.categoryName}</span> : null}
+                        {r.breaksIntoVariantId ? <span className="text-brand-text font-medium">📦 Pack (1→{r.breaksIntoQty})</span> : null}
+                        {r.active ? "" : <span className="text-slate-400">· {t("admin:products.inactive")}</span>}
+                      </span>
                     </span>
-                  </span>
-                  <span className="flex shrink-0 items-center gap-2">
-                    {expiry === "expired" ? <Badge tone="danger">⚠️ {t("admin:products.expired")}</Badge> : null}
-                    {expiry === "expiring_soon" ? <Badge tone="warn">⏳ {t("admin:products.expiringSoon")}</Badge> : null}
-                    {status === "out" ? <Badge tone="danger">{t("admin:products.out")}</Badge> : null}
-                    {status === "low" ? <Badge tone="warn">{t("admin:products.low")}</Badge> : null}
-                    <span className="text-right">
-                      <span className="block font-semibold tabular-nums">{r.price === null ? t("admin:products.noPrice") : fmt(r.price)}</span>
-                      {r.tracked ? (
-                        <span className="text-xs text-slate-500 tabular-nums">
-                          {formatQty(r.qty)} {r.unit}
-                        </span>
-                      ) : null}
+                    <span className="flex shrink-0 items-center gap-2">
+                      {expiry === "expired" ? <Badge tone="danger">⚠️ {t("admin:products.expired")}</Badge> : null}
+                      {expiry === "expiring_soon" ? <Badge tone="warn">⏳ {t("admin:products.expiringSoon")}</Badge> : null}
+                      {status === "out" ? <Badge tone="danger">{t("admin:products.out")}</Badge> : null}
+                      {status === "low" ? <Badge tone="warn">{t("admin:products.low")}</Badge> : null}
+                      <span className="text-right">
+                        <span className="block font-semibold tabular-nums">{r.price === null ? t("admin:products.noPrice") : fmt(r.price)}</span>
+                        {r.tracked ? (
+                          <span className="text-xs text-slate-500 tabular-nums">
+                            {formatQty(r.qty)} {r.unit}
+                          </span>
+                        ) : null}
+                      </span>
                     </span>
-                  </span>
-                </button>
+                  </button>
+                </div>
               </li>
             );
           })}
@@ -1088,9 +1164,13 @@ export function ProductsPage() {
 
       {/* Barcode Labels Dialog */}
       <BarcodeLabelsDialog
-        open={Boolean(printingProduct)}
-        onClose={() => setPrintingProduct(null)}
+        open={Boolean(printingProduct || batchPrinting)}
+        onClose={() => {
+          setPrintingProduct(null);
+          setBatchPrinting(null);
+        }}
         product={printingProduct}
+        products={batchPrinting}
         currency={currency}
         storeName={store?.name ?? access.tenant?.name ?? "Store"}
       />

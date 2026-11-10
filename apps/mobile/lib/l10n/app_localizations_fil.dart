@@ -1758,6 +1758,17 @@ class AppLocalizationsFil extends AppLocalizations {
   String get whCountRetry => 'Subukan ulit';
 
   @override
+  String get whCountStartOffline => 'Simulan ang offline na bilang';
+
+  @override
+  String get whCountOfflineBanner =>
+      'Offline na bilang · Naka-save sa device, mag-sync pag may koneksyon';
+
+  @override
+  String get whCountOfflineDone =>
+      'Tapos na ang pagbilang offline at naka-save sa device. Kusang mag-sync ito pag may koneksyon.';
+
+  @override
   String get whCountNone => 'Walang kasalukuyang bilang.';
 
   @override

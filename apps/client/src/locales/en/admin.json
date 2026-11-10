@@ -86,6 +86,10 @@
     "change": "Change",
     "charge": "Charge {{total}}",
     "charging": "Saving the sale...",
+    "fastKeys": "Quick Keys",
+    "fastKeysEmpty": "No quick keys pinned yet",
+    "pinToFastKeys": "Pin to Quick Keys",
+    "unpinFromFastKeys": "Unpin from Quick Keys",
     "clear": "Clear cart",
     "done": "Sale saved",
     "receiptNo": "Receipt",
@@ -1266,16 +1270,22 @@
   },
   "barcodeLabels": {
     "title": "Print Barcode Labels",
+    "batchTitle": "Print Barcode Labels ({{count}} items)",
     "subtitle": "Generate and print shelf price tags or thermal barcode stickers",
     "format": "Label Layout",
     "formatRoll": "Thermal Sticker Roll (50mm × 30mm)",
     "formatSheet": "30-up Sheet (A4 / Letter 3x10 grid)",
     "quantity": "Labels Quantity",
+    "copiesPerProduct": "Copies per Product",
     "includePrice": "Include Retail Price",
     "includeStore": "Include Store Name",
     "includeSku": "Include SKU",
     "print": "Print Labels",
     "close": "Close",
-    "preview": "Print Preview"
+    "preview": "Print Preview",
+    "selectAll": "Select All",
+    "deselectAll": "Deselect All",
+    "selectedCount": "{{count}} products selected",
+    "clearSelection": "Clear Selection"
   }
 }

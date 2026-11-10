@@ -137,12 +137,52 @@ class _CountBodyState extends State<_CountBody> {
         _load = _Load.ready;
       });
     } on CountOffline {
-      if (mounted) setState(() => _load = _Load.offline);
+      await _tryLoadLocalCount(store);
     } on AuthExpired {
-      if (mounted) setState(() => _load = _Load.offline);
+      await _tryLoadLocalCount(store);
     } on CountException {
-      if (mounted) setState(() => _load = _Load.offline);
+      await _tryLoadLocalCount(store);
     }
+  }
+
+  Future<void> _tryLoadLocalCount(dynamic store) async {
+    try {
+      final localSession = await store.localOpenCount(widget.warehouse.id);
+      if (localSession != null) {
+        final products = await store.watchProducts().first;
+        final bins = widget.warehouse.binsEnabled ? await store.watchBins(widget.warehouse.id).first : const <BinView>[];
+        if (!mounted) return;
+        setState(() {
+          _session = localSession;
+          _names = {for (final p in products) p.variantId: p.name};
+          _bins = bins;
+          _load = _Load.ready;
+        });
+        return;
+      }
+    } catch (_) {}
+    if (mounted) setState(() => _load = _Load.offline);
+  }
+
+  Future<void> _startOffline() async {
+    final store = CatalogScope.of(context).store;
+    final products = await store.watchProducts().first;
+    final bins = widget.warehouse.binsEnabled ? await store.watchBins(widget.warehouse.id).first : const <BinView>[];
+    final session = await store.startOfflineCount(
+      id: _startId,
+      warehouseId: widget.warehouse.id,
+      binId: _scopeBin,
+      notes: _notes.text.trim().isEmpty ? null : _notes.text.trim(),
+    );
+    if (!mounted) return;
+    _startId = const Uuid().v7();
+    _notes.clear();
+    setState(() {
+      _session = session;
+      _names = {for (final p in products) p.variantId: p.name};
+      _bins = bins;
+      _load = _Load.ready;
+    });
   }
 
   Future<void> _start() async {
@@ -202,9 +242,25 @@ class _CountBodyState extends State<_CountBody> {
     }
     final store = CatalogScope.of(context).store;
     final localSys = await store.warehouseStockFor(widget.warehouse.id, p.variantId, binId: bin);
+    final entry = CountEntry(variantId: p.variantId, qty: qty, binId: bin, qtySystem: localSys);
+
+    if (session.isLocal) {
+      await store.recordOfflineCount(session.id, [entry]);
+      final updated = await store.localOpenCount(widget.warehouse.id);
+      if (!mounted) return;
+      setState(() {
+        _session = updated;
+        _picked = null;
+        _qty.clear();
+        _query = '';
+        _search.clear();
+      });
+      return;
+    }
+
     final ok = await _run(() => widget.api.recordCount(
           session.id,
-          [CountEntry(variantId: p.variantId, qty: qty, binId: bin, qtySystem: localSys)],
+          [entry],
         ));
     if (!ok) return;
     setState(() {
@@ -244,6 +300,20 @@ class _CountBodyState extends State<_CountBody> {
       ),
     );
     if (go != true || !mounted) return;
+
+    if (session.isLocal) {
+      final store = CatalogScope.of(context).store;
+      await store.closeOfflineCount(session.id, zeroUncounted: zero);
+      if (!mounted) return;
+      setState(() => _session = null);
+      await _refresh();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(key: const Key('count-result'), content: Text(t.whCountOfflineDone)));
+      return;
+    }
+
     CountResult? result;
     final ok = await _run(() async => result = await widget.api.closeCount(session.id, zeroUncounted: zero));
     if (!ok || !mounted) return;
@@ -270,6 +340,14 @@ class _CountBodyState extends State<_CountBody> {
     );
     if (go != true || !mounted) return;
     final session = _session!;
+    if (session.isLocal) {
+      final store = CatalogScope.of(context).store;
+      await store.cancelOfflineCount(session.id);
+      if (!mounted) return;
+      setState(() => _session = null);
+      await _refresh();
+      return;
+    }
     final ok = await _run(() => widget.api.cancelCount(session.id));
     if (ok) await _refresh();
   }
@@ -288,6 +366,12 @@ class _CountBodyState extends State<_CountBody> {
               Text(t.whCountOffline, key: const Key('count-offline'), textAlign: TextAlign.center),
               const SizedBox(height: Gap.m),
               FilledButton(key: const Key('count-retry'), onPressed: _refresh, child: Text(t.whCountRetry)),
+              const SizedBox(height: Gap.m),
+              OutlinedButton(
+                key: const Key('count-start-offline'),
+                onPressed: _busy ? null : _startOffline,
+                child: Text(t.whCountStartOffline),
+              ),
             ]),
           ),
         );
@@ -328,6 +412,34 @@ class _CountBodyState extends State<_CountBody> {
     final needsBin = widget.warehouse.binsEnabled && s.binId == null;
     return [
       Text('${s.countNo} · ${s.wholeWarehouse ? t.whCountWhole : (s.binCode ?? '')}', key: const Key('count-header'), style: Theme.of(context).textTheme.titleMedium),
+      if (s.isLocal) ...[
+        const SizedBox(height: Gap.xs),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: Gap.s + 2, vertical: Gap.xs),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(Gap.radiusS),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.cloud_off_rounded, size: 14, color: Theme.of(context).colorScheme.primary),
+              const SizedBox(width: Gap.xs),
+              Flexible(
+                child: Text(
+                  t.whCountOfflineBanner,
+                  key: const Key('count-offline-banner'),
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
       const SizedBox(height: Gap.m),
       TextField(
         key: const Key('count-search'),

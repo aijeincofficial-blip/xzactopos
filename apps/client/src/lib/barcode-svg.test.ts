@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { encodeCode128, CODE128_PATTERNS } from "./barcode-svg.tsx";
+import { buildPrintItems, type BarcodeProduct } from "../components/barcode-labels-dialog.tsx";
 
 describe("encodeCode128", () => {
   it("has exactly 107 ISO patterns", () => {
@@ -49,5 +50,39 @@ describe("encodeCode128", () => {
 
     const filteredResult = encodeCode128("TEST\u20AC", 5); // euro sign filtered
     expect(filteredResult.rawText).toBe("TEST");
+  });
+});
+
+describe("buildPrintItems", () => {
+  const sampleProducts: BarcodeProduct[] = [
+    { name: "Rice 1kg", sku: "SKU-RICE", barcode: "480000000001", price: 55 },
+    { name: "Canned Tuna", sku: "SKU-TUNA", barcode: null, price: 38 },
+  ];
+
+  it("multiplies items by the specified copies count", () => {
+    const items = buildPrintItems(sampleProducts, 3, "PHP", "en");
+    // 2 products * 3 copies = 6 total print items
+    expect(items).toHaveLength(6);
+    expect(items.filter((i) => i.product.sku === "SKU-RICE")).toHaveLength(3);
+    expect(items.filter((i) => i.product.sku === "SKU-TUNA")).toHaveLength(3);
+  });
+
+  it("uses barcode when present and falls back to sku when missing", () => {
+    const items = buildPrintItems(sampleProducts, 1, "PHP", "en");
+    expect(items[0]!.code).toBe("480000000001");
+    expect(items[1]!.code).toBe("SKU-TUNA");
+  });
+
+  it("formats formatted price display with currency", () => {
+    const items = buildPrintItems(sampleProducts, 1, "PHP", "en");
+    expect(items[0]!.priceDisplay).toContain("55");
+    expect(items[1]!.priceDisplay).toContain("38");
+  });
+
+  it("handles products with no price gracefully", () => {
+    const noPriceProduct: BarcodeProduct[] = [{ name: "Box", sku: "BOX-1", price: null }];
+    const items = buildPrintItems(noPriceProduct, 2, "PHP", "en");
+    expect(items).toHaveLength(2);
+    expect(items[0]!.priceDisplay).toBe("");
   });
 });
