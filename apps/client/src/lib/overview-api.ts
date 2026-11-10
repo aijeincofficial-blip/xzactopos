@@ -145,9 +145,13 @@ export async function warehouseTransfersInTransit(args: {
 }
 
 /** Places where stock is below zero (negative stock exceptions). Runs as the user, so only places they may see appear. */
-export async function negativeStockList(args: { afterLocation?: string; afterVariant?: string }): Promise<NegativeRow[]> {
+export async function negativeStockList(args: {
+  locationId?: string;
+  afterLocation?: string;
+  afterVariant?: string;
+}): Promise<NegativeRow[]> {
   const rows = await rpc<Array<Record<string, unknown>>>("negative_stock_list", {
-    p_location_id: null,
+    p_location_id: args.locationId || null,
     p_limit: PAGE_SIZE,
     p_after_location: args.afterLocation ?? null,
     p_after_variant: args.afterVariant ?? null,

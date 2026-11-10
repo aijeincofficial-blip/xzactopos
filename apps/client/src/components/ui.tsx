@@ -85,13 +85,14 @@ export function Alert({ tone = "error", children }: { tone?: "error" | "info"; c
   );
 }
 
-export function Badge({ children, tone = "neutral" }: { children: ReactNode; tone?: "neutral" | "good" | "warn" }) {
+export function Badge({ children, tone = "neutral" }: { children: ReactNode; tone?: "neutral" | "good" | "warn" | "danger" }) {
   return (
     <span
       className={cn(
         "inline-block rounded-full px-2 py-0.5 text-xs font-medium",
         tone === "good" && "bg-green-100 text-green-800",
         tone === "warn" && "bg-amber-100 text-amber-800",
+        tone === "danger" && "bg-red-100 text-red-800",
         tone === "neutral" && "bg-slate-100 text-slate-700",
       )}
     >

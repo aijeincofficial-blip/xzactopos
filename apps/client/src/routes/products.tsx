@@ -978,7 +978,7 @@ export function ProductsPage() {
                   type="button"
                   data-testid={`row-${r.sku}`}
                   onClick={() => { setOpenId(r.variantId); setAdding(false); setArchiveError(null); }}
-                  className={`flex w-full items-center justify-between gap-3 rounded-lg border bg-white p-3 text-left text-sm transition-all hover:bg-slate-50 ${isSelected ? "border-brand-600 ring-2 ring-brand-600/20 bg-brand-50/20" : "border-slate-200"}`}
+                  className={`flex w-full items-center justify-between gap-3 rounded-lg border bg-white p-3 text-left text-sm transition-all hover:bg-slate-100/70 hover:border-slate-300 ${isSelected ? "border-brand-600 ring-2 ring-brand-600/20 bg-brand-50/20" : "border-slate-200"}`}
                 >
                   <span className="min-w-0">
                     <span className="block font-medium truncate text-slate-900">{r.name}</span>
@@ -990,9 +990,9 @@ export function ProductsPage() {
                     </span>
                   </span>
                   <span className="flex shrink-0 items-center gap-2">
-                    {expiry === "expired" ? <Badge tone="warn">⚠️ {t("admin:products.expired")}</Badge> : null}
+                    {expiry === "expired" ? <Badge tone="danger">⚠️ {t("admin:products.expired")}</Badge> : null}
                     {expiry === "expiring_soon" ? <Badge tone="warn">⏳ {t("admin:products.expiringSoon")}</Badge> : null}
-                    {status === "out" ? <Badge tone="warn">{t("admin:products.out")}</Badge> : null}
+                    {status === "out" ? <Badge tone="danger">{t("admin:products.out")}</Badge> : null}
                     {status === "low" ? <Badge tone="warn">{t("admin:products.low")}</Badge> : null}
                     <span className="text-right">
                       <span className="block font-semibold tabular-nums">{r.price === null ? t("admin:products.noPrice") : fmt(r.price)}</span>

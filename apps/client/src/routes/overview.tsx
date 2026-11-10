@@ -303,10 +303,12 @@ function NegativeTab() {
   const msg = useErrorMessage();
   const { access } = useSession();
   const currency = access.tenant.base_currency;
+  const [locationId, setLocationId] = useState("");
+  const locations = access.locations;
   const q = useInfiniteQuery({
-    queryKey: ["overview", "negative"],
+    queryKey: ["overview", "negative", locationId],
     initialPageParam: null as { location: string; variant: string } | null,
-    queryFn: ({ pageParam }) => negativeStockList({ afterLocation: pageParam?.location, afterVariant: pageParam?.variant }),
+    queryFn: ({ pageParam }) => negativeStockList({ locationId, afterLocation: pageParam?.location, afterVariant: pageParam?.variant }),
     getNextPageParam: (last) => nextNegativeCursor(last, PAGE_SIZE),
   });
   const rows: NegativeRow[] = (q.data?.pages ?? []).flat();
@@ -315,6 +317,18 @@ function NegativeTab() {
 
   return (
     <div className="grid gap-4">
+      <Card className="flex flex-wrap items-end gap-3">
+        <Field label={t("overview.filter.warehouse")}>
+          <Select value={locationId} onChange={(e) => setLocationId(e.target.value)} data-testid="ov-negative-location">
+            <option value="">{t("overview.filter.all")}</option>
+            {locations.map((l) => (
+              <option key={l.id} value={l.id}>
+                {l.code} · {l.name}
+              </option>
+            ))}
+          </Select>
+        </Field>
+      </Card>
       {q.isError ? <ErrorState message={msg(q.error)} onRetry={() => void q.refetch()} retryLabel={t("common:actions.retry")} /> : null}
       {rows.length > 0 ? (
         <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900" data-testid="negative-summary">
