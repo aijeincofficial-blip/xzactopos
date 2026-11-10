@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatMoney, money } from "@pos/core";
-import { Alert, Badge, Button, Card, Input } from "../components/ui.tsx";
+import { Alert, Badge, Button, Card, EmptyState, ErrorState, Input, PageHeader, useToast } from "../components/ui.tsx";
 import { useSession } from "../lib/session.tsx";
 import { useActiveLocation } from "../lib/location-context.tsx";
 import { useErrorMessage } from "../lib/i18n-helpers.ts";
@@ -14,8 +14,9 @@ import type { OfflineApprovalPayload } from "../lib/offline-pin-api.ts";
 
 /** Sales (Solo web): the store's latest sales, each as a receipt, with cancel (void) for those allowed to. */
 export function SalesPage() {
-  const { t, i18n } = useTranslation("admin");
+  const { t, i18n } = useTranslation(["admin", "common"]);
   const msg = useErrorMessage();
+  const toast = useToast();
   const { access, can } = useSession();
   const qc = useQueryClient();
   const currency = access.tenant.base_currency;
@@ -74,6 +75,7 @@ export function SalesPage() {
       setApprovalId(null);
       setOfflineApproval(null);
       setShowApprovalDialog(false);
+      toast.good(t("sales.status.voided"));
       await Promise.all([
         qc.invalidateQueries({ queryKey: ["sales"] }),
         qc.invalidateQueries({ queryKey: ["sale", openId] }),
@@ -85,7 +87,9 @@ export function SalesPage() {
         setShowApprovalDialog(true);
         return;
       }
-      setError(msg(e));
+      const err = msg(e);
+      setError(err);
+      toast.error(err);
     },
   });
 
@@ -99,9 +103,7 @@ export function SalesPage() {
 
   if (!store) {
     return (
-      <Card>
-        <p>{t("sell.noStore")}</p>
-      </Card>
+      <EmptyState title={t("sell.noStore")} />
     );
   }
 
@@ -123,7 +125,9 @@ export function SalesPage() {
           </Button>
         </div>
         {detail.isPending ? <Card>{t("sales.loading")}</Card> : null}
-        {detail.isError ? <Alert>{t("sales.error")}</Alert> : null}
+        {detail.isError ? (
+          <ErrorState message={t("sales.error")} onRetry={() => void detail.refetch()} retryLabel={t("common:actions.retry")} />
+        ) : null}
         {d ? (
           <Card className="grid gap-3" data-testid="sale-detail">
             <div className="flex flex-wrap items-center gap-2">
@@ -210,11 +214,13 @@ export function SalesPage() {
   }
 
   return (
-    <div className="grid max-w-2xl gap-3">
-      <h2 className="text-lg font-semibold">{t("sales.title")}</h2>
+    <div className="grid max-w-2xl gap-4">
+      <PageHeader title={t("sales.title")} />
       {list.isPending ? <Card>{t("sales.loading")}</Card> : null}
-      {list.isError ? <Alert>{t("sales.error")}</Alert> : null}
-      {list.data && list.data.length === 0 ? <Card>{t("sales.empty")}</Card> : null}
+      {list.isError ? (
+        <ErrorState message={t("sales.error")} onRetry={() => void list.refetch()} retryLabel={t("common:actions.retry")} />
+      ) : null}
+      {list.data && list.data.length === 0 ? <EmptyState title={t("sales.empty")} /> : null}
       <ul className="grid gap-2">
         {(list.data ?? []).map((s) => (
           <li key={s.id}>
@@ -222,7 +228,7 @@ export function SalesPage() {
               type="button"
               data-testid={`sale-${s.sale_no ?? s.local_no}`}
               onClick={() => setOpenId(s.id)}
-              className="flex w-full items-center justify-between gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-left text-sm hover:bg-slate-50"
+              className="flex w-full items-center justify-between gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-left text-sm hover:bg-slate-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/20"
             >
               <span>
                 <span className="block font-mono font-medium">{s.sale_no ?? s.local_no}</span>

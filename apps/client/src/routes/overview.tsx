@@ -3,7 +3,7 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { formatMoney, money } from "@pos/core";
-import { Alert, Badge, Button, Card, Field, Select, Table, PageHeader, Tabs, TabPanel } from "../components/ui.tsx";
+import { Alert, Badge, Button, Card, EmptyState, ErrorState, Field, PageHeader, Select, Table, Tabs, TabPanel } from "../components/ui.tsx";
 import { useSession } from "../lib/session.tsx";
 import { useErrorMessage } from "../lib/i18n-helpers.ts";
 import { formatQty } from "../lib/product-math.ts";
@@ -34,7 +34,7 @@ import { listVariantOptions } from "../lib/purchasing-api.ts";
 type Tab = "reorder" | "transit" | "product" | "negative";
 
 export function OverviewPage() {
-  const { t } = useTranslation("admin");
+  const { t } = useTranslation(["admin", "common"]);
   const { can } = useSession();
   const [tab, setTab] = useState<Tab>("reorder");
   const warehousesQ = useQuery({ queryKey: ["overview", "warehouses"], queryFn: listCountWarehouses });
@@ -43,7 +43,7 @@ export function OverviewPage() {
   return (
     <div className="grid gap-4">
       <PageHeader title={t("overview.title")} subtitle={t("overview.subtitle")} />
-      {warehousesQ.isSuccess && warehouses.length === 0 ? <Alert tone="info">{t("overview.noWarehouses")}</Alert> : null}
+      {warehousesQ.isSuccess && warehouses.length === 0 ? <EmptyState title={t("overview.noWarehouses")} /> : null}
       <Tabs
         value={tab}
         onValueChange={(v) => setTab(v as Tab)}
@@ -87,7 +87,7 @@ function WarehouseFilter({
 /* ------------------------------------------------------------------------------------------------ reorder */
 
 function ReorderTab({ warehouses }: { warehouses: Array<{ id: string; code: string; name: string }> }) {
-  const { t } = useTranslation("admin");
+  const { t } = useTranslation(["admin", "common"]);
   const msg = useErrorMessage();
   const { can } = useSession();
   const [warehouseId, setWarehouseId] = useState("");
@@ -103,7 +103,7 @@ function ReorderTab({ warehouses }: { warehouses: Array<{ id: string; code: stri
   return (
     <div className="grid gap-4">
       <WarehouseFilter warehouses={warehouses} value={warehouseId} onChange={setWarehouseId} />
-      {q.isError ? <Alert>{msg(q.error)}</Alert> : null}
+      {q.isError ? <ErrorState message={msg(q.error)} onRetry={() => void q.refetch()} retryLabel={t("common:actions.retry")} /> : null}
       {rows.length > 0 ? (
         <p className="text-sm text-slate-700" data-testid="reorder-summary">
           {t("overview.reorder.summary", { need: sum.needOrder, covered: sum.covered, atPoint: sum.atPoint })}
@@ -113,9 +113,9 @@ function ReorderTab({ warehouses }: { warehouses: Array<{ id: string; code: stri
         {q.isLoading ? (
           <p className="p-4 text-sm text-slate-500">{t("overview.loading")}</p>
         ) : rows.length === 0 ? (
-          <p className="p-4 text-sm text-slate-500" data-testid="reorder-none">
-            {t("overview.reorder.none")}
-          </p>
+          <div data-testid="reorder-none" className="p-4">
+            <EmptyState title={t("overview.reorder.none")} />
+          </div>
         ) : (
           <Table bare>
             <thead>
@@ -174,7 +174,7 @@ function ReorderTab({ warehouses }: { warehouses: Array<{ id: string; code: stri
 /* ------------------------------------------------------------------------------------------------ below zero */
 
 function NegativeTab() {
-  const { t, i18n } = useTranslation("admin");
+  const { t, i18n } = useTranslation(["admin", "common"]);
   const msg = useErrorMessage();
   const { access } = useSession();
   const currency = access.tenant.base_currency;
@@ -190,7 +190,7 @@ function NegativeTab() {
 
   return (
     <div className="grid gap-4">
-      {q.isError ? <Alert>{msg(q.error)}</Alert> : null}
+      {q.isError ? <ErrorState message={msg(q.error)} onRetry={() => void q.refetch()} retryLabel={t("common:actions.retry")} /> : null}
       {rows.length > 0 ? (
         <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900" data-testid="negative-summary">
           {t("overview.negative.summary", { lines: sum.lines, places: sum.places, units: formatQty(sum.units), value: fmt(sum.value) })}
@@ -200,9 +200,9 @@ function NegativeTab() {
         {q.isLoading ? (
           <p className="p-4 text-sm text-slate-500">{t("overview.loading")}</p>
         ) : rows.length === 0 ? (
-          <p className="p-4 text-sm text-slate-500" data-testid="negative-none">
-            {t("overview.negative.none")}
-          </p>
+          <div data-testid="negative-none" className="p-4">
+            <EmptyState title={t("overview.negative.none")} />
+          </div>
         ) : (
           <Table bare>
             <thead>
@@ -247,7 +247,7 @@ function NegativeTab() {
 /* ------------------------------------------------------------------------------------------------ in transit */
 
 function TransitTab({ warehouses }: { warehouses: Array<{ id: string; code: string; name: string }> }) {
-  const { t, i18n } = useTranslation("admin");
+  const { t, i18n } = useTranslation(["admin", "common"]);
   const msg = useErrorMessage();
   const [warehouseId, setWarehouseId] = useState("");
   const q = useInfiniteQuery({
@@ -261,15 +261,15 @@ function TransitTab({ warehouses }: { warehouses: Array<{ id: string; code: stri
   return (
     <div className="grid gap-4">
       <WarehouseFilter warehouses={warehouses} value={warehouseId} onChange={setWarehouseId} />
-      {q.isError ? <Alert>{msg(q.error)}</Alert> : null}
+      {q.isError ? <ErrorState message={msg(q.error)} onRetry={() => void q.refetch()} retryLabel={t("common:actions.retry")} /> : null}
       <p className="text-sm text-slate-600">{t("overview.transit.help")}</p>
       <Card className="overflow-x-auto p-0">
         {q.isLoading ? (
           <p className="p-4 text-sm text-slate-500">{t("overview.loading")}</p>
         ) : rows.length === 0 ? (
-          <p className="p-4 text-sm text-slate-500" data-testid="transit-none">
-            {t("overview.transit.none")}
-          </p>
+          <div data-testid="transit-none" className="p-4">
+            <EmptyState title={t("overview.transit.none")} />
+          </div>
         ) : (
           <Table bare>
             <thead>
@@ -322,7 +322,7 @@ function TransitTab({ warehouses }: { warehouses: Array<{ id: string; code: stri
 /* ------------------------------------------------------------------------------------------------ find a product */
 
 function ProductTab() {
-  const { t, i18n } = useTranslation("admin");
+  const { t, i18n } = useTranslation(["admin", "common"]);
   const msg = useErrorMessage();
   const { access } = useSession();
   const currency = access.tenant.base_currency;
@@ -351,13 +351,13 @@ function ProductTab() {
           </Select>
         </Field>
       </Card>
-      {stock.isError ? <Alert>{msg(stock.error)}</Alert> : null}
+      {stock.isError ? <ErrorState message={msg(stock.error)} onRetry={() => void stock.refetch()} retryLabel={t("common:actions.retry")} /> : null}
       {!variantId ? (
         <p className="text-sm text-slate-500">{t("overview.product.prompt")}</p>
       ) : stock.isLoading ? (
         <p className="text-sm text-slate-500">{t("overview.loading")}</p>
       ) : rows.length === 0 ? (
-        <p className="text-sm text-slate-500">{t("overview.product.none")}</p>
+        <EmptyState title={t("overview.product.none")} />
       ) : (
         <Card className="overflow-x-auto p-0" data-testid="product-table">
           <Table bare>

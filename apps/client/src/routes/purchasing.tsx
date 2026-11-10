@@ -2,7 +2,7 @@ import { Fragment, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { formatMoney, money, uuidv7 } from "@pos/core";
-import { Alert, Badge, Button, Card, Dialog, Field, Input, Select, Table, PageHeader, Tabs, TabPanel, EmptyState } from "../components/ui.tsx";
+import { Alert, Badge, Button, Card, Dialog, Field, Input, Select, Table, PageHeader, Tabs, TabPanel, EmptyState, ErrorState, useToast } from "../components/ui.tsx";
 import { useSession } from "../lib/session.tsx";
 import { useErrorMessage } from "../lib/i18n-helpers.ts";
 import { formatQty } from "../lib/product-math.ts";
@@ -73,9 +73,10 @@ function useWarehouses() {
 }
 
 function OrdersTab() {
-  const { t } = useTranslation("admin");
+  const { t } = useTranslation(["admin", "common"]);
   const msg = useErrorMessage();
   const qc = useQueryClient();
+  const toast = useToast();
   const warehouses = useWarehouses();
   const [status, setStatus] = useState("");
   const [warehouseId, setWarehouseId] = useState("");
@@ -87,8 +88,16 @@ function OrdersTab() {
 
   const submit = useMutation({
     mutationFn: (id: string) => submitPo(id),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: ["po"] }),
+    onSuccess: () => {
+      toast.good(t("purchasing.action.submit"));
+      void qc.invalidateQueries({ queryKey: ["po"] });
+    },
   });
+
+  const handleDone = (m: string) => {
+    setNotice(m);
+    toast.good(m);
+  };
 
   return (
     <div className="grid gap-4">
@@ -125,8 +134,8 @@ function OrdersTab() {
 
       {warehouses.length === 0 ? <Alert tone="info">{t("purchasing.orders.noWarehouses")}</Alert> : null}
       {notice ? <Alert tone="info">{notice}</Alert> : null}
-      {orders.isError ? <Alert>{msg(orders.error)}</Alert> : null}
-      {submit.isError ? <Alert>{msg(submit.error)}</Alert> : null}
+      {orders.isError ? <ErrorState message={msg(orders.error)} onRetry={() => orders.refetch()} retryLabel={t("common:actions.retry")} /> : null}
+      {submit.isError ? <ErrorState message={msg(submit.error)} /> : null}
 
       <Card className="overflow-x-auto p-0">
         {orders.isLoading ? (
@@ -196,10 +205,10 @@ function OrdersTab() {
         )}
       </Card>
 
-      {modal?.kind === "new" ? <NewOrderDialog onClose={() => setModal(null)} onDone={(m) => { setNotice(m); setModal(null); }} /> : null}
-      {modal?.kind === "walkin" ? <WalkInDialog onClose={() => setModal(null)} onDone={(m) => { setNotice(m); setModal(null); }} /> : null}
+      {modal?.kind === "new" ? <NewOrderDialog onClose={() => setModal(null)} onDone={(m) => { handleDone(m); setModal(null); }} /> : null}
+      {modal?.kind === "walkin" ? <WalkInDialog onClose={() => setModal(null)} onDone={(m) => { handleDone(m); setModal(null); }} /> : null}
       {modal?.kind === "detail" ? <DetailDialog po={modal.po} onClose={() => setModal(null)} /> : null}
-      {modal?.kind === "receive" ? <ReceiveDialog po={modal.po} onClose={() => setModal(null)} onDone={(m) => { setNotice(m); setModal(null); }} /> : null}
+      {modal?.kind === "receive" ? <ReceiveDialog po={modal.po} onClose={() => setModal(null)} onDone={(m) => { handleDone(m); setModal(null); }} /> : null}
       {modal?.kind === "cancel" ? <CancelDialog po={modal.po} onClose={() => setModal(null)} /> : null}
       {modal?.kind === "close" ? <CloseDialog po={modal.po} onClose={() => setModal(null)} /> : null}
     </div>
@@ -655,14 +664,18 @@ function WalkInDialog({ onClose, onDone }: { onClose: () => void; onDone: (messa
 /* ------------------------------------------------------------------------------------------------ suppliers */
 
 function SuppliersTab() {
-  const { t } = useTranslation("admin");
+  const { t } = useTranslation(["admin", "common"]);
   const msg = useErrorMessage();
   const qc = useQueryClient();
+  const toast = useToast();
   const suppliers = useQuery({ queryKey: ["po", "suppliers"], queryFn: listSuppliers });
   const [editing, setEditing] = useState<Supplier | "new" | null>(null);
   const remove = useMutation({
     mutationFn: (id: string) => archiveSupplier(id),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: ["po", "suppliers"] }),
+    onSuccess: () => {
+      toast.good(t("purchasing.suppliers.save"));
+      void qc.invalidateQueries({ queryKey: ["po", "suppliers"] });
+    },
   });
   return (
     <div className="grid gap-4">
@@ -671,15 +684,22 @@ function SuppliersTab() {
           {t("purchasing.suppliers.add")}
         </Button>
       </div>
-      {suppliers.isError ? <Alert>{msg(suppliers.error)}</Alert> : null}
-      {remove.isError ? <Alert>{msg(remove.error)}</Alert> : null}
+      {suppliers.isError ? <ErrorState message={msg(suppliers.error)} onRetry={() => suppliers.refetch()} retryLabel={t("common:actions.retry")} /> : null}
+      {remove.isError ? <ErrorState message={msg(remove.error)} /> : null}
       <Card className="overflow-x-auto p-0">
         {suppliers.isLoading ? (
           <p className="p-4 text-sm text-slate-500">{t("purchasing.loading")}</p>
         ) : (suppliers.data ?? []).length === 0 ? (
-          <p className="p-4 text-sm text-slate-500" data-testid="no-suppliers">
-            {t("purchasing.suppliers.none")}
-          </p>
+          <div data-testid="no-suppliers" className="p-4">
+            <EmptyState
+              title={t("purchasing.suppliers.none")}
+              action={
+                <Button size="sm" onClick={() => setEditing("new")}>
+                  + {t("purchasing.suppliers.add")}
+                </Button>
+              }
+            />
+          </div>
         ) : (
           <Table bare>
             <thead>
@@ -730,6 +750,7 @@ function SupplierDialog({ supplier, onClose }: { supplier: Supplier | null; onCl
   const { t } = useTranslation("admin");
   const msg = useErrorMessage();
   const qc = useQueryClient();
+  const toast = useToast();
   const [id] = useState(() => supplier?.id ?? uuidv7());
   const [name, setName] = useState(supplier?.name ?? "");
   const [contact, setContact] = useState(supplier?.contact_name ?? "");
@@ -739,6 +760,7 @@ function SupplierDialog({ supplier, onClose }: { supplier: Supplier | null; onCl
   const run = useMutation({
     mutationFn: () => upsertSupplier({ id, name, contact_name: contact, phone, email, notes }),
     onSuccess: async () => {
+      toast.good(t("purchasing.suppliers.save"));
       await qc.invalidateQueries({ queryKey: ["po", "suppliers"] });
       onClose();
     },
@@ -775,19 +797,19 @@ function SupplierDialog({ supplier, onClose }: { supplier: Supplier | null; onCl
 /* ------------------------------------------------------------------------------------------------ deliveries */
 
 function ReceiptsTab() {
-  const { t, i18n } = useTranslation("admin");
+  const { t, i18n } = useTranslation(["admin", "common"]);
   const msg = useErrorMessage();
   const receipts = useQuery({ queryKey: ["po", "receipts"], queryFn: listGoodsReceipts });
   const [open, setOpen] = useState<string | null>(null);
   return (
     <Card className="overflow-x-auto p-0">
-      {receipts.isError ? <Alert>{msg(receipts.error)}</Alert> : null}
+      {receipts.isError ? <ErrorState message={msg(receipts.error)} onRetry={() => receipts.refetch()} retryLabel={t("common:actions.retry")} /> : null}
       {receipts.isLoading ? (
         <p className="p-4 text-sm text-slate-500">{t("purchasing.loading")}</p>
       ) : (receipts.data ?? []).length === 0 ? (
-        <p className="p-4 text-sm text-slate-500" data-testid="no-receipts">
-          {t("purchasing.receipts.none")}
-        </p>
+        <div data-testid="no-receipts" className="p-4">
+          <EmptyState title={t("purchasing.receipts.none")} />
+        </div>
       ) : (
         <Table bare>
           <thead>

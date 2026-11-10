@@ -6,7 +6,7 @@ import { fetchTenantSettings, updateTenantSettings } from "../lib/settings-api.t
 import { fieldErrors, tenantSettingsSchema } from "../lib/schemas.ts";
 import { accessQuery } from "../lib/session.tsx";
 import { useErrorMessage, useValidationMessage } from "../lib/i18n-helpers.ts";
-import { Alert, Badge, Button, Card, Field, Input, Select, Table } from "../components/ui.tsx";
+import { Alert, Badge, Button, Card, ErrorState, Field, Input, PageHeader, Select, Table, useToast } from "../components/ui.tsx";
 import {
   fetchStorageMetrics,
   runArchiveMaintenance,
@@ -27,6 +27,7 @@ export function SettingsPage() {
   const qc = useQueryClient();
   const errMsg = useErrorMessage();
   const vm = useValidationMessage();
+  const toast = useToast();
 
   const q = useQuery({
     queryKey: ["tenant-settings"],
@@ -61,24 +62,33 @@ export function SettingsPage() {
     mutationFn: () => runArchiveMaintenance(30),
     onSuccess: async (res) => {
       await qc.invalidateQueries({ queryKey: ["storage-metrics"] });
-      setArchiveMessage(
-        t("settings.archiveSuccess", {
-          ops: res.ops_deleted,
-          approvals: res.approvals_deleted,
-        })
-      );
+      const msgText = t("settings.archiveSuccess", {
+        ops: res.ops_deleted,
+        approvals: res.approvals_deleted,
+      });
+      setArchiveMessage(msgText);
+      toast.good(msgText);
       setTimeout(() => setArchiveMessage(null), 5000);
     },
-    onError: (e) => setActionError(errMsg(e)),
+    onError: (e) => {
+      const err = errMsg(e);
+      setActionError(err);
+      toast.error(err);
+    },
   });
 
   const pingMutation = useMutation({
     mutationFn: checkHealthPing,
     onSuccess: (res) => {
       setPingResult(res);
+      toast.good(`✓ ${res.status} (${new Date(res.timestamp).toLocaleTimeString()})`);
       setTimeout(() => setPingResult(null), 6000);
     },
-    onError: (e) => setActionError(errMsg(e)),
+    onError: (e) => {
+      const err = errMsg(e);
+      setActionError(err);
+      toast.error(err);
+    },
   });
 
   useEffect(() => {
@@ -119,7 +129,11 @@ export function SettingsPage() {
       await qc.invalidateQueries({ queryKey: ["tenant-settings"] });
       await qc.invalidateQueries({ queryKey: accessQuery.queryKey });
       setSavedSuccess(true);
+      toast.good(t("common:saved"));
       setTimeout(() => setSavedSuccess(false), 4000);
+    },
+    onError: (e) => {
+      toast.error(errMsg(e));
     },
   });
 
@@ -160,7 +174,7 @@ export function SettingsPage() {
   }
 
   if (q.isPending) return <Card>{t("settings.loading")}</Card>;
-  if (q.isError) return <Alert>{errMsg(q.error)}</Alert>;
+  if (q.isError) return <ErrorState message={errMsg(q.error)} onRetry={() => void q.refetch()} retryLabel={t("common:actions.retry")} />;
 
   const d = q.data;
   const tzList = timezones();
@@ -168,20 +182,20 @@ export function SettingsPage() {
 
   return (
     <div className="grid gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">{t("settings.title")}</h1>
-          <p className="text-sm text-slate-500">{t("settings.subtitle")}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Badge tone={d.tenant.status === "active" ? "good" : "warn"}>
-            {t(`settings.status.${d.tenant.status}`)}
-          </Badge>
-          <Badge tone={d.tenant.plan === "pro" ? "good" : "neutral"}>
-            {t(`settings.plan.${d.tenant.plan}`)}
-          </Badge>
-        </div>
-      </div>
+      <PageHeader
+        title={t("settings.title")}
+        subtitle={t("settings.subtitle")}
+        actions={
+          <div className="flex items-center gap-2">
+            <Badge tone={d.tenant.status === "active" ? "good" : "warn"}>
+              {t(`settings.status.${d.tenant.status}`)}
+            </Badge>
+            <Badge tone={d.tenant.plan === "pro" ? "good" : "neutral"}>
+              {t(`settings.plan.${d.tenant.plan}`)}
+            </Badge>
+          </div>
+        }
+      />
 
       {save.isError ? <Alert>{errMsg(save.error)}</Alert> : null}
       {savedSuccess ? <Alert tone="info">{t("common:saved")}</Alert> : null}

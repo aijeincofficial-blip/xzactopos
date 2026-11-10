@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatMoney, money } from "@pos/core";
-import { Alert, Badge, Button, Card, Dialog, Input, Select } from "../components/ui.tsx";
+import { Alert, Badge, Button, Card, Dialog, EmptyState, ErrorState, Field, Input, PageHeader, Select, useToast } from "../components/ui.tsx";
 import { useSession } from "../lib/session.tsx";
 import { useActiveLocation } from "../lib/location-context.tsx";
 import { useErrorMessage } from "../lib/i18n-helpers.ts";
@@ -18,8 +18,9 @@ import {
 } from "../lib/day-close-api.ts";
 
 export function DayClosePage() {
-  const { t, i18n } = useTranslation("admin");
+  const { t, i18n } = useTranslation(["admin", "common"]);
   const msg = useErrorMessage();
+  const toast = useToast();
   const { access, can } = useSession();
   const qc = useQueryClient();
   const currency = access.tenant.base_currency;
@@ -110,7 +111,9 @@ export function DayClosePage() {
       setCountedText("");
       setNote("");
       setCloseError(null);
-      setSuccessNote(t("dayClose.closedSuccess", { diff: fmt(r.difference) }));
+      const succ = t("dayClose.closedSuccess", { diff: fmt(r.difference) });
+      setSuccessNote(succ);
+      toast.good(succ);
       await Promise.all([
         qc.invalidateQueries({ queryKey: ["day-closes", store?.id] }),
         qc.invalidateQueries({ queryKey: ["day-summary"] }),
@@ -118,7 +121,9 @@ export function DayClosePage() {
     },
     onError: (e) => {
       setSuccessNote(null);
-      setCloseError(e instanceof Error ? e.message : msg(e));
+      const err = e instanceof Error ? e.message : msg(e);
+      setCloseError(err);
+      toast.error(err);
     },
   });
 
@@ -132,34 +137,30 @@ export function DayClosePage() {
 
   if (!store) {
     return (
-      <Card>
-        <p>{t("sell.noStore")}</p>
-      </Card>
+      <EmptyState title={t("sell.noStore")} />
     );
   }
 
   return (
     <div className="grid max-w-4xl gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h2 className="text-xl font-bold text-slate-900">{t("dayClose.title")}</h2>
-          <p className="text-xs text-slate-500">
-            {today} · {store.name} ({store.code}) · {timezone}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setShowXReport(true)}>
-            {t("dayClose.xReportBtn")}
-          </Button>
-          {todayClose ? (
-            <Badge tone="good">
-              {t("dayClose.statusClosed", { time: todayClose.closed_at.slice(11, 16) })}
-            </Badge>
-          ) : (
-            <Badge tone="warn">{t("dayClose.statusOpen")}</Badge>
-          )}
-        </div>
-      </div>
+      <PageHeader
+        title={t("dayClose.title")}
+        subtitle={`${today} · ${store.name} (${store.code}) · ${timezone}`}
+        actions={
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setShowXReport(true)}>
+              {t("dayClose.xReportBtn")}
+            </Button>
+            {todayClose ? (
+              <Badge tone="good">
+                {t("dayClose.statusClosed", { time: todayClose.closed_at.slice(11, 16) })}
+              </Badge>
+            ) : (
+              <Badge tone="warn">{t("dayClose.statusOpen")}</Badge>
+            )}
+          </div>
+        }
+      />
 
       {successNote ? <Alert tone="info">{successNote}</Alert> : null}
 
@@ -207,8 +208,7 @@ export function DayClosePage() {
             {todayClose ? t("dayClose.recountTitle") : t("dayClose.countTitle")}
           </h3>
 
-          <label className="grid gap-1 text-sm">
-            <span className="font-medium">{t("dayClose.countedCash")}</span>
+          <Field label={t("dayClose.countedCash")}>
             <Input
               data-testid="counted-cash-input"
               inputMode="decimal"
@@ -216,7 +216,7 @@ export function DayClosePage() {
               value={countedText}
               onChange={(e) => setCountedText(e.target.value)}
             />
-          </label>
+          </Field>
 
           {diff !== null ? (
             <div
@@ -234,8 +234,7 @@ export function DayClosePage() {
             </div>
           ) : null}
 
-          <label className="grid gap-1 text-sm">
-            <span className="font-medium">{t("expenses.note")}</span>
+          <Field label={t("expenses.note")}>
             <Input
               data-testid="close-note-input"
               placeholder={t("expenses.notePlaceholder")}
@@ -243,7 +242,7 @@ export function DayClosePage() {
               value={note}
               onChange={(e) => setNote(e.target.value)}
             />
-          </label>
+          </Field>
 
           {closeError ? <Alert>{closeError}</Alert> : null}
 
@@ -281,8 +280,11 @@ export function DayClosePage() {
         </div>
 
         {dayClosesQuery.isPending ? <p className="text-sm text-slate-500">{t("today.loading")}</p> : null}
+        {dayClosesQuery.isError ? (
+          <ErrorState message={t("dayClose.historyTitle")} onRetry={() => void dayClosesQuery.refetch()} retryLabel={t("common:actions.retry")} />
+        ) : null}
         {filteredCloses.length === 0 && !dayClosesQuery.isPending ? (
-          <p className="text-sm text-slate-500">{t("dayClose.noHistory")}</p>
+          <EmptyState title={t("dayClose.noHistory")} />
         ) : null}
 
         <ul className="grid gap-2">

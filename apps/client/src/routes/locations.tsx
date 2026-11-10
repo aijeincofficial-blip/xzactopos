@@ -6,7 +6,7 @@ import { listLocations, rpc, type LocationRow } from "../lib/api.ts";
 import { fieldErrors, locationSchema } from "../lib/schemas.ts";
 import { accessQuery, useSession } from "../lib/session.tsx";
 import { useErrorMessage, useValidationMessage } from "../lib/i18n-helpers.ts";
-import { Alert, Badge, Button, Card, Dialog, Field, Input, Select, Table } from "../components/ui.tsx";
+import { Alert, Badge, Button, Card, Dialog, EmptyState, ErrorState, Field, Input, PageHeader, Select, Table, useToast } from "../components/ui.tsx";
 
 interface Draft {
   id: string;
@@ -24,6 +24,7 @@ export function LocationsPage() {
   const { t } = useTranslation(["admin", "common"]);
   const { access } = useSession();
   const qc = useQueryClient();
+  const toast = useToast();
   const errMsg = useErrorMessage();
   const vm = useValidationMessage();
   const q = useQuery({ queryKey: ["locations"], queryFn: listLocations });
@@ -48,15 +49,19 @@ export function LocationsPage() {
       }),
     onSuccess: async () => {
       setDraft(null);
+      toast.good(t("common:saved"));
       await refresh();
     },
+    onError: (e) => toast.error(errMsg(e)),
   });
   const archive = useMutation({
     mutationFn: (id: string) => rpc("archive_location", { p_id: id }),
     onSuccess: async () => {
       setArchiving(null);
+      toast.good(t("locations.archive"));
       await refresh();
     },
+    onError: (e) => toast.error(errMsg(e)),
   });
 
   function submit(e: FormEvent) {
@@ -75,25 +80,33 @@ export function LocationsPage() {
   };
 
   return (
-    <>
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">{t("locations.title")}</h1>
-        <Button onClick={() => open(blank())}>{t("locations.add")}</Button>
-      </div>
+    <div className="grid gap-4">
+      <PageHeader
+        title={t("locations.title")}
+        actions={<Button onClick={() => open(blank())}>{t("locations.add")}</Button>}
+      />
 
-      {q.isError ? <Alert>{errMsg(q.error)}</Alert> : null}
+      {q.isError ? <ErrorState message={errMsg(q.error)} onRetry={() => q.refetch()} retryLabel={t("common:actions.retry")} /> : null}
       <Card className="overflow-x-auto p-0">
-        <Table bare>
-          <thead className="border-b border-slate-200 text-xs text-slate-500 uppercase">
-            <tr>
-              <th className="p-3">{t("locations.code")}</th>
-              <th className="p-3">{t("locations.name")}</th>
-              <th className="p-3">{t("locations.typeLabel")}</th>
-              <th className="p-3" />
-            </tr>
-          </thead>
-          <tbody>
-            {(q.data ?? []).map((l) => (
+        {(q.data ?? []).length === 0 ? (
+          <div className="p-6">
+            <EmptyState
+              title={t("locations.title")}
+              action={<Button size="sm" onClick={() => open(blank())}>+ {t("locations.add")}</Button>}
+            />
+          </div>
+        ) : (
+          <Table bare>
+            <thead className="border-b border-slate-200 text-xs text-slate-500 uppercase">
+              <tr>
+                <th className="p-3">{t("locations.code")}</th>
+                <th className="p-3">{t("locations.name")}</th>
+                <th className="p-3">{t("locations.typeLabel")}</th>
+                <th className="p-3" />
+              </tr>
+            </thead>
+            <tbody>
+              {(q.data ?? []).map((l) => (
               <tr key={l.id} className="border-b border-slate-100 last:border-0">
                 <td className="p-3 font-mono">{l.code}</td>
                 <td className="p-3">
@@ -128,15 +141,9 @@ export function LocationsPage() {
                 </td>
               </tr>
             ))}
-            {q.data?.length === 0 ? (
-              <tr>
-                <td colSpan={4} className="p-4 text-center text-slate-500">
-                  {t("locations.empty")}
-                </td>
-              </tr>
-            ) : null}
           </tbody>
         </Table>
+        )}
       </Card>
 
       <Dialog
@@ -210,6 +217,6 @@ export function LocationsPage() {
           </div>
         </div>
       </Dialog>
-    </>
+    </div>
   );
 }

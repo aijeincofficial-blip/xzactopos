@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Alert, Badge, Button, Card, Dialog, Field, Input, Select, Table } from "../components/ui.tsx";
+import { Alert, Badge, Button, Card, Dialog, EmptyState, ErrorState, Field, Input, PageHeader, Select, Table, useToast } from "../components/ui.tsx";
 import { useSession } from "../lib/session.tsx";
 import { useErrorMessage } from "../lib/i18n-helpers.ts";
 import { supabase } from "../lib/supabase.ts";
@@ -24,6 +24,7 @@ export function BinsPage() {
   const msg = useErrorMessage();
   const { access, can } = useSession();
   const qc = useQueryClient();
+  const toast = useToast();
 
   const warehouses = access.locations.filter(
     (l) => l.type === "warehouse" && (can("stock.adjust_store", l.id) || can("transfer.manage", l.id) || can("locations.manage", l.id)),
@@ -125,6 +126,7 @@ export function BinsPage() {
   const enableMutation = useMutation({
     mutationFn: () => enableWarehouseBins(selectedWarehouseId),
     onSuccess: async () => {
+      toast.good(t("bins.enableSuccess", "Warehouse bins enabled"));
       await Promise.all([
         qc.invalidateQueries({ queryKey: ["warehouse-location", selectedWarehouseId] }),
         qc.invalidateQueries({ queryKey: ["warehouse-bins", selectedWarehouseId] }),
@@ -133,7 +135,11 @@ export function BinsPage() {
         qc.invalidateQueries({ queryKey: ["locations"] }),
       ]);
     },
-    onError: (e) => setActionError(msg(e)),
+    onError: (e) => {
+      const m = msg(e);
+      setActionError(m);
+      toast.error(m);
+    },
   });
 
   const addZoneMutation = useMutation({
@@ -143,9 +149,14 @@ export function BinsPage() {
       setZoneCode("");
       setZoneName("");
       setActionError(null);
+      toast.good(t("bins.zoneCreated", "Zone saved"));
       await qc.invalidateQueries({ queryKey: ["warehouse-zones", selectedWarehouseId] });
     },
-    onError: (e) => setActionError(msg(e)),
+    onError: (e) => {
+      const m = msg(e);
+      setActionError(m);
+      toast.error(m);
+    },
   });
 
   const addBinMutation = useMutation({
@@ -170,9 +181,14 @@ export function BinsPage() {
       setBinPos("");
       setBinMaxQty("");
       setActionError(null);
+      toast.good(t("bins.binCreated", "Bin saved"));
       await qc.invalidateQueries({ queryKey: ["warehouse-bins", selectedWarehouseId] });
     },
-    onError: (e) => setActionError(msg(e)),
+    onError: (e) => {
+      const m = msg(e);
+      setActionError(m);
+      toast.error(m);
+    },
   });
 
   const moveStockMutation = useMutation({
@@ -191,20 +207,26 @@ export function BinsPage() {
       setMoveQty("");
       setMoveReason("");
       setActionError(null);
+      toast.good(t("bins.stockMoved", "Stock transferred"));
       await Promise.all([
         qc.invalidateQueries({ queryKey: ["warehouse-bins", selectedWarehouseId] }),
         qc.invalidateQueries({ queryKey: ["bin-invariant", selectedWarehouseId] }),
         qc.invalidateQueries({ queryKey: ["bin-stock"] }),
       ]);
     },
-    onError: (e) => setActionError(msg(e)),
+    onError: (e) => {
+      const m = msg(e);
+      setActionError(m);
+      toast.error(m);
+    },
   });
 
   if (warehouses.length === 0) {
     return (
-      <Card>
-        <p className="text-sm text-slate-600">{t("bins.noWarehouses", "No warehouses accessible.")}</p>
-      </Card>
+      <EmptyState
+        title={t("bins.noWarehouses", "No warehouses accessible")}
+        hint={t("bins.noWarehousesHint", "You do not have access to any warehouse locations or permission to manage bins.")}
+      />
     );
   }
 
@@ -218,34 +240,30 @@ export function BinsPage() {
 
   return (
     <div className="grid gap-4">
-      {/* Header and Warehouse Selector */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold">{t("bins.title", "Warehouse Bins & Storage")}</h1>
-          <p className="text-xs text-slate-500">
-            {t("bins.subtitle", "Zones, aisle/rack/shelf positions, put-away, and pick locations.")}
-          </p>
-        </div>
+      <PageHeader
+        title={t("bins.title", "Warehouse Bins & Storage")}
+        subtitle={t("bins.subtitle", "Zones, aisle/rack/shelf positions, put-away, and pick locations.")}
+        actions={
+          warehouses.length > 1 ? (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-slate-500">{t("bins.warehouse", "Warehouse")}:</span>
+              <Select
+                value={selectedWarehouseId}
+                onChange={(e) => setSelectedWarehouseId(e.target.value)}
+                className="w-56"
+              >
+                {warehouses.map((w) => (
+                  <option key={w.id} value={w.id}>
+                    {w.code} · {w.name}
+                  </option>
+                ))}
+              </Select>
+            </div>
+          ) : undefined
+        }
+      />
 
-        {warehouses.length > 1 ? (
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-slate-500">{t("bins.warehouse", "Warehouse")}:</span>
-            <Select
-              value={selectedWarehouseId}
-              onChange={(e) => setSelectedWarehouseId(e.target.value)}
-              className="w-56"
-            >
-              {warehouses.map((w) => (
-                <option key={w.id} value={w.id}>
-                  {w.code} · {w.name}
-                </option>
-              ))}
-            </Select>
-          </div>
-        ) : null}
-      </div>
-
-      {actionError ? <Alert>{actionError}</Alert> : null}
+      {actionError ? <ErrorState message={actionError} /> : null}
 
       {/* When Bins Not Enabled on this Warehouse */}
       {!isBinsEnabled ? (

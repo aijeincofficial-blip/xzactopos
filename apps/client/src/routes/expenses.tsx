@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatMoney, money } from "@pos/core";
-import { Alert, Badge, Button, Card, Input, Select } from "../components/ui.tsx";
+import { Alert, Badge, Button, Card, EmptyState, ErrorState, Field, Input, PageHeader, Select, useToast } from "../components/ui.tsx";
 import { useSession } from "../lib/session.tsx";
 import { useActiveLocation } from "../lib/location-context.tsx";
 import { useErrorMessage } from "../lib/i18n-helpers.ts";
@@ -20,8 +20,9 @@ import {
 const WALLETS: Wallet[] = ["gcash", "maya", "other"];
 
 export function ExpensesPage() {
-  const { t, i18n } = useTranslation("admin");
+  const { t, i18n } = useTranslation(["admin", "common"]);
   const msg = useErrorMessage();
+  const toast = useToast();
   const { access, can } = useSession();
   const qc = useQueryClient();
   const currency = access.tenant.base_currency;
@@ -76,9 +77,14 @@ export function ExpensesPage() {
       setNote("");
       setAddError(null);
       setShowAdd(false);
+      toast.good(t("common:saved"));
       await refreshAll();
     },
-    onError: (e) => setAddError(e instanceof Error ? e.message : msg(e)),
+    onError: (e) => {
+      const err = e instanceof Error ? e.message : msg(e);
+      setAddError(err);
+      toast.error(err);
+    },
   });
 
   const voidMut = useMutation({
@@ -89,16 +95,19 @@ export function ExpensesPage() {
       setVoidingId(null);
       setVoidReason("");
       setVoidError(null);
+      toast.good(t("expenses.voided"));
       await refreshAll();
     },
-    onError: (e) => setVoidError(msg(e)),
+    onError: (e) => {
+      const err = msg(e);
+      setVoidError(err);
+      toast.error(err);
+    },
   });
 
   if (!store) {
     return (
-      <Card>
-        <p>{t("sell.noStore")}</p>
-      </Card>
+      <EmptyState title={t("sell.noStore")} />
     );
   }
 
@@ -106,19 +115,20 @@ export function ExpensesPage() {
 
   return (
     <div className="grid max-w-3xl gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-lg font-semibold">{t("expenses.title")}</h2>
-        <Button data-testid="add-expense-btn" onClick={() => setShowAdd(!showAdd)}>
-          {showAdd ? t("sell.cancel") : t("expenses.add")}
-        </Button>
-      </div>
+      <PageHeader
+        title={t("expenses.title")}
+        actions={
+          <Button data-testid="add-expense-btn" onClick={() => setShowAdd(!showAdd)}>
+            {showAdd ? t("sell.cancel") : t("expenses.add")}
+          </Button>
+        }
+      />
 
       {showAdd ? (
         <Card className="grid gap-3 border-slate-900" data-testid="add-expense-card">
           <h3 className="font-medium">{t("expenses.recordNew")}</h3>
           <div className="grid gap-3 sm:grid-cols-2">
-            <label className="grid gap-1 text-sm">
-              <span className="font-medium">{t("expenses.amount")}</span>
+            <Field label={t("expenses.amount")}>
               <Input
                 data-testid="expense-amount"
                 inputMode="decimal"
@@ -126,9 +136,8 @@ export function ExpensesPage() {
                 value={amountText}
                 onChange={(e) => setAmountText(e.target.value)}
               />
-            </label>
-            <label className="grid gap-1 text-sm">
-              <span className="font-medium">{t("expenses.category")}</span>
+            </Field>
+            <Field label={t("expenses.category")}>
               <Select
                 data-testid="expense-category"
                 value={category}
@@ -140,9 +149,8 @@ export function ExpensesPage() {
                   </option>
                 ))}
               </Select>
-            </label>
-            <label className="grid gap-1 text-sm">
-              <span className="font-medium">{t("expenses.paidFrom")}</span>
+            </Field>
+            <Field label={t("expenses.paidFrom")}>
               <Select
                 data-testid="expense-paid-from"
                 value={paidFrom}
@@ -151,10 +159,9 @@ export function ExpensesPage() {
                 <option value="cash">{t("sell.cash")}</option>
                 <option value="ewallet">{t("sell.ewallet")}</option>
               </Select>
-            </label>
+            </Field>
             {paidFrom === "ewallet" ? (
-              <label className="grid gap-1 text-sm">
-                <span className="font-medium">{t("sell.wallet")}</span>
+              <Field label={t("sell.wallet")}>
                 <Select
                   data-testid="expense-wallet"
                   value={wallet}
@@ -166,11 +173,10 @@ export function ExpensesPage() {
                     </option>
                   ))}
                 </Select>
-              </label>
+              </Field>
             ) : null}
           </div>
-          <label className="grid gap-1 text-sm">
-            <span className="font-medium">{t("expenses.note")}</span>
+          <Field label={t("expenses.note")}>
             <Input
               data-testid="expense-note"
               placeholder={t("expenses.notePlaceholder")}
@@ -178,7 +184,7 @@ export function ExpensesPage() {
               value={note}
               onChange={(e) => setNote(e.target.value)}
             />
-          </label>
+          </Field>
           {addError ? <Alert>{addError}</Alert> : null}
           <div className="flex gap-2">
             <Button
@@ -196,8 +202,10 @@ export function ExpensesPage() {
       ) : null}
 
       {expensesQuery.isPending ? <Card>{t("expenses.loading")}</Card> : null}
-      {expensesQuery.isError ? <Alert>{t("expenses.error")}</Alert> : null}
-      {expensesQuery.data && items.length === 0 ? <Card>{t("expenses.empty")}</Card> : null}
+      {expensesQuery.isError ? (
+        <ErrorState message={t("expenses.error")} onRetry={() => void expensesQuery.refetch()} retryLabel={t("common:actions.retry")} />
+      ) : null}
+      {expensesQuery.data && items.length === 0 ? <EmptyState title={t("expenses.empty")} /> : null}
 
       <ul className="grid gap-2">
         {items.map((exp: ExpenseRow) => {

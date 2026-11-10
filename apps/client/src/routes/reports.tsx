@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { formatMoney, money } from "@pos/core";
-import { Badge, Button, Card } from "../components/ui.tsx";
+import { Badge, Button, Card, ErrorState, PageHeader, useToast } from "../components/ui.tsx";
 import { useSession } from "../lib/session.tsx";
 import { listLocations } from "../lib/api.ts";
 import {
@@ -23,6 +23,7 @@ function toDateString(d: Date): string {
 export function ReportsPage() {
   const { t, i18n } = useTranslation(["admin", "common"]);
   const { access, can } = useSession();
+  const toast = useToast();
   const currency = access.tenant.base_currency ?? "PHP";
 
   // Date ranges
@@ -90,7 +91,11 @@ export function ReportsPage() {
   const snapshotMutation = useMutation({
     mutationFn: () => snapshotDailyStock(),
     onSuccess: () => {
+      toast.good(t("admin:reports.snapshotSuccess", { defaultValue: "Stock snapshot recorded" }));
       void reportQuery.refetch();
+    },
+    onError: () => {
+      toast.error(t("admin:reports.snapshotError", { defaultValue: "Failed to snapshot stock" }));
     },
   });
 
@@ -114,57 +119,54 @@ export function ReportsPage() {
   return (
     <div className="grid gap-6">
       {/* Title & Actions */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-            {t("admin:reports.title")}
-          </h1>
-          <p className="text-sm text-slate-500">{t("admin:reports.subtitle")}</p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          {canSnapshot && (
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={snapshotMutation.isPending}
-              onClick={() => snapshotMutation.mutate()}
-            >
-              {snapshotMutation.isPending
-                ? t("admin:reports.snapshotting")
-                : t("admin:reports.snapshotNow")}
-            </Button>
-          )}
-
-          {rep && (
-            <div className="flex items-center gap-1.5">
+      <PageHeader
+        title={t("admin:reports.title")}
+        subtitle={t("admin:reports.subtitle")}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            {canSnapshot && (
               <Button
-                variant="ghost"
+                variant="outline"
                 size="sm"
-                onClick={() => exportDailySalesCsv(rep, access.tenant.name)}
+                disabled={snapshotMutation.isPending}
+                onClick={() => snapshotMutation.mutate()}
               >
-                📥 {t("admin:reports.exportDaily")}
+                {snapshotMutation.isPending
+                  ? t("admin:reports.snapshotting")
+                  : t("admin:reports.snapshotNow")}
               </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => exportTopProductsCsv(rep, access.tenant.name)}
-              >
-                📥 {t("admin:reports.exportProducts")}
-              </Button>
-              {rep.stores.length > 1 && (
+            )}
+
+            {rep && (
+              <div className="flex items-center gap-1.5">
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => exportStoresComparisonCsv(rep, access.tenant.name)}
+                  onClick={() => exportDailySalesCsv(rep, access.tenant.name)}
                 >
-                  📥 {t("admin:reports.exportStores")}
+                  📥 {t("admin:reports.exportDaily")}
                 </Button>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => exportTopProductsCsv(rep, access.tenant.name)}
+                >
+                  📥 {t("admin:reports.exportProducts")}
+                </Button>
+                {rep.stores.length > 1 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => exportStoresComparisonCsv(rep, access.tenant.name)}
+                  >
+                    📥 {t("admin:reports.exportStores")}
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+        }
+      />
 
       {/* Filter Bar */}
       <Card className="flex flex-wrap items-center justify-between gap-4">
@@ -260,6 +262,12 @@ export function ReportsPage() {
         <Card className="py-12 text-center text-slate-500">
           {t("admin:reports.loading")}
         </Card>
+      ) : reportQuery.isError ? (
+        <ErrorState
+          message={t("admin:reports.noData")}
+          onRetry={() => void reportQuery.refetch()}
+          retryLabel={t("common:actions.retry")}
+        />
       ) : !rep ? (
         <Card className="py-12 text-center text-slate-500">
           {t("admin:reports.noData")}

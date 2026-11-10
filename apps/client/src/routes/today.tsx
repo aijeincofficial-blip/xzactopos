@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { formatMoney, money } from "@pos/core";
-import { Alert, Button, Card, PageHeader } from "../components/ui.tsx";
+import { Button, Card, EmptyState, ErrorState, PageHeader } from "../components/ui.tsx";
 import { useSession } from "../lib/session.tsx";
 import { tenantMode } from "../lib/mode.ts";
 import { dayInTimezone, getDaySummary } from "../lib/today.ts";
@@ -18,7 +18,7 @@ function Stat({ label, value, id }: { label: string; value: string; id: string }
 
 /** Solo home: today's sales, how they were paid, expenses and what customers still owe (read-only). */
 export function TodayPage() {
-  const { t, i18n } = useTranslation("admin");
+  const { t, i18n } = useTranslation(["admin", "common"]);
   const { access, can } = useSession();
   const mode = tenantMode(access);
   const day = dayInTimezone(access.tenant.timezone);
@@ -26,7 +26,7 @@ export function TodayPage() {
   const fmt = (n: number) => formatMoney(money(n, access.tenant.base_currency), i18n.language);
 
   if (q.isPending) return <Card>{t("today.loading")}</Card>;
-  if (q.isError) return <Alert>{t("today.error")}</Alert>;
+  if (q.isError) return <ErrorState message={t("today.error")} onRetry={() => void q.refetch()} retryLabel={t("common:actions.retry")} />;
 
   const s = q.data;
   const cashLeft = s.totals.cash - s.expenses.cash;
@@ -68,7 +68,7 @@ export function TodayPage() {
       <Card>
         <h3 className="mb-2 font-medium">{t("today.topItems")}</h3>
         {s.top_items.length === 0 ? (
-          <p className="text-sm text-slate-500">{t("today.noSales")}</p>
+          <EmptyState title={t("today.noSales")} />
         ) : (
           <ul className="grid gap-1 text-sm">
             {s.top_items.slice(0, 5).map((i) => (

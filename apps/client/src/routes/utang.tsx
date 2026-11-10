@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatMoney, money } from "@pos/core";
-import { Alert, Badge, Button, Card, Input, Select } from "../components/ui.tsx";
+import { Alert, Badge, Button, Card, EmptyState, ErrorState, Input, PageHeader, Select, useToast } from "../components/ui.tsx";
 import { useSession } from "../lib/session.tsx";
 import { useActiveLocation } from "../lib/location-context.tsx";
 import { useErrorMessage } from "../lib/i18n-helpers.ts";
@@ -18,8 +18,9 @@ import {
 } from "../lib/utang-api.ts";
 
 export function UtangPage() {
-  const { t, i18n } = useTranslation("admin");
+  const { t, i18n } = useTranslation(["admin", "common"]);
   const msg = useErrorMessage();
+  const toast = useToast();
   const { access, can } = useSession();
   const qc = useQueryClient();
   const currency = access.tenant.base_currency;
@@ -75,10 +76,15 @@ export function UtangPage() {
       setNewName("");
       setNewPhone("");
       setShowAdd(false);
+      toast.good(t("common:saved"));
       await refreshAll();
       setSelectedId(created.id);
     },
-    onError: (e) => setPayError(msg(e)),
+    onError: (e) => {
+      const err = msg(e);
+      setPayError(err);
+      toast.error(err);
+    },
   });
 
   const payMut = useMutation({
@@ -101,9 +107,14 @@ export function UtangPage() {
       setPayAmount("");
       setPayNote("");
       setPayError(null);
+      toast.good(t("common:saved"));
       await refreshAll();
     },
-    onError: (e) => setPayError(e instanceof Error ? e.message : msg(e)),
+    onError: (e) => {
+      const err = e instanceof Error ? e.message : msg(e);
+      setPayError(err);
+      toast.error(err);
+    },
   });
 
   const dueDateMut = useMutation({
@@ -113,16 +124,19 @@ export function UtangPage() {
     },
     onSuccess: async () => {
       setDueDateError(null);
+      toast.good(t("common:saved"));
       await refreshAll();
     },
-    onError: (e) => setDueDateError(msg(e)),
+    onError: (e) => {
+      const err = msg(e);
+      setDueDateError(err);
+      toast.error(err);
+    },
   });
 
   if (!store) {
     return (
-      <Card>
-        <p>{t("sell.noStore")}</p>
-      </Card>
+      <EmptyState title={t("sell.noStore")} />
     );
   }
 
@@ -136,104 +150,104 @@ export function UtangPage() {
   const totalOwed = (customersQuery.data ?? []).reduce((acc, c) => acc + Math.max(0, c.balance), 0);
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[1fr_420px]">
-      <section className="grid content-start gap-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <h2 className="text-lg font-semibold">{t("utang.title")}</h2>
-            <p className="text-xs text-slate-500">
-              {t("utang.totalOwed")}: <strong className="text-slate-900">{fmt(totalOwed)}</strong>
-            </p>
-          </div>
+    <div className="grid gap-4">
+      <PageHeader
+        title={t("utang.title")}
+        subtitle={`${t("utang.totalOwed")}: ${fmt(totalOwed)}`}
+        actions={
           <Button data-testid="add-customer-btn" onClick={() => setShowAdd(true)}>
             {t("utang.newCustomer")}
           </Button>
-        </div>
-
-        {showAdd ? (
-          <Card className="grid gap-2 border-slate-900 p-3" data-testid="new-customer-card">
-            <h3 className="font-medium text-sm">{t("utang.newCustomer")}</h3>
-            <Input
-              data-testid="cust-name-input"
-              placeholder={t("sell.customerName")}
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-            />
-            <Input
-              data-testid="cust-phone-input"
-              placeholder={t("sell.customerPhone")}
-              value={newPhone}
-              onChange={(e) => setNewPhone(e.target.value)}
-            />
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                data-testid="cust-save-btn"
-                disabled={newName.trim() === "" || addCustomerMut.isPending}
-                onClick={() => addCustomerMut.mutate()}
-              >
-                {t("products.save")}
-              </Button>
-              <Button size="sm" variant="ghost" onClick={() => setShowAdd(false)}>
-                {t("sell.cancel")}
-              </Button>
-            </div>
-          </Card>
-        ) : null}
-
-        <Input
-          data-testid="utang-search"
-          placeholder={t("utang.searchPlaceholder")}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={onlyOwed} onChange={(e) => setOnlyOwed(e.target.checked)} />
-          {t("utang.onlyOwed")}
-        </label>
-
-        {customersQuery.isPending ? <Card>{t("utang.loading")}</Card> : null}
-        {customersQuery.isError ? <Alert>{t("utang.error")}</Alert> : null}
-        {customersQuery.data && customers.length === 0 ? <Card>{t("utang.noCustomers")}</Card> : null}
-
-        <ul className="grid gap-2">
-          {customers.map((c) => {
-            const overdue = isOverdue(c.balance, c.dueOn, today);
-            return (
-              <li key={c.customerId}>
-                <button
-                  type="button"
-                  data-testid={`customer-row-${c.customerId}`}
-                  onClick={() => {
-                    setSelectedId(c.customerId);
-                    setNewDueDate(c.dueOn ?? "");
-                    setPayError(null);
-                    setDueDateError(null);
-                  }}
-                  className={`flex w-full items-center justify-between gap-2 rounded-md border bg-white px-3 py-2 text-left text-sm hover:bg-slate-50 ${
-                    c.customerId === selectedId ? "border-slate-900" : "border-slate-200"
-                  }`}
+        }
+      />
+      <div className="grid gap-4 lg:grid-cols-[1fr_420px]">
+        <section className="grid content-start gap-3">
+          {showAdd ? (
+            <Card className="grid gap-2 border-slate-900 p-3" data-testid="new-customer-card">
+              <h3 className="font-medium text-sm">{t("utang.newCustomer")}</h3>
+              <Input
+                data-testid="cust-name-input"
+                placeholder={t("sell.customerName")}
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+              />
+              <Input
+                data-testid="cust-phone-input"
+                placeholder={t("sell.customerPhone")}
+                value={newPhone}
+                onChange={(e) => setNewPhone(e.target.value)}
+              />
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  data-testid="cust-save-btn"
+                  disabled={newName.trim() === "" || addCustomerMut.isPending}
+                  onClick={() => addCustomerMut.mutate()}
                 >
-                  <span>
-                    <span className="block font-medium">{c.name}</span>
-                    <span className="text-xs text-slate-500">
-                      {c.phone ? `${c.phone} · ` : ""}
-                      {c.dueOn ? `${t("utang.due")}: ${c.dueOn}` : t("utang.noDueDate")}
+                  {t("products.save")}
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setShowAdd(false)}>
+                  {t("sell.cancel")}
+                </Button>
+              </div>
+            </Card>
+          ) : null}
+
+          <Input
+            data-testid="utang-search"
+            placeholder={t("utang.searchPlaceholder")}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={onlyOwed} onChange={(e) => setOnlyOwed(e.target.checked)} />
+            {t("utang.onlyOwed")}
+          </label>
+
+          {customersQuery.isPending ? <Card>{t("utang.loading")}</Card> : null}
+          {customersQuery.isError ? (
+            <ErrorState message={t("utang.error")} onRetry={() => void customersQuery.refetch()} retryLabel={t("common:actions.retry")} />
+          ) : null}
+          {customersQuery.data && customers.length === 0 ? <EmptyState title={t("utang.noCustomers")} /> : null}
+
+          <ul className="grid gap-2">
+            {customers.map((c) => {
+              const overdue = isOverdue(c.balance, c.dueOn, today);
+              return (
+                <li key={c.customerId}>
+                  <button
+                    type="button"
+                    data-testid={`customer-row-${c.customerId}`}
+                    onClick={() => {
+                      setSelectedId(c.customerId);
+                      setNewDueDate(c.dueOn ?? "");
+                      setPayError(null);
+                      setDueDateError(null);
+                    }}
+                    className={`flex w-full items-center justify-between gap-2 rounded-md border bg-white px-3 py-2 text-left text-sm hover:bg-slate-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/20 ${
+                      c.customerId === selectedId ? "border-slate-900" : "border-slate-200"
+                    }`}
+                  >
+                    <span>
+                      <span className="block font-medium">{c.name}</span>
+                      <span className="text-xs text-slate-500">
+                        {c.phone ? `${c.phone} · ` : ""}
+                        {c.dueOn ? `${t("utang.due")}: ${c.dueOn}` : t("utang.noDueDate")}
+                      </span>
                     </span>
-                  </span>
-                  <span className="flex items-center gap-2">
-                    {overdue ? <Badge tone="warn">{t("utang.overdue")}</Badge> : null}
-                    <span className={`font-semibold ${c.balance > 0 ? "text-amber-800" : "text-slate-600"}`}>
-                      {fmt(c.balance)}
+                    <span className="flex items-center gap-2">
+                      {overdue ? <Badge tone="warn">{t("utang.overdue")}</Badge> : null}
+                      <span className={`font-semibold ${c.balance > 0 ? "text-amber-800" : "text-slate-600"}`}>
+                        {fmt(c.balance)}
+                      </span>
                     </span>
-                  </span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      </section>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
 
       <section className="grid content-start gap-3">
         {selectedCustomer ? (
@@ -324,8 +338,11 @@ export function UtangPage() {
             <Card className="grid gap-2" data-testid="customer-ledger-card">
               <h4 className="text-sm font-semibold">{t("utang.history")}</h4>
               {ledgerQuery.isPending ? <p className="text-sm text-slate-500">{t("utang.loading")}</p> : null}
+              {ledgerQuery.isError ? (
+                <ErrorState message={t("utang.error")} onRetry={() => void ledgerQuery.refetch()} retryLabel={t("common:actions.retry")} />
+              ) : null}
               {ledgerQuery.data && ledgerQuery.data.length === 0 ? (
-                <p className="text-sm text-slate-500">{t("utang.noHistory")}</p>
+                <EmptyState title={t("utang.noHistory")} />
               ) : null}
               <ul className="grid gap-1.5 text-sm">
                 {(ledgerQuery.data ?? []).map((entry) => (
@@ -358,6 +375,7 @@ export function UtangPage() {
           <Card className="text-sm text-slate-500">{t("utang.pickCustomer")}</Card>
         )}
       </section>
+      </div>
     </div>
   );
 }

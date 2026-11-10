@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Alert, Badge, Button, Card, Dialog, Field, Input, Select } from "../components/ui.tsx";
+import { Alert, Badge, Button, Card, Dialog, EmptyState, ErrorState, Field, Input, PageHeader, Select, useToast } from "../components/ui.tsx";
 import { useSession } from "../lib/session.tsx";
 import { useErrorMessage } from "../lib/i18n-helpers.ts";
 import { pullCatalog } from "../lib/sell-api.ts";
@@ -20,6 +20,7 @@ import { createTransferSchema, fieldErrors, receiveTransferSchema } from "../lib
 export function TransfersPage() {
   const { t, i18n } = useTranslation(["admin", "common"]);
   const msg = useErrorMessage();
+  const toast = useToast();
   const { access, can } = useSession();
   const qc = useQueryClient();
 
@@ -97,15 +98,22 @@ export function TransfersPage() {
       void qc.invalidateQueries({ queryKey: ["transfers"] });
       setShowCreateModal(false);
       resetCreateForm();
+      toast.good(t("admin:transfers.createdSuccess", { defaultValue: "Transfer created" }));
     },
-    onError: (e) => setCreateError(msg(e)),
+    onError: (e) => {
+      const err = msg(e);
+      setCreateError(err);
+      toast.error(err);
+    },
   });
 
   const shipMutation = useMutation({
     mutationFn: shipTransfer,
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["transfers"] });
+      toast.good(t("admin:transfers.shippedSuccess", { defaultValue: "Transfer shipped" }));
     },
+    onError: (e) => toast.error(msg(e)),
   });
 
   const receiveMutation = useMutation({
@@ -114,8 +122,13 @@ export function TransfersPage() {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["transfers"] });
       setReceivingTransfer(null);
+      toast.good(t("admin:transfers.receivedSuccess", { defaultValue: "Transfer received" }));
     },
-    onError: (e) => setReceiveError(msg(e)),
+    onError: (e) => {
+      const err = msg(e);
+      setReceiveError(err);
+      toast.error(err);
+    },
   });
 
   const cancelMutation = useMutation({
@@ -124,7 +137,9 @@ export function TransfersPage() {
       void qc.invalidateQueries({ queryKey: ["transfers"] });
       setCancellingTransfer(null);
       setCancelReason("");
+      toast.good(t("admin:transfers.cancelledSuccess", { defaultValue: "Transfer cancelled" }));
     },
+    onError: (e) => toast.error(msg(e)),
   });
 
   function resetCreateForm() {
@@ -242,19 +257,17 @@ export function TransfersPage() {
   return (
     <div className="grid gap-6">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-            {t("admin:transfers.title")}
-          </h1>
-          <p className="text-sm text-slate-500">{t("admin:transfers.subtitle")}</p>
-        </div>
-        {canCreate && (
-          <Button onClick={() => setShowCreateModal(true)}>
-            {t("admin:transfers.newTransfer")}
-          </Button>
-        )}
-      </div>
+      <PageHeader
+        title={t("admin:transfers.title")}
+        subtitle={t("admin:transfers.subtitle")}
+        actions={
+          canCreate ? (
+            <Button onClick={() => setShowCreateModal(true)}>
+              {t("admin:transfers.newTransfer")}
+            </Button>
+          ) : undefined
+        }
+      />
 
       {/* Filters */}
       <Card className="flex flex-wrap items-center gap-4">
@@ -295,6 +308,13 @@ export function TransfersPage() {
       </Card>
 
       {/* Transfers Table */}
+      {transfersQuery.isError ? (
+        <ErrorState
+          message={msg(transfersQuery.error)}
+          onRetry={() => void transfersQuery.refetch()}
+          retryLabel={t("common:actions.retry")}
+        />
+      ) : null}
       <Card className="overflow-x-auto p-0">
         <table className="w-full text-left text-sm text-slate-600">
           <thead className="border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase text-slate-500">

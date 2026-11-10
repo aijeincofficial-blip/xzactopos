@@ -24,7 +24,7 @@ import {
 } from "../lib/schemas.ts";
 import { useSession } from "../lib/session.tsx";
 import { useErrorMessage, useValidationMessage } from "../lib/i18n-helpers.ts";
-import { Alert, Badge, Button, Card, Dialog, Field, Input, Select, Table } from "../components/ui.tsx";
+import { Alert, Badge, Button, Card, Dialog, EmptyState, ErrorState, Field, Input, PageHeader, Select, Table, useToast } from "../components/ui.tsx";
 
 const ROLES: Role[] = ["superadmin", "admin", "warehouse", "cashier"];
 
@@ -96,33 +96,29 @@ export function UsersPage() {
 
   return (
     <div className="grid gap-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">{t("users.title")}</h1>
-          <div className="flex items-center gap-2 mt-1">
-            <Badge tone={isQuotaFull ? "warn" : "neutral"}>
-              {t("users.quota", { count: totalUsers, max: maxUsers })}
-            </Badge>
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" onClick={() => setPinOpen(true)}>
-            {t("users.changeMyPin")}
-          </Button>
-          {me.role === "superadmin" ? (
-            <Button
-              variant="outline"
-              disabled={isQuotaFull}
-              onClick={() => setAddMode("invite")}
-            >
-              {t("users.invite")}
+      <PageHeader
+        title={t("users.title")}
+        subtitle={t("users.quota", { count: totalUsers, max: maxUsers })}
+        actions={
+          <>
+            <Button variant="outline" onClick={() => setPinOpen(true)}>
+              {t("users.changeMyPin")}
             </Button>
-          ) : null}
-          <Button disabled={isQuotaFull} onClick={() => setAddMode("cashier")}>
-            {t("users.addCashier")}
-          </Button>
-        </div>
-      </div>
+            {me.role === "superadmin" ? (
+              <Button
+                variant="outline"
+                disabled={isQuotaFull}
+                onClick={() => setAddMode("invite")}
+              >
+                {t("users.invite")}
+              </Button>
+            ) : null}
+            <Button disabled={isQuotaFull} onClick={() => setAddMode("cashier")}>
+              {t("users.addCashier")}
+            </Button>
+          </>
+        }
+      />
 
       {isQuotaFull ? (
         <Alert tone="info">
@@ -130,7 +126,7 @@ export function UsersPage() {
         </Alert>
       ) : null}
 
-      {error ? <Alert>{errMsg(error)}</Alert> : null}
+      {error ? <ErrorState message={errMsg(error)} onRetry={() => { void users.refetch(); void locations.refetch(); void access.refetch(); }} retryLabel={t("common:actions.retry")} /> : null}
 
       {/* Filter and Search Bar */}
       <Card className="p-4 grid gap-3 sm:grid-cols-4">
@@ -184,8 +180,8 @@ export function UsersPage() {
           <tbody>
             {filteredUsers.length === 0 ? (
               <tr>
-                <td colSpan={4} className="p-6 text-center text-slate-500">
-                  {t("users.emptyFiltered")}
+                <td colSpan={4} className="p-8 text-center">
+                  <EmptyState title={t("users.emptyFiltered")} />
                 </td>
               </tr>
             ) : (

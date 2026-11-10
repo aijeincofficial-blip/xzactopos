@@ -2,7 +2,7 @@ import { Fragment, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { uuidv7 } from "@pos/core";
-import { Alert, Badge, Button, Card, Dialog, Field, Input, Select, Table, PageHeader } from "../components/ui.tsx";
+import { Alert, Badge, Button, Card, Dialog, EmptyState, ErrorState, Field, Input, Select, Table, PageHeader, useToast } from "../components/ui.tsx";
 import { useSession } from "../lib/session.tsx";
 import { useErrorMessage } from "../lib/i18n-helpers.ts";
 import { formatQty } from "../lib/product-math.ts";
@@ -34,7 +34,7 @@ const productLabel = (v: VariantOption | undefined) => (v ? `${v.product?.name ?
 const signed = (n: number) => (n > 0 ? `+${formatQty(n)}` : formatQty(n));
 
 export function CountsPage() {
-  const { t } = useTranslation("admin");
+  const { t } = useTranslation(["admin", "common"]);
   const msg = useErrorMessage();
   const { can } = useSession();
   const warehousesQ = useQuery({ queryKey: ["counts", "warehouses"], queryFn: listCountWarehouses });
@@ -55,8 +55,8 @@ export function CountsPage() {
     <div className="grid gap-4">
       <PageHeader title={t("counts.title")} subtitle={t("counts.subtitle")} />
 
-      {warehousesQ.isError ? <Alert>{msg(warehousesQ.error)}</Alert> : null}
-      {warehousesQ.isSuccess && warehouses.length === 0 ? <Alert tone="info">{t("counts.noWarehouses")}</Alert> : null}
+      {warehousesQ.isError ? <ErrorState message={msg(warehousesQ.error)} onRetry={() => warehousesQ.refetch()} retryLabel={t("common:actions.retry")} /> : null}
+      {warehousesQ.isSuccess && warehouses.length === 0 ? <EmptyState title={t("counts.noWarehouses")} /> : null}
 
       {warehouse ? (
         <>
@@ -80,7 +80,7 @@ export function CountsPage() {
           </Card>
 
           {notice ? <Alert tone="info">{notice}</Alert> : null}
-          {countsQ.isError ? <Alert>{msg(countsQ.error)}</Alert> : null}
+          {countsQ.isError ? <ErrorState message={msg(countsQ.error)} onRetry={() => countsQ.refetch()} retryLabel={t("common:actions.retry")} /> : null}
 
           {countsQ.isSuccess ? (
             open ? (
@@ -164,9 +164,10 @@ function StartCard({ warehouse, onNotice }: { warehouse: CountWarehouse; onNotic
 /* ------------------------------------------------------------------------------------------------ open count */
 
 function OpenCount({ count, warehouse, onNotice }: { count: StockCount; warehouse: CountWarehouse; onNotice: (m: string | null) => void }) {
-  const { t, i18n } = useTranslation("admin");
+  const { t, i18n } = useTranslation(["admin", "common"]);
   const msg = useErrorMessage();
   const qc = useQueryClient();
+  const toast = useToast();
   const variantsQ = useQuery({ queryKey: ["po", "variants"], queryFn: listVariantOptions });
   const systemQ = useQuery({ queryKey: ["counts", "system", warehouse.id, count.id], queryFn: () => listSystemStock(warehouse) });
   const binsQ = useQuery({ queryKey: ["counts", "bins", warehouse.id], queryFn: () => listCountBins(warehouse.id), enabled: warehouse.bins_enabled });
@@ -213,7 +214,9 @@ function OpenCount({ count, warehouse, onNotice }: { count: StockCount; warehous
     onSuccess: async (r) => {
       setTyped({});
       setError(null);
-      onNotice(t("counts.save.done", { n: r.recorded }));
+      const doneMsg = t("counts.save.done", { n: r.recorded });
+      onNotice(doneMsg);
+      toast.good(doneMsg);
       await qc.invalidateQueries({ queryKey: ["counts"] });
     },
     onError: (e) => {
@@ -278,7 +281,7 @@ function OpenCount({ count, warehouse, onNotice }: { count: StockCount; warehous
         </Button>
       </div>
 
-      {systemQ.isError ? <Alert>{msg(systemQ.error)}</Alert> : null}
+      {systemQ.isError ? <ErrorState message={msg(systemQ.error)} onRetry={() => systemQ.refetch()} retryLabel={t("common:actions.retry")} /> : null}
       {rows.length === 0 ? (
         <p className="text-sm text-slate-500" data-testid="no-rows">
           {t("counts.table.none")}
@@ -376,6 +379,7 @@ function CloseDialog({
   const { t } = useTranslation("admin");
   const msg = useErrorMessage();
   const qc = useQueryClient();
+  const toast = useToast();
   const [zero, setZero] = useState(false);
   const lines = count.stock_count_items.map((l) => ({ qtySystem: Number(l.qty_system), qtyCounted: Number(l.qty_counted) }));
   const sum = summarizeVariance(lines);
@@ -386,7 +390,9 @@ function CloseDialog({
     mutationFn: () => closeCount(count.id, zero),
     onSuccess: async (r) => {
       await qc.invalidateQueries({ queryKey: ["counts"] });
-      onDone(t("counts.closeCount.done", { no: count.count_no, corrections: r.corrections, net: signed(Number(r.net_variance)) }));
+      const doneMsg = t("counts.closeCount.done", { no: count.count_no, corrections: r.corrections, net: signed(Number(r.net_variance)) });
+      onDone(doneMsg);
+      toast.good(doneMsg);
       onClose();
     },
   });
@@ -425,11 +431,13 @@ function CancelDialog({ count, onClose }: { count: StockCount; onClose: () => vo
   const { t } = useTranslation("admin");
   const msg = useErrorMessage();
   const qc = useQueryClient();
+  const toast = useToast();
   const [reason, setReason] = useState("");
   const run = useMutation({
     mutationFn: () => cancelCount(count.id, reason),
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["counts"] });
+      toast.good(t("counts.cancel.title", { no: count.count_no }));
       onClose();
     },
   });

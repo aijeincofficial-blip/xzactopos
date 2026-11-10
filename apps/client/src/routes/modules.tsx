@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { rpc } from "../lib/api.ts";
 import { accessQuery, useSession } from "../lib/session.tsx";
 import { useErrorMessage } from "../lib/i18n-helpers.ts";
-import { Alert, Button, Card } from "../components/ui.tsx";
+import { Alert, Button, Card, useToast } from "../components/ui.tsx";
 import { ModuleChoice } from "../components/ModuleChoice.tsx";
 
 export function ModulesPage() {
@@ -12,12 +12,17 @@ export function ModulesPage() {
   const { access } = useSession();
   const qc = useQueryClient();
   const errMsg = useErrorMessage();
+  const toast = useToast();
   const [pos, setPos] = useState(access.modules.pos);
   const [warehouse, setWarehouse] = useState(access.modules.warehouse);
 
   const save = useMutation({
     mutationFn: () => rpc("set_modules", { p_pos: pos, p_warehouse: warehouse }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: accessQuery.queryKey }),
+    onSuccess: () => {
+      toast.good(t("common:saved"));
+      return qc.invalidateQueries({ queryKey: accessQuery.queryKey });
+    },
+    onError: (e) => toast.error(errMsg(e)),
   });
   const dirty = pos !== access.modules.pos || warehouse !== access.modules.warehouse;
   const turningOff = (access.modules.pos && !pos) || (access.modules.warehouse && !warehouse);
