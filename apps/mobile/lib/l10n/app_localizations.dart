@@ -3493,6 +3493,204 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Cashier: {name}'**
   String shiftCashierLabel(String name);
+
+  /// No description provided for @printerSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Receipt & Thermal Printer'**
+  String get printerSection;
+
+  /// No description provided for @printerSectionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect a thermal ESC/POS network printer or use system print'**
+  String get printerSectionHint;
+
+  /// No description provided for @printerEngine.
+  ///
+  /// In en, this message translates to:
+  /// **'Printer mode'**
+  String get printerEngine;
+
+  /// No description provided for @printerEnginePdf.
+  ///
+  /// In en, this message translates to:
+  /// **'System print dialog / PDF'**
+  String get printerEnginePdf;
+
+  /// No description provided for @printerEngineEscPos.
+  ///
+  /// In en, this message translates to:
+  /// **'Thermal ESC/POS (Network/LAN)'**
+  String get printerEngineEscPos;
+
+  /// No description provided for @printerIp.
+  ///
+  /// In en, this message translates to:
+  /// **'Printer IP address'**
+  String get printerIp;
+
+  /// No description provided for @printerPort.
+  ///
+  /// In en, this message translates to:
+  /// **'Port'**
+  String get printerPort;
+
+  /// No description provided for @printerWidth.
+  ///
+  /// In en, this message translates to:
+  /// **'Paper roll width'**
+  String get printerWidth;
+
+  /// No description provided for @printerDrawerKick.
+  ///
+  /// In en, this message translates to:
+  /// **'Kick cash drawer on print'**
+  String get printerDrawerKick;
+
+  /// No description provided for @printerAutoPrint.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-print receipt after sale'**
+  String get printerAutoPrint;
+
+  /// No description provided for @printerTestPrint.
+  ///
+  /// In en, this message translates to:
+  /// **'Test Print'**
+  String get printerTestPrint;
+
+  /// No description provided for @printerTestSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Test print sent successfully!'**
+  String get printerTestSuccess;
+
+  /// No description provided for @printerTestFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not connect to thermal printer.'**
+  String get printerTestFailed;
+
+  /// No description provided for @transfersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock Transfers'**
+  String get transfersTitle;
+
+  /// No description provided for @transfersIncoming.
+  ///
+  /// In en, this message translates to:
+  /// **'Incoming'**
+  String get transfersIncoming;
+
+  /// No description provided for @transfersHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'History'**
+  String get transfersHistory;
+
+  /// No description provided for @transfersEmptyIncoming.
+  ///
+  /// In en, this message translates to:
+  /// **'No incoming transfers waiting to be received.'**
+  String get transfersEmptyIncoming;
+
+  /// No description provided for @transfersEmptyHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'No transfer history found.'**
+  String get transfersEmptyHistory;
+
+  /// No description provided for @transferManifest.
+  ///
+  /// In en, this message translates to:
+  /// **'Manifest #'**
+  String get transferManifest;
+
+  /// No description provided for @transferFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'From'**
+  String get transferFrom;
+
+  /// No description provided for @transferTo.
+  ///
+  /// In en, this message translates to:
+  /// **'To'**
+  String get transferTo;
+
+  /// No description provided for @transferShipped.
+  ///
+  /// In en, this message translates to:
+  /// **'Shipped'**
+  String get transferShipped;
+
+  /// No description provided for @transferReceived.
+  ///
+  /// In en, this message translates to:
+  /// **'Received'**
+  String get transferReceived;
+
+  /// No description provided for @transferReceive.
+  ///
+  /// In en, this message translates to:
+  /// **'Receive Shipment'**
+  String get transferReceive;
+
+  /// No description provided for @transferReceiveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Receive Transfer'**
+  String get transferReceiveTitle;
+
+  /// No description provided for @transferReceivePrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify items received against the shipping manifest.'**
+  String get transferReceivePrompt;
+
+  /// No description provided for @transferItemShipped.
+  ///
+  /// In en, this message translates to:
+  /// **'Shipped: {count}'**
+  String transferItemShipped(num count);
+
+  /// No description provided for @transferItemCounted.
+  ///
+  /// In en, this message translates to:
+  /// **'Counted'**
+  String get transferItemCounted;
+
+  /// No description provided for @transferDiscrepancyWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Some quantities differ from the shipping manifest.'**
+  String get transferDiscrepancyWarning;
+
+  /// No description provided for @transferConfirmReceive.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Receipt'**
+  String get transferConfirmReceive;
+
+  /// No description provided for @transferReceivedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfer received successfully.'**
+  String get transferReceivedSuccess;
+
+  /// No description provided for @transferReceivedDiscrepancy.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfer received with discrepancies recorded.'**
+  String get transferReceivedDiscrepancy;
+
+  /// No description provided for @transferScanItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan item barcode to count'**
+  String get transferScanItem;
 }
 
 class _AppLocalizationsDelegate

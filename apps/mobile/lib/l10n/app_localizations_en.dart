@@ -2062,4 +2062,110 @@ class AppLocalizationsEn extends AppLocalizations {
   String shiftCashierLabel(String name) {
     return 'Cashier: $name';
   }
+
+  @override
+  String get printerSection => 'Receipt & Thermal Printer';
+
+  @override
+  String get printerSectionHint =>
+      'Connect a thermal ESC/POS network printer or use system print';
+
+  @override
+  String get printerEngine => 'Printer mode';
+
+  @override
+  String get printerEnginePdf => 'System print dialog / PDF';
+
+  @override
+  String get printerEngineEscPos => 'Thermal ESC/POS (Network/LAN)';
+
+  @override
+  String get printerIp => 'Printer IP address';
+
+  @override
+  String get printerPort => 'Port';
+
+  @override
+  String get printerWidth => 'Paper roll width';
+
+  @override
+  String get printerDrawerKick => 'Kick cash drawer on print';
+
+  @override
+  String get printerAutoPrint => 'Auto-print receipt after sale';
+
+  @override
+  String get printerTestPrint => 'Test Print';
+
+  @override
+  String get printerTestSuccess => 'Test print sent successfully!';
+
+  @override
+  String get printerTestFailed => 'Could not connect to thermal printer.';
+
+  @override
+  String get transfersTitle => 'Stock Transfers';
+
+  @override
+  String get transfersIncoming => 'Incoming';
+
+  @override
+  String get transfersHistory => 'History';
+
+  @override
+  String get transfersEmptyIncoming =>
+      'No incoming transfers waiting to be received.';
+
+  @override
+  String get transfersEmptyHistory => 'No transfer history found.';
+
+  @override
+  String get transferManifest => 'Manifest #';
+
+  @override
+  String get transferFrom => 'From';
+
+  @override
+  String get transferTo => 'To';
+
+  @override
+  String get transferShipped => 'Shipped';
+
+  @override
+  String get transferReceived => 'Received';
+
+  @override
+  String get transferReceive => 'Receive Shipment';
+
+  @override
+  String get transferReceiveTitle => 'Receive Transfer';
+
+  @override
+  String get transferReceivePrompt =>
+      'Verify items received against the shipping manifest.';
+
+  @override
+  String transferItemShipped(num count) {
+    return 'Shipped: $count';
+  }
+
+  @override
+  String get transferItemCounted => 'Counted';
+
+  @override
+  String get transferDiscrepancyWarning =>
+      'Some quantities differ from the shipping manifest.';
+
+  @override
+  String get transferConfirmReceive => 'Confirm Receipt';
+
+  @override
+  String get transferReceivedSuccess => 'Transfer received successfully.';
+
+  @override
+  String get transferReceivedDiscrepancy =>
+      'Transfer received with discrepancies recorded.';
+
+  @override
+  String get transferScanItem => 'Scan item barcode to count';
 }

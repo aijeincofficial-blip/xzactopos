@@ -22,6 +22,7 @@ import 'shift_screen.dart';
 import 'stock_screen.dart';
 import 'store_picker.dart';
 import 'today_screen.dart';
+import 'transfers_screen.dart';
 import 'utang_screen.dart';
 
 class _TabSpec {
@@ -195,6 +196,18 @@ class MoreScreen extends StatelessWidget {
           label: t.dayCloseTitle,
           glyph: const _Glyph(Icons.power_settings_new_rounded, [Color(0xFFFF7A00), Color(0xFFEA580C)], round: true),
           onTap: () => open(DayCloseScreen(backend: backend)),
+        ),
+      if (scope.canManageStock)
+        _GlassTile(
+          key: const Key('tile-transfers'),
+          label: t.transfersTitle,
+          glyph: const _Glyph(Icons.local_shipping_rounded, [Color(0xFF6366F1), Color(0xFF4F46E5)]),
+          onTap: () async {
+            final locId = await scope.store.activeStoreNow();
+            if (locId != null && context.mounted) {
+              open(TransfersScreen(backend: backend, locationId: locId));
+            }
+          },
         ),
       if (scope.canManageStock)
         _GlassTile(

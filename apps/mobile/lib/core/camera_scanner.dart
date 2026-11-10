@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show HapticFeedback;
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../l10n/app_localizations.dart';
@@ -86,6 +87,9 @@ class _CameraScanScreenState extends State<CameraScanScreen> {
     if (code == _lastCode && now.difference(_lastAt) < const Duration(milliseconds: 1500)) return;
     _lastCode = code;
     _lastAt = now;
+    try {
+      HapticFeedback.mediumImpact();
+    } catch (_) {}
     if (widget.onCode == null) {
       Navigator.of(context).pop(code);
       return;
@@ -124,6 +128,7 @@ class _CameraScanScreenState extends State<CameraScanScreen> {
             child: Padding(padding: const EdgeInsets.all(24), child: Text(t.scanCameraDenied, textAlign: TextAlign.center)),
           ),
         ),
+        const _ViewfinderReticle(),
         Positioned(
           left: 0,
           right: 0,
@@ -149,6 +154,37 @@ class _CameraScanScreenState extends State<CameraScanScreen> {
           ),
         ),
       ]),
+    );
+  }
+}
+
+class _ViewfinderReticle extends StatelessWidget {
+  const _ViewfinderReticle();
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final boxWidth = constraints.maxWidth * 0.72;
+        final boxHeight = boxWidth * 0.65;
+        return Center(
+          child: Container(
+            width: boxWidth,
+            height: boxHeight,
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.white70, width: 2),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Center(
+              child: Container(
+                height: 1.5,
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

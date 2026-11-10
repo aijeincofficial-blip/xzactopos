@@ -9,6 +9,7 @@ import '../l10n/app_localizations.dart';
 import '../sync/store_session.dart';
 import '../sync/sync_badge.dart';
 import 'settings_screen.dart';
+import 'transfers_screen.dart';
 import 'warehouse_count.dart';
 import 'warehouse_receive.dart';
 
@@ -397,6 +398,17 @@ class _MoreTab extends StatelessWidget {
               if (context.mounted) await showWarehousePicker(context, store, all, active);
             },
           );
+        },
+      ),
+      ListTile(
+        key: const Key('more-transfers'),
+        leading: const Icon(Icons.local_shipping_rounded),
+        title: Text(t.transfersTitle),
+        onTap: () async {
+          final wh = await store.activeWarehouse();
+          if (wh != null && context.mounted) {
+            Navigator.of(context).push(_scoped(context, TransfersScreen(backend: backend, locationId: wh.id)));
+          }
         },
       ),
       ListTile(

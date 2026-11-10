@@ -9,6 +9,7 @@ import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:xzactopos_mobile/data/db.dart';
 import 'package:xzactopos_mobile/data/drift_store.dart';
+import 'package:xzactopos_mobile/data/transfer_models.dart';
 
 DriftStore memoryStore({bool safeMode = false}) => DriftStore(AppDatabase(NativeDatabase.memory()));
 
@@ -123,6 +124,16 @@ class FakeBackend implements Backend {
 
   @override
   Future<List<Map<String, dynamic>>> pullOfflinePins({String? locationId}) async => [];
+
+  @override
+  Future<List<TransferHeader>> fetchIncomingTransfers(String locationId) async => [];
+  @override
+  Future<List<TransferHeader>> fetchTransferHistory(String locationId) async => [];
+  @override
+  Future<void> receiveTransfer({
+    required String transferId,
+    required List<Map<String, dynamic>> items,
+  }) async {}
 
   final pushed = <String>[];
   @override

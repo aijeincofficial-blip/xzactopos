@@ -1196,5 +1196,45 @@
         "type": "String"
       }
     }
-  }
+  },
+  "printerSection": "Resibo at Thermal Printer",
+  "printerSectionHint": "Ikonekta sa thermal ESC/POS network printer o gamitin ang system print",
+  "printerEngine": "Modo ng printer",
+  "printerEnginePdf": "System print dialog / PDF",
+  "printerEngineEscPos": "Thermal ESC/POS (Network/LAN)",
+  "printerIp": "IP address ng printer",
+  "printerPort": "Port",
+  "printerWidth": "Lapad ng papel",
+  "printerDrawerKick": "Buksan ang drawer kapag nag-print",
+  "printerAutoPrint": "Kusang mag-print pagkatapos ng benta",
+  "printerTestPrint": "Subukan ang Pag-print",
+  "printerTestSuccess": "Matagumpay na naipadala ang test print!",
+  "printerTestFailed": "Hindi makakonekta sa thermal printer.",
+  "transfersTitle": "Mga Paglipat ng Imbentaryo",
+  "transfersIncoming": "Papasok",
+  "transfersHistory": "Kasaysayan",
+  "transfersEmptyIncoming": "Walang papasok na paglipat na naghihintay matanggap.",
+  "transfersEmptyHistory": "Walang nakitang kasaysayan ng paglipat.",
+  "transferManifest": "Manifest #",
+  "transferFrom": "Galing sa",
+  "transferTo": "Papunta sa",
+  "transferShipped": "Ipinadala",
+  "transferReceived": "Natanggap",
+  "transferReceive": "Tanggapin ang Kargamento",
+  "transferReceiveTitle": "Pagtanggap ng Paglipat",
+  "transferReceivePrompt": "Suriin ang mga natanggap na aytem laban sa shipping manifest.",
+  "transferItemShipped": "Ipinadala: {count}",
+  "@transferItemShipped": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "transferItemCounted": "Nabilang",
+  "transferDiscrepancyWarning": "May mga dami na iba kaysa sa nakasaad sa manifest.",
+  "transferConfirmReceive": "Kumpirmahin ang Pagtanggap",
+  "transferReceivedSuccess": "Matagumpay na natanggap ang paglipat.",
+  "transferReceivedDiscrepancy": "Natanggap ang paglipat na may naitalang diperensya.",
+  "transferScanItem": "I-scan ang barcode ng aytem para mabilang"
 }

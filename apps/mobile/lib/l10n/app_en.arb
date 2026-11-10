@@ -1196,5 +1196,45 @@
         "type": "String"
       }
     }
-  }
+  },
+  "printerSection": "Receipt & Thermal Printer",
+  "printerSectionHint": "Connect a thermal ESC/POS network printer or use system print",
+  "printerEngine": "Printer mode",
+  "printerEnginePdf": "System print dialog / PDF",
+  "printerEngineEscPos": "Thermal ESC/POS (Network/LAN)",
+  "printerIp": "Printer IP address",
+  "printerPort": "Port",
+  "printerWidth": "Paper roll width",
+  "printerDrawerKick": "Kick cash drawer on print",
+  "printerAutoPrint": "Auto-print receipt after sale",
+  "printerTestPrint": "Test Print",
+  "printerTestSuccess": "Test print sent successfully!",
+  "printerTestFailed": "Could not connect to thermal printer.",
+  "transfersTitle": "Stock Transfers",
+  "transfersIncoming": "Incoming",
+  "transfersHistory": "History",
+  "transfersEmptyIncoming": "No incoming transfers waiting to be received.",
+  "transfersEmptyHistory": "No transfer history found.",
+  "transferManifest": "Manifest #",
+  "transferFrom": "From",
+  "transferTo": "To",
+  "transferShipped": "Shipped",
+  "transferReceived": "Received",
+  "transferReceive": "Receive Shipment",
+  "transferReceiveTitle": "Receive Transfer",
+  "transferReceivePrompt": "Verify items received against the shipping manifest.",
+  "transferItemShipped": "Shipped: {count}",
+  "@transferItemShipped": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "transferItemCounted": "Counted",
+  "transferDiscrepancyWarning": "Some quantities differ from the shipping manifest.",
+  "transferConfirmReceive": "Confirm Receipt",
+  "transferReceivedSuccess": "Transfer received successfully.",
+  "transferReceivedDiscrepancy": "Transfer received with discrepancies recorded.",
+  "transferScanItem": "Scan item barcode to count"
 }

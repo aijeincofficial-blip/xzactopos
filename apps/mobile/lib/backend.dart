@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'data/count_models.dart';
 import 'data/shift_models.dart';
 import 'data/staff_models.dart';
+import 'data/transfer_models.dart';
 import 'sync/sync_engine.dart';
 
 /// True when the failure is an ANSWER from the server (it was reached and said no), false when it was not reached at all (no
@@ -74,6 +75,23 @@ abstract class Backend implements SyncApi {
 
   /// Pulls store approver PIN hashes for offline verification (F-06).
   Future<List<Map<String, dynamic>>> pullOfflinePins({String? locationId});
+
+  // ---- transfers (F-08) ----
+  Future<List<TransferHeader>> fetchIncomingTransfers(String locationId);
+  Future<List<TransferHeader>> fetchTransferHistory(String locationId);
+  Future<void> receiveTransfer({
+    required String transferId,
+    required List<Map<String, dynamic>> items,
+  });
+}
+
+abstract class TransferApi {
+  Future<List<TransferHeader>> fetchIncomingTransfers(String locationId);
+  Future<List<TransferHeader>> fetchTransferHistory(String locationId);
+  Future<void> receiveTransfer({
+    required String transferId,
+    required List<Map<String, dynamic>> items,
+  });
 }
 
 class PinResult {
@@ -128,7 +146,7 @@ const pinRefusalHints = {
   'location_denied', 'module_disabled',
 };
 
-class SupabaseBackend implements Backend, DeviceApi, WarehouseApi, CountApi, ShiftApi, StaffApi {
+class SupabaseBackend implements Backend, DeviceApi, WarehouseApi, CountApi, ShiftApi, StaffApi, TransferApi {
   SupabaseClient get _c => Supabase.instance.client;
 
   @override
@@ -505,6 +523,62 @@ class SupabaseBackend implements Backend, DeviceApi, WarehouseApi, CountApi, Shi
 
   @override
   Future<Uint8List> downloadPhoto(String path) => _c.storage.from(_photoBucket).download(path);
+
+  // ---- transfers (F-08) ----
+
+  @override
+  Future<List<TransferHeader>> fetchIncomingTransfers(String locationId) async {
+    final res = await _auth(() => _c
+        .from('transfers')
+        .select('''
+          *,
+          from_location:locations!transfers_from_location_fk(id, code, name, type, address),
+          to_location:locations!transfers_to_location_fk(id, code, name, type, address),
+          transfer_items(
+            id, transfer_id, variant_id, qty_shipped, qty_received, created_at,
+            variant:product_variants(id, sku, barcode, product:products(name, unit))
+          )
+        ''')
+        .eq('to_location_id', locationId)
+        .eq('status', 'shipped')
+        .order('created_at', ascending: false));
+    return (res as List<dynamic>)
+        .map((r) => TransferHeader.fromJson(r as Map<String, dynamic>))
+        .toList();
+  }
+
+  @override
+  Future<List<TransferHeader>> fetchTransferHistory(String locationId) async {
+    final res = await _auth(() => _c
+        .from('transfers')
+        .select('''
+          *,
+          from_location:locations!transfers_from_location_fk(id, code, name, type, address),
+          to_location:locations!transfers_to_location_fk(id, code, name, type, address),
+          transfer_items(
+            id, transfer_id, variant_id, qty_shipped, qty_received, created_at,
+            variant:product_variants(id, sku, barcode, product:products(name, unit))
+          )
+        ''')
+        .or('from_location_id.eq.$locationId,to_location_id.eq.$locationId')
+        .neq('status', 'shipped')
+        .order('created_at', ascending: false)
+        .limit(30));
+    return (res as List<dynamic>)
+        .map((r) => TransferHeader.fromJson(r as Map<String, dynamic>))
+        .toList();
+  }
+
+  @override
+  Future<void> receiveTransfer({
+    required String transferId,
+    required List<Map<String, dynamic>> items,
+  }) async {
+    await _op(() => _c.rpc('receive_transfer', params: {
+          'p_transfer_id': transferId,
+          'p_items': items,
+        }));
+  }
 
   /// Maps refusals that retrying cannot fix to [OpRejected]; everything else (network, 5xx, expired token)
   /// stays a normal exception so the engine retries it later with the same op id.

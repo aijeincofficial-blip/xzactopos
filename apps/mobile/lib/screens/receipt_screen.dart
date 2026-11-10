@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
 import '../core/money.dart';
+import '../core/printer_config.dart';
 import '../core/receipt_printer.dart';
 import '../data/sales_models.dart';
 import '../l10n/app_localizations.dart';
@@ -30,6 +31,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
   late Stream<List<StockRow>> _stock;
   late Future<String?> _storeName;
   bool _loaded = false;
+  bool _autoPrinted = false;
 
   @override
   void didChangeDependencies() {
@@ -41,6 +43,13 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
     _today = store.watchToday();
     _stock = store.watchStockList();
     _storeName = store.meta('store_name');
+
+    if (widget.justSold && activePrinterConfig.autoPrint && !_autoPrinted) {
+      _autoPrinted = true;
+      _detail.first.then((d) {
+        if (mounted && d != null) _output(d, share: false);
+      });
+    }
   }
 
   Future<void> _cancelSale() async {

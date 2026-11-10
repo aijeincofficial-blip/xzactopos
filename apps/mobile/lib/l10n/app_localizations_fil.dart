@@ -2072,4 +2072,110 @@ class AppLocalizationsFil extends AppLocalizations {
   String shiftCashierLabel(String name) {
     return 'Kahera: $name';
   }
+
+  @override
+  String get printerSection => 'Resibo at Thermal Printer';
+
+  @override
+  String get printerSectionHint =>
+      'Ikonekta sa thermal ESC/POS network printer o gamitin ang system print';
+
+  @override
+  String get printerEngine => 'Modo ng printer';
+
+  @override
+  String get printerEnginePdf => 'System print dialog / PDF';
+
+  @override
+  String get printerEngineEscPos => 'Thermal ESC/POS (Network/LAN)';
+
+  @override
+  String get printerIp => 'IP address ng printer';
+
+  @override
+  String get printerPort => 'Port';
+
+  @override
+  String get printerWidth => 'Lapad ng papel';
+
+  @override
+  String get printerDrawerKick => 'Buksan ang drawer kapag nag-print';
+
+  @override
+  String get printerAutoPrint => 'Kusang mag-print pagkatapos ng benta';
+
+  @override
+  String get printerTestPrint => 'Subukan ang Pag-print';
+
+  @override
+  String get printerTestSuccess => 'Matagumpay na naipadala ang test print!';
+
+  @override
+  String get printerTestFailed => 'Hindi makakonekta sa thermal printer.';
+
+  @override
+  String get transfersTitle => 'Mga Paglipat ng Imbentaryo';
+
+  @override
+  String get transfersIncoming => 'Papasok';
+
+  @override
+  String get transfersHistory => 'Kasaysayan';
+
+  @override
+  String get transfersEmptyIncoming =>
+      'Walang papasok na paglipat na naghihintay matanggap.';
+
+  @override
+  String get transfersEmptyHistory => 'Walang nakitang kasaysayan ng paglipat.';
+
+  @override
+  String get transferManifest => 'Manifest #';
+
+  @override
+  String get transferFrom => 'Galing sa';
+
+  @override
+  String get transferTo => 'Papunta sa';
+
+  @override
+  String get transferShipped => 'Ipinadala';
+
+  @override
+  String get transferReceived => 'Natanggap';
+
+  @override
+  String get transferReceive => 'Tanggapin ang Kargamento';
+
+  @override
+  String get transferReceiveTitle => 'Pagtanggap ng Paglipat';
+
+  @override
+  String get transferReceivePrompt =>
+      'Suriin ang mga natanggap na aytem laban sa shipping manifest.';
+
+  @override
+  String transferItemShipped(num count) {
+    return 'Ipinadala: $count';
+  }
+
+  @override
+  String get transferItemCounted => 'Nabilang';
+
+  @override
+  String get transferDiscrepancyWarning =>
+      'May mga dami na iba kaysa sa nakasaad sa manifest.';
+
+  @override
+  String get transferConfirmReceive => 'Kumpirmahin ang Pagtanggap';
+
+  @override
+  String get transferReceivedSuccess => 'Matagumpay na natanggap ang paglipat.';
+
+  @override
+  String get transferReceivedDiscrepancy =>
+      'Natanggap ang paglipat na may naitalang diperensya.';
+
+  @override
+  String get transferScanItem => 'I-scan ang barcode ng aytem para mabilang';
 }
