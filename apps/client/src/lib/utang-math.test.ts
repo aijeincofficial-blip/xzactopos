@@ -1,7 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { computeCustomerBalances, isOverdue } from "./utang-math.ts";
+import { computeCustomerBalances, isOverdue, calculateAdjustment } from "./utang-math.ts";
 
 describe("utang-math", () => {
+  it("calculates adjustment amount correctly based on direction", () => {
+    expect(calculateAdjustment(500, "less")).toBe(-500);
+    expect(calculateAdjustment(500, "more")).toBe(500);
+    expect(calculateAdjustment(0, "less")).toBe(0);
+    expect(calculateAdjustment(0, "more")).toBe(0);
+    expect(calculateAdjustment(-10, "less")).toBe(0);
+    expect(calculateAdjustment(-10, "more")).toBe(0);
+  });
   it("determines whether an account is overdue correctly", () => {
     expect(isOverdue(100, "2026-11-07", "2026-11-08")).toBe(true);
     expect(isOverdue(100, "2026-11-08", "2026-11-08")).toBe(false);

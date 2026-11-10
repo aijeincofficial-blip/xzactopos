@@ -14,6 +14,12 @@ export function isOverdue(balance: number, dueOn: string | null, today: string):
   return dueOn < today;
 }
 
+/** Calculate signed adjustment amount from magnitude and direction (less = negative, more = positive). */
+export function calculateAdjustment(magnitude: number, direction: "less" | "more"): number {
+  if (magnitude <= 0) return 0;
+  return direction === "less" ? -Math.abs(magnitude) : Math.abs(magnitude);
+}
+
 /** Calculate customer balances given customer records and ledger entries. */
 export function computeCustomerBalances(
   customers: ReadonlyArray<{ id: string; name: string; phone: string | null; due_on: string | null }>,

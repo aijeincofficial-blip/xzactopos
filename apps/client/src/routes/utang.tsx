@@ -2,15 +2,16 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatMoney, money } from "@pos/core";
-import { Alert, Badge, Button, Card, EmptyState, ErrorState, Input, PageHeader, Select, useToast } from "../components/ui.tsx";
+import { Alert, Badge, Button, Card, Dialog, EmptyState, ErrorState, Field, Input, PageHeader, Select, useToast } from "../components/ui.tsx";
 import { useSession } from "../lib/session.tsx";
 import { useActiveLocation } from "../lib/location-context.tsx";
 import { useErrorMessage } from "../lib/i18n-helpers.ts";
 import { parseAmount } from "../lib/sale-math.ts";
-import { isOverdue } from "../lib/utang-math.ts";
+import { calculateAdjustment, isOverdue } from "../lib/utang-math.ts";
 import { dayInTimezone } from "../lib/today.ts";
 import { createCustomer } from "../lib/sell-api.ts";
 import {
+  adjustUtang,
   fetchCustomerLedger,
   fetchCustomersWithBalances,
   recordUtangPayment,
@@ -47,6 +48,14 @@ export function UtangPage() {
   // Due date form
   const [newDueDate, setNewDueDate] = useState("");
   const [dueDateError, setDueDateError] = useState<string | null>(null);
+
+  // Adjust balance form
+  const canAdjust = (store && can("stock.adjust_store", store.id)) || access.role === "superadmin";
+  const [showAdjust, setShowAdjust] = useState(false);
+  const [adjustDirection, setAdjustDirection] = useState<"less" | "more">("less");
+  const [adjustAmount, setAdjustAmount] = useState("");
+  const [adjustNote, setAdjustNote] = useState("");
+  const [adjustError, setAdjustError] = useState<string | null>(null);
 
   const customersQuery = useQuery({
     queryKey: ["customers-balances"],
@@ -130,6 +139,39 @@ export function UtangPage() {
     onError: (e) => {
       const err = msg(e);
       setDueDateError(err);
+      toast.error(err);
+    },
+  });
+
+  const adjustMut = useMutation({
+    mutationFn: async () => {
+      if (!selectedCustomer) throw new Error("No customer selected");
+      const minor = parseAmount(adjustAmount, currency);
+      if (minor === null || minor <= 0) {
+        throw new Error(t("utang.adjustAmountInvalid"));
+      }
+      const signed = calculateAdjustment(minor, adjustDirection);
+      if (signed === 0) {
+        throw new Error(t("utang.adjustAmountInvalid"));
+      }
+      await adjustUtang({
+        customerId: selectedCustomer.customerId,
+        amount: signed,
+        note: adjustNote,
+        locationId: store?.id,
+      });
+    },
+    onSuccess: async () => {
+      setShowAdjust(false);
+      setAdjustAmount("");
+      setAdjustNote("");
+      setAdjustError(null);
+      toast.good(t("utang.adjusted"));
+      await refreshAll();
+    },
+    onError: (e) => {
+      const err = e instanceof Error ? e.message : msg(e);
+      setAdjustError(err);
       toast.error(err);
     },
   });
@@ -224,6 +266,8 @@ export function UtangPage() {
                       setNewDueDate(c.dueOn ?? "");
                       setPayError(null);
                       setDueDateError(null);
+                      setShowAdjust(false);
+                      setAdjustError(null);
                     }}
                     className={`flex w-full items-center justify-between gap-2 rounded-md border bg-white px-3 py-2 text-left text-sm hover:bg-slate-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/20 ${
                       c.customerId === selectedId ? "border-slate-900" : "border-slate-200"
@@ -270,6 +314,24 @@ export function UtangPage() {
                   >
                     {fmt(selectedCustomer.balance)}
                   </span>
+                  {canAdjust ? (
+                    <div className="mt-1">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        data-testid="adjust-balance-btn"
+                        onClick={() => {
+                          setAdjustDirection("less");
+                          setAdjustAmount("");
+                          setAdjustNote("");
+                          setAdjustError(null);
+                          setShowAdjust(true);
+                        }}
+                      >
+                        {t("utang.adjustBalance")}
+                      </Button>
+                    </div>
+                  ) : null}
                 </div>
               </div>
 
@@ -376,6 +438,87 @@ export function UtangPage() {
         )}
       </section>
       </div>
+
+      {showAdjust && selectedCustomer ? (
+        <Dialog
+          open
+          onOpenChange={(open) => {
+            if (!open) {
+              setShowAdjust(false);
+              setAdjustError(null);
+            }
+          }}
+          title={t("utang.adjustTitle", { name: selectedCustomer.name })}
+          closeLabel={t("common:actions.close")}
+        >
+          <div className="grid gap-4 py-2">
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant={adjustDirection === "less" ? "primary" : "outline"}
+                data-testid="adjust-less"
+                onClick={() => setAdjustDirection("less")}
+              >
+                {t("utang.writeOff")}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={adjustDirection === "more" ? "primary" : "outline"}
+                data-testid="adjust-more"
+                onClick={() => setAdjustDirection("more")}
+              >
+                {t("utang.addMore")}
+              </Button>
+            </div>
+
+            <Field label={t("utang.adjustAmount")}>
+              <Input
+                data-testid="adjust-amount"
+                inputMode="decimal"
+                placeholder="0.00"
+                autoFocus
+                value={adjustAmount}
+                onChange={(e) => setAdjustAmount(e.target.value)}
+              />
+            </Field>
+
+            <Field label={t("utang.adjustNote")}>
+              <Input
+                data-testid="adjust-note"
+                maxLength={200}
+                placeholder={t("utang.notePlaceholder")}
+                value={adjustNote}
+                onChange={(e) => setAdjustNote(e.target.value)}
+              />
+            </Field>
+
+            {adjustError ? <Alert>{adjustError}</Alert> : null}
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => {
+                  setShowAdjust(false);
+                  setAdjustError(null);
+                }}
+              >
+                {t("common:actions.cancel")}
+              </Button>
+              <Button
+                type="button"
+                data-testid="adjust-save-btn"
+                disabled={adjustMut.isPending || !adjustAmount.trim()}
+                onClick={() => adjustMut.mutate()}
+              >
+                {t("common:actions.save")}
+              </Button>
+            </div>
+          </div>
+        </Dialog>
+      ) : null}
     </div>
   );
 }

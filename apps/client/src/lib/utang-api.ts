@@ -71,3 +71,20 @@ export async function setUtangDueDate(customerId: string, dueOn: string | null):
     due_on: dueOn,
   });
 }
+
+export interface AdjustUtangInput {
+  customerId: string;
+  amount: number;
+  note?: string;
+  locationId?: string;
+}
+
+export async function adjustUtang(input: AdjustUtangInput): Promise<void> {
+  await pushOp("adjust_utang", {
+    customer_id: input.customerId,
+    amount: input.amount,
+    ...(input.note?.trim() ? { note: input.note.trim() } : {}),
+    ...(input.locationId ? { location_id: input.locationId } : {}),
+    occurred_at: new Date().toISOString(),
+  });
+}
