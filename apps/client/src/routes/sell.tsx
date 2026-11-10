@@ -263,18 +263,20 @@ export function SellPage() {
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-emerald-700">✓ {t("sell.done")}</h2>
             <div className="text-sm font-mono text-slate-500">
-              {t("sell.receiptNo")} <span className="font-bold text-slate-900">{done.saleNo ?? done.localNo}</span>
+              {t("sell.receiptNo")} <span className="font-semibold text-slate-900">{done.saleNo ?? done.localNo}</span>
             </div>
           </div>
-          <div className="text-2xl font-bold text-slate-900">{fmt(done.total)}</div>
+          <div className="text-2xl font-semibold text-slate-900">{fmt(done.total)}</div>
           {done.onUtang > 0 ? (
-            <div className="text-sm text-amber-800">
-              {t("sell.onUtang")}: <strong>{fmt(done.onUtang)}</strong>
+            <div className="flex justify-between text-sm text-amber-800">
+              <span>{t("sell.onUtang")}</span>
+              <strong>{fmt(done.onUtang)}</strong>
             </div>
           ) : null}
           {done.change > 0 ? (
-            <div className="text-sm text-slate-600">
-              {t("sell.change")}: <strong>{fmt(done.change)}</strong>
+            <div className="flex justify-between text-sm text-slate-600">
+              <span>{t("sell.change")}</span>
+              <strong>{fmt(done.change)}</strong>
             </div>
           ) : null}
           <div className="flex gap-2 pt-2 border-t border-slate-100 no-print">
@@ -307,7 +309,13 @@ export function SellPage() {
           onChange={(e) => setSearch(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && onSearchEnter()}
         />
-        {catalog.isPending ? <Card>{t("sell.loading")}</Card> : null}
+        {catalog.isPending ? (
+          <ul className="grid gap-2 sm:grid-cols-2">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <li key={i} className="h-14 rounded-md border border-slate-200 bg-slate-100 animate-pulse" />
+            ))}
+          </ul>
+        ) : null}
         {catalog.isError ? <Alert>{t("sell.loadError")}</Alert> : null}
         {catalog.data && catalog.data.length === 0 ? <Card>{t("sell.noProducts")}</Card> : null}
         {catalog.data && catalog.data.length > 0 && shown.length === 0 ? <Card>{t("sell.noMatch")}</Card> : null}
@@ -321,7 +329,7 @@ export function SellPage() {
                 className="flex w-full items-center justify-between gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-left text-sm hover:bg-slate-50"
               >
                 <span>
-                  <span className="block font-medium">{s.name}</span>
+                  <span className="block font-semibold">{s.name}</span>
                   <span className="text-xs text-slate-500">{s.sku}</span>
                 </span>
                 <span className="font-semibold">{fmt(s.price)}</span>
@@ -332,7 +340,7 @@ export function SellPage() {
       </section>
 
       <Card className="grid content-start gap-3" data-testid="cart">
-        <h3 className="font-medium">{t("sell.cart")}</h3>
+        <h3 className="font-semibold">{t("sell.cart")}</h3>
         {cart.length === 0 ? (
           <p className="text-sm text-slate-500">{t("sell.emptyCart")}</p>
         ) : (
@@ -374,7 +382,7 @@ export function SellPage() {
         </div>
 
         <div className="grid gap-2 border-t border-slate-200 pt-3 text-sm">
-          <span className="font-medium">{t("sell.payment")}</span>
+          <span className="font-semibold">{t("sell.payment")}</span>
           <Select aria-label={t("sell.payment")} data-testid="pay-method" value={method} onChange={(e) => setMethod(e.target.value as PayMethod)}>
             <option value="cash">{t("sell.cash")}</option>
             <option value="ewallet">{t("sell.ewallet")}</option>

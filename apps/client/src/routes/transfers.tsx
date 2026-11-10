@@ -970,12 +970,12 @@ export function TransfersPage() {
                           <td className="p-2 font-mono">
                             <span className="font-semibold text-slate-900">{item.bin_code}</span>
                             {item.location_info && item.location_info !== "---" ? (
-                              <div className="text-[10px] text-slate-400">{item.location_info}</div>
+                              <div className="text-xs text-slate-400">{item.location_info}</div>
                             ) : null}
                           </td>
                           <td className="p-2">
-                            <span className="font-medium text-slate-800">{item.product_name}</span>
-                            <div className="font-mono text-[10px] text-slate-400">{item.sku}</div>
+                            <span className="font-semibold text-slate-800">{item.product_name}</span>
+                            <div className="font-mono text-xs text-slate-400">{item.sku}</div>
                           </td>
                           <td className="p-2 text-right font-mono font-medium">{item.qty_requested}</td>
                           <td className="p-2 text-right font-mono font-semibold text-slate-900">

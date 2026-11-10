@@ -133,7 +133,7 @@ export function AppLayout() {
         if (items.length === 0) return null;
         return (
           <div key={g} className="grid gap-0.5">
-            <div className="px-2 pb-1 text-[0.7rem] font-semibold tracking-wider text-slate-400 uppercase">{t(`admin:nav.group.${g}`)}</div>
+            <div className="px-2 pb-1 text-xs font-semibold tracking-wider text-slate-400 uppercase">{t(`admin:nav.group.${g}`)}</div>
             {items.map((n) => {
               const Icon = n.icon;
               return (
@@ -142,7 +142,7 @@ export function AppLayout() {
                   to={n.to}
                   activeOptions={{ exact: n.to === "/app" }}
                   className="flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                  activeProps={{ className: "bg-brand-50 font-medium text-brand-text hover:bg-brand-50 hover:text-brand-text", "aria-current": "page" }}
+                  activeProps={{ className: "bg-brand-50 font-semibold text-brand-text hover:bg-brand-50 hover:text-brand-text", "aria-current": "page" }}
                 >
                   <Icon size={17} aria-hidden />
                   {t(`admin:nav.${n.key}`)}
@@ -199,7 +199,7 @@ export function AppLayout() {
           <div className="mr-auto hidden md:block" />
           {stores.length > 1 ? (
             <div className="flex items-center gap-1.5 rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs">
-              <span className="font-medium text-slate-500">🏪 {t("admin:users.store")}:</span>
+              <span className="font-semibold text-slate-500">🏪 {t("admin:users.store")}:</span>
               <select
                 value={activeStoreId ?? ""}
                 onChange={(e) => setActiveStoreId(e.target.value)}

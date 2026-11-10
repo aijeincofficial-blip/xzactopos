@@ -8,7 +8,7 @@ Updated at the end of every task. Read this first in a fresh session. New sessio
 | Agent | Branch and worktree | Working on | Status |
 | --- | --- | --- | --- |
 | Claude | `claude/phase3-sell-8261d3`, `.claude/worktrees/phase3-sell-8261d3` | Priority 3: cashier shifts and X/Z on the phone done (`docs/tasks/F-05m-cashier-shifts.md`); staff on the phone done (`docs/tasks/F-04m-phone-staff.md`); priority 4 (web design system) started: tokens, dark mode, sidebar, components (`docs/web-design-system.md`). | stopped (owner switched to Antigravity 2026-11-10; branch equals main, clean) |
-| Antigravity | `ag/work`, `.claude/worktrees/ag-work` | Refactoring UI & Vibecheck design system overhaul: tokens (warm grays, primary indigo, danger/warning/success, 6px/10px radii, xs/sm/md/lg/xl shadows), UI primitives, typography hierarchy (400/600), button rules, and zero-shift loading skeletons | in progress |
+| Antigravity | `ag/work`, `.claude/worktrees/ag-work` | Refactoring UI & Vibecheck design system overhaul: tokens (warm grays, primary indigo, danger/warning/success, 6px/10px radii, xs/sm/md/lg/xl shadows), UI primitives, typography hierarchy (400/600), button rules, zero-shift loading skeletons, and route alignment | done |
 | Owner | merges branches into `main`; makes the git remote and the keystore | | |
 
 Row status words: `waiting`, `in progress`, `done`, `stopped` / `limit reached` (the other agent may take over, see `docs/START-HERE-antigravity.md` "Working together").
@@ -30,6 +30,43 @@ Row status words: `waiting`, `in progress`, `done`, `stopped` / `limit reached` 
 6. ~~F-13h H2 to H8, the warehouse phone~~ **Done 2026-11-09** (receive offline, count online, bin stock, offline start). Offline counting (H7) is still item 8.
 7. ~~**Web Solo/Full gaps:** a stored mode flag, pick-list and put-away screens, editing a draft purchase order, product search by typing.~~ **Done 2026-11-10.**
 8. **Later:** offline counting (H7), web offline, per-warehouse reorder points, card payments.
+- **Refactoring UI & Vibecheck Design System Overhaul: done (2026-11-10, branch `ag/work`).**
+  - **Tokens & Theme Setup (`apps/client/src/index.css`):**
+    - Integrated Vibecheck / Refactoring UI CSS variables into `:root`:
+      - Primary indigo/violet palette (`--color-primary-50` `#f4f0ff` to `900` `#0a045d`)
+      - Warm yellow-tinted grays (`--color-gray-50` `#fbfaf9` to `900` `#3b3226`)
+      - Danger (`--color-danger-50` `#fff3f0` to `900` `#5b060b`)
+      - Warning (`--color-warning-50` `#fffcf0` to `900` `#613700`)
+      - Success (`--color-success-50` `#f1fdf9` to `900` `#0e532a`)
+      - Exact type scale: 12, 14, 16, 18, 20, 24, 30, 36, 48px
+      - Radii: 6px on controls/inputs (`--radius-control`), 10px on cards/dialogs (`--radius-card`)
+      - Elevation shadows: xs (buttons), sm (cards), md (popovers), lg (floating panels), xl (dialogs)
+    - Mapped Tailwind `@theme` properties: `--color-slate-*` and `--color-gray-*` map directly to the warm gray scale so existing routes immediately render with consistent warm grays. `--color-brand-*` maps to primary violet scale (`#3419d2`, `#4d2fe4`).
+    - Configured warm dark mode theme in `:root[data-theme="dark"]`.
+  - **UI Primitives Alignment (`apps/client/src/components/ui.tsx`):**
+    - `buttonVariants`: enforced 600 weight (`font-semibold`), `shadow-xs`, 6px corner radius (`rounded-md`); outline variant styled with `border-slate-200 bg-white shadow-xs`; primary button uses primary 600 (`#3419d2`).
+    - `Card`: generous 24px padding (`p-6`), 10px corner radius (`rounded-lg`), subtle two-part elevation (`shadow-sm`), `border-slate-200 bg-white`.
+    - `Badge`: 6px radius (`rounded-md`, avoiding round pills), dark text on light-tinted same-hue background with matching border, meeting WCAG AA contrast.
+    - `Alert`: 6px radius, left 500-accent border stripe (`border-l-4`), light 50 background, dark 900 text.
+    - `Dialog`: 10px radius (`rounded-lg`), `shadow-xl`, `border-slate-200 bg-white`, max width capped.
+    - `Table`: quiet uppercase header with `font-semibold text-slate-600`, clean row dividers (`border-slate-100`), hover state, numeric columns right-aligned with `tabular-nums`. `bare` mode omits outer border inside `Card` to eliminate nested borders.
+    - Added `Skeleton` and `TableSkeleton` primitives for zero-shift data loading.
+    - Added `StatCard` for key metric display (small muted uppercase label above bold value).
+  - **Route Refinement & Hierarchy (`apps/client/src/routes/`):**
+    - `overview.tsx`: replaced layout-shifting loading text with `<TableSkeleton />`; updated dialog to avoid "Label: value" strings using muted label over bold value; standardized font weights to 400 and 600; secondary filter action uses outline button.
+    - `purchasing.tsx`: replaced loading text in Orders, Suppliers, and Receipts tabs with `<TableSkeleton />`; normalized font weights to 400 and 600.
+    - `sell.tsx`: replaced catalog loading jump with product grid skeleton; aligned completion screen to single primary solid button (`New Sale`) with outline `Print Receipt`; normalized font weights to 400 and 600.
+    - `sales.tsx`: replaced sales list and detail pending states with zero-shift skeleton items; aligned void confirmation button hierarchy.
+    - `utang.tsx`: replaced customer list and ledger loading text with skeleton loaders; normalized font weights.
+    - `app-layout.tsx`: removed one-off `text-[0.7rem]` in favor of design system `text-xs` (12px); active nav links use `font-semibold`.
+    - `reports.tsx`, `transfers.tsx`, `today.tsx`: eliminated one-off `text-[10px]` and arbitrary `#fff` colors in favor of `text-xs` and semantic tokens.
+  - **Verification:**
+    - TypeScript: `pnpm -C apps/client typecheck` passed (0 errors).
+    - ESLint: `pnpm lint` passed across all workspace packages (0 errors).
+    - Client Unit Tests: `pnpm -C apps/client test` passed (17 files, 131 tests green).
+    - Functions: `pnpm test:functions` passed (20 tests green).
+    - Client Build: `pnpm -C apps/client build` produced production bundle and PWA service worker with 0 errors.
+    - Mobile Verification: `pnpm check:mobile` passed completely (all service worker checks passed, Flutter analysis 0 issues, 582 mobile tests passed).
 - **Web POS Thermal Receipt & Reprint Engine, Customer Statement of Account (SOA) & CSV, and Reorder-to-PO Seamless Flow: done (2026-11-10, commit `936b5ca`).**
   - **Option 1 (Web POS Thermal Receipt & Reprint Engine - sell.tsx & sales.tsx):**
     - Created `apps/client/src/components/receipt-slip.tsx` with `ReceiptSlipView` and `ReceiptModal`. Styled with `.printable-slip` for 58mm/80mm thermal paper with print media isolation (`@media print` in `apps/client/src/index.css`), tenant/store branding, receipt metadata (sale no., date, cashier), line item quantities, prices, discounts, subtotal, tender methods (cash, card trace code, e-wallet, utang), change, and footer thank you message.

@@ -6,16 +6,16 @@ import { AlertTriangle, CheckCircle2, Inbox, Info, X } from "lucide-react";
 import { cn } from "../lib/utils.ts";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex items-center justify-center gap-2 rounded-md text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
-        primary: "bg-brand-600 text-[#fff] hover:bg-brand-700",
-        outline: "border border-slate-300 bg-white hover:bg-slate-100",
-        danger: "bg-[#dc2626] text-[#fff] hover:bg-[#b91c1c]",
-        ghost: "hover:bg-slate-100",
+        primary: "bg-brand-600 text-white shadow-xs hover:bg-brand-700",
+        outline: "border border-slate-200 bg-white text-slate-800 shadow-xs hover:bg-slate-100 hover:text-slate-900",
+        danger: "bg-red-600 text-white shadow-xs hover:bg-red-700",
+        ghost: "text-slate-700 hover:bg-slate-100 hover:text-slate-900",
       },
-      size: { md: "h-9 px-4", sm: "h-8 px-3" },
+      size: { md: "h-9 px-4", sm: "h-8 px-3 text-xs" },
     },
     defaultVariants: { variant: "primary", size: "md" },
   },
@@ -32,7 +32,7 @@ export function Button({
 }
 
 const field =
-  "h-9 w-full rounded-md border border-slate-300 bg-white px-3 text-sm focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand-600 disabled:bg-slate-100 disabled:text-slate-500";
+  "h-9 w-full rounded-md border border-slate-200 bg-white px-3 text-sm font-normal text-slate-900 placeholder:text-slate-400 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand-600 disabled:bg-slate-100 disabled:text-slate-500";
 
 export function Input({ className, ...props }: ComponentProps<"input">) {
   return <input className={cn(field, className)} {...props} />;
@@ -55,11 +55,11 @@ export function Field({
 }) {
   return (
     <label className="grid gap-1 text-sm">
-      <span className="font-medium">{label}</span>
+      <span className="font-semibold text-slate-900">{label}</span>
       {children}
-      {hint && !error ? <span className="text-xs text-slate-500">{hint}</span> : null}
+      {hint && !error ? <span className="text-xs text-slate-600">{hint}</span> : null}
       {error ? (
-        <span role="alert" className="text-xs text-red-600">
+        <span role="alert" className="text-xs font-normal text-red-700">
           {error}
         </span>
       ) : null}
@@ -68,20 +68,23 @@ export function Field({
 }
 
 export function Card({ className, ...props }: ComponentProps<"section">) {
-  return <section className={cn("rounded-lg border border-slate-200 bg-white p-4 shadow-sm", className)} {...props} />;
+  return <section className={cn("rounded-lg border border-slate-200 bg-white p-6 shadow-sm", className)} {...props} />;
 }
 
-export function Alert({ tone = "error", children }: { tone?: "error" | "info"; children: ReactNode }) {
+export function Alert({ tone = "error", children }: { tone?: "error" | "info" | "warn" | "good"; children: ReactNode }) {
   return (
-    <p
+    <div
       role={tone === "error" ? "alert" : "status"}
       className={cn(
-        "rounded-md border px-3 py-2 text-sm",
-        tone === "error" ? "border-red-200 bg-red-50 text-red-800" : "border-slate-200 bg-slate-100 text-slate-700",
+        "rounded-md border-l-4 p-4 text-sm font-normal shadow-xs",
+        tone === "error" && "border-red-500 bg-red-50 text-red-900 border-y border-r border-red-200",
+        tone === "info" && "border-brand-500 bg-brand-50 text-slate-900 border-y border-r border-brand-200",
+        tone === "warn" && "border-amber-500 bg-amber-50 text-amber-900 border-y border-r border-amber-200",
+        tone === "good" && "border-emerald-500 bg-emerald-50 text-emerald-900 border-y border-r border-emerald-200",
       )}
     >
       {children}
-    </p>
+    </div>
   );
 }
 
@@ -89,11 +92,11 @@ export function Badge({ children, tone = "neutral" }: { children: ReactNode; ton
   return (
     <span
       className={cn(
-        "inline-block rounded-full px-2 py-0.5 text-xs font-medium",
-        tone === "good" && "bg-green-100 text-green-800",
-        tone === "warn" && "bg-amber-100 text-amber-800",
-        tone === "danger" && "bg-red-100 text-red-800",
-        tone === "neutral" && "bg-slate-100 text-slate-700",
+        "inline-block rounded-md px-2 py-0.5 text-xs font-semibold border",
+        tone === "good" && "bg-green-50 text-green-900 border-green-200",
+        tone === "warn" && "bg-amber-50 text-amber-900 border-amber-200",
+        tone === "danger" && "bg-red-50 text-red-900 border-red-200",
+        tone === "neutral" && "bg-slate-100 text-slate-800 border-slate-200",
       )}
     >
       {children}
@@ -120,11 +123,11 @@ export function Dialog({
         <RadixDialog.Overlay className="fixed inset-0 bg-black/50" />
         <RadixDialog.Content
           aria-describedby={undefined}
-          className="fixed top-1/2 left-1/2 max-h-[90vh] w-[min(32rem,92vw)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-lg border border-slate-200 bg-white p-5 shadow-xl"
+          className="fixed top-1/2 left-1/2 max-h-[90vh] w-[min(32rem,92vw)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-lg border border-slate-200 bg-white p-6 shadow-xl"
         >
           <div className="mb-4 flex items-center justify-between">
-            <RadixDialog.Title className="text-lg font-semibold">{title}</RadixDialog.Title>
-            <RadixDialog.Close aria-label={closeLabel} className="rounded p-1 hover:bg-slate-100">
+            <RadixDialog.Title className="text-lg font-semibold tracking-tight text-slate-900">{title}</RadixDialog.Title>
+            <RadixDialog.Close aria-label={closeLabel} className="rounded p-1 text-slate-600 hover:bg-slate-100 hover:text-slate-900">
               <X size={18} />
             </RadixDialog.Close>
           </div>
@@ -140,8 +143,8 @@ export function PageHeader({ title, subtitle, actions }: { title: string; subtit
   return (
     <div className="flex flex-wrap items-end justify-between gap-3">
       <div>
-        <h1 className="text-xl font-semibold tracking-tight">{title}</h1>
-        {subtitle ? <p className="text-sm text-slate-500">{subtitle}</p> : null}
+        <h1 className="text-xl font-semibold tracking-tight text-slate-900">{title}</h1>
+        {subtitle ? <p className="text-sm text-slate-600">{subtitle}</p> : null}
       </div>
       {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
     </div>
@@ -151,10 +154,10 @@ export function PageHeader({ title, subtitle, actions }: { title: string; subtit
 /** Nothing here yet: say so, and offer the next step. */
 export function EmptyState({ title, hint, action }: { title: string; hint?: string; action?: ReactNode }) {
   return (
-    <div className="grid justify-items-center gap-2 rounded-lg border border-dashed border-slate-300 px-4 py-10 text-center">
+    <div className="grid justify-items-center gap-2 rounded-lg border border-dashed border-slate-200 bg-slate-50/50 px-4 py-8 text-center">
       <Inbox size={28} className="text-slate-400" aria-hidden />
-      <p className="font-medium">{title}</p>
-      {hint ? <p className="max-w-sm text-sm text-slate-500">{hint}</p> : null}
+      <p className="font-semibold text-slate-900">{title}</p>
+      {hint ? <p className="max-w-sm text-sm text-slate-600">{hint}</p> : null}
       {action}
     </div>
   );
@@ -163,9 +166,9 @@ export function EmptyState({ title, hint, action }: { title: string; hint?: stri
 /** A load or save failed: the reason, and a way to try again. */
 export function ErrorState({ message, retryLabel, onRetry }: { message: string; retryLabel?: string; onRetry?: () => void }) {
   return (
-    <div role="alert" className="flex flex-wrap items-center gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-      <AlertTriangle size={18} aria-hidden />
-      <span className="mr-auto">{message}</span>
+    <div role="alert" className="flex flex-wrap items-center gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-900 shadow-xs">
+      <AlertTriangle size={18} className="text-red-600 shrink-0" aria-hidden />
+      <span className="mr-auto font-normal">{message}</span>
       {onRetry && retryLabel ? (
         <Button variant="outline" size="sm" onClick={onRetry}>
           {retryLabel}
@@ -176,7 +179,7 @@ export function ErrorState({ message, retryLabel, onRetry }: { message: string; 
 }
 
 const tableClass =
-  "w-full text-left text-sm [&_thead_th]:bg-slate-50 [&_thead_th]:px-3 [&_thead_th]:py-2 [&_thead_th]:text-xs [&_thead_th]:font-medium [&_thead_th]:tracking-wide [&_thead_th]:text-slate-500 [&_thead_th]:uppercase [&_tbody_tr]:border-t [&_tbody_tr]:border-slate-100 [&_tbody_tr:hover]:bg-slate-50";
+  "w-full text-left text-sm [&_thead_th]:bg-slate-50 [&_thead_th]:px-3 [&_thead_th]:py-2 [&_thead_th]:text-xs [&_thead_th]:font-semibold [&_thead_th]:tracking-wider [&_thead_th]:text-slate-600 [&_thead_th]:uppercase [&_tbody_tr]:border-t [&_tbody_tr]:border-slate-100 [&_tbody_tr:hover]:bg-slate-50";
 
 /**
  * Data table: quiet uppercase header, row dividers, hover row. Header and row styling comes from the table itself,
@@ -185,21 +188,62 @@ const tableClass =
 export function Table({ className, bare, ...props }: ComponentProps<"table"> & { bare?: boolean }) {
   const table = <table className={cn(tableClass, className)} {...props} />;
   if (bare) return table;
-  return <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">{table}</div>;
+  return <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">{table}</div>;
 }
 
 export function Th({ className, numeric, ...props }: ComponentProps<"th"> & { numeric?: boolean }) {
   return (
     <th
       scope="col"
-      className={cn("bg-slate-50 px-3 py-2 text-xs font-medium tracking-wide text-slate-500 uppercase", numeric && "text-right", className)}
+      className={cn("bg-slate-50 px-3 py-2 text-xs font-semibold tracking-wider text-slate-600 uppercase", numeric && "text-right", className)}
       {...props}
     />
   );
 }
 
 export function Td({ className, numeric, ...props }: ComponentProps<"td"> & { numeric?: boolean }) {
-  return <td className={cn("px-3 py-2", numeric && "text-right tabular-nums", className)} {...props} />;
+  return <td className={cn("px-3 py-2 text-slate-900", numeric && "text-right tabular-nums", className)} {...props} />;
+}
+
+/** Loading skeleton block: matches content layout and size to prevent layout shift */
+export function Skeleton({ className, ...props }: ComponentProps<"div">) {
+  return <div className={cn("animate-pulse rounded-md bg-slate-200", className)} {...props} />;
+}
+
+/** Pre-built table loading skeleton matching common data table column layouts */
+export function TableSkeleton({ rows = 4, cols = 4 }: { rows?: number; cols?: number }) {
+  return (
+    <div className="grid gap-3 p-4">
+      {Array.from({ length: rows }).map((_, i) => (
+        <div key={i} className="flex gap-4">
+          {Array.from({ length: cols }).map((_, j) => (
+            <Skeleton key={j} className="h-5 flex-1" />
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** Visual stat card: muted uppercase label above bold prominent value, avoiding inline 'Label: value' strings */
+export function StatCard({
+  label,
+  value,
+  subtext,
+  className,
+}: {
+  label: string;
+  value: ReactNode;
+  subtext?: string;
+  className?: string;
+}) {
+  return (
+    <div className={cn("rounded-lg border border-slate-200 bg-white p-4 shadow-sm", className)}>
+      <div className="text-xs font-semibold tracking-wider text-slate-600 uppercase">{label}</div>
+      <div className="mt-1 text-2xl font-semibold tracking-tight text-slate-900">{value}</div>
+      {subtext ? <div className="mt-1 text-xs text-slate-600">{subtext}</div> : null}
+    </div>
+  );
 }
 
 /** Tabs (Radix: arrow keys, roles and focus come for free). Pass the panels as TabPanel children. */
@@ -224,7 +268,7 @@ export function Tabs({
             key={tab.value}
             value={tab.value}
             data-testid={tab.testId}
-            className="-mb-px border-b-2 border-transparent px-3 py-2 text-sm whitespace-nowrap text-slate-600 hover:text-slate-900 data-[state=active]:border-brand-600 data-[state=active]:font-medium data-[state=active]:text-slate-900"
+            className="-mb-px border-b-2 border-transparent px-3 py-2 text-sm whitespace-nowrap text-slate-600 hover:text-slate-900 data-[state=active]:border-brand-600 data-[state=active]:font-semibold data-[state=active]:text-slate-900"
           >
             {tab.label}
           </RadixTabs.Trigger>

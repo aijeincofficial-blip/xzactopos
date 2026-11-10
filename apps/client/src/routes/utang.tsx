@@ -252,7 +252,13 @@ export function UtangPage() {
             {t("utang.onlyOwed")}
           </label>
 
-          {customersQuery.isPending ? <Card>{t("utang.loading")}</Card> : null}
+          {customersQuery.isPending ? (
+            <ul className="grid gap-2">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <li key={i} className="h-14 rounded-md border border-slate-200 bg-slate-100 animate-pulse" />
+              ))}
+            </ul>
+          ) : null}
           {customersQuery.isError ? (
             <ErrorState message={t("utang.error")} onRetry={() => void customersQuery.refetch()} retryLabel={t("common:actions.retry")} />
           ) : null}
@@ -279,7 +285,7 @@ export function UtangPage() {
                     }`}
                   >
                     <span>
-                      <span className="block font-medium">{c.name}</span>
+                      <span className="block font-semibold">{c.name}</span>
                       <span className="text-xs text-slate-500">
                         {c.phone ? `${c.phone} · ` : ""}
                         {c.dueOn ? `${t("utang.due")}: ${c.dueOn}` : t("utang.noDueDate")}
@@ -313,7 +319,7 @@ export function UtangPage() {
                   <span className="text-xs text-slate-500 block">{t("utang.balance")}</span>
                   <span
                     data-testid="customer-balance"
-                    className={`text-xl font-bold ${
+                    className={`text-xl font-semibold ${
                       selectedCustomer.balance > 0 ? "text-amber-700" : "text-emerald-700"
                     }`}
                   >
@@ -342,7 +348,7 @@ export function UtangPage() {
 
               {/* Record Payment */}
               <div className="grid gap-2 border-t border-slate-200 pt-3">
-                <span className="text-sm font-medium">{t("utang.recordPayment")}</span>
+                <span className="text-sm font-semibold">{t("utang.recordPayment")}</span>
                 <div className="grid gap-2 sm:grid-cols-2">
                   <Input
                     data-testid="payment-amount"
@@ -379,7 +385,7 @@ export function UtangPage() {
 
               {/* Due Date Management */}
               <div className="grid gap-2 border-t border-slate-200 pt-3">
-                <span className="text-sm font-medium">{t("utang.promisedPayDate")}</span>
+                <span className="text-sm font-semibold">{t("utang.promisedPayDate")}</span>
                 <div className="flex gap-2">
                   <Input
                     type="date"
@@ -437,7 +443,13 @@ export function UtangPage() {
                   </Button>
                 </div>
               </div>
-              {ledgerQuery.isPending ? <p className="text-sm text-slate-500">{t("utang.loading")}</p> : null}
+              {ledgerQuery.isPending ? (
+                <div className="grid gap-2 py-2">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="h-8 rounded bg-slate-100 animate-pulse" />
+                  ))}
+                </div>
+              ) : null}
               {ledgerQuery.isError ? (
                 <ErrorState message={t("utang.error")} onRetry={() => void ledgerQuery.refetch()} retryLabel={t("common:actions.retry")} />
               ) : null}
@@ -451,7 +463,7 @@ export function UtangPage() {
                     className="flex items-center justify-between border-b border-slate-100 pb-1.5 last:border-0"
                   >
                     <div>
-                      <span className="block font-medium">
+                      <span className="block font-semibold">
                         {t(`utang.kind.${entry.kind}`)}
                         {entry.note ? ` - ${entry.note}` : ""}
                       </span>

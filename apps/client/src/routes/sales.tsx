@@ -126,7 +126,16 @@ export function SalesPage() {
             {t("sales.back")}
           </Button>
         </div>
-        {detail.isPending ? <Card>{t("sales.loading")}</Card> : null}
+        {detail.isPending ? (
+          <Card className="grid gap-3">
+            <div className="h-6 w-32 rounded bg-slate-200 animate-pulse" />
+            <div className="h-4 w-48 rounded bg-slate-200 animate-pulse" />
+            <div className="space-y-2 pt-2">
+              <div className="h-4 w-full rounded bg-slate-200 animate-pulse" />
+              <div className="h-4 w-full rounded bg-slate-200 animate-pulse" />
+            </div>
+          </Card>
+        ) : null}
         {detail.isError ? (
           <ErrorState message={t("sales.error")} onRetry={() => void detail.refetch()} retryLabel={t("common:actions.retry")} />
         ) : null}
@@ -139,7 +148,8 @@ export function SalesPage() {
             </div>
             {d.customerName ? (
               <div className="text-sm">
-                {t("sell.customer")}: <strong>{d.customerName}</strong>
+                <span className="text-slate-500">{t("sell.customer")}</span>{" "}
+                <span className="font-semibold text-slate-900">{d.customerName}</span>
               </div>
             ) : null}
             <ul className="grid gap-1 text-sm">
@@ -263,7 +273,13 @@ export function SalesPage() {
   return (
     <div className="grid max-w-2xl gap-4">
       <PageHeader title={t("sales.title")} />
-      {list.isPending ? <Card>{t("sales.loading")}</Card> : null}
+      {list.isPending ? (
+        <ul className="grid gap-2">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <li key={i} className="h-14 rounded-md border border-slate-200 bg-slate-100 animate-pulse" />
+          ))}
+        </ul>
+      ) : null}
       {list.isError ? (
         <ErrorState message={t("sales.error")} onRetry={() => void list.refetch()} retryLabel={t("common:actions.retry")} />
       ) : null}
@@ -278,7 +294,7 @@ export function SalesPage() {
               className="flex w-full items-center justify-between gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-left text-sm hover:bg-slate-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/20"
             >
               <span>
-                <span className="block font-mono font-medium">{s.sale_no ?? s.local_no}</span>
+                <span className="block font-mono font-semibold">{s.sale_no ?? s.local_no}</span>
                 <span className="text-xs text-slate-500">{when(s.sold_at)}</span>
               </span>
               <span className="flex items-center gap-2">

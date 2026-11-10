@@ -3,7 +3,7 @@ import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tansta
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { formatMoney, money } from "@pos/core";
-import { Alert, Badge, Button, Card, Dialog, EmptyState, ErrorState, Field, Input, PageHeader, Select, Table, Tabs, TabPanel, useToast } from "../components/ui.tsx";
+import { Alert, Badge, Button, Card, Dialog, EmptyState, ErrorState, Field, Input, PageHeader, Select, Table, TableSkeleton, Tabs, TabPanel, useToast } from "../components/ui.tsx";
 import { useSession } from "../lib/session.tsx";
 import { useErrorMessage } from "../lib/i18n-helpers.ts";
 import { formatQty } from "../lib/product-math.ts";
@@ -159,6 +159,7 @@ function ReorderTab({ warehouses }: { warehouses: Array<{ id: string; code: stri
         {needOrderRows.length > 0 ? (
           <Button
             size="sm"
+            variant="outline"
             data-testid="draft-po-all-low-stock"
             title={t("overview.reorder.draftPoAllDesc")}
             onClick={handleDraftPoAll}
@@ -175,7 +176,7 @@ function ReorderTab({ warehouses }: { warehouses: Array<{ id: string; code: stri
       ) : null}
       <Card className="overflow-x-auto p-0">
         {q.isLoading ? (
-          <p className="p-4 text-sm text-slate-500">{t("overview.loading")}</p>
+          <TableSkeleton rows={5} cols={9} />
         ) : rows.length === 0 ? (
           <div data-testid="reorder-none" className="p-4">
             <EmptyState title={t("overview.reorder.none")} />
@@ -290,9 +291,13 @@ function ReorderTab({ warehouses }: { warehouses: Array<{ id: string; code: stri
         >
           <div className="grid gap-4 py-2">
             <p className="text-sm text-slate-600">{t("overview.reorder.editThresholdDesc")}</p>
-            <div className="text-sm text-slate-700">
-              <span className="font-medium">{t("overview.reorder.onHand")}: </span>
-              {formatQty(editingRow.qty_on_hand)}
+            <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
+              <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                {t("overview.reorder.onHand")}
+              </div>
+              <div className="mt-1 text-lg font-semibold text-slate-900">
+                {formatQty(editingRow.qty_on_hand)}
+              </div>
             </div>
 
             <Field label={t("overview.reorder.point")}>
@@ -391,7 +396,7 @@ function NegativeTab() {
       ) : null}
       <Card className="overflow-x-auto p-0">
         {q.isLoading ? (
-          <p className="p-4 text-sm text-slate-500">{t("overview.loading")}</p>
+          <TableSkeleton rows={5} cols={5} />
         ) : rows.length === 0 ? (
           <div data-testid="negative-none" className="p-4">
             <EmptyState title={t("overview.negative.none")} />
@@ -401,7 +406,7 @@ function NegativeTab() {
             <thead>
               <tr className="border-b border-slate-200 text-slate-500">
                 {(["place", "product", "onHand", "value", "lastMoved"] as const).map((c) => (
-                  <th key={c} className="px-3 py-2 font-medium">
+                  <th key={c} className="px-3 py-2 font-semibold">
                     {t(`overview.negative.${c}`)}
                   </th>
                 ))}
@@ -416,7 +421,7 @@ function NegativeTab() {
                   <td className="px-3 py-2">
                     {r.product_name} · {r.sku}
                   </td>
-                  <td className="px-3 py-2 font-medium text-red-700">{formatQty(r.qty_on_hand)}</td>
+                  <td className="px-3 py-2 font-semibold text-red-700">{formatQty(r.qty_on_hand)}</td>
                   <td className="px-3 py-2">{r.stock_value === null ? "—" : fmt(r.stock_value)}</td>
                   <td className="px-3 py-2">{r.last_movement_at ? new Date(r.last_movement_at).toLocaleDateString(i18n.language) : "—"}</td>
                 </tr>
@@ -458,7 +463,7 @@ function TransitTab({ warehouses }: { warehouses: Array<{ id: string; code: stri
       <p className="text-sm text-slate-600">{t("overview.transit.help")}</p>
       <Card className="overflow-x-auto p-0">
         {q.isLoading ? (
-          <p className="p-4 text-sm text-slate-500">{t("overview.loading")}</p>
+          <TableSkeleton rows={5} cols={7} />
         ) : rows.length === 0 ? (
           <div data-testid="transit-none" className="p-4">
             <EmptyState title={t("overview.transit.none")} />
@@ -468,7 +473,7 @@ function TransitTab({ warehouses }: { warehouses: Array<{ id: string; code: stri
             <thead>
               <tr className="border-b border-slate-200 text-slate-500">
                 {(["no", "from", "to", "shipped", "age", "lines", "units"] as const).map((c) => (
-                  <th key={c} className="px-3 py-2 font-medium">
+                  <th key={c} className="px-3 py-2 font-semibold">
                     {t(`overview.transit.${c}`)}
                   </th>
                 ))}
@@ -567,7 +572,9 @@ function ProductTab() {
       {!variantId ? (
         <p className="text-sm text-slate-500">{t("overview.product.prompt")}</p>
       ) : stock.isLoading ? (
-        <p className="text-sm text-slate-500">{t("overview.loading")}</p>
+        <Card className="p-0">
+          <TableSkeleton rows={4} cols={6} />
+        </Card>
       ) : rows.length === 0 ? (
         <EmptyState title={t("overview.product.none")} />
       ) : (
@@ -576,7 +583,7 @@ function ProductTab() {
             <thead>
               <tr className="border-b border-slate-200 text-slate-500">
                 {(["warehouse", "onHand", "incoming", "onOrder", "cost", "value"] as const).map((c) => (
-                  <th key={c} className="px-3 py-2 font-medium">
+                  <th key={c} className="px-3 py-2 font-semibold">
                     {t(`overview.product.${c}`)}
                   </th>
                 ))}
@@ -595,7 +602,7 @@ function ProductTab() {
                   <td className="px-3 py-2">{r.stock_value === null ? "—" : fmt(r.stock_value)}</td>
                 </tr>
               ))}
-              <tr className="bg-slate-50 font-medium" data-testid="stock-total">
+              <tr className="bg-slate-50 font-semibold" data-testid="stock-total">
                 <td className="px-3 py-2">{t("overview.product.total")}</td>
                 <td className="px-3 py-2">{formatQty(totals.qty)}</td>
                 <td className="px-3 py-2">{formatQty(totals.incoming)}</td>

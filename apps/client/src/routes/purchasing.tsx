@@ -2,7 +2,7 @@ import { Fragment, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { formatMoney, money, uuidv7 } from "@pos/core";
-import { Alert, Badge, Button, Card, Dialog, Field, Input, Select, Table, PageHeader, Tabs, TabPanel, EmptyState, ErrorState, useToast } from "../components/ui.tsx";
+import { Alert, Badge, Button, Card, Dialog, Field, Input, Select, Table, TableSkeleton, PageHeader, Tabs, TabPanel, EmptyState, ErrorState, useToast } from "../components/ui.tsx";
 import { useSession } from "../lib/session.tsx";
 import { useErrorMessage } from "../lib/i18n-helpers.ts";
 import { formatQty } from "../lib/product-math.ts";
@@ -191,7 +191,7 @@ function OrdersTab() {
 
       <Card className="overflow-x-auto p-0">
         {orders.isLoading ? (
-          <p className="p-4 text-sm text-slate-500">{t("purchasing.loading")}</p>
+          <TableSkeleton rows={5} cols={7} />
         ) : rows.length === 0 ? (
           <div data-testid="no-orders" className="p-4">
             <EmptyState title={t("purchasing.orders.none")} />
@@ -201,7 +201,7 @@ function OrdersTab() {
             <thead>
               <tr className="border-b border-slate-200 text-slate-500">
                 {(["poNo", "warehouse", "supplier", "expected", "status", "progress", "actions"] as const).map((c) => (
-                  <th key={c} className="px-3 py-2 font-medium">
+                  <th key={c} className="px-3 py-2 font-semibold">
                     {t(`purchasing.orders.${c}`)}
                   </th>
                 ))}
@@ -875,7 +875,7 @@ function SuppliersTab() {
       {remove.isError ? <ErrorState message={msg(remove.error)} /> : null}
       <Card className="overflow-x-auto p-0">
         {suppliers.isLoading ? (
-          <p className="p-4 text-sm text-slate-500">{t("purchasing.loading")}</p>
+          <TableSkeleton rows={4} cols={5} />
         ) : (suppliers.data ?? []).length === 0 ? (
           <div data-testid="no-suppliers" className="p-4">
             <EmptyState
@@ -892,7 +892,7 @@ function SuppliersTab() {
             <thead>
               <tr className="border-b border-slate-200 text-slate-500">
                 {(["name", "contact", "phone", "email", "actions"] as const).map((c) => (
-                  <th key={c} className="px-3 py-2 font-medium">
+                  <th key={c} className="px-3 py-2 font-semibold">
                     {t(`purchasing.suppliers.${c}`)}
                   </th>
                 ))}
@@ -901,7 +901,7 @@ function SuppliersTab() {
             <tbody>
               {(suppliers.data ?? []).map((s) => (
                 <tr key={s.id} className="border-b border-slate-100" data-testid={`supplier-${s.name}`}>
-                  <td className="px-3 py-2 font-medium">{s.name}</td>
+                  <td className="px-3 py-2 font-semibold">{s.name}</td>
                   <td className="px-3 py-2">{s.contact_name ?? "—"}</td>
                   <td className="px-3 py-2">{s.phone ?? "—"}</td>
                   <td className="px-3 py-2">{s.email ?? "—"}</td>
@@ -992,7 +992,7 @@ function ReceiptsTab() {
     <Card className="overflow-x-auto p-0">
       {receipts.isError ? <ErrorState message={msg(receipts.error)} onRetry={() => receipts.refetch()} retryLabel={t("common:actions.retry")} /> : null}
       {receipts.isLoading ? (
-        <p className="p-4 text-sm text-slate-500">{t("purchasing.loading")}</p>
+        <TableSkeleton rows={4} cols={7} />
       ) : (receipts.data ?? []).length === 0 ? (
         <div data-testid="no-receipts" className="p-4">
           <EmptyState title={t("purchasing.receipts.none")} />
@@ -1002,7 +1002,7 @@ function ReceiptsTab() {
           <thead>
             <tr className="border-b border-slate-200 text-slate-500">
               {(["grnNo", "date", "warehouse", "supplier", "order", "deliveryRef", "lines"] as const).map((c) => (
-                <th key={c} className="px-3 py-2 font-medium">
+                <th key={c} className="px-3 py-2 font-semibold">
                   {t(`purchasing.receipts.${c}`)}
                 </th>
               ))}
