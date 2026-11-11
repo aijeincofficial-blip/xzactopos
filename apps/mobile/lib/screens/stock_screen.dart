@@ -124,95 +124,105 @@ class _StockScreenState extends State<StockScreen> {
               : (_expiringOnly ? all.where((r) => isExpiringRow(r, today)).toList() : all);
           return Column(children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(Gap.xl, Gap.s, Gap.xl, Gap.s),
+              padding: const EdgeInsets.fromLTRB(Gap.l, Gap.s, Gap.l, Gap.s),
               child: TextField(
                 key: const Key('stock-search'),
                 onChanged: (v) => setState(() => _query = v),
                 decoration: InputDecoration(
-                  prefixIcon: const Icon(Icons.search),
+                  prefixIcon: const Icon(Icons.search_rounded, size: 20),
                   hintText: t.searchProducts,
                 ),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: Gap.xl),
-              child: Wrap(spacing: 8, runSpacing: 4, children: [
-                ChoiceChip(
-                  key: const Key('filter-all'),
-                  label: Text(t.stockAll),
-                  selected: !_lowOnly && !_expiringOnly,
-                  onSelected: (_) => setState(() {
-                    _lowOnly = false;
-                    _expiringOnly = false;
-                  }),
-                ),
-                ChoiceChip(
-                  key: const Key('filter-low'),
-                  avatar: lowCount > 0 ? const Icon(Icons.warning_amber_rounded, size: 18) : null,
-                  label: Text(t.stockLowCount(lowCount)),
-                  selected: _lowOnly,
-                  onSelected: (_) => setState(() {
-                    _lowOnly = true;
-                    _expiringOnly = false;
-                  }),
-                ),
-                if (expiringCount > 0 || _expiringOnly) ...[
+              padding: const EdgeInsets.symmetric(horizontal: Gap.l),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Wrap(spacing: 8, runSpacing: 4, children: [
                   ChoiceChip(
-                    key: const Key('filter-expiring'),
-                    avatar: expiringCount > 0 ? const Icon(Icons.event_busy_rounded, size: 18) : null,
-                    label: Text(t.stockExpiringFilter(expiringCount)),
-                    selected: _expiringOnly,
+                    key: const Key('filter-all'),
+                    label: Text(t.stockAll),
+                    selected: !_lowOnly && !_expiringOnly,
                     onSelected: (_) => setState(() {
-                      _expiringOnly = true;
                       _lowOnly = false;
+                      _expiringOnly = false;
                     }),
                   ),
-                ],
-              ]),
+                  ChoiceChip(
+                    key: const Key('filter-low'),
+                    avatar: lowCount > 0 ? const Icon(Icons.warning_amber_rounded, size: 16) : null,
+                    label: Text(t.stockLowCount(lowCount)),
+                    selected: _lowOnly,
+                    onSelected: (_) => setState(() {
+                      _lowOnly = true;
+                      _expiringOnly = false;
+                    }),
+                  ),
+                  if (expiringCount > 0 || _expiringOnly) ...[
+                    ChoiceChip(
+                      key: const Key('filter-expiring'),
+                      avatar: expiringCount > 0 ? const Icon(Icons.event_busy_rounded, size: 16) : null,
+                      label: Text(t.stockExpiringFilter(expiringCount)),
+                      selected: _expiringOnly,
+                      onSelected: (_) => setState(() {
+                        _expiringOnly = true;
+                        _lowOnly = false;
+                      }),
+                    ),
+                  ],
+                ]),
+              ),
             ),
             Expanded(
               child: rows.isEmpty
                   ? Center(
                       child: Padding(
                         padding: const EdgeInsets.all(32),
-                        child: Text(_lowOnly ? t.stockNoneLow : (_expiringOnly ? t.stockNoneExpiring : (all.isEmpty ? t.noProductsHere : t.noMatches)),
-                            textAlign: TextAlign.center),
+                        child: Text(
+                          _lowOnly
+                              ? t.stockNoneLow
+                              : (_expiringOnly ? t.stockNoneExpiring : (all.isEmpty ? t.noProductsHere : t.noMatches)),
+                          textAlign: TextAlign.center,
+                        ),
                       ),
                     )
                   : ListView.separated(
-                      padding: EdgeInsets.fromLTRB(Gap.xl, Gap.s, Gap.xl, Gap.xl + MediaQuery.paddingOf(context).bottom), // clear of the tab bar
+                      padding: EdgeInsets.fromLTRB(Gap.l, Gap.s, Gap.l, Gap.xl + MediaQuery.paddingOf(context).bottom),
                       itemCount: rows.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: Gap.m),
+                      separatorBuilder: (_, _) => const SizedBox(height: Gap.s),
                       itemBuilder: (context, i) {
                         final r = rows[i];
                         final scheme = Theme.of(context).colorScheme;
                         return AppCard(
                           key: Key('stock-${r.product.id}'),
-                          padding: const EdgeInsets.symmetric(horizontal: Gap.l, vertical: Gap.s), radius: Gap.radiusL,
+                          padding: const EdgeInsets.symmetric(horizontal: Gap.l, vertical: 8),
+                          radius: Gap.radiusL,
                           onTap: () => _open(r),
                           child: ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: ProductThumb(productId: r.product.id, path: r.product.photoPath),
-                          title: Text(r.product.name, style: const TextStyle(fontSize: 18)),
-                          subtitle: _stockSubtitle(t, scheme, r, today),
-                          trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-                            if (r.pending)
-                              Padding(
-                                padding: const EdgeInsets.only(right: 8),
-                                child: Icon(Icons.cloud_upload_outlined, size: 18, semanticLabel: t.notSentYet),
+                            contentPadding: EdgeInsets.zero,
+                            dense: true,
+                            leading: ProductThumb(productId: r.product.id, path: r.product.photoPath, size: 38),
+                            title: Text(r.product.name, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                            subtitle: _stockSubtitle(t, scheme, r, today),
+                            trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                              if (r.pending)
+                                Padding(
+                                  padding: const EdgeInsets.only(right: 8),
+                                  child: Icon(Icons.cloud_upload_outlined, size: 18, semanticLabel: t.notSentYet),
+                                ),
+                              Text(
+                                r.counted ? fmtQty(r.qty!) : t.stockNotCounted,
+                                style: TextStyle(
+                                  fontSize: r.counted ? 18 : 13.5,
+                                  fontWeight: r.counted ? FontWeight.w700 : FontWeight.w500,
+                                  color: r.low || (r.counted && r.qty! <= 0)
+                                      ? scheme.error
+                                      : (r.counted ? scheme.onSurface : scheme.outline),
+                                ),
                               ),
-                            Text(
-                              r.counted ? fmtQty(r.qty!) : t.stockNotCounted,
-                              style: TextStyle(
-                                fontSize: r.counted ? 22 : 15,
-                                fontWeight: r.counted ? FontWeight.w800 : null,
-                                color: r.low || (r.counted && r.qty! <= 0)
-                                    ? scheme.error
-                                    : (r.counted ? null : scheme.outline),
-                              ),
-                            ),
-                          ]),
-                        ));
+                            ]),
+                          ),
+                        );
                       },
                     ),
             ),

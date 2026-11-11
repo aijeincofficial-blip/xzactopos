@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/theme.dart';
 import '../data/local_store.dart';
 import '../l10n/app_localizations.dart';
 import 'store_session.dart';
@@ -16,20 +17,25 @@ class SyncBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final scope = CatalogScope.of(context);
     final t = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
     return ValueListenableBuilder<SyncStatus>(
       valueListenable: scope.engine.status,
       builder: (context, status, _) => StreamBuilder<OutboxCounts>(
         stream: scope.store.watchOutboxCounts(),
         builder: (context, snap) {
           final counts = snap.data ?? const OutboxCounts(0, 0);
-          final (IconData icon, String label, Color? color) = switch (status.phase) {
-            SyncPhase.needsSignIn => (Icons.lock_outline, t.syncSignIn, Colors.red),
-            _ when counts.failed > 0 => (Icons.error_outline, t.syncNeedsAttention(counts.failed), Colors.red),
-            SyncPhase.syncing => (Icons.sync, t.syncSyncing, null),
-            SyncPhase.idle when status.lastSyncedAt == null => (Icons.sync, t.syncSyncing, null),
-            SyncPhase.offline => (Icons.cloud_off, counts.pending > 0 ? t.syncOfflinePending(counts.pending) : t.syncOffline, Colors.orange),
-            SyncPhase.idle when counts.pending > 0 => (Icons.cloud_upload_outlined, t.syncPending(counts.pending), null),
-            SyncPhase.idle => (Icons.cloud_done_outlined, t.syncSynced, Colors.green),
+          final (IconData icon, String label, Color color) = switch (status.phase) {
+            SyncPhase.needsSignIn => (Icons.lock_outline_rounded, t.syncSignIn, scheme.error),
+            _ when counts.failed > 0 => (Icons.error_outline_rounded, t.syncNeedsAttention(counts.failed), scheme.error),
+            SyncPhase.syncing => (Icons.sync_rounded, t.syncSyncing, scheme.primary),
+            SyncPhase.idle when status.lastSyncedAt == null => (Icons.sync_rounded, t.syncSyncing, scheme.primary),
+            SyncPhase.offline => (
+                Icons.cloud_off_rounded,
+                counts.pending > 0 ? t.syncOfflinePending(counts.pending) : t.syncOffline,
+                scheme.payUtang,
+              ),
+            SyncPhase.idle when counts.pending > 0 => (Icons.cloud_upload_outlined, t.syncPending(counts.pending), scheme.primary),
+            SyncPhase.idle => (Icons.cloud_done_outlined, t.syncSynced, scheme.success),
           };
           // On a phone the full sentence does not fit next to the store name and the other buttons:
           // show the icon and the number only; the sentence stays in the tooltip and for screen readers.
@@ -41,12 +47,12 @@ class SyncBadge extends StatelessWidget {
                 key: const Key('sync-badge'),
                 style: TextButton.styleFrom(
                   minimumSize: const Size(36, 36),
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
                 onPressed: scope.engine.syncNow,
-                icon: Icon(icon, color: color, size: 20, semanticLabel: label),
-                label: Text(n > 0 ? '$n' : '', style: TextStyle(color: color, fontWeight: FontWeight.w600)),
+                icon: Icon(icon, color: color, size: 19, semanticLabel: label),
+                label: Text(n > 0 ? '$n' : '', style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600)),
               ),
             );
           }
@@ -54,7 +60,7 @@ class SyncBadge extends StatelessWidget {
             key: const Key('sync-badge'),
             onPressed: scope.engine.syncNow,
             icon: Icon(icon, color: color, size: 18),
-            label: Text(label, style: TextStyle(color: color)),
+            label: Text(label, style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.w600)),
           );
         },
       ),

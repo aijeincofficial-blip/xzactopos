@@ -52,7 +52,6 @@ class _AuthScreenState extends State<AuthScreen> {
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(t.cancel)),
           FilledButton(
             key: const Key('forgot-send'),
-            style: FilledButton.styleFrom(shape: const StadiumBorder()),
             onPressed: () => Navigator.pop(ctx, true),
             child: Text(t.forgotSend),
           ),
@@ -97,7 +96,6 @@ class _AuthScreenState extends State<AuthScreen> {
     final t = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final dark = scheme.brightness == Brightness.dark;
 
     return Scaffold(
       appBar: AppBar(
@@ -106,11 +104,11 @@ class _AuthScreenState extends State<AuthScreen> {
       ),
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: Gap.xl, vertical: Gap.l),
+          padding: const EdgeInsets.symmetric(horizontal: Gap.l, vertical: Gap.l),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 420),
+            constraints: const BoxConstraints(maxWidth: 400),
             child: AppCard(
-              padding: const EdgeInsets.all(Gap.xxl),
+              padding: const EdgeInsets.all(Gap.xl),
               child: Form(
                 key: _form,
                 child: Column(
@@ -120,28 +118,29 @@ class _AuthScreenState extends State<AuthScreen> {
                     Center(
                       child: ClipRRect(
                         key: const Key('app-logo'),
-                        borderRadius: BorderRadius.circular(22),
+                        borderRadius: BorderRadius.circular(Gap.radiusL),
                         child: Image.asset(
                           'assets/brand/logo_squircle.png',
-                          width: 84,
-                          height: 84,
+                          width: 64,
+                          height: 64,
                           semanticLabel: 'XZACTO POS',
                           errorBuilder: (_, _, _) =>
                               CoinBadge(icon: Icons.storefront_rounded, color: scheme.primary, size: 52),
                         ),
                       ),
                     ),
-                    const SizedBox(height: Gap.s),
+                    const SizedBox(height: Gap.m),
                     Text(
                       'XZACTO',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 20,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.2,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.0,
                         color: scheme.onSurface,
                       ),
                     ),
+                    const SizedBox(height: 2),
                     Text(
                       'POS APP',
                       textAlign: TextAlign.center,
@@ -149,7 +148,7 @@ class _AuthScreenState extends State<AuthScreen> {
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 2.0,
-                        color: scheme.secondary,
+                        color: scheme.primary,
                       ),
                     ),
                     const SizedBox(height: Gap.l),
@@ -160,7 +159,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       decoration: InputDecoration(
                         labelText: t.email,
                         helperText: t.loginHelper,
-                        prefixIcon: const Icon(Icons.email_outlined, size: 20),
+                        prefixIcon: const Icon(Icons.email_outlined, size: 19),
                       ),
                       validator: (v) => (v == null || v.trim().isEmpty) ? t.errRequired : null,
                     ),
@@ -171,19 +170,19 @@ class _AuthScreenState extends State<AuthScreen> {
                       textInputAction: TextInputAction.done,
                       decoration: InputDecoration(
                         labelText: t.password,
-                        prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20),
+                        prefixIcon: const Icon(Icons.lock_outline_rounded, size: 19),
                       ),
                       validator: (v) => (v == null || v.length < 6) ? t.errPasswordShort : null,
                     ),
-                    const SizedBox(height: Gap.xl),
+                    const SizedBox(height: Gap.l),
                     SizedBox(
-                      height: 52,
+                      height: 50,
                       child: FilledButton(
                         style: FilledButton.styleFrom(
                           backgroundColor: scheme.obsidian,
-                          foregroundColor: dark ? scheme.onPrimary : Colors.white,
+                          foregroundColor: Colors.white,
                           shape: const StadiumBorder(),
-                          elevation: 3,
+                          elevation: 2,
                           textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                         ),
                         onPressed: _busy ? null : _submit,

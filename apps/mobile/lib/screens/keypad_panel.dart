@@ -40,29 +40,29 @@ class AmountPad extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final dark = scheme.brightness == Brightness.dark;
+    final radius = BorderRadius.circular(Gap.radiusS);
 
     Widget key(String k, {Widget? child}) => Expanded(
           child: Padding(
-            padding: const EdgeInsets.all(4),
+            padding: const EdgeInsets.all(3.5),
             child: Material(
-              color: dark ? Colors.white.withValues(alpha: 0.06) : Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              color: scheme.surface,
+              borderRadius: radius,
               elevation: 0,
               child: InkWell(
                 key: Key('key-$k'),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: radius,
                 onTap: () => _press(k),
                 onLongPress: k == 'del' ? () => _press('clear') : null,
                 child: Container(
-                  height: 48,
+                  height: 46,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: dark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFE6E8F3)),
+                    borderRadius: radius,
+                    border: Border.all(color: scheme.outlineVariant, width: 1.0),
                   ),
                   child: child ??
-                      Text(k, style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: scheme.onSurface)),
+                      Text(k, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: scheme.onSurface)),
                 ),
               ),
             ),
@@ -81,7 +81,7 @@ class AmountPad extends StatelessWidget {
         Row(children: [
           _decimals > 0 ? key('.') : key('00'),
           key('0'),
-          key('del', child: Icon(Icons.backspace_outlined, color: scheme.onSurface)),
+          key('del', child: Icon(Icons.backspace_outlined, size: 20, color: scheme.onSurface)),
         ]),
       ]),
     );

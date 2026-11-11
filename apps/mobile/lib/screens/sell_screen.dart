@@ -358,7 +358,7 @@ class _SellScreenState extends State<SellScreen> {
           children: [
             if (widget.backend != null) _todayStrip(context, widget.backend!),
             Padding(
-              padding: const EdgeInsets.fromLTRB(Gap.xl, Gap.s, Gap.xl, Gap.s),
+              padding: const EdgeInsets.fromLTRB(Gap.l, Gap.s, Gap.l, Gap.xs),
               child: TextField(
                 key: const Key('sell-search'),
                 controller: _search,
@@ -370,18 +370,18 @@ class _SellScreenState extends State<SellScreen> {
                 onSubmitted: _onSubmit,
                 onChanged: (v) => setState(() => _query = v),
                 decoration: InputDecoration(
-                  prefixIcon: const Icon(Icons.search),
+                  prefixIcon: const Icon(Icons.search_rounded, size: 20),
                   hintText: t.sellSearchHint,
                   suffixIcon: _query.isEmpty
                       ? (cameraScanner.available
                             ? IconButton(
                                 key: const Key('camera-scan'),
                                 tooltip: t.scanWithCamera,
-                                icon: const Icon(Icons.qr_code_scanner),
+                                icon: const Icon(Icons.qr_code_scanner_rounded, size: 20),
                                 onPressed: _scanWithCamera,
                               )
-                            : const Icon(Icons.qr_code_scanner))
-                      : IconButton(icon: const Icon(Icons.clear), tooltip: t.clear, onPressed: _clearSearch),
+                            : const Icon(Icons.qr_code_scanner_rounded, size: 20))
+                      : IconButton(icon: const Icon(Icons.close_rounded, size: 18), tooltip: t.clear, onPressed: _clearSearch),
                 ),
               ),
             ),
@@ -390,7 +390,7 @@ class _SellScreenState extends State<SellScreen> {
                 stream: scope.store.watchStock(),
                 builder: (context, stockSnap) {
                   final stock = stockSnap.data ?? const <String, double>{};
-                  return _query.trim().isEmpty ? _tiles(stock) : _results(stock);
+                  return _query.trim().isEmpty ? _tiles(stock, cart) : _results(stock);
                 },
               ),
             ),
@@ -410,13 +410,13 @@ class _SellScreenState extends State<SellScreen> {
     );
   }
 
-  /// Today's total in one line on top of Sell; tap for the full day.
+  /// Today's total in one compact bar on top of Sell; tap for the full day.
   Widget _todayStrip(BuildContext context, Backend backend) {
     final t = AppLocalizations.of(context);
     final scope = CatalogScope.of(context);
     final scheme = Theme.of(context).colorScheme;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(Gap.xl, Gap.xs, Gap.xl, 0),
+      padding: const EdgeInsets.fromLTRB(Gap.l, Gap.s, Gap.l, 0),
       child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
         Expanded(child: _todayCard(context, backend, t, scope, scheme)),
         const SizedBox(width: Gap.s),
@@ -425,7 +425,7 @@ class _SellScreenState extends State<SellScreen> {
     );
   }
 
-  /// A small button beside the Today strip: is a shift open for this user, and a way into it.
+  /// Compact shift status button beside the Today strip.
   Widget _shiftChip(BuildContext context, Backend backend, AppLocalizations t, CatalogScope scope, ColorScheme scheme) {
     return StreamBuilder<ShiftView?>(
       stream: scope.store.watchOpenShift(backend.userId ?? ''),
@@ -433,13 +433,13 @@ class _SellScreenState extends State<SellScreen> {
         final open = snap.data != null;
         return AppCard(
           key: const Key('shift-chip'),
-          padding: const EdgeInsets.all(Gap.s + 2),
-          radius: Gap.radiusL,
+          padding: const EdgeInsets.all(10),
+          radius: Gap.radiusM,
           onTap: () => Navigator.of(context).push(
               MaterialPageRoute<void>(builder: (_) => scope.wrap(ShiftScreen(backend: backend, storeName: widget.storeName)))),
           child: Tooltip(
             message: open ? t.shiftChipOpen : t.shiftChipNone,
-            child: Icon(open ? Icons.lock_open_rounded : Icons.lock_outline_rounded, size: 22, color: open ? scheme.success : scheme.outline),
+            child: Icon(open ? Icons.lock_open_rounded : Icons.lock_outline_rounded, size: 20, color: open ? scheme.success : scheme.outline),
           ),
         );
       },
@@ -454,14 +454,14 @@ class _SellScreenState extends State<SellScreen> {
           final d = snap.data ?? const TodayTotals();
           return AppCard(
             key: const Key('tile-today'),
-            padding: const EdgeInsets.symmetric(horizontal: Gap.l, vertical: Gap.s + 2),
-            radius: Gap.radiusL,
+            padding: const EdgeInsets.symmetric(horizontal: Gap.m, vertical: 10),
+            radius: Gap.radiusM,
             onTap: () => Navigator.of(
               context,
             ).push(MaterialPageRoute<void>(builder: (_) => scope.wrap(TodayScreen(backend: backend)))),
             child: Row(
               children: [
-                Icon(Icons.today_rounded, size: 20, color: scheme.primary),
+                Icon(Icons.today_rounded, size: 19, color: scheme.primary),
                 const SizedBox(width: Gap.s),
                 Expanded(
                   child: Text(
@@ -474,9 +474,9 @@ class _SellScreenState extends State<SellScreen> {
                 Text(
                   _money(d.total),
                   key: const Key('today-strip-total'),
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+                  style: TextStyle(fontSize: 15.5, fontWeight: FontWeight.w800, color: scheme.onSurface),
                 ),
-                const SizedBox(width: Gap.s),
+                const SizedBox(width: 6),
                 Flexible(
                   child: Text(
                     t.todayCount(d.count),
@@ -486,7 +486,8 @@ class _SellScreenState extends State<SellScreen> {
                     style: TextStyle(fontSize: 12, color: scheme.outline),
                   ),
                 ),
-                Icon(Icons.chevron_right_rounded, size: 18, color: scheme.outline),
+                const SizedBox(width: 2),
+                Icon(Icons.chevron_right_rounded, size: 17, color: scheme.outline),
               ],
             ),
           );
@@ -506,7 +507,7 @@ class _SellScreenState extends State<SellScreen> {
     });
   }
 
-  Widget _tiles(Map<String, double> stock) {
+  Widget _tiles(Map<String, double> stock, Cart cart) {
     final t = AppLocalizations.of(context);
     return FutureBuilder<List<ProductView>>(
       future: _quick,
@@ -535,24 +536,33 @@ class _SellScreenState extends State<SellScreen> {
             ),
           );
         }
-        return GridView.builder(
-          padding: const EdgeInsets.fromLTRB(Gap.xl, Gap.xs, Gap.xl, Gap.l),
-          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-            maxCrossAxisExtent: 180,
-            mainAxisExtent: 136,
-            crossAxisSpacing: Gap.m,
-            mainAxisSpacing: Gap.m,
-          ),
-          itemCount: items.length,
-          itemBuilder: (context, i) {
-            final p = items[i];
-            return _Tile(
-              product: p,
-              left: p.trackStock ? stock[p.variantId] : null,
-              money: _money,
-              pinned: _pinned.contains(p.variantId),
-              onTap: () => _add(p),
-              onLongPress: () => _togglePin(p),
+        return ListenableBuilder(
+          listenable: cart,
+          builder: (context, _) {
+            final qtyByVariant = <String, double>{
+              for (final l in cart.lines) l.product.variantId: l.qty,
+            };
+            return GridView.builder(
+              padding: const EdgeInsets.fromLTRB(Gap.l, Gap.xs, Gap.l, Gap.s),
+              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                maxCrossAxisExtent: 192,
+                mainAxisExtent: 128,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+              ),
+              itemCount: items.length,
+              itemBuilder: (context, i) {
+                final p = items[i];
+                return _Tile(
+                  product: p,
+                  left: p.trackStock ? stock[p.variantId] : null,
+                  money: _money,
+                  pinned: _pinned.contains(p.variantId),
+                  cartQty: qtyByVariant[p.variantId] ?? 0,
+                  onTap: () => _add(p),
+                  onLongPress: () => _togglePin(p),
+                );
+              },
             );
           },
         );
@@ -570,6 +580,7 @@ class _SellScreenState extends State<SellScreen> {
         if (items == null) return const Center(child: CircularProgressIndicator());
         if (items.isEmpty) return Center(child: Text(t.noMatches));
         return ListView.separated(
+          padding: const EdgeInsets.symmetric(horizontal: Gap.l, vertical: Gap.xs),
           itemCount: items.length,
           separatorBuilder: (_, _) => const Divider(height: 1),
           itemBuilder: (context, i) {
@@ -577,12 +588,13 @@ class _SellScreenState extends State<SellScreen> {
             final left = p.trackStock ? stock[p.variantId] : null;
             return ListTile(
               key: Key('result-${p.id}'),
-              leading: ProductThumb(productId: p.id, path: p.photoPath),
-              title: Text(p.name, style: const TextStyle(fontSize: 18)),
+              contentPadding: const EdgeInsets.symmetric(horizontal: Gap.xs, vertical: 2),
+              leading: ProductThumb(productId: p.id, path: p.photoPath, size: 38),
+              title: Text(p.name, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
               subtitle: left == null ? null : _StockText(left: left, reorderPoint: p.reorderPoint),
               trailing: Text(
                 p.price == null ? '—' : _money(p.price!),
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w700),
               ),
               onTap: () {
                 _add(p);
@@ -605,6 +617,7 @@ class _StockText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
     final out = left <= 0;
     final low = !out && reorderPoint > 0 && left <= reorderPoint;
     final n = left == left.roundToDouble() ? left.toInt().toString() : left.toStringAsFixed(1);
@@ -613,8 +626,9 @@ class _StockText extends StatelessWidget {
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
       style: TextStyle(
-        color: (out || low) ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.outline,
-        fontSize: 12,
+        color: out ? scheme.error : (low ? scheme.payUtang : scheme.outline),
+        fontWeight: (out || low) ? FontWeight.w600 : FontWeight.w400,
+        fontSize: 11.5,
       ),
     );
   }
@@ -628,9 +642,11 @@ class _Tile extends StatelessWidget {
     required this.onTap,
     required this.onLongPress,
     this.pinned = false,
+    this.cartQty = 0,
   });
   final ProductView product;
   final bool pinned;
+  final double cartQty;
   final VoidCallback onLongPress;
   final double? left;
   final String Function(int) money;
@@ -639,34 +655,41 @@ class _Tile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final inCart = cartQty > 0;
+    final qtyText = cartQty == cartQty.roundToDouble() ? '${cartQty.toInt()}' : '$cartQty';
     return AppCard(
       key: Key('tile-${product.id}'),
       onTap: onTap,
       onLongPress: onLongPress,
-      padding: const EdgeInsets.fromLTRB(Gap.s, Gap.m, Gap.s, Gap.s),
-      radius: 22,
+      padding: const EdgeInsets.fromLTRB(Gap.s, 10, Gap.s, 8),
+      radius: 20,
+      color: inCart ? scheme.primaryContainer.withValues(alpha: scheme.isDark ? 0.50 : 0.72) : null,
+      borderColor: inCart ? scheme.primary : null,
+      borderWidth: inCart ? 1.5 : 1.0,
       child: Stack(
         children: [
           Positioned.fill(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                ProductThumb(productId: product.id, path: product.photoPath, size: 42),
+                ProductThumb(productId: product.id, path: product.photoPath, size: 40),
                 const Spacer(),
                 Text(
                   product.name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                  style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: scheme.onSurface),
                 ),
                 Text(
                   product.price == null ? '—' : money(product.price!),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 17,
+                    fontSize: 16.5,
                     fontWeight: FontWeight.w800,
-                    letterSpacing: -0.4,
-                    color: scheme.onSurface,
+                    letterSpacing: -0.3,
+                    color: inCart ? scheme.primary : scheme.onSurface,
                   ),
                 ),
                 if (left != null)
@@ -677,6 +700,27 @@ class _Tile extends StatelessWidget {
               ],
             ),
           ),
+          if (inCart)
+            Positioned(
+              top: 0,
+              left: 0,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: scheme.primary,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '×$qtyText',
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w700,
+                    color: scheme.onPrimary,
+                    height: 1.1,
+                  ),
+                ),
+              ),
+            ),
           if (pinned)
             Positioned(
               top: 0,
@@ -708,89 +752,95 @@ class _CartPanel extends StatelessWidget {
     final t = AppLocalizations.of(context);
     final scheme = Theme.of(context).colorScheme;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(Gap.m, Gap.xs, Gap.m, Gap.xs),
+      padding: const EdgeInsets.fromLTRB(Gap.l, Gap.xs, Gap.l, Gap.s),
       child: AppCard(
         padding: EdgeInsets.zero,
-        radius: 26,
+        radius: 24,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (cart.isEmpty)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(Gap.l, Gap.l, Gap.l, Gap.s),
-                child: Text(t.sellCartEmpty, style: TextStyle(color: scheme.outline)),
-              )
-            else
+            if (!cart.isEmpty) ...[
               ConstrainedBox(
-                constraints: const BoxConstraints(maxHeight: 220),
-                child: ListView.builder(
+                constraints: const BoxConstraints(maxHeight: 176),
+                child: ListView.separated(
                   shrinkWrap: true,
-                  padding: const EdgeInsets.only(top: Gap.s),
+                  padding: const EdgeInsets.only(top: 6, bottom: 2),
                   itemCount: cart.lines.length,
+                  separatorBuilder: (_, _) => Divider(height: 1, color: scheme.outlineVariant.withValues(alpha: 0.55)),
                   itemBuilder: (context, i) {
                     final l = cart.lines[i];
                     return Padding(
                       key: Key('cart-line-$i'),
-                      padding: const EdgeInsets.fromLTRB(Gap.l, 2, Gap.s, 2),
+                      padding: const EdgeInsets.fromLTRB(Gap.l, 2, Gap.m, 2),
                       child: Row(
                         children: [
                           Expanded(
                             child: InkWell(
                               key: Key('edit-line-$i'),
+                              borderRadius: BorderRadius.circular(8),
                               onTap: () => onEditLine(i),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    l.product.name,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(fontSize: 16),
-                                  ),
-                                  if (l.discount > 0)
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 4),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
                                     Text(
-                                      t.cartLineDiscountShort(money(l.discount)),
-                                      key: Key('line-discount-$i'),
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                        color: scheme.success,
-                                      ),
+                                      l.product.name,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w600, color: scheme.onSurface),
                                     ),
-                                ],
+                                    if (l.discount > 0)
+                                      Text(
+                                        t.cartLineDiscountShort(money(l.discount)),
+                                        key: Key('line-discount-$i'),
+                                        style: TextStyle(
+                                          fontSize: 11.5,
+                                          fontWeight: FontWeight.w600,
+                                          color: scheme.success,
+                                        ),
+                                      ),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
                           IconButton(
                             key: Key('minus-$i'),
-                            icon: const Icon(Icons.remove_circle_outline),
+                            visualDensity: VisualDensity.compact,
+                            icon: Icon(Icons.remove_circle_outline_rounded, size: 21, color: scheme.outline),
                             onPressed: () => cart.setQty(i, l.qty - 1),
                           ),
                           InkWell(
                             key: Key('qty-$i'),
+                            borderRadius: BorderRadius.circular(8),
                             onTap: () => onEditQty(i),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+                            child: Container(
+                              constraints: const BoxConstraints(minWidth: 30),
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color: scheme.chipFill,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
                               child: Text(
                                 l.qty == l.qty.roundToDouble() ? '${l.qty.toInt()}' : '${l.qty}',
-                                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: scheme.onSurface),
                               ),
                             ),
                           ),
                           IconButton(
                             key: Key('plus-$i'),
-                            icon: const Icon(Icons.add_circle_outline),
+                            visualDensity: VisualDensity.compact,
+                            icon: Icon(Icons.add_circle_outline_rounded, size: 21, color: scheme.primary),
                             onPressed: () => cart.setQty(i, l.qty + 1),
                           ),
                           SizedBox(
-                            width: 88,
-                            child: Padding(
-                              padding: const EdgeInsets.only(right: Gap.s),
-                              child: Text(
-                                money(l.lineTotal),
-                                textAlign: TextAlign.end,
-                                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                              ),
+                            width: 82,
+                            child: Text(
+                              money(l.lineTotal),
+                              textAlign: TextAlign.end,
+                              style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700, color: scheme.onSurface),
                             ),
                           ),
                         ],
@@ -799,43 +849,74 @@ class _CartPanel extends StatelessWidget {
                   },
                 ),
               ),
+              Divider(height: 1, color: scheme.outlineVariant.withValues(alpha: 0.75)),
+            ],
             Padding(
-              padding: const EdgeInsets.fromLTRB(Gap.l, Gap.s, Gap.m, Gap.m),
+              padding: EdgeInsets.fromLTRB(Gap.l, cart.isEmpty ? 11 : 10, Gap.m, cart.isEmpty ? 11 : 10),
               child: Row(
                 children: [
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (cart.totalDiscount > 0)
+                        if (cart.isEmpty)
+                          Text(
+                            t.sellCartEmpty,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(color: scheme.outline, fontSize: 12, fontWeight: FontWeight.w500),
+                          )
+                        else if (cart.totalDiscount > 0)
                           Text(
                             t.cartLineDiscountShort(money(cart.totalDiscount)),
                             key: const Key('cart-total-discount'),
-                            style: TextStyle(color: scheme.success, fontWeight: FontWeight.w700, fontSize: 13),
+                            style: TextStyle(color: scheme.success, fontWeight: FontWeight.w700, fontSize: 12.5),
                           )
                         else
                           Text(
                             t.sellItems(cart.itemCount),
-                            style: TextStyle(color: scheme.outline, fontWeight: FontWeight.w600, fontSize: 13),
+                            style: TextStyle(color: scheme.outline, fontWeight: FontWeight.w600, fontSize: 12.5),
                           ),
-                        const SizedBox(height: 2),
-                        Text(
-                          money(cart.subtotal),
-                          key: const Key('cart-total'),
-                          style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w900, letterSpacing: -0.8),
+                        const SizedBox(height: 1),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.baseline,
+                          textBaseline: TextBaseline.alphabetic,
+                          children: [
+                            Text(
+                              money(cart.subtotal),
+                              key: const Key('cart-total'),
+                              style: TextStyle(
+                                fontSize: cart.isEmpty ? 20 : 24,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -0.6,
+                                color: scheme.onSurface,
+                              ),
+                            ),
+                            if (cart.isEmpty) ...[
+                              const SizedBox(width: 8),
+                              Flexible(
+                                child: Text(
+                                  t.sellItems(cart.itemCount),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(color: scheme.outline, fontSize: 12, fontWeight: FontWeight.w500),
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                       ],
                     ),
                   ),
                   DecoratedBox(
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(30),
+                      borderRadius: BorderRadius.circular(28),
                       boxShadow: onPay == null
                           ? null
                           : [
                               BoxShadow(
-                                color: scheme.glow.withValues(alpha: 0.35),
-                                blurRadius: 16,
+                                color: scheme.obsidian.withValues(alpha: 0.30),
+                                blurRadius: 14,
                                 offset: const Offset(0, 4),
                               ),
                             ],
@@ -843,19 +924,20 @@ class _CartPanel extends StatelessWidget {
                     child: FilledButton.icon(
                       key: const Key('pay-button'),
                       style: FilledButton.styleFrom(
-                        minimumSize: const Size(140, 56),
+                        minimumSize: Size(cart.isEmpty ? 116 : 136, 48),
                         backgroundColor: scheme.obsidian,
                         foregroundColor: scheme.onObsidian,
-                        shape: StadiumBorder(
-                          side: BorderSide(
-                            color: scheme.glow.withValues(alpha: onPay == null ? 0 : 0.9),
-                            width: 1.6,
-                          ),
-                        ),
-                        textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: 0.3),
+                        disabledBackgroundColor: scheme.chipFill,
+                        disabledForegroundColor: scheme.outline,
+                        shape: const StadiumBorder(),
+                        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: 0.2),
                       ),
                       onPressed: onPay,
-                      icon: Icon(Icons.payments_rounded, color: scheme.glow, size: 22),
+                      icon: Icon(
+                        Icons.payments_rounded,
+                        size: 20,
+                        color: onPay == null ? scheme.outline : scheme.onObsidian,
+                      ),
                       label: Text(t.sellPay),
                     ),
                   ),

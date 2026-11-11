@@ -184,57 +184,56 @@ class _PayScreenState extends State<PayScreen> {
     return Scaffold(
       appBar: AppBar(title: Text(t.payTitle)),
       bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(0, Gap.xs, 0, Gap.l),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // the number pad types the amount received (cash or e-wallet); no phone keyboard needed
-              AmountPad(controller: _received, currency: _ccy, onChanged: () => setState(() {})),
-              const SizedBox(height: Gap.s),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: Gap.xl),
-                child: FilledButton.icon(
-                  key: const Key('pay-done'),
-                  style: FilledButton.styleFrom(
-                    minimumSize: const Size.fromHeight(60),
-                    backgroundColor: scheme.obsidian,
-                    foregroundColor: Colors.white,
-                    disabledBackgroundColor: scheme.outlineVariant,
-                    disabledForegroundColor: scheme.outline,
-                    shape: StadiumBorder(
-                      side: BorderSide(
-                        color: (_valid && !_saving)
-                            ? scheme.glow.withValues(alpha: 0.85)
-                            : Colors.transparent,
-                        width: 1.6,
-                      ),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: scheme.surface,
+            border: Border(top: BorderSide(color: scheme.outlineVariant, width: 1.0)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(0, Gap.xs, 0, Gap.s),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // the number pad types the amount received (cash or e-wallet); no phone keyboard needed
+                AmountPad(controller: _received, currency: _ccy, onChanged: () => setState(() {})),
+                const SizedBox(height: 6),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: Gap.l),
+                  child: FilledButton.icon(
+                    key: const Key('pay-done'),
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size.fromHeight(48),
+                      backgroundColor: scheme.obsidian,
+                      foregroundColor: Colors.white,
+                      disabledBackgroundColor: scheme.chipFill,
+                      disabledForegroundColor: scheme.outline,
+                      shape: const StadiumBorder(),
+                      textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                     ),
-                    textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: 0.5),
+                    icon: const Icon(Icons.check_circle_outline_rounded, size: 20),
+                    onPressed: _valid && !_saving ? _finish : null,
+                    label: Text(t.payDone),
                   ),
-                  icon: Icon(Icons.check_circle_rounded, color: scheme.glow, size: 22),
-                  onPressed: _valid && !_saving ? _finish : null,
-                  label: Text(t.payDone),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(Gap.l, Gap.s, Gap.l, Gap.l),
+        padding: const EdgeInsets.fromLTRB(Gap.l, Gap.xs, Gap.l, Gap.l),
         children: [
-          // Total Due Hero Card (Sleek horizontal ceramic row)
+          // Total Due Hero Card
           AppCard(
-            padding: const EdgeInsets.symmetric(horizontal: Gap.l, vertical: Gap.m),
+            padding: const EdgeInsets.symmetric(horizontal: Gap.l, vertical: 10),
             radius: Gap.radiusL,
             child: Row(
               children: [
                 CoinBadge(
                   icon: _method == 'cash'
-                      ? Icons.payments_rounded
+                      ? Icons.payments_outlined
                       : (_method == 'card' ? Icons.credit_card_rounded : Icons.phone_android_rounded),
-                  color: scheme.payCash,
+                  color: scheme.primary,
                   size: 40,
                 ),
                 const SizedBox(width: Gap.m),
@@ -245,16 +244,16 @@ class _PayScreenState extends State<PayScreen> {
                       Text(
                         t.payTotal.toUpperCase(),
                         style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
                           color: scheme.outline,
-                          letterSpacing: 0.5,
+                          letterSpacing: 0.6,
                         ),
                       ),
                       Text(
                         _money(_total),
                         key: const Key('pay-total'),
-                        style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w900, letterSpacing: -1.0),
+                        style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w700, letterSpacing: -0.8),
                       ),
                     ],
                   ),
@@ -263,28 +262,32 @@ class _PayScreenState extends State<PayScreen> {
                   label: _method == 'cash'
                       ? t.payCash
                       : (_method == 'card' ? t.payCard : t.payEwallet),
-                  color: scheme.obsidian,
-                  textColor: Colors.white,
+                  color: scheme.primaryContainer,
+                  textColor: scheme.onPrimaryContainer,
                 ),
               ],
             ),
           ),
-          const SizedBox(height: Gap.m),
+          const SizedBox(height: Gap.s),
 
           // Payment Method Segmented Switcher
           SegmentedButton<String>(
-            style: SegmentedButton.styleFrom(shape: const StadiumBorder(), visualDensity: VisualDensity.compact),
+            showSelectedIcon: false,
+            style: SegmentedButton.styleFrom(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Gap.radiusS)),
+              visualDensity: VisualDensity.compact,
+            ),
             segments: [
-              ButtonSegment(value: 'cash', label: Text(t.payCash), icon: const Icon(Icons.payments_rounded, size: 18)),
+              ButtonSegment(value: 'cash', label: Text(t.payCash), icon: const Icon(Icons.payments_outlined, size: 17)),
               ButtonSegment(
                 value: 'ewallet',
                 label: Text(t.payEwallet),
-                icon: const Icon(Icons.phone_android_rounded, size: 18),
+                icon: const Icon(Icons.phone_android_rounded, size: 17),
               ),
               ButtonSegment(
                 value: 'card',
                 label: Text(t.payCard),
-                icon: const Icon(Icons.credit_card_rounded, size: 18),
+                icon: const Icon(Icons.credit_card_rounded, size: 17),
               ),
             ],
             selected: {_method},
@@ -320,7 +323,7 @@ class _PayScreenState extends State<PayScreen> {
               ),
             ),
           ],
-          const SizedBox(height: Gap.m),
+          const SizedBox(height: Gap.s),
 
           // Amount received: typed with the pad below (no system keyboard)
           TextField(

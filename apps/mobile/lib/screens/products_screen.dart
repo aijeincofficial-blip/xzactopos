@@ -113,7 +113,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
         children: [
           const _NeedsAttentionBanner(),
           Padding(
-            padding: const EdgeInsets.fromLTRB(Gap.xl, Gap.s, Gap.xl, Gap.s),
+            padding: const EdgeInsets.fromLTRB(Gap.l, Gap.s, Gap.l, Gap.s),
             child: TextField(
               key: const Key('product-search'),
               controller: _search,
@@ -121,16 +121,16 @@ class _ProductsScreenState extends State<ProductsScreen> {
               textInputAction: TextInputAction.search,
               onSubmitted: _onSubmit,
               decoration: InputDecoration(
-                prefixIcon: const Icon(Icons.search),
+                prefixIcon: const Icon(Icons.search_rounded, size: 20),
                 hintText: t.searchProducts,
                 suffixIcon: _query.isEmpty
                     ? IconButton(
                         key: const Key('scan-button'),
-                        icon: const Icon(Icons.qr_code_scanner),
+                        icon: const Icon(Icons.qr_code_scanner_rounded, size: 20),
                         tooltip: t.scanBarcode,
                         onPressed: _scanButton,
                       )
-                    : IconButton(icon: const Icon(Icons.clear), tooltip: t.clear, onPressed: _clearSearch),
+                    : IconButton(icon: const Icon(Icons.close_rounded, size: 18), tooltip: t.clear, onPressed: _clearSearch),
               ),
               onChanged: (v) => setState(() => _query = v),
             ),
@@ -143,26 +143,27 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 if (items == null) return const Center(child: CircularProgressIndicator());
                 if (items.isEmpty) {
                   return EmptyState(
-                    icon: _query.isEmpty ? Icons.category_rounded : Icons.search_off_rounded,
+                    icon: _query.isEmpty ? Icons.inventory_2_outlined : Icons.search_off_rounded,
                     text: _query.isEmpty ? t.noProductsYet : t.noMatches,
                   );
                 }
                 final scheme = Theme.of(context).colorScheme;
                 return ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(Gap.xl, Gap.s, Gap.xl, 96),
+                  padding: const EdgeInsets.fromLTRB(Gap.l, Gap.xs, Gap.l, 88),
                   itemCount: items.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: Gap.m),
+                  separatorBuilder: (_, _) => const SizedBox(height: Gap.s),
                   itemBuilder: (context, i) {
                     final p = items[i];
                     return AppCard(
-                      padding: const EdgeInsets.symmetric(horizontal: Gap.l, vertical: Gap.s),
+                      padding: const EdgeInsets.symmetric(horizontal: Gap.l, vertical: 8),
                       radius: Gap.radiusL,
                       onTap: () => _open(product: p),
                       child: ListTile(
                         contentPadding: EdgeInsets.zero,
-                        leading: ProductThumb(productId: p.id, path: p.photoPath),
-                        title: Text(p.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-                        subtitle: p.barcode == null ? null : Text(p.barcode!, style: TextStyle(color: scheme.outline, fontSize: 13)),
+                        dense: true,
+                        leading: ProductThumb(productId: p.id, path: p.photoPath, size: 38),
+                        title: Text(p.name, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                        subtitle: p.barcode == null ? null : Text(p.barcode!, style: TextStyle(color: scheme.outline, fontSize: 12.5)),
                         trailing: Row(mainAxisSize: MainAxisSize.min, children: [
                           if (p.pending)
                             Padding(
@@ -171,7 +172,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                             ),
                           Text(
                             p.price == null ? '—' : Money(p.price!, p.currency).format(locale),
-                            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900, letterSpacing: -0.5),
+                            style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w700, letterSpacing: -0.3),
                           ),
                         ]),
                       ),

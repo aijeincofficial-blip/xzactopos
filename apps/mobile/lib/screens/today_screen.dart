@@ -128,28 +128,28 @@ class _TodayScreenState extends State<TodayScreen> {
                                   Text(
                                     t.todaySales.toUpperCase(),
                                     style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w800,
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.w600,
                                       color: scheme.outline,
-                                      letterSpacing: 0.8,
+                                      letterSpacing: 0.6,
                                     ),
                                   ),
                                   StatusPill(
                                     label: t.todayCount(d.count),
                                     textKey: const Key('today-count'),
-                                    color: scheme.obsidian,
-                                    textColor: Colors.white,
+                                    color: scheme.primaryContainer,
+                                    textColor: scheme.onPrimaryContainer,
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: Gap.s),
+                              const SizedBox(height: 6),
                               Text(
                                 money(d.total),
                                 key: const Key('today-total'),
                                 style: TextStyle(
-                                  fontSize: 34,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: -1.2,
+                                  fontSize: 30,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: -0.9,
                                   color: scheme.onSurface,
                                 ),
                               ),
@@ -161,7 +161,7 @@ class _TodayScreenState extends State<TodayScreen> {
                                 ),
                                 decoration: BoxDecoration(
                                   color: scheme.chipFill,
-                                  borderRadius: BorderRadius.circular(16),
+                                  borderRadius: BorderRadius.circular(Gap.radiusS),
                                   border: Border.all(color: scheme.outlineVariant),
                                 ),
                                 child: Row(
@@ -178,6 +178,7 @@ class _TodayScreenState extends State<TodayScreen> {
                                       height: 24,
                                       color: scheme.outlineVariant,
                                     ),
+                                    const SizedBox(width: 10),
                                     Expanded(
                                       child: _Stat(
                                         label: t.payEwallet,
@@ -190,6 +191,7 @@ class _TodayScreenState extends State<TodayScreen> {
                                       height: 24,
                                       color: scheme.outlineVariant,
                                     ),
+                                    const SizedBox(width: 10),
                                     Expanded(
                                       child: _Stat(
                                         label: t.todayUtang,
@@ -209,14 +211,14 @@ class _TodayScreenState extends State<TodayScreen> {
                     // Services tile
                     Padding(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: Gap.xl,
+                        horizontal: Gap.l,
                         vertical: Gap.xs,
                       ),
                       child: StreamBuilder<ServiceTotals>(
                         stream: scope.store.watchTodayServices(),
                         builder: (context, snap) => AppCard(
                           key: const Key('tile-services'),
-                          padding: const EdgeInsets.all(Gap.m),
+                          padding: const EdgeInsets.symmetric(horizontal: Gap.l, vertical: Gap.m),
                           radius: Gap.radiusL,
                           onTap: () => Navigator.of(context).push(
                             MaterialPageRoute<void>(
@@ -225,14 +227,14 @@ class _TodayScreenState extends State<TodayScreen> {
                           ),
                           child: Row(
                             children: [
-                              Icon(Icons.phone_iphone_rounded, color: scheme.primary),
+                              CoinBadge(icon: Icons.smartphone_rounded, color: scheme.primary, size: 34),
                               const SizedBox(width: Gap.m),
                               Expanded(
                                 child: Text(
                                   t.servicesTitle,
                                   style: const TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w700,
+                                    fontSize: 14.5,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ),
@@ -240,10 +242,12 @@ class _TodayScreenState extends State<TodayScreen> {
                                 money((snap.data ?? const ServiceTotals()).fees),
                                 key: const Key('today-service-fees'),
                                 style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w800,
+                                  fontSize: 15.5,
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
+                              const SizedBox(width: 4),
+                              Icon(Icons.chevron_right_rounded, size: 18, color: scheme.outline),
                             ],
                           ),
                         ),
@@ -255,7 +259,7 @@ class _TodayScreenState extends State<TodayScreen> {
                       if (scope.canAccessExpenses || scope.canCloseDay)
                         Padding(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: Gap.xl,
+                            horizontal: Gap.l,
                             vertical: Gap.xs,
                           ),
                           child: IntrinsicHeight(
@@ -283,18 +287,18 @@ class _TodayScreenState extends State<TodayScreen> {
                                               style: TextStyle(
                                                 fontSize: 12,
                                                 color: scheme.outline,
-                                                fontWeight: FontWeight.w700,
+                                                fontWeight: FontWeight.w600,
                                               ),
                                             ),
-                                            const SizedBox(height: 2),
+                                            const SizedBox(height: 4),
                                             Text(
                                               money(
                                                 (snap.data ?? const ExpenseTotals()).total,
                                               ),
                                               key: const Key('today-expenses'),
                                               style: const TextStyle(
-                                                fontSize: 18,
-                                                fontWeight: FontWeight.w800,
+                                                fontSize: 17,
+                                                fontWeight: FontWeight.w700,
                                               ),
                                             ),
                                           ],
@@ -303,7 +307,7 @@ class _TodayScreenState extends State<TodayScreen> {
                                     ),
                                   ),
                                 if (scope.canAccessExpenses && scope.canCloseDay)
-                                  const SizedBox(width: Gap.m),
+                                  const SizedBox(width: 10),
                                 if (scope.canCloseDay)
                                   Expanded(
                                     child: AppCard(
@@ -315,22 +319,19 @@ class _TodayScreenState extends State<TodayScreen> {
                                           builder: (_) => scope.wrap(DayCloseScreen(backend: widget.backend)),
                                         ),
                                       ),
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                      child: Row(
                                         children: [
-                                          Text(
-                                            t.dayCloseTitle,
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: scheme.outline,
-                                              fontWeight: FontWeight.w700,
+                                          CoinBadge(icon: Icons.lock_clock_outlined, color: scheme.payExpense, size: 34),
+                                          const SizedBox(width: 10),
+                                          Expanded(
+                                            child: Text(
+                                              t.dayCloseTitle,
+                                              style: TextStyle(
+                                                fontSize: 13.5,
+                                                color: scheme.onSurface,
+                                                fontWeight: FontWeight.w600,
+                                              ),
                                             ),
-                                          ),
-                                          const SizedBox(height: 2),
-                                          Icon(
-                                            Icons.lock_clock_rounded,
-                                            size: 22,
-                                            color: scheme.payExpense,
                                           ),
                                         ],
                                       ),
@@ -343,7 +344,7 @@ class _TodayScreenState extends State<TodayScreen> {
 
                     // Receipts & Past Days Filter Header
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(Gap.xl, Gap.l, Gap.xl, Gap.xs),
+                      padding: const EdgeInsets.fromLTRB(Gap.l, Gap.l, Gap.m, Gap.xs),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -352,10 +353,10 @@ class _TodayScreenState extends State<TodayScreen> {
                               Text(
                                 t.receiptTitle.toUpperCase(),
                                 style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w800,
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w600,
                                   color: scheme.outline,
-                                  letterSpacing: 0.8,
+                                  letterSpacing: 0.6,
                                 ),
                               ),
                               const SizedBox(width: 8),
@@ -363,14 +364,15 @@ class _TodayScreenState extends State<TodayScreen> {
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                 decoration: BoxDecoration(
                                   color: scheme.chipFill,
-                                  borderRadius: BorderRadius.circular(10),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: scheme.outlineVariant),
                                 ),
                                 child: Text(
                                   '${filtered.length} · ${money(periodTotal)}',
                                   style: TextStyle(
                                     fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    color: scheme.onSurfaceVariant,
+                                    fontWeight: FontWeight.w600,
+                                    color: scheme.onSurface,
                                   ),
                                 ),
                               ),
@@ -388,7 +390,7 @@ class _TodayScreenState extends State<TodayScreen> {
                     // Period Selection Chips (Past Days Navigation)
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: Gap.xl, vertical: Gap.xs),
+                      padding: const EdgeInsets.symmetric(horizontal: Gap.l, vertical: Gap.xs),
                       child: Row(
                         children: [
                           ChoiceChip(
@@ -463,17 +465,17 @@ class _TodayScreenState extends State<TodayScreen> {
                 )
               else
                 SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: Gap.xl),
+                  padding: const EdgeInsets.symmetric(horizontal: Gap.l),
                   sliver: SliverList.builder(
                     itemCount: filtered.length,
                     itemBuilder: (context, i) {
                       final s = filtered[i];
                       return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: Gap.xs),
+                        padding: const EdgeInsets.symmetric(vertical: 4),
                         child: AppCard(
                           padding: const EdgeInsets.symmetric(
                             horizontal: Gap.l,
-                            vertical: Gap.s,
+                            vertical: 6,
                           ),
                           radius: Gap.radiusL,
                           onTap: () => Navigator.of(context).push(
@@ -483,18 +485,19 @@ class _TodayScreenState extends State<TodayScreen> {
                           ),
                           child: ListTile(
                             contentPadding: EdgeInsets.zero,
+                            dense: true,
                             key: Key('sale-${s.id}'),
                             leading: CoinBadge(
-                              icon: Icons.receipt_rounded,
+                              icon: Icons.receipt_long_outlined,
                               color: s.voided ? scheme.outline : scheme.primary,
-                              size: 40,
+                              size: 36,
                             ),
                             title: Text(
                               money(s.total),
                               style: TextStyle(
-                                fontSize: 17,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: -0.5,
+                                fontSize: 15.5,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: -0.3,
                                 color: s.voided ? scheme.outline : scheme.onSurface,
                                 decoration: s.voided ? TextDecoration.lineThrough : null,
                               ),
@@ -508,7 +511,7 @@ class _TodayScreenState extends State<TodayScreen> {
                               ].join(' · '),
                               style: TextStyle(
                                 color: scheme.outline,
-                                fontSize: 13,
+                                fontSize: 12.5,
                               ),
                             ),
                             trailing: s.pending
@@ -518,10 +521,10 @@ class _TodayScreenState extends State<TodayScreen> {
                                     color: scheme.primary,
                                     semanticLabel: t.notSentYet,
                                   )
-                                : const Icon(
+                                : Icon(
                                     Icons.chevron_right_rounded,
-                                    size: 20,
-                                    color: Color(0xFFCBD5E1),
+                                    size: 18,
+                                    color: scheme.outline,
                                   ),
                           ),
                         ),
@@ -529,8 +532,8 @@ class _TodayScreenState extends State<TodayScreen> {
                     },
                   ),
                 ),
-              const SliverToBoxAdapter(
-                child: SizedBox(height: 100),
+              SliverToBoxAdapter(
+                child: SizedBox(height: 32 + MediaQuery.paddingOf(context).bottom),
               ),
             ],
           );

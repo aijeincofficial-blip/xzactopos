@@ -32,14 +32,11 @@ class SettingsScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          t.settingsTitle,
-          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
-        ),
+        title: Text(t.settingsTitle),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(Gap.xl, Gap.s, Gap.xl, Gap.xxl),
+          padding: const EdgeInsets.fromLTRB(Gap.l, Gap.m, Gap.l, Gap.xxl),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -49,30 +46,20 @@ class SettingsScreen extends StatelessWidget {
               child: Row(
                 children: [
                   Container(
-                    width: 50,
-                    height: 50,
+                    width: 44,
+                    height: 44,
                     decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        colors: [scheme.primary, scheme.secondary],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: scheme.primary.withValues(alpha: 0.3),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
+                      color: scheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(Gap.radiusS),
+                      border: Border.all(color: scheme.primary.withValues(alpha: 0.2)),
                     ),
                     child: Center(
                       child: Text(
                         storeName.isNotEmpty ? storeName[0].toUpperCase() : 'X',
                         style: TextStyle(
-                          color: scheme.onPrimary,
-                          fontWeight: FontWeight.w900,
-                          fontSize: 22,
+                          color: scheme.primary,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 18,
                         ),
                       ),
                     ),
@@ -85,17 +72,17 @@ class SettingsScreen extends StatelessWidget {
                         Text(
                           storeName,
                           style: const TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: -0.3,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.2,
                           ),
                         ),
                         const SizedBox(height: 2),
                         Row(
                           children: [
                             Container(
-                              width: 8,
-                              height: 8,
+                              width: 7,
+                              height: 7,
                               decoration: BoxDecoration(
                                 color: scheme.success,
                                 shape: BoxShape.circle,
@@ -104,7 +91,7 @@ class SettingsScreen extends StatelessWidget {
                             const SizedBox(width: 6),
                             Text(
                               (CatalogScope.maybeOf(context)?.isWarehouse ?? false) ? t.activeWarehouse : t.activeStore,
-                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: scheme.outline),
+                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: scheme.outline),
                             ),
                           ],
                         ),

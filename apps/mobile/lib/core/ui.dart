@@ -2,18 +2,19 @@ import 'package:flutter/material.dart';
 
 import 'theme.dart';
 
-/// Soft glass card (the More-grid look): faint white-to-lavender gradient, white hairline,
-/// one lavender drop shadow. Dark: translucent navy with a faint white edge.
-/// A custom [color] keeps the same shape and shadow but paints flat.
+/// Soft sculptural surface card: subtle white-to-cool-slate gradient, fine hairline border,
+/// and diffused ambient shadow. Custom [color] paints flat while keeping the same shape and shadow.
 class AppCard extends StatelessWidget {
   const AppCard({
     super.key,
     required this.child,
     this.onTap,
     this.onLongPress,
-    this.padding = const EdgeInsets.all(Gap.xl),
+    this.padding = const EdgeInsets.all(Gap.l),
     this.color,
     this.radius,
+    this.borderColor,
+    this.borderWidth = 1.0,
   });
 
   final Widget child;
@@ -22,6 +23,8 @@ class AppCard extends StatelessWidget {
   final EdgeInsetsGeometry padding;
   final Color? color;
   final double? radius;
+  final Color? borderColor;
+  final double borderWidth;
 
   @override
   Widget build(BuildContext context) {
@@ -38,18 +41,18 @@ class AppCard extends StatelessWidget {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: dark
-                    ? [scheme.surface.withValues(alpha: 0.95), Color.lerp(scheme.surface, Colors.black, 0.15)!.withValues(alpha: 0.95)]
-                    : [scheme.surface, Color.lerp(scheme.surface, const Color(0xFFF1F5F9), 0.50)!],
+                    ? [scheme.surface.withValues(alpha: 0.96), Color.lerp(scheme.surface, Colors.black, 0.14)!.withValues(alpha: 0.96)]
+                    : [scheme.surface, const Color(0xFFFAFCFF)],
               ),
         borderRadius: r,
         border: Border.all(
-          color: dark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFE2E8F0),
-          width: 1.0,
+          color: borderColor ?? (dark ? Colors.white.withValues(alpha: 0.08) : scheme.outlineVariant),
+          width: borderWidth,
         ),
         boxShadow: [
           BoxShadow(
-            color: dark ? Colors.black.withValues(alpha: 0.25) : const Color(0x0C0F172A),
-            blurRadius: 16,
+            color: dark ? Colors.black.withValues(alpha: 0.28) : const Color(0x0B0F172A),
+            blurRadius: 14,
             offset: const Offset(0, 4),
           ),
         ],
@@ -68,9 +71,7 @@ class AppCard extends StatelessWidget {
   }
 }
 
-/// A sculptural Hero Card directly styled after the reference swap card:
-/// Pure white surface, clean label with pill badge on top right, huge bold numbers,
-/// and subtle secondary indicators.
+/// Sculptural Hero KPI Card aligned cleanly to the 16px horizontal layout rail.
 class SummaryCard extends StatelessWidget {
   const SummaryCard({
     super.key,
@@ -85,28 +86,29 @@ class SummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: Gap.xl, vertical: Gap.s),
+      padding: const EdgeInsets.symmetric(horizontal: Gap.l, vertical: Gap.xs),
       child: AppCard(
         onTap: onTap,
-        padding: const EdgeInsets.all(Gap.xl + 4),
-        radius: Gap.radiusXL,
+        padding: const EdgeInsets.all(Gap.l + 4),
+        radius: 22,
+        borderColor: accent ? scheme.primary.withValues(alpha: 0.35) : null,
         child: child,
       ),
     );
   }
 }
 
-/// Glossy app-icon badge (the More-grid look): a rounded square filled with a light-to-deep
-/// gradient of [color], a white icon, and a soft coloured shadow underneath.
-/// [iconColor] overrides the white icon.
+/// Tactile app-icon squircle badge: smooth gradient of [color], crisp white icon,
+/// and a subtle colored ambient shadow underneath.
 class CoinBadge extends StatelessWidget {
   const CoinBadge({
     super.key,
     required this.icon,
     required this.color,
     this.iconColor,
-    this.size = 46,
+    this.size = 42,
   });
 
   final IconData icon;
@@ -117,29 +119,35 @@ class CoinBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hsl = HSLColor.fromColor(color);
-    final light = hsl.withLightness((hsl.lightness + 0.14).clamp(0.0, 0.85)).withHue((hsl.hue + 12) % 360).toColor();
-    final deep = hsl.withLightness((hsl.lightness - 0.06).clamp(0.12, 1.0)).toColor();
+    final light = hsl.withLightness((hsl.lightness + 0.10).clamp(0.0, 0.82)).toColor();
+    final deep = hsl.withLightness((hsl.lightness - 0.05).clamp(0.14, 1.0)).toColor();
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(size * 0.30),
         gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [light, deep]),
-        boxShadow: [BoxShadow(color: deep.withValues(alpha: 0.30), blurRadius: size * 0.26, offset: Offset(0, size * 0.10))],
+        boxShadow: [
+          BoxShadow(
+            color: deep.withValues(alpha: 0.22),
+            blurRadius: size * 0.22,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
-      child: Center(child: Icon(icon, size: size * 0.52, color: iconColor ?? Colors.white)),
+      child: Center(child: Icon(icon, size: size * 0.50, color: iconColor ?? Colors.white)),
     );
   }
 }
 
-/// Small rounded square or circular badge with an icon.
+/// Small rounded squircle badge with an icon.
 class IconBadge extends StatelessWidget {
   const IconBadge({
     super.key,
     required this.icon,
     required this.color,
     this.onColor,
-    this.size = 46,
+    this.size = 42,
   });
 
   final IconData icon;
@@ -153,7 +161,7 @@ class IconBadge extends StatelessWidget {
   }
 }
 
-/// Floating Pill Badge for counts, statuses, or micro-tags (like [Max] in the reference).
+/// Soft Pill Badge for counts, statuses, or micro-tags.
 class StatusPill extends StatelessWidget {
   const StatusPill({
     super.key,
@@ -187,7 +195,7 @@ class StatusPill extends StatelessWidget {
           color: fg,
           fontSize: 12,
           fontWeight: FontWeight.w700,
-          letterSpacing: 0.3,
+          letterSpacing: 0.2,
         ),
       ),
     );
@@ -216,13 +224,13 @@ class EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            CoinBadge(icon: icon, color: scheme.primary, size: 72),
+            CoinBadge(icon: icon, color: scheme.primary, size: 64),
             const SizedBox(height: Gap.l),
             Text(
               text,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: scheme.onSurface.withValues(alpha: 0.7),
+                    color: scheme.outline,
                     height: 1.4,
                   ),
             ),

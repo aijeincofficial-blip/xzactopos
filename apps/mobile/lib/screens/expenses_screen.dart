@@ -104,14 +104,14 @@ class ExpensesScreen extends StatelessWidget {
                   for (final e in list)
                     Padding(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: Gap.xl,
-                        vertical: Gap.xs,
+                        horizontal: Gap.l,
+                        vertical: 4,
                       ),
                       child: AppCard(
                         key: Key('expense-${e.id}'),
                         padding: const EdgeInsets.symmetric(
                           horizontal: Gap.l,
-                          vertical: Gap.m,
+                          vertical: 12,
                         ),
                         radius: Gap.radiusL,
                         onTap: e.voided

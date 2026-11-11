@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../sync/store_session.dart';
 
-/// Product photo from the device, downloaded on first display if needed. Shows an icon until (or unless) it is there.
+/// Product photo from the device, downloaded on first display if needed. Shows a ceramic squircle icon until loaded.
 class ProductThumb extends StatefulWidget {
   const ProductThumb({super.key, required this.productId, required this.path, this.size = 48});
   final String productId;
@@ -42,7 +42,7 @@ class _ProductThumbState extends State<ProductThumb> {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final dark = scheme.brightness == Brightness.dark;
-    // Branded ceramic product tile with ocean blue/cyan box glyph
+    // Branded ceramic product squircle harmonized with Cobalt Royal + Cool Slate
     final placeholder = Container(
       width: widget.size,
       height: widget.size,
@@ -51,15 +51,15 @@ class _ProductThumbState extends State<ProductThumb> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: dark
-              ? const [Color(0xFF1E293B), Color(0xFF131D33)]
-              : const [Color(0xFFF0F6FE), Color(0xFFE2EEFD)],
+              ? const [Color(0xFF1E293B), Color(0xFF172554)]
+              : const [Color(0xFFEFF6FF), Color(0xFFDBEAFE)],
         ),
       ),
       child: Center(
         child: Icon(
           Icons.inventory_2_rounded,
-          color: dark ? const Color(0xFF38BDF8) : const Color(0xFF1E6FF2),
-          size: widget.size * 0.52,
+          color: dark ? const Color(0xFF60A5FA) : const Color(0xFF2563EB),
+          size: widget.size * 0.50,
         ),
       ),
     );

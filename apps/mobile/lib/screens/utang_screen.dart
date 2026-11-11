@@ -58,29 +58,37 @@ class _UtangScreenState extends State<UtangScreen> {
           final overdueCount = all.where((c) => c.overdue(today)).length;
           final byName = _q.isEmpty ? all : all.where((c) => searchKey(c.name).contains(_q)).toList();
           final list = _overdueOnly ? byName.where((c) => c.overdue(today)).toList() : byName;
+          final scheme = Theme.of(context).colorScheme;
           return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             SummaryCard(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(t.utangTotalOwed),
-                Text(money(owed),
-                    key: const Key('utang-total'), style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w800)),
+                Text(
+                  t.utangTotalOwed.toUpperCase(),
+                  style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: scheme.outline, letterSpacing: 0.6),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  money(owed),
+                  key: const Key('utang-total'),
+                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, letterSpacing: -0.8, color: scheme.onSurface),
+                ),
               ]),
             ),
             if (all.isNotEmpty)
               Padding(
-                padding: const EdgeInsets.fromLTRB(Gap.xl, Gap.s, Gap.xl, Gap.s),
+                padding: const EdgeInsets.fromLTRB(Gap.l, Gap.xs, Gap.l, Gap.s),
                 child: TextField(
                   key: const Key('utang-search'),
                   onChanged: (v) => setState(() => _q = searchKey(v)),
                   decoration: InputDecoration(
-                    prefixIcon: const Icon(Icons.search),
+                    prefixIcon: const Icon(Icons.search_rounded, size: 20),
                     hintText: t.customerSearch,
                   ),
                 ),
               ),
             if (overdueCount > 0 || _overdueOnly)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: Gap.xl),
+                padding: const EdgeInsets.symmetric(horizontal: Gap.l),
                 child: Row(children: [
                   ChoiceChip(
                     key: const Key('filter-utang-all'),
@@ -91,7 +99,7 @@ class _UtangScreenState extends State<UtangScreen> {
                   const SizedBox(width: 8),
                   ChoiceChip(
                     key: const Key('filter-utang-overdue'),
-                    avatar: overdueCount > 0 ? const Icon(Icons.schedule_rounded, size: 18) : null,
+                    avatar: overdueCount > 0 ? const Icon(Icons.schedule_rounded, size: 16) : null,
                     label: Text(t.utangOverdueFilter(overdueCount)),
                     selected: _overdueOnly,
                     onSelected: (_) => setState(() => _overdueOnly = true),
@@ -101,48 +109,55 @@ class _UtangScreenState extends State<UtangScreen> {
             Expanded(
               child: list.isEmpty
                   ? EmptyState(
-                      icon: all.isEmpty ? Icons.menu_book_rounded : Icons.search_off_rounded,
+                      icon: all.isEmpty ? Icons.menu_book_outlined : Icons.search_off_rounded,
                       text: all.isEmpty ? t.utangEmpty : (_overdueOnly ? t.utangOverdueNone : t.noMatches),
                     )
                   : ListView.separated(
-                      padding: EdgeInsets.fromLTRB(Gap.xl, Gap.s, Gap.xl, 96 + MediaQuery.paddingOf(context).bottom),
+                      padding: EdgeInsets.fromLTRB(Gap.l, Gap.s, Gap.l, 88 + MediaQuery.paddingOf(context).bottom),
                       itemCount: list.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: Gap.m),
+                      separatorBuilder: (_, _) => const SizedBox(height: Gap.s),
                       itemBuilder: (context, i) {
                         final c = list[i];
                         return AppCard(
                           key: Key('customer-row-${c.id}'),
-                          padding: const EdgeInsets.symmetric(horizontal: Gap.l, vertical: Gap.s), radius: Gap.radiusL,
+                          padding: const EdgeInsets.symmetric(horizontal: Gap.l, vertical: 8),
+                          radius: Gap.radiusL,
                           onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
                             builder: (_) => scope.wrap(CustomerScreen(customerId: c.id, storeName: widget.storeName)),
                           )),
                           child: ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          title: Text(c.name, style: const TextStyle(fontSize: 18)),
-                          subtitle: (c.phone == null && !c.overdue(today))
-                              ? null
-                              : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                  if (c.phone != null) Text(c.phone!),
-                                  if (c.overdue(today))
-                                    Text(t.utangOverdueDays(c.daysOverdue(today)),
+                            contentPadding: EdgeInsets.zero,
+                            dense: true,
+                            leading: CoinBadge(icon: Icons.person_outline_rounded, color: scheme.primary, size: 36),
+                            title: Text(c.name, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                            subtitle: (c.phone == null && !c.overdue(today))
+                                ? null
+                                : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                    if (c.phone != null) Text(c.phone!, style: TextStyle(fontSize: 12.5, color: scheme.outline)),
+                                    if (c.overdue(today))
+                                      Text(
+                                        t.utangOverdueDays(c.daysOverdue(today)),
                                         key: Key('overdue-${c.id}'),
-                                        style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12, fontWeight: FontWeight.w700)),
-                                ]),
-                          trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-                            if (c.pending)
-                              Padding(
-                                padding: const EdgeInsets.only(right: 8),
-                                child: Icon(Icons.cloud_upload_outlined, size: 18, semanticLabel: t.notSentYet),
-                              ),
-                            Text(
-                              c.balance == 0 ? t.utangSettled : money(c.balance),
-                              style: TextStyle(
-                                  fontSize: 18,
+                                        style: TextStyle(color: scheme.error, fontSize: 12, fontWeight: FontWeight.w600),
+                                      ),
+                                  ]),
+                            trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                              if (c.pending)
+                                Padding(
+                                  padding: const EdgeInsets.only(right: 8),
+                                  child: Icon(Icons.cloud_upload_outlined, size: 18, semanticLabel: t.notSentYet),
+                                ),
+                              Text(
+                                c.balance == 0 ? t.utangSettled : money(c.balance),
+                                style: TextStyle(
+                                  fontSize: 15.5,
                                   fontWeight: FontWeight.w700,
-                                  color: c.balance > 0 ? Theme.of(context).colorScheme.error : null),
-                            ),
-                          ]),
-                        ));
+                                  color: c.balance > 0 ? scheme.error : scheme.outline,
+                                ),
+                              ),
+                            ]),
+                          ),
+                        );
                       },
                     ),
             ),
@@ -379,19 +394,31 @@ class CustomerScreen extends StatelessWidget {
           body: c == null
               ? const SizedBox.shrink()
               : Column(children: [
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(20),
-                    color: Theme.of(context).colorScheme.secondaryContainer,
+                  SummaryCard(
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(c.balance > 0 ? t.utangOwes : t.utangSettled),
+                      Text(
+                        c.balance > 0 ? t.utangOwes : t.utangSettled,
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.outline),
+                      ),
+                      const SizedBox(height: 4),
                       if (c.balance != 0)
-                        Text(money(c.balance),
-                            key: const Key('customer-balance'),
-                            style: Theme.of(context).textTheme.displaySmall?.copyWith(fontWeight: FontWeight.w800)),
-                      if (c.phone != null) Text(c.phone!),
+                        Text(
+                          money(c.balance),
+                          key: const Key('customer-balance'),
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.8,
+                            color: c.balance > 0 ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
+                      if (c.phone != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: Text(c.phone!, style: TextStyle(color: Theme.of(context).colorScheme.outline, fontSize: 13)),
+                        ),
                       if (c.balance > 0) ...[
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 6),
                         if (c.dueOn != null)
                           Text(
                             c.overdue(DateTime.now())
@@ -399,8 +426,10 @@ class CustomerScreen extends StatelessWidget {
                                 : t.utangDueOn(DateFormat.yMMMd(locale).format(c.dueOn!)),
                             key: const Key('customer-due'),
                             style: TextStyle(
-                                fontWeight: FontWeight.w700,
-                                color: c.overdue(DateTime.now()) ? Theme.of(context).colorScheme.error : null),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: c.overdue(DateTime.now()) ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.outline,
+                            ),
                           ),
                         Wrap(spacing: 8, children: [
                           TextButton(
@@ -412,18 +441,23 @@ class CustomerScreen extends StatelessWidget {
                             TextButton(key: const Key('clear-due'), onPressed: () => _clearDue(context, c), child: Text(t.utangDueClear)),
                         ]),
                       ],
-                      TextButton.icon(
-                        key: const Key('send-statement'),
-                        icon: const Icon(Icons.ios_share_rounded, size: 18),
-                        onPressed: () => _sendStatement(context, c),
-                        label: Text(t.utangSendStatement),
+                      Wrap(
+                        spacing: 8,
+                        children: [
+                          TextButton.icon(
+                            key: const Key('send-statement'),
+                            icon: const Icon(Icons.ios_share_rounded, size: 17),
+                            onPressed: () => _sendStatement(context, c),
+                            label: Text(t.utangSendStatement),
+                          ),
+                          if (scope.canManageStock)
+                            TextButton(
+                              key: const Key('adjust-balance'),
+                              onPressed: () => _adjust(context, c),
+                              child: Text(t.utangAdjust),
+                            ),
+                        ],
                       ),
-                      if (scope.canManageStock)
-                        TextButton(
-                          key: const Key('adjust-balance'),
-                          onPressed: () => _adjust(context, c),
-                          child: Text(t.utangAdjust),
-                        ),
                     ]),
                   ),
                   Expanded(

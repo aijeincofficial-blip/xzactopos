@@ -12,10 +12,9 @@ class GlassTab {
   final Widget Function(Color color) icon;
 }
 
-/// The owner's mockup bar: a frosted glass bar whose top edge dips into a silky smooth wave
-/// that cradles a raised, glowing circular POS button. Thin outline icons, slate labels on the
-/// exact same baseline; the selected tab sits in a white/frosted pill with a mint glow.
-/// In dark mode the bar stays a light translucent frosted glass, as in the mockup.
+/// Signature floating frosted glass bottom bar whose top edge dips into a smooth S-curve wave
+/// cradling the raised circular XZACTO POS crest button, with custom outline glyphs and clean
+/// light & dark mode glass surfaces.
 class GlassTabBar extends StatelessWidget {
   const GlassTabBar({
     super.key,
@@ -30,25 +29,27 @@ class GlassTabBar extends StatelessWidget {
   final int centerIndex;
   final ValueChanged<int> onSelect;
 
-  static const double barHeight = 70.0;
-  static const double button = 62.0;
+  static const double barHeight = 68.0;
+  static const double button = 60.0;
   static const double sideMargin = 16.0;
-  static const double bottomMargin = 12.0;
+  static const double bottomMargin = 10.0;
+  static const double topClearance = 8.0;
 
   @override
   Widget build(BuildContext context) {
-    final dark = Theme.of(context).colorScheme.brightness == Brightness.dark;
+    final scheme = Theme.of(context).colorScheme;
+    final dark = scheme.brightness == Brightness.dark;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
-    const iconColor = Color(0xFF0F1C3C);
-    const activeIconColor = Color(0xFF0F172A);
+    final iconColor = dark ? const Color(0xFFCBD5E1) : const Color(0xFF1E293B);
+    final activeIconColor = scheme.primary;
 
     return SizedBox(
-      height: barHeight + button / 2 + bottomMargin + bottomInset,
+      height: barHeight + button / 2 + bottomMargin + topClearance + bottomInset,
       child: LayoutBuilder(builder: (context, c) {
         return Stack(
           clipBehavior: Clip.none,
           children: [
-            // The smoothly waved frosted glass bar
+            // Smoothly waved frosted glass bar
             Positioned(
               left: sideMargin,
               right: sideMargin,
@@ -69,12 +70,12 @@ class GlassTabBar extends StatelessWidget {
                             end: Alignment.bottomCenter,
                             colors: dark
                                 ? [
-                                    const Color(0xFFB8C8DD).withValues(alpha: 0.88),
-                                    const Color(0xFF98ACC4).withValues(alpha: 0.84),
+                                    const Color(0xFF1E293B).withValues(alpha: 0.94),
+                                    const Color(0xFF0F172A).withValues(alpha: 0.92),
                                   ]
                                 : [
-                                    Colors.white.withValues(alpha: 0.94),
-                                    const Color(0xFFF1F4FA).withValues(alpha: 0.88),
+                                    Colors.white.withValues(alpha: 0.96),
+                                    const Color(0xFFF1F5F9).withValues(alpha: 0.92),
                                   ],
                           ),
                         ),
@@ -88,6 +89,7 @@ class GlassTabBar extends StatelessWidget {
                                         label: tabs[i].label,
                                         selected: i == index,
                                         dark: dark,
+                                        primary: scheme.primary,
                                         onTap: () => onSelect(i),
                                       )
                                     : _SideItem(
@@ -95,6 +97,7 @@ class GlassTabBar extends StatelessWidget {
                                         tab: tabs[i],
                                         selected: i == index,
                                         dark: dark,
+                                        primary: scheme.primary,
                                         iconColor: iconColor,
                                         activeIconColor: activeIconColor,
                                         onTap: () => onSelect(i),
@@ -108,7 +111,7 @@ class GlassTabBar extends StatelessWidget {
                 ),
               ),
             ),
-            // The raised glowing POS button, nestled in the wave cradle
+            // Raised circular XZACTO POS button nestled cleanly in the wave cradle
             Positioned(
               left: c.maxWidth / 2 - button / 2,
               bottom: bottomMargin + bottomInset + barHeight - button / 2 - 3,
@@ -116,6 +119,7 @@ class GlassTabBar extends StatelessWidget {
                 size: button,
                 selected: index == centerIndex,
                 dark: dark,
+                primary: scheme.primary,
                 onTap: () => onSelect(centerIndex),
               ),
             ),
@@ -126,20 +130,18 @@ class GlassTabBar extends StatelessWidget {
   }
 }
 
-/// Continuous flowing wave path matching the owner's mockup.
+/// Continuous flowing wave path cradling the center POS button.
 Path _barPath(Size s) {
-  const r = 28.0; // corner radius
-  const span = 68.0; // half-width of the wave dip
-  const depth = 26.0; // depth of the wave dip
+  const r = 26.0;
+  const span = 66.0;
+  const depth = 25.0;
   final cx = s.width / 2;
 
   return Path()
     ..moveTo(0, r)
     ..quadraticBezierTo(0, 0, r, 0)
     ..lineTo(cx - span, 0)
-    // S-curve dip down to center (cx, depth)
     ..cubicTo(cx - span * 0.52, 0, cx - span * 0.40, depth, cx, depth)
-    // S-curve rise back up to (cx + span, 0)
     ..cubicTo(cx + span * 0.40, depth, cx + span * 0.52, 0, cx + span, 0)
     ..lineTo(s.width - r, 0)
     ..quadraticBezierTo(s.width, 0, s.width, r)
@@ -163,12 +165,12 @@ class _BarShadowPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final path = _barPath(size).shift(const Offset(0, 8));
+    final path = _barPath(size).shift(const Offset(0, 6));
     canvas.drawPath(
       path,
       Paint()
-        ..color = dark ? Colors.black.withValues(alpha: 0.40) : const Color(0x180F172A)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 16),
+        ..color = dark ? Colors.black.withValues(alpha: 0.45) : const Color(0x160F172A)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 14),
     );
   }
 
@@ -186,8 +188,8 @@ class _BarEdgePainter extends CustomPainter {
       _barPath(size),
       Paint()
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.2
-        ..color = Colors.white.withValues(alpha: dark ? 0.45 : 0.95),
+        ..strokeWidth = 1.1
+        ..color = dark ? Colors.white.withValues(alpha: 0.14) : const Color(0xFFE2E8F0),
     );
   }
 
@@ -201,6 +203,7 @@ class _SideItem extends StatelessWidget {
     required this.tab,
     required this.selected,
     required this.dark,
+    required this.primary,
     required this.iconColor,
     required this.activeIconColor,
     required this.onTap,
@@ -209,6 +212,7 @@ class _SideItem extends StatelessWidget {
   final GlassTab tab;
   final bool selected;
   final bool dark;
+  final Color primary;
   final Color iconColor;
   final Color activeIconColor;
   final VoidCallback onTap;
@@ -216,8 +220,8 @@ class _SideItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final labelColor = selected
-        ? const Color(0xFF0F172A)
-        : (dark ? const Color(0xFF475569) : const Color(0xFF64748B));
+        ? (dark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A))
+        : (dark ? const Color(0xFF94A3B8) : const Color(0xFF64748B));
 
     return Semantics(
       selected: selected,
@@ -232,10 +236,10 @@ class _SideItem extends StatelessWidget {
             alignment: Alignment.center,
             children: [
               Positioned(
-                top: 7,
+                top: 6,
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 180),
-                  width: 56,
+                  width: 54,
                   height: 32,
                   alignment: Alignment.center,
                   decoration: selected
@@ -246,19 +250,23 @@ class _SideItem extends StatelessWidget {
                             end: Alignment.bottomCenter,
                             colors: dark
                                 ? [
-                                    Colors.white.withValues(alpha: 0.72),
-                                    const Color(0xFFEFF3F8).withValues(alpha: 0.55),
+                                    const Color(0xFF1E3A8A).withValues(alpha: 0.85),
+                                    const Color(0xFF172554).withValues(alpha: 0.85),
                                   ]
-                                : [
-                                    Colors.white,
-                                    const Color(0xFFEFF3F8),
+                                : const [
+                                    Color(0xFFEFF6FF),
+                                    Color(0xFFDBEAFE),
                                   ],
+                          ),
+                          border: Border.all(
+                            color: primary.withValues(alpha: dark ? 0.35 : 0.25),
+                            width: 1.0,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF2DD4BF).withValues(alpha: dark ? 0.70 : 0.45),
-                              blurRadius: 14,
-                              spreadRadius: 1,
+                              color: primary.withValues(alpha: dark ? 0.30 : 0.18),
+                              blurRadius: 10,
+                              offset: const Offset(0, 2),
                             ),
                           ],
                         )
@@ -292,19 +300,21 @@ class _CenterItem extends StatelessWidget {
     required this.label,
     required this.selected,
     required this.dark,
+    required this.primary,
     required this.onTap,
   });
 
   final String label;
   final bool selected;
   final bool dark;
+  final Color primary;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final labelColor = selected
-        ? const Color(0xFF0F172A)
-        : (dark ? const Color(0xFF475569) : const Color(0xFF64748B));
+        ? (dark ? primary : const Color(0xFF0F172A))
+        : (dark ? const Color(0xFF94A3B8) : const Color(0xFF64748B));
 
     return Semantics(
       selected: selected,
@@ -339,18 +349,20 @@ class _CenterItem extends StatelessWidget {
 }
 
 /// Floating circular POS button featuring the official XZACTO logo mark,
-/// with a crisp neutral rim and subtle drop shadow (no blue outer glow/ring).
+/// with a crisp rim and clean elevation.
 class _PosButton extends StatelessWidget {
   const _PosButton({
     required this.size,
     required this.selected,
     required this.dark,
+    required this.primary,
     required this.onTap,
   });
 
   final double size;
   final bool selected;
   final bool dark;
+  final Color primary;
   final VoidCallback onTap;
 
   @override
@@ -361,39 +373,38 @@ class _PosButton extends StatelessWidget {
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
           width: size,
           height: size,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: dark
-                    ? Colors.black.withValues(alpha: 0.50)
-                    : const Color(0xFF0F172A).withValues(alpha: 0.18),
+                color: selected
+                    ? primary.withValues(alpha: dark ? 0.40 : 0.26)
+                    : (dark ? Colors.black.withValues(alpha: 0.45) : const Color(0xFF0F172A).withValues(alpha: 0.16)),
                 blurRadius: 12,
                 offset: const Offset(0, 4),
               ),
               BoxShadow(
-                color: dark
-                    ? Colors.black.withValues(alpha: 0.25)
-                    : const Color(0xFF0F172A).withValues(alpha: 0.08),
+                color: dark ? Colors.black.withValues(alpha: 0.25) : const Color(0xFF0F172A).withValues(alpha: 0.08),
                 blurRadius: 4,
                 offset: const Offset(0, 1),
               ),
             ],
             border: Border.all(
-              color: dark
-                  ? Colors.white.withValues(alpha: 0.16)
-                  : Colors.white,
-              width: 2.2,
+              color: selected
+                  ? (dark ? primary.withValues(alpha: 0.65) : Colors.white)
+                  : (dark ? Colors.white.withValues(alpha: 0.18) : Colors.white),
+              width: 2.4,
             ),
             gradient: const RadialGradient(
               center: Alignment(0, -0.35),
-              radius: 0.85,
+              radius: 0.88,
               colors: [
-                Color(0xFF0B1E48),
-                Color(0xFF060B18),
+                Color(0xFF0F2557),
+                Color(0xFF070E22),
               ],
             ),
           ),
@@ -404,6 +415,11 @@ class _PosButton extends StatelessWidget {
               height: size * 0.64,
               fit: BoxFit.contain,
               filterQuality: FilterQuality.high,
+              errorBuilder: (_, _, _) => const Icon(
+                Icons.point_of_sale_rounded,
+                color: Colors.white,
+                size: 26,
+              ),
             ),
           ),
         ),
@@ -411,7 +427,6 @@ class _PosButton extends StatelessWidget {
     );
   }
 }
-
 
 // ---------- Outline icons drawn to match the owner's mockup ----------
 
@@ -422,7 +437,7 @@ Paint _line(Color c, double w) => Paint()
   ..strokeCap = StrokeCap.round
   ..strokeJoin = StrokeJoin.round;
 
-/// Calendar with clock hands, plus green peso badge (Today).
+/// Calendar with clock hands, plus emerald peso badge (Today).
 class TodayGlyph extends StatelessWidget {
   const TodayGlyph({super.key, required this.color, this.badge = true});
   final Color color;
@@ -430,6 +445,7 @@ class TodayGlyph extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final dark = Theme.of(context).colorScheme.brightness == Brightness.dark;
     return SizedBox(
       width: 28,
       height: 26,
@@ -447,7 +463,7 @@ class TodayGlyph extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: const Color(0xFF10B981),
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 1.5),
+                  border: Border.all(color: dark ? const Color(0xFF1E293B) : Colors.white, width: 1.5),
                 ),
                 alignment: Alignment.center,
                 child: const Text(
@@ -476,17 +492,13 @@ class _CalendarPainter extends CustomPainter {
     final p = _line(color, 1.8);
     final w = s.width;
     final h = s.height;
-    // Outer calendar card
     canvas.drawRRect(
       RRect.fromRectAndRadius(Rect.fromLTWH(2, 3.5, w - 4, h - 5), const Radius.circular(3.5)),
       p,
     );
-    // Header divider line
     canvas.drawLine(Offset(2, 9), Offset(w - 2, 9), p);
-    // Top rings
     canvas.drawLine(Offset(w * 0.30, 1.5), Offset(w * 0.30, 5.5), p);
     canvas.drawLine(Offset(w * 0.70, 1.5), Offset(w * 0.70, 5.5), p);
-    // Clock hands
     final c = Offset(w * 0.5, h * 0.63);
     canvas.drawLine(c, c.translate(0, -3.8), p);
     canvas.drawLine(c, c.translate(3.4, 0), p);
@@ -522,7 +534,6 @@ class _BoxPainter extends CustomPainter {
     final left = Offset(cx - 9.5, cy - 3.5);
     const bodyDepth = 9.5;
 
-    // Top opening
     canvas.drawPath(
       Path()
         ..moveTo(top.dx, top.dy)
@@ -533,7 +544,6 @@ class _BoxPainter extends CustomPainter {
       p,
     );
 
-    // Box body outline
     canvas.drawPath(
       Path()
         ..moveTo(left.dx, left.dy)
@@ -544,10 +554,7 @@ class _BoxPainter extends CustomPainter {
       p,
     );
 
-    // Center vertical fold
     canvas.drawLine(bottomCenter, Offset(bottomCenter.dx, bottomCenter.dy + bodyDepth), p);
-
-    // Outward open flaps
     canvas.drawLine(left, Offset(left.dx - 3.5, left.dy + 3.5), p);
     canvas.drawLine(right, Offset(right.dx + 3.5, right.dy + 3.5), p);
   }
@@ -576,18 +583,14 @@ class _NotebookPainter extends CustomPainter {
     final w = s.width;
     final h = s.height;
 
-    // Cover
     canvas.drawRRect(
       RRect.fromRectAndRadius(Rect.fromLTWH(5.5, 1.5, w - 7.5, h - 3), const Radius.circular(3)),
       p,
     );
-    // Vertical margin line
     canvas.drawLine(Offset(9.5, 1.5), Offset(9.5, h - 1.5), p);
-    // Spiral rings
     for (final y in [5.5, 10.5, 15.5, 20.5]) {
       canvas.drawLine(Offset(2.0, y), Offset(6.0, y), p);
     }
-    // Lines on the cover
     canvas.drawLine(Offset(12.5, 7.5), Offset(18.5, 7.5), p);
     canvas.drawLine(Offset(12.5, 11.5), Offset(16.5, 11.5), p);
   }
