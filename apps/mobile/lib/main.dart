@@ -3,6 +3,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'app.dart';
 import 'backend.dart';
+import 'core/printer_config.dart';
+import 'core/theme.dart';
 import 'data/db.dart';
 import 'data/drift_store.dart';
 import 'data/persist_storage_stub.dart' if (dart.library.js_interop) 'data/persist_storage_web.dart';
@@ -19,8 +21,21 @@ Future<void> main() async {
     return;
   }
   await Supabase.initialize(url: _url, publishableKey: _anonKey);
+  const prefsStorage = AppPreferencesStorage();
+  final prefs = await prefsStorage.load();
+  final printerCfg = await PrinterConfig.load();
+  applyPrinterConfig(printerCfg);
   requestPersistentStorage(); // not awaited: the answer does not change what we do
-  runApp(App(backend: SupabaseBackend(), openStore: ({bool safeMode = false}) => DriftStore(AppDatabase.open(safeMode: safeMode))));
+  runApp(
+    App(
+      backend: SupabaseBackend(),
+      openStore: ({bool safeMode = false}) => DriftStore(AppDatabase.open(safeMode: safeMode)),
+      initialLocale: prefs.locale,
+      initialPalette: prefs.palette,
+      initialMode: prefs.mode,
+      prefsStorage: prefsStorage,
+    ),
+  );
 }
 
 class _NotConfigured extends StatelessWidget {

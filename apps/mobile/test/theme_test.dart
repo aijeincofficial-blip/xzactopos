@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:xzactopos_mobile/core/theme.dart';
 
 double _ratio(Color a, Color b) {
@@ -16,6 +17,7 @@ void main() {
         expect(s.brightness, b);
         final pairs = {
           'onSurface/surface': [s.onSurface, s.surface],
+          'outline/surface': [s.outline, s.surface],
           'onPrimary/primary': [s.onPrimary, s.primary],
           'onSecondary/secondary': [s.onSecondary, s.secondary],
           'onPrimaryContainer/primaryContainer': [s.onPrimaryContainer, s.primaryContainer],
@@ -29,4 +31,25 @@ void main() {
       });
     }
   }
+
+  test('AppPreferencesStorage persists palette, mode, and locale across launches', () async {
+    SharedPreferences.setMockInitialValues({});
+    const storage = AppPreferencesStorage();
+
+    final defaults = await storage.load();
+    expect(defaults.palette, AppPalette.goldenIndigo);
+    expect(defaults.mode, ThemeMode.system);
+    expect(defaults.locale, 'en');
+
+    await storage.save(const AppPreferences(
+      palette: AppPalette.freshTide,
+      mode: ThemeMode.dark,
+      locale: 'fil',
+    ));
+
+    final restored = await storage.load();
+    expect(restored.palette, AppPalette.freshTide);
+    expect(restored.mode, ThemeMode.dark);
+    expect(restored.locale, 'fil');
+  });
 }

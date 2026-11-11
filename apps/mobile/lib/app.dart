@@ -16,12 +16,23 @@ import 'screens/store_name_screen.dart';
 import 'sync/store_session.dart';
 
 class App extends StatefulWidget {
-  const App({super.key, required this.backend, required this.openStore, this.initialLocale = 'en'});
+  const App({
+    super.key,
+    required this.backend,
+    required this.openStore,
+    this.initialLocale = 'en',
+    this.initialPalette = AppPalette.goldenIndigo,
+    this.initialMode = ThemeMode.system,
+    this.prefsStorage,
+  });
   final Backend backend;
 
   /// Opens the device database; called once per signed-in session (again with safeMode if that fails).
   final OpenStore openStore;
   final String initialLocale;
+  final AppPalette initialPalette;
+  final ThemeMode initialMode;
+  final AppPreferencesStorage? prefsStorage;
 
   @override
   State<App> createState() => _AppState();
@@ -29,9 +40,15 @@ class App extends StatefulWidget {
 
 class _AppState extends State<App> {
   late String _locale = widget.initialLocale;
-  // Not saved between launches yet (follow-up: store the choice on the device).
-  AppPalette _palette = AppPalette.freshTide;
-  ThemeMode _mode = ThemeMode.system;
+  late AppPalette _palette = widget.initialPalette;
+  late ThemeMode _mode = widget.initialMode;
+
+  void _persist() {
+    final storage = widget.prefsStorage;
+    if (storage != null) {
+      unawaited(storage.save(AppPreferences(palette: _palette, mode: _mode, locale: _locale)));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,11 +68,20 @@ class _AppState extends State<App> {
       builder: (context, child) => ThemeScope(
         palette: _palette,
         mode: _mode,
-        setPalette: (p) => setState(() => _palette = p),
-        setMode: (m) => setState(() => _mode = m),
+        setPalette: (p) {
+          setState(() => _palette = p);
+          _persist();
+        },
+        setMode: (m) {
+          setState(() => _mode = m);
+          _persist();
+        },
         child: LocaleScope(
           locale: _locale,
-          setLocale: (l) => setState(() => _locale = l),
+          setLocale: (l) {
+            setState(() => _locale = l);
+            _persist();
+          },
           child: child!,
         ),
       ),

@@ -139,12 +139,77 @@ class SaleSummary {
 }
 
 class SaleItemView {
-  const SaleItemView(this.name, this.qty, this.unitPrice, this.lineTotal, {this.discount = 0});
+  const SaleItemView(
+    this.name,
+    this.qty,
+    this.unitPrice,
+    this.lineTotal, {
+    this.discount = 0,
+    this.variantId = '',
+    this.returnedQty = 0,
+  });
   final String name;
   final double qty;
   final int unitPrice;
   final int lineTotal;
   final int discount;
+  final String variantId;
+  final double returnedQty;
+
+  double get remainingQty => (qty - returnedQty) > 0 ? qty - returnedQty : 0;
+}
+
+class SaleReturnLine {
+  const SaleReturnLine({required this.variantId, required this.qty});
+  final String variantId;
+  final double qty;
+}
+
+/// Computes exact pro-rata refund in centavos (matching server `op_return_sale_items`).
+int computePartialReturnRefund({
+  required int saleSubtotal,
+  required int saleDiscount,
+  required int saleTotal,
+  required int alreadyRefundedTotal,
+  required List<SaleItemView> items,
+  required Map<String, double> returnByVariant,
+}) {
+  var totalSoldMilli = 0;
+  var totalPrevMilli = 0;
+  var totalReqMilli = 0;
+  var refundSum = 0;
+
+  for (final it in items) {
+    totalSoldMilli += SaleLine.milli(it.qty);
+    totalPrevMilli += SaleLine.milli(it.returnedQty);
+    final rawReq = returnByVariant[it.variantId] ?? 0;
+    final maxRem = it.remainingQty;
+    final req = rawReq < 0 ? 0.0 : (rawReq > maxRem ? maxRem : rawReq);
+    if (req <= 0 || it.qty <= 0) continue;
+    totalReqMilli += SaleLine.milli(req);
+
+    int lineSub;
+    if (SaleLine.milli(it.returnedQty) + SaleLine.milli(req) == SaleLine.milli(it.qty)) {
+      final prevSub = ((it.lineTotal * it.returnedQty) / it.qty).round();
+      lineSub = it.lineTotal - prevSub;
+      if (lineSub < 0) lineSub = 0;
+    } else {
+      lineSub = ((it.lineTotal * req) / it.qty).round();
+    }
+
+    final lineDisc = (saleSubtotal > 0 && saleDiscount > 0)
+        ? ((saleDiscount * lineSub) / saleSubtotal).round().clamp(0, lineSub)
+        : 0;
+    final netLine = lineSub - lineDisc;
+    if (netLine > 0) refundSum += netLine;
+  }
+
+  if (totalReqMilli == 0) return 0;
+  if (totalPrevMilli + totalReqMilli == totalSoldMilli) {
+    final rem = saleTotal - alreadyRefundedTotal;
+    return rem > 0 ? rem : 0;
+  }
+  return refundSum;
 }
 
 class SalePaymentView {
@@ -168,6 +233,7 @@ class SaleDetail {
     required this.items,
     required this.payments,
     this.customerId,
+    this.refundedTotal = 0,
   });
 
   final SaleSummary summary;
@@ -177,6 +243,12 @@ class SaleDetail {
   final List<SaleItemView> items;
   final List<SalePaymentView> payments;
   final String? customerId;
+  final int refundedTotal;
+
+  bool get hasPartialReturns =>
+      refundedTotal > 0 || items.any((i) => i.returnedQty > 0);
+  bool get hasReturnableItems =>
+      !summary.voided && items.any((i) => i.variantId.isNotEmpty && i.remainingQty > 0);
 
   /// See [SaleSummary.saleNo], [SaleSummary.displayNo], [SaleSummary.provisional].
   String? get saleNo => summary.saleNo;
@@ -681,6 +753,17 @@ abstract class SalesStore {
   /// Cancels a completed sale: stock goes back, an utang charge is reversed, the e-wallet payments that named a wallet
   /// leave its float. Queued as one op.
   Future<void> voidSale(String saleId, {required String opId, String? reason});
+
+  /// Returns specific items from a completed sale back into stock with pro-rata refund (cash, ewallet, card, or utang).
+  Future<int> returnSaleItems(
+    String saleId, {
+    required List<SaleReturnLine> items,
+    required String refundMethod,
+    String? reason,
+    String? approvalId,
+    Map<String, dynamic>? offlineApproval,
+    required String opId,
+  });
 
   Future<void> saveCustomer({required String id, required String name, String? phone, required String opId});
   /// Owner write-off or correction of a customer's balance. [amount] is signed: positive = owes more, negative = owes less.

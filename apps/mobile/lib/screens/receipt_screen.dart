@@ -60,7 +60,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
     final yes = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         title: Text(t.saleCancelTitle),
         content: Text(t.saleCancelBody),
         actions: [
@@ -98,6 +98,27 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
 
     await scope.store.voidSale(widget.saleId, opId: const Uuid().v7());
     scope.engine.poke();
+  }
+
+  Future<void> _openReturnSheet(SaleDetail d) async {
+    final t = AppLocalizations.of(context);
+    final scope = CatalogScope.of(context);
+    final locale = Localizations.localeOf(context).languageCode;
+    final messenger = ScaffoldMessenger.of(context);
+    final refunded = await showModalBottomSheet<int>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
+      ),
+      builder: (_) => _ReturnItemsSheet(detail: d),
+    );
+    if (refunded != null && mounted) {
+      final formatted = Money(refunded, scope.store.baseCurrency).format(locale);
+      messenger.showSnackBar(
+        SnackBar(content: Text(t.saleReturnSuccess(formatted))),
+      );
+    }
   }
 
   ReceiptLabels _labels(AppLocalizations t) => ReceiptLabels(
@@ -299,6 +320,13 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                                   isTotal: true,
                                   key: const Key('receipt-total'),
                                 ),
+                                if (d.refundedTotal > 0)
+                                  _buildSummaryRow(
+                                    label: '${t.saleReturnTotal}:',
+                                    value: '−${money(d.refundedTotal)}',
+                                    valueColor: const Color(0xFFCD201D),
+                                    key: const Key('receipt-refunded'),
+                                  ),
                                 if (cash > 0)
                                   _buildSummaryRow(
                                     label: locale == 'fil'
@@ -464,13 +492,8 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                                 child: FilledButton(
                                   key: const Key('receipt-print'),
                                   style: FilledButton.styleFrom(
-                                    backgroundColor: const Color(0xFF1E6FF2),
-                                    foregroundColor: Colors.white,
-                                    shape: const StadiumBorder(),
-                                    elevation: 2,
-                                    textStyle: const TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w700,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(6),
                                     ),
                                   ),
                                   onPressed: () => _output(d, share: false),
@@ -497,17 +520,9 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                                         : 'receipt-share',
                                   ),
                                   style: OutlinedButton.styleFrom(
-                                    backgroundColor: Colors.white,
-                                    foregroundColor: const Color(0xFF0F172A),
-                                    side: const BorderSide(
-                                      color: Color(0xFFCBD5E1),
-                                      width: 1.2,
-                                    ),
-                                    shape: const StadiumBorder(),
-                                    elevation: 1,
-                                    textStyle: const TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w700,
+                                    backgroundColor: dark ? theme.colorScheme.surface : Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(6),
                                     ),
                                   ),
                                   onPressed: () {
@@ -532,25 +547,46 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                         ],
                       ),
 
-                      // Cancel sale option if not voided
-                      if (!s.voided)
+                      // Partial item return button when sale has returnable items
+                      if (d.hasReturnableItems)
                         Padding(
-                          padding: const EdgeInsets.only(top: 14),
+                          padding: const EdgeInsets.only(top: 12),
+                          child: SizedBox(
+                            height: 44,
+                            child: OutlinedButton.icon(
+                              key: const Key('return-items-btn'),
+                              style: OutlinedButton.styleFrom(
+                                backgroundColor: dark ? theme.colorScheme.surface : Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                              ),
+                              onPressed: () => _openReturnSheet(d),
+                              icon: const Icon(Icons.assignment_return_outlined, size: 18),
+                              label: Text(t.saleReturnButton),
+                            ),
+                          ),
+                        ),
+
+                      // Cancel sale option if not voided and no partial returns exist
+                      if (!s.voided && !d.hasPartialReturns)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 12),
                           child: Center(
                             child: TextButton.icon(
                               key: const Key('cancel-sale'),
                               onPressed: _cancelSale,
-                              icon: const Icon(
+                              icon: Icon(
                                 Icons.cancel_outlined,
                                 size: 16,
-                                color: Color(0xFFEF4444),
+                                color: theme.colorScheme.error,
                               ),
                               label: Text(
                                 t.saleCancelButton,
-                                style: const TextStyle(
-                                  color: Color(0xFFEF4444),
+                                style: TextStyle(
+                                  color: theme.colorScheme.error,
                                   fontWeight: FontWeight.w600,
-                                  fontSize: 13,
+                                  fontSize: 14,
                                 ),
                               ),
                             ),
@@ -708,6 +744,15 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                       color: Color(0xFF10B981),
+                    ),
+                  ),
+                if (item.returnedQty > 0)
+                  Text(
+                    '−${item.returnedQty == item.returnedQty.roundToDouble() ? item.returnedQty.toInt() : item.returnedQty} returned',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFFCD201D),
                     ),
                   ),
                 if (stockText != null) ...[
@@ -981,6 +1026,339 @@ class _DashedDivider extends StatelessWidget {
           }),
         );
       },
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Partial Item Return Modal Bottom Sheet
+// ---------------------------------------------------------------------------
+
+class _ReturnItemsSheet extends StatefulWidget {
+  const _ReturnItemsSheet({required this.detail});
+  final SaleDetail detail;
+
+  @override
+  State<_ReturnItemsSheet> createState() => _ReturnItemsSheetState();
+}
+
+class _ReturnItemsSheetState extends State<_ReturnItemsSheet> {
+  final Map<String, double> _returnQtyByVariant = {};
+  final TextEditingController _reasonCtrl = TextEditingController();
+  late String _refundMethod;
+  bool _submitting = false;
+  String? _errorText;
+
+  @override
+  void initState() {
+    super.initState();
+    final d = widget.detail;
+    _refundMethod = (d.utang > 0 && d.customerId != null) ? 'utang' : 'cash';
+  }
+
+  @override
+  void dispose() {
+    _reasonCtrl.dispose();
+    super.dispose();
+  }
+
+  String _fmtQty(double q) =>
+      q == q.roundToDouble() ? q.toInt().toString() : q.toStringAsFixed(2);
+
+  void _stepQty(SaleItemView item, double delta) {
+    final maxRem = item.remainingQty;
+    final current = _returnQtyByVariant[item.variantId] ?? 0;
+    double next = current + delta;
+    if (next < 0) next = 0;
+    if (next > maxRem) next = maxRem;
+    setState(() {
+      if (next <= 0) {
+        _returnQtyByVariant.remove(item.variantId);
+      } else {
+        _returnQtyByVariant[item.variantId] = next;
+      }
+      _errorText = null;
+    });
+  }
+
+  Future<void> _submit() async {
+    final scope = CatalogScope.of(context);
+    final lines = <SaleReturnLine>[
+      for (final e in _returnQtyByVariant.entries)
+        if (e.value > 0) SaleReturnLine(variantId: e.key, qty: e.value),
+    ];
+    if (lines.isEmpty || _submitting) return;
+
+    setState(() {
+      _submitting = true;
+      _errorText = null;
+    });
+
+    try {
+      SupervisorApprovalResult? approval;
+      if (scope.isCashier) {
+        final backend =
+            (scope.engine.api is Backend) ? scope.engine.api as Backend : null;
+        if (backend != null) {
+          approval = await showSupervisorPinDialog(
+            context,
+            backend: backend,
+            action: 'void_sale',
+            refId: widget.detail.summary.id,
+          );
+          if (approval == null) {
+            if (mounted) setState(() => _submitting = false);
+            return;
+          }
+          if (!mounted) return;
+        }
+      }
+
+      final refunded = await scope.store.returnSaleItems(
+        widget.detail.summary.id,
+        items: lines,
+        refundMethod: _refundMethod,
+        reason: _reasonCtrl.text,
+        approvalId: approval?.approvalId,
+        offlineApproval: approval?.offlineApproval,
+        opId: const Uuid().v7(),
+      );
+      scope.engine.poke();
+      if (mounted) Navigator.of(context).pop(refunded);
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _submitting = false;
+          _errorText = e.toString();
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
+    final scope = CatalogScope.of(context);
+    final locale = Localizations.localeOf(context).languageCode;
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    String money(int a) => Money(a, scope.store.baseCurrency).format(locale);
+
+    final d = widget.detail;
+    final returnableItems = d.items
+        .where((i) => i.variantId.isNotEmpty && i.remainingQty > 0)
+        .toList();
+
+    final refundPreview = computePartialReturnRefund(
+      saleSubtotal: d.subtotal,
+      saleDiscount: d.discount,
+      saleTotal: d.summary.total,
+      alreadyRefundedTotal: d.refundedTotal,
+      items: d.items,
+      returnByVariant: _returnQtyByVariant,
+    );
+    final hasSelection =
+        _returnQtyByVariant.values.any((qty) => qty > 0) && !_submitting;
+
+    final methods = <ButtonSegment<String>>[
+      ButtonSegment(value: 'cash', label: Text(t.payCash)),
+      ButtonSegment(value: 'ewallet', label: Text(t.payEwallet)),
+      ButtonSegment(value: 'card', label: Text(t.payCard)),
+      if (d.customerId != null)
+        ButtonSegment(value: 'utang', label: Text(t.receiptOnUtang)),
+    ];
+
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: 24,
+          right: 24,
+          top: 24,
+          bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                t.saleReturnTitle,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                t.saleReturnSubtitle,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: cs.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              for (final item in returnableItems) ...[
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  margin: const EdgeInsets.only(bottom: 8),
+                  decoration: BoxDecoration(
+                    color: cs.surfaceContainerHighest.withAlpha(90),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item.name,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${money(item.unitPrice)} · ${t.saleReturnRemaining(_fmtQty(item.remainingQty))}',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: cs.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        key: Key('return-dec-${item.variantId}'),
+                        onPressed: (_returnQtyByVariant[item.variantId] ?? 0) > 0
+                            ? () => _stepQty(item, -1)
+                            : null,
+                        icon: const Icon(Icons.remove_circle_outline, size: 20),
+                      ),
+                      SizedBox(
+                        width: 36,
+                        child: Text(
+                          _fmtQty(_returnQtyByVariant[item.variantId] ?? 0),
+                          key: Key('return-qty-${item.variantId}'),
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        key: Key('return-inc-${item.variantId}'),
+                        onPressed: (_returnQtyByVariant[item.variantId] ?? 0) <
+                                item.remainingQty
+                            ? () => _stepQty(
+                                  item,
+                                  item.remainingQty -
+                                              (_returnQtyByVariant[
+                                                      item.variantId] ??
+                                                  0) <
+                                          1
+                                      ? item.remainingQty -
+                                          (_returnQtyByVariant[
+                                                  item.variantId] ??
+                                              0)
+                                      : 1,
+                                )
+                            : null,
+                        icon: const Icon(Icons.add_circle_outline, size: 20),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: 16),
+              Text(
+                t.saleReturnMethod,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: cs.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 8),
+              SegmentedButton<String>(
+                segments: methods,
+                selected: {_refundMethod},
+                onSelectionChanged: (sel) {
+                  setState(() => _refundMethod = sel.first);
+                },
+              ),
+
+              const SizedBox(height: 16),
+              TextField(
+                key: const Key('return-reason-field'),
+                controller: _reasonCtrl,
+                decoration: InputDecoration(
+                  labelText: t.saleReturnReason,
+                  hintText: t.saleReturnReasonHint,
+                ),
+              ),
+
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: cs.surfaceContainerHighest.withAlpha(90),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      t.saleReturnTotal,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      money(refundPreview),
+                      key: const Key('return-refund-preview'),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: cs.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              if (_errorText != null) ...[
+                const SizedBox(height: 12),
+                Text(
+                  _errorText!,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: cs.error,
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: _submitting
+                          ? null
+                          : () => Navigator.of(context).pop(),
+                      child: Text(t.saleCancelNo),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton(
+                      key: const Key('confirm-return-btn'),
+                      onPressed: hasSelection ? _submit : null,
+                      child: Text(t.saleReturnConfirm),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

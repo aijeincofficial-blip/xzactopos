@@ -1399,5 +1399,44 @@
   "coins": "Mga Barya",
   "applyCount": "Gamitin ang Bilang",
   "clearCount": "Burahin Lahat",
-  "totalCalculated": "Kabuuang Nabilang na Pera"
+  "totalCalculated": "Kabuuang Nabilang na Pera",
+  "printerEngineBluetooth": "Bluetooth",
+  "printerBtNotSelected": "Bluetooth (Walang napiling printer)",
+  "printerBtPairedTitle": "Mga Naka-pair na Bluetooth Printer",
+  "printerBtScan": "Mag-scan",
+  "printerBtHint": "Buksan ang Bluetooth at i-pair muna ang iyong 58mm/80mm printer sa Android Settings.",
+  "printerBtEmpty": "Wala pang nahanap na naka-pair na Bluetooth printer.",
+  "printerBtAddress": "Bluetooth MAC Address",
+  "saleReturnButton": "Magbalik ng Item",
+  "saleReturnTitle": "Magbalik ng Item at Refund",
+  "saleReturnSubtitle": "Piliin ang daming ibabalik sa stock at paraan ng refund.",
+  "saleReturnMethod": "Paraan ng Refund",
+  "saleReturnReason": "Dahilan (opsyonal)",
+  "saleReturnReasonHint": "hal. Sirang item, maling sukat",
+  "saleReturnTotal": "Kabuuang Refund",
+  "saleReturnConfirm": "Kumpirmahin ang Pagbabalik",
+  "saleReturnRefunded": "Na-refund: -{amount}",
+  "@saleReturnRefunded": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "saleReturnSuccess": "Naitala ang pagbabalik ({amount} na-refund)",
+  "@saleReturnSuccess": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "saleReturnRemaining": "{qty} maaaring ibalik",
+  "@saleReturnRemaining": {
+    "placeholders": {
+      "qty": {
+        "type": "String"
+      }
+    }
+  }
 }

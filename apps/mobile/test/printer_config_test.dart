@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -131,5 +133,59 @@ void main() {
     // Should include drawer kick and cut commands
     expect(bytes, containsAllInOrder(EscPosCommands.drawerKickPin2));
     expect(bytes, containsAllInOrder(EscPosCommands.feedAndCut));
+  });
+
+  test('PrinterConfig saves and reloads Bluetooth ESC/POS settings and prints over SPP adapter', () async {
+    const btConfig = PrinterConfig(
+      engine: PrinterEngineType.bluetoothEscPos,
+      btName: 'MPT-II 58mm',
+      btAddress: 'AA:BB:CC:DD:EE:FF',
+      paperWidth: PaperWidth.mm58,
+      drawerKick: false,
+      autoPrint: true,
+    );
+    await btConfig.save();
+
+    final reloaded = await PrinterConfig.load();
+    expect(reloaded.engine, PrinterEngineType.bluetoothEscPos);
+    expect(reloaded.btName, 'MPT-II 58mm');
+    expect(reloaded.btAddress, 'AA:BB:CC:DD:EE:FF');
+    expect(reloaded.isThermal, true);
+
+    final prevAdapter = activeBluetoothAdapter;
+    final fakeBt = FakeBluetoothEscPosAdapter(
+      devices: const [BluetoothPrinterDevice(name: 'MPT-II 58mm', address: 'AA:BB:CC:DD:EE:FF')],
+    );
+    activeBluetoothAdapter = fakeBt;
+    addTearDown(() {
+      activeBluetoothAdapter = prevAdapter;
+      applyPrinterConfig(const PrinterConfig(engine: PrinterEngineType.systemPdf));
+    });
+
+    final bonded = await activeBluetoothAdapter.getBondedDevices();
+    expect(bonded.single.address, 'AA:BB:CC:DD:EE:FF');
+
+    applyPrinterConfig(reloaded);
+    expect(receiptPrinter, isA<EscPosReceiptPrinter>());
+    expect(shiftPrinter, isA<EscPosShiftPrinter>());
+
+    await printTestSlip(config: reloaded, storeName: 'Palengke Stall');
+    expect(fakeBt.sentByAddress.keys.toList(), ['AA:BB:CC:DD:EE:FF']);
+    expect(
+      fakeBt.sentByAddress['AA:BB:CC:DD:EE:FF']!.single,
+      containsAllInOrder(EscPosCommands.feedAndCut),
+    );
+  });
+
+  test('BluetoothEscPosTransport rejects empty Bluetooth MAC address', () async {
+    const emptyBt = PrinterConfig(
+      engine: PrinterEngineType.bluetoothEscPos,
+      btAddress: '   ',
+    );
+    final transport = resolveEscPosTransport(emptyBt);
+    expect(
+      () => transport.send(Uint8List.fromList(const [0x1B, 0x40])),
+      throwsA(isA<StateError>()),
+    );
   });
 }

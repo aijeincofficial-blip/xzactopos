@@ -196,11 +196,28 @@ export interface SaleRow {
   location_id: string;
 }
 
+export interface SaleReturnRecord {
+  id: string;
+  refund_method: "cash" | "utang" | "ewallet" | "card";
+  refund_total: number;
+  reason: string | null;
+  returned_at: string;
+}
+
 export interface SaleDetail {
   sale: SaleRow;
   customerName: string | null;
-  items: Array<{ product_name: string; qty: number; unit_price: number; line_total: number }>;
+  items: Array<{
+    id: string;
+    variant_id: string;
+    product_name: string;
+    qty: number;
+    returned_qty: number;
+    unit_price: number;
+    line_total: number;
+  }>;
   payments: Array<{ method: string; amount: number; tendered: number | null; wallet: string | null; reference?: string | null }>;
+  returns: SaleReturnRecord[];
 }
 
 const SALE_COLS = "id, sale_no, local_no, status, subtotal, discount, total, sold_at, customer_id, location_id";
@@ -212,10 +229,12 @@ export async function fetchRecentSales(locationId: string, limit = 50): Promise<
 }
 
 export async function fetchSaleDetail(saleId: string): Promise<SaleDetail> {
-  const [s, i, p] = await Promise.all([
+  const [s, i, p, r, ri] = await Promise.all([
     supabase.from("sales").select(SALE_COLS).eq("id", saleId).single(),
-    supabase.from("sale_items").select("product_name, qty, unit_price, line_total").eq("sale_id", saleId).order("product_name"),
+    supabase.from("sale_items").select("id, variant_id, product_name, qty, unit_price, line_total").eq("sale_id", saleId).order("product_name"),
     supabase.from("payments").select("method, amount, tendered, wallet, reference").eq("sale_id", saleId).order("amount", { ascending: false }),
+    supabase.from("sale_returns").select("id, refund_method, refund_total, reason, returned_at").eq("sale_id", saleId).order("returned_at", { ascending: false }),
+    supabase.from("sale_return_items").select("sale_item_id, qty").eq("sale_id", saleId),
   ]);
   if (s.error) throw fromRaw(s.error);
   if (i.error) throw fromRaw(i.error);
@@ -226,7 +245,29 @@ export async function fetchSaleDetail(saleId: string): Promise<SaleDetail> {
     const c = await supabase.from("customers").select("name").eq("id", sale.customer_id).maybeSingle();
     customerName = c.data?.name ?? null;
   }
-  return { sale, customerName, items: i.data as SaleDetail["items"], payments: p.data as SaleDetail["payments"] };
+  const returnedByItem = new Map<string, number>();
+  for (const row of (ri.data ?? []) as Array<{ sale_item_id: string; qty: number }>) {
+    returnedByItem.set(row.sale_item_id, (returnedByItem.get(row.sale_item_id) ?? 0) + Number(row.qty));
+  }
+  const rawItems = (i.data ?? []) as Array<{
+    id: string;
+    variant_id: string;
+    product_name: string;
+    qty: number;
+    unit_price: number;
+    line_total: number;
+  }>;
+  return {
+    sale,
+    customerName,
+    items: rawItems.map((item) => ({
+      ...item,
+      qty: Number(item.qty),
+      returned_qty: returnedByItem.get(item.id) ?? 0,
+    })),
+    payments: p.data as SaleDetail["payments"],
+    returns: (r.data ?? []) as SaleReturnRecord[],
+  };
 }
 
 /** Cancels a sale: stock goes back and any utang charge is reversed. The server checks the caller may do it. */
@@ -246,5 +287,34 @@ export const voidSale = (
     ...(reason.trim() ? { reason: reason.trim() } : {}),
     ...(approvalId ? { approval_id: approvalId } : {}),
     ...(offlineApproval ? { offline_approval: offlineApproval } : {}),
+  });
+
+/** Returns specific items from a completed receipt back into stock with pro-rata refund. */
+export const returnSaleItems = (params: {
+  saleId: string;
+  refundMethod: "cash" | "utang" | "ewallet" | "card";
+  items: Array<{ variant_id: string; qty: number }>;
+  reason?: string;
+  approvalId?: string;
+  offlineApproval?: {
+    approver_id: string;
+    action: string;
+    ref_id: string;
+    approved_at: string;
+  };
+}) =>
+  pushOp<{
+    return_id: string;
+    sale_id: string;
+    refund_total: number;
+    refund_method: string;
+    applied_at: string;
+  }>("return_sale_items", {
+    sale_id: params.saleId,
+    refund_method: params.refundMethod,
+    items: params.items,
+    ...(params.reason?.trim() ? { reason: params.reason.trim() } : {}),
+    ...(params.approvalId ? { approval_id: params.approvalId } : {}),
+    ...(params.offlineApproval ? { offline_approval: params.offlineApproval } : {}),
   });
 

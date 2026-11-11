@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Badge, Button, Card, Dialog, EmptyState, ErrorState, Field, Input, PageHeader, Select, Table, Tabs, TabPanel, useToast } from "../components/ui.tsx";
+import { BarcodeLabelsDialog, formatBinBarcodeItem } from "../components/barcode-labels-dialog.tsx";
 import { useSession } from "../lib/session.tsx";
 import { useErrorMessage } from "../lib/i18n-helpers.ts";
 import { supabase } from "../lib/supabase.ts";
@@ -49,6 +50,8 @@ export function BinsPage() {
   const [showAddBin, setShowAddBin] = useState(false);
   const [showMoveStock, setShowMoveStock] = useState(false);
   const [activeBinDetail, setActiveBinDetail] = useState<WarehouseBin | null>(null);
+  const [selectedBinIds, setSelectedBinIds] = useState<Set<string>>(() => new Set());
+  const [barcodeTargetBins, setBarcodeTargetBins] = useState<WarehouseBin[] | null>(null);
 
   // Form states: Zone
   const [zoneCode, setZoneCode] = useState("");
@@ -350,19 +353,19 @@ export function BinsPage() {
                 {/* Invariant & Metrics Bar */}
           <div className="grid gap-3 sm:grid-cols-4">
             <Card className="p-4">
-              <div className="text-xs text-slate-500 uppercase">{t("bins.totalBins", "Total Bins")}</div>
-              <div className="mt-1 text-2xl font-bold">{allBins.length}</div>
+              <div className="text-xs text-slate-500 uppercase tracking-wider">{t("bins.totalBins", "Total Bins")}</div>
+              <div className="mt-1 text-2xl font-semibold text-slate-900 tabular-nums">{allBins.length}</div>
             </Card>
             <Card className="p-4">
-              <div className="text-xs text-slate-500 uppercase">{t("bins.occupiedBins", "Occupied Bins")}</div>
-              <div className="mt-1 text-2xl font-bold text-slate-900">{totalOccupied}</div>
+              <div className="text-xs text-slate-500 uppercase tracking-wider">{t("bins.occupiedBins", "Occupied Bins")}</div>
+              <div className="mt-1 text-2xl font-semibold text-slate-900 tabular-nums">{totalOccupied}</div>
             </Card>
             <Card className="p-4">
-              <div className="text-xs text-slate-500 uppercase">{t("bins.totalUnits", "Total Units")}</div>
-              <div className="mt-1 text-2xl font-bold text-slate-900">{totalUnits.toLocaleString()}</div>
+              <div className="text-xs text-slate-500 uppercase tracking-wider">{t("bins.totalUnits", "Total Units")}</div>
+              <div className="mt-1 text-2xl font-semibold text-slate-900 tabular-nums">{totalUnits.toLocaleString()}</div>
             </Card>
             <Card className="p-4">
-              <div className="text-xs text-slate-500 uppercase">{t("bins.ledgerStatus", "Ledger Invariant")}</div>
+              <div className="text-xs text-slate-500 uppercase tracking-wider">{t("bins.ledgerStatus", "Ledger Invariant")}</div>
               <div className="mt-1">
                 {isInvariantBalanced ? (
                   <Badge tone="good">✓ {t("bins.balanced", "100% Balanced")}</Badge>
@@ -375,11 +378,14 @@ export function BinsPage() {
 
           {/* Action Toolbar */}
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-500 uppercase">{t("bins.filterZone", "Zone")}:</span>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs text-slate-500 uppercase tracking-wider">{t("bins.filterZone", "Zone")}</span>
               <Select
                 value={selectedZoneFilter}
-                onChange={(e) => setSelectedZoneFilter(e.target.value)}
+                onChange={(e) => {
+                  setSelectedZoneFilter(e.target.value);
+                  setSelectedBinIds(new Set());
+                }}
                 className="w-44 text-sm"
               >
                 <option value="">{t("bins.allZones", "All Zones")}</option>
@@ -392,6 +398,31 @@ export function BinsPage() {
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
+              {selectedBinIds.size > 0 ? (
+                <>
+                  <span className="text-xs font-semibold text-brand-700 bg-brand-50 border border-brand-200 rounded-[6px] px-2.5 py-1.5 tabular-nums">
+                    {t("bins.selectedCount", { count: selectedBinIds.size, defaultValue: "{{count}} bins selected" })}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const chosen = allBins.filter((b) => selectedBinIds.has(b.id));
+                      if (chosen.length > 0) setBarcodeTargetBins(chosen);
+                    }}
+                    data-testid="batch-print-bin-labels-btn"
+                  >
+                    {t("bins.printLabels", "Print Bin Labels")}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedBinIds(new Set())}
+                  >
+                    {t("barcodeLabels.clearSelection", "Clear Selection")}
+                  </Button>
+                </>
+              ) : null}
               <Button variant="outline" size="sm" onClick={() => setShowAddZone(true)}>
                 + {t("bins.addZone", "Add Zone")}
               </Button>
@@ -409,6 +440,24 @@ export function BinsPage() {
             <Table bare>
               <thead className="border-b border-slate-200 text-xs text-slate-500 uppercase">
                 <tr>
+                  <th className="w-10 p-3 text-center">
+                    {allBins.length > 0 ? (
+                      <input
+                        type="checkbox"
+                        aria-label={t("barcodeLabels.selectAll", "Select All")}
+                        checked={allBins.length > 0 && allBins.every((b) => selectedBinIds.has(b.id))}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedBinIds(new Set(allBins.map((b) => b.id)));
+                          } else {
+                            setSelectedBinIds(new Set());
+                          }
+                        }}
+                        className="h-4 w-4 rounded-[4px] border-slate-300 text-brand-600 focus:ring-brand-500"
+                        data-testid="select-all-bins"
+                      />
+                    ) : null}
+                  </th>
                   <th className="p-3">{t("bins.colCode", "Bin Code")}</th>
                   <th className="p-3">{t("bins.colZone", "Zone")}</th>
                   <th className="p-3">{t("bins.colPosition", "Position")}</th>
@@ -416,7 +465,7 @@ export function BinsPage() {
                   <th className="p-3 text-right">{t("bins.colItems", "Variants")}</th>
                   <th className="p-3 text-right">{t("bins.colTotalQty", "Units")}</th>
                   <th className="p-3 text-right">{t("bins.colMaxQty", "Capacity")}</th>
-                  <th className="p-3 text-center">{t("common:actions.actions", "Actions")}</th>
+                  <th className="p-3 text-right">{t("common:actions.actions", "Actions")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -424,9 +473,27 @@ export function BinsPage() {
                   const posParts = [bin.aisle ? `Aisle ${bin.aisle}` : null, bin.rack ? `Rack ${bin.rack}` : null, bin.shelf ? `Shelf ${bin.shelf}` : null, bin.position ? `Pos ${bin.position}` : null]
                     .filter(Boolean)
                     .join(" · ");
+                  const isSelected = selectedBinIds.has(bin.id);
 
                   return (
                     <tr key={bin.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
+                      <td className="p-3 text-center">
+                        <input
+                          type="checkbox"
+                          aria-label={bin.code}
+                          checked={isSelected}
+                          onChange={(e) => {
+                            setSelectedBinIds((prev) => {
+                              const next = new Set(prev);
+                              if (e.target.checked) next.add(bin.id);
+                              else next.delete(bin.id);
+                              return next;
+                            });
+                          }}
+                          className="h-4 w-4 rounded-[4px] border-slate-300 text-brand-600 focus:ring-brand-500"
+                          data-testid={`select-bin-${bin.code}`}
+                        />
+                      </td>
                       <td className="p-3 font-mono font-semibold text-slate-900">
                         {bin.code}
                       </td>
@@ -439,26 +506,36 @@ export function BinsPage() {
                         {posParts || "—"}
                       </td>
                       <td className="p-3 text-xs capitalize text-slate-600">{bin.type}</td>
-                      <td className="p-3 text-right font-medium">{bin.item_count}</td>
-                      <td className="p-3 text-right font-semibold text-slate-900">{bin.total_qty}</td>
-                      <td className="p-3 text-right text-xs text-slate-500">
+                      <td className="p-3 text-right tabular-nums text-slate-700">{bin.item_count}</td>
+                      <td className="p-3 text-right font-semibold tabular-nums text-slate-900">{bin.total_qty}</td>
+                      <td className="p-3 text-right text-xs tabular-nums text-slate-500">
                         {bin.max_qty ? `${bin.max_qty} max` : "—"}
                       </td>
-                      <td className="p-3 text-center">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setActiveBinDetail(bin)}
-                        >
-                          {t("bins.viewContents", "View Items")}
-                        </Button>
+                      <td className="p-3 text-right">
+                        <div className="inline-flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setBarcodeTargetBins([bin])}
+                            data-testid={`print-bin-label-${bin.code}`}
+                          >
+                            {t("bins.printLabel", "Print Label")}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setActiveBinDetail(bin)}
+                          >
+                            {t("bins.viewContents", "View Items")}
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   );
                 })}
                 {allBins.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="p-6 text-center text-sm text-slate-500">
+                    <td colSpan={9} className="p-6 text-center text-sm text-slate-500">
                       {t("bins.empty", "No bins found in this zone.")}
                     </td>
                   </tr>
@@ -555,7 +632,22 @@ export function BinsPage() {
         <div className="grid gap-3">
           <div className="flex items-center justify-between text-xs text-slate-500">
             <span>{activeBinDetail?.zone_code ? `Zone: ${activeBinDetail.zone_code}` : ""}</span>
-            <span className="font-semibold text-slate-900">{activeBinDetail?.total_qty} total units</span>
+            <div className="flex items-center gap-3">
+              <span className="font-semibold text-slate-900 tabular-nums">{activeBinDetail?.total_qty} total units</span>
+              {activeBinDetail ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const target = activeBinDetail;
+                    setActiveBinDetail(null);
+                    setBarcodeTargetBins([target]);
+                  }}
+                >
+                  {t("bins.printLabel", "Print Label")}
+                </Button>
+              ) : null}
+            </div>
           </div>
 
           {binStockQuery.isPending ? (
@@ -897,6 +989,28 @@ export function BinsPage() {
           </form>
         </Dialog>
       ) : null}
+      <BarcodeLabelsDialog
+        open={Boolean(barcodeTargetBins && barcodeTargetBins.length > 0)}
+        onClose={() => setBarcodeTargetBins(null)}
+        products={(barcodeTargetBins ?? []).map(formatBinBarcodeItem)}
+        currency={access.tenant.base_currency}
+        storeName={warehouseDetails.data?.name ?? t("bins.warehouse", "Warehouse")}
+        titleOverride={
+          barcodeTargetBins && barcodeTargetBins.length > 1
+            ? t("bins.barcodeBatchTitle", {
+                count: barcodeTargetBins.length,
+                defaultValue: "Print Bin Labels ({{count}} bins)",
+              })
+            : t("bins.barcodeTitle", "Print Bin Barcode Label")
+        }
+        subtitleOverride={t(
+          "bins.barcodeSubtitle",
+          "Generate and print Code 128 rack, shelf, or thermal bin location stickers",
+        )}
+        storeLabelOverride={t("bins.includeWarehouse", "Include Warehouse Name")}
+        skuLabelOverride={t("bins.includeBinCode", "Include Bin Code")}
+        copiesLabelOverride={t("bins.copiesPerBin", "Copies per Bin")}
+      />
     </div>
   );
 }

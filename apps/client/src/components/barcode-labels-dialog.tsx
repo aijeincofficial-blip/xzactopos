@@ -18,6 +18,39 @@ export interface BarcodeLabelsDialogProps {
   products?: BarcodeProduct[] | null;
   currency: string;
   storeName?: string;
+  titleOverride?: string;
+  subtitleOverride?: string;
+  storeLabelOverride?: string;
+  skuLabelOverride?: string;
+  copiesLabelOverride?: string;
+}
+
+export interface BinBarcodeInput {
+  code: string;
+  zone_code?: string | null;
+  aisle?: string | null;
+  rack?: string | null;
+  shelf?: string | null;
+  position?: string | null;
+  type: string;
+}
+
+/** Converts a warehouse bin row into a Code 128 printable sticker item. */
+export function formatBinBarcodeItem(bin: BinBarcodeInput): BarcodeProduct {
+  const posParts = [
+    bin.aisle ? `A${bin.aisle}` : null,
+    bin.rack ? `R${bin.rack}` : null,
+    bin.shelf ? `S${bin.shelf}` : null,
+    bin.position ? `P${bin.position}` : null,
+  ].filter(Boolean);
+  const posText = posParts.length > 0 ? posParts.join("-") : bin.type.toUpperCase();
+  const labelTitle = [bin.zone_code, posText].filter(Boolean).join(" · ");
+  return {
+    name: labelTitle || bin.code,
+    sku: bin.code,
+    barcode: bin.code,
+    price: null,
+  };
 }
 
 export function buildPrintItems(
@@ -46,6 +79,11 @@ export function BarcodeLabelsDialog({
   products,
   currency,
   storeName = "Store",
+  titleOverride,
+  subtitleOverride,
+  storeLabelOverride,
+  skuLabelOverride,
+  copiesLabelOverride,
 }: BarcodeLabelsDialogProps) {
   const { t, i18n } = useTranslation("admin");
   const [quantity, setQuantity] = useState(1);
@@ -61,6 +99,7 @@ export function BarcodeLabelsDialog({
 
   if (!open || items.length === 0) return null;
 
+  const hasAnyPrice = items.some((item) => item.price != null);
   const isBatch = items.length > 1;
   const currentPreview = items[Math.min(previewIdx, items.length - 1)] ?? items[0]!;
   const previewCode = currentPreview.barcode?.trim() || currentPreview.sku;
@@ -76,9 +115,11 @@ export function BarcodeLabelsDialog({
   const count = isBatch ? copies : quantity;
   const printItems = buildPrintItems(items, count, currency, i18n.language);
 
-  const dialogTitle = isBatch
-    ? t("barcodeLabels.batchTitle", { count: items.length })
-    : t("barcodeLabels.title");
+  const dialogTitle =
+    titleOverride ??
+    (isBatch
+      ? t("barcodeLabels.batchTitle", { count: items.length })
+      : t("barcodeLabels.title"));
 
   return (
     <>
@@ -92,7 +133,7 @@ export function BarcodeLabelsDialog({
       >
         <div className="space-y-6 pt-1" data-testid="barcode-labels-dialog">
           <p className="text-sm text-slate-600">
-            {t("barcodeLabels.subtitle")}
+            {subtitleOverride ?? t("barcodeLabels.subtitle")}
           </p>
 
           {/* Form Controls */}
@@ -109,7 +150,7 @@ export function BarcodeLabelsDialog({
             </Field>
 
             {isBatch ? (
-              <Field label={t("barcodeLabels.copiesPerProduct")}>
+              <Field label={copiesLabelOverride ?? t("barcodeLabels.copiesPerProduct")}>
                 <Input
                   type="number"
                   min={1}
@@ -140,19 +181,21 @@ export function BarcodeLabelsDialog({
           </div>
 
           {/* Label Options */}
-          <div className="rounded-[10px] border border-slate-200 p-4 space-y-3 bg-slate-50/50">
-            <label className="flex items-center gap-2.5 text-sm font-medium text-slate-700 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={includePrice}
-                onChange={(e) => setIncludePrice(e.target.checked)}
-                className="h-4 w-4 rounded-[4px] border-slate-300 text-brand-600 focus:ring-brand-500"
-                data-testid="include-price-checkbox"
-              />
-              <span>{t("barcodeLabels.includePrice")}</span>
-            </label>
+          <div className="rounded-[10px] border border-slate-200 p-4 space-y-3 bg-slate-50">
+            {hasAnyPrice ? (
+              <label className="flex items-center gap-3 text-sm text-slate-700 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={includePrice}
+                  onChange={(e) => setIncludePrice(e.target.checked)}
+                  className="h-4 w-4 rounded-[4px] border-slate-300 text-brand-600 focus:ring-brand-500"
+                  data-testid="include-price-checkbox"
+                />
+                <span>{t("barcodeLabels.includePrice")}</span>
+              </label>
+            ) : null}
 
-            <label className="flex items-center gap-2.5 text-sm font-medium text-slate-700 cursor-pointer">
+            <label className="flex items-center gap-3 text-sm text-slate-700 cursor-pointer">
               <input
                 type="checkbox"
                 checked={includeStore}
@@ -160,10 +203,10 @@ export function BarcodeLabelsDialog({
                 className="h-4 w-4 rounded-[4px] border-slate-300 text-brand-600 focus:ring-brand-500"
                 data-testid="include-store-checkbox"
               />
-              <span>{t("barcodeLabels.includeStore")}</span>
+              <span>{storeLabelOverride ?? t("barcodeLabels.includeStore")}</span>
             </label>
 
-            <label className="flex items-center gap-2.5 text-sm font-medium text-slate-700 cursor-pointer">
+            <label className="flex items-center gap-3 text-sm text-slate-700 cursor-pointer">
               <input
                 type="checkbox"
                 checked={includeSku}
@@ -171,7 +214,7 @@ export function BarcodeLabelsDialog({
                 className="h-4 w-4 rounded-[4px] border-slate-300 text-brand-600 focus:ring-brand-500"
                 data-testid="include-sku-checkbox"
               />
-              <span>{t("barcodeLabels.includeSku")}</span>
+              <span>{skuLabelOverride ?? t("barcodeLabels.includeSku")}</span>
             </label>
           </div>
 
@@ -215,7 +258,7 @@ export function BarcodeLabelsDialog({
                 data-testid="barcode-label-preview"
               >
                 {includeStore ? (
-                  <span className="text-[10px] font-semibold tracking-wider uppercase text-slate-600 max-w-[200px] truncate">
+                  <span className="text-xs font-semibold tracking-wider uppercase text-slate-600 max-w-[200px] truncate">
                     {storeName}
                   </span>
                 ) : null}
@@ -233,8 +276,8 @@ export function BarcodeLabelsDialog({
                   />
                 </div>
 
-                {includePrice && previewPriceDisplay ? (
-                  <span className="text-base font-bold text-slate-950 tabular-nums">
+                {hasAnyPrice && includePrice && previewPriceDisplay ? (
+                  <span className="text-base font-semibold text-slate-950 tabular-nums">
                     {previewPriceDisplay}
                   </span>
                 ) : null}

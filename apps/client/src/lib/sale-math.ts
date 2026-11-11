@@ -185,3 +185,58 @@ export function parseAmount(value: string, currency: string): number | null {
 export function localReceiptNo(deviceCode: string, day: string, seq: number): string {
   return `${deviceCode}-${day.slice(2, 4)}${day.slice(5, 7)}${day.slice(8, 10)}-${String(seq).padStart(4, "0")}`;
 }
+
+export interface ReturnMathItem {
+  variantId: string;
+  soldQty: number;
+  alreadyReturnedQty: number;
+  lineTotal: number;
+  returnQty: number;
+}
+
+/**
+ * Computes the exact pro-rata refund in minor units for a partial or full remaining return,
+ * matching `op_return_sale_items` on the server (including cart-level discount share and
+ * zero-centavo drift when all remaining units on the receipt are returned).
+ */
+export function computePartialReturnRefund(params: {
+  saleSubtotal: number;
+  saleDiscount: number;
+  saleTotal: number;
+  alreadyRefundedTotal: number;
+  items: readonly ReturnMathItem[];
+}): number {
+  const { saleSubtotal, saleDiscount, saleTotal, alreadyRefundedTotal, items } = params;
+  let totalSoldUnits = 0;
+  let totalPrevUnits = 0;
+  let totalReqUnits = 0;
+  let refundSum = 0;
+
+  for (const it of items) {
+    totalSoldUnits += milli(it.soldQty);
+    totalPrevUnits += milli(it.alreadyReturnedQty);
+    const req = Math.max(0, Math.min(it.returnQty, it.soldQty - it.alreadyReturnedQty));
+    if (req <= 0 || it.soldQty <= 0) continue;
+    totalReqUnits += milli(req);
+
+    let lineSub: number;
+    if (milli(it.alreadyReturnedQty) + milli(req) === milli(it.soldQty)) {
+      const prevSub = Math.round(it.lineTotal * (it.alreadyReturnedQty / it.soldQty));
+      lineSub = Math.max(0, it.lineTotal - prevSub);
+    } else {
+      lineSub = Math.round(it.lineTotal * (req / it.soldQty));
+    }
+
+    const lineDisc =
+      saleSubtotal > 0 && saleDiscount > 0
+        ? Math.min(lineSub, Math.round((saleDiscount * lineSub) / saleSubtotal))
+        : 0;
+    refundSum += Math.max(0, lineSub - lineDisc);
+  }
+
+  if (totalReqUnits === 0) return 0;
+  if (totalPrevUnits + totalReqUnits === totalSoldUnits) {
+    return Math.max(0, saleTotal - alreadyRefundedTotal);
+  }
+  return refundSum;
+}

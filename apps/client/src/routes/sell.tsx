@@ -34,6 +34,7 @@ import {
   isSkuPinned,
   togglePinnedSku,
 } from "../lib/fast-keys.ts";
+import { resolvePosHotkey } from "../lib/sell-hotkeys.ts";
 
 const WALLETS: Wallet[] = ["gcash", "maya", "other"];
 
@@ -75,6 +76,10 @@ export function SellPage() {
   const [offlineApproval, setOfflineApproval] = useState<OfflineApprovalPayload | null>(null);
   const [showApprovalDialog, setShowApprovalDialog] = useState(false);
   const attempt = useRef<{ key: string; id: string; opId: string } | null>(null);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
+  const discountInputRef = useRef<HTMLInputElement | null>(null);
+  const tenderedInputRef = useRef<HTMLInputElement | null>(null);
+  const payMethodSelectRef = useRef<HTMLSelectElement | null>(null);
 
   useEffect(() => {
     void registerWebDevice();
@@ -273,6 +278,61 @@ export function SellPage() {
     charge.mutate();
   }
 
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      const el = e.target as HTMLElement | null;
+      const tag = el?.tagName?.toLowerCase();
+      const inField = tag === "input" || tag === "textarea" || tag === "select" || Boolean(el?.isContentEditable);
+      const action = resolvePosHotkey({
+        key: e.key,
+        altKey: e.altKey,
+        ctrlKey: e.ctrlKey,
+        metaKey: e.metaKey,
+        shiftKey: e.shiftKey,
+        inField,
+        modalOpen: showApprovalDialog,
+        isDoneScreen: done !== null,
+        canCharge: cart.length > 0 && !charge.isPending,
+      });
+      if (!action) return;
+      e.preventDefault();
+      switch (action.type) {
+        case "focus_search":
+          searchInputRef.current?.focus();
+          searchInputRef.current?.select();
+          break;
+        case "focus_discount":
+          discountInputRef.current?.focus();
+          discountInputRef.current?.select();
+          break;
+        case "focus_payment":
+          if (method === "cash" && tenderedInputRef.current) {
+            tenderedInputRef.current.focus();
+            tenderedInputRef.current.select();
+          } else {
+            payMethodSelectRef.current?.focus();
+          }
+          break;
+        case "fast_key": {
+          const item = fastKeyProducts[action.index];
+          if (item) add(item);
+          break;
+        }
+        case "charge":
+          handleCharge();
+          break;
+        case "new_sale":
+          setDone(null);
+          break;
+        case "print_receipt":
+          window.print();
+          break;
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  });
+
   if (!store) {
     return (
       <Card>
@@ -326,27 +386,41 @@ export function SellPage() {
   return (
     <div className="grid gap-4 lg:grid-cols-[1fr_380px]">
       <section className="grid content-start gap-3">
-        <PageHeader title={t("sell.title")} />
-        <Input
-          data-testid="sell-search"
-          placeholder={t("sell.search")}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && onSearchEnter()}
+        <PageHeader
+          title={t("sell.title")}
+          actions={
+            <span className="hidden text-xs text-slate-600 sm:inline" data-testid="pos-shortcuts-hint">
+              {t("sell.shortcutsHint")}
+            </span>
+          }
         />
+        <div className="relative">
+          <Input
+            ref={searchInputRef}
+            data-testid="sell-search"
+            placeholder={t("sell.search")}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && onSearchEnter()}
+            className="pr-14"
+          />
+          <kbd className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 rounded border border-slate-200 bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-slate-600">
+            F2
+          </kbd>
+        </div>
         {/* Fast-Keys Quick Bar */}
         {fastKeyProducts.length > 0 || (customPinned !== null && customPinned.length === 0) ? (
           <div data-testid="fast-keys-bar" className="grid gap-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-600">
                 {t("sell.fastKeys")}
               </span>
             </div>
             {fastKeyProducts.length === 0 ? (
-              <p className="text-xs text-slate-400 py-1">{t("sell.fastKeysEmpty")}</p>
+              <p className="text-xs text-slate-500 py-1">{t("sell.fastKeysEmpty")}</p>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
-                {fastKeyProducts.map((s) => (
+                {fastKeyProducts.map((s, idx) => (
                   <button
                     key={s.variantId}
                     type="button"
@@ -355,13 +429,20 @@ export function SellPage() {
                     className="flex flex-col justify-between p-2 rounded-md border border-slate-200 bg-white text-left hover:border-slate-300 hover:bg-slate-50 transition-colors shadow-xs"
                   >
                     <div className="w-full">
-                      <span className="block text-xs font-semibold text-slate-900 truncate" title={s.name}>
-                        {s.name}
-                      </span>
-                      <span className="block text-[11px] text-slate-500 font-mono truncate">{s.sku}</span>
+                      <div className="flex items-start justify-between gap-1">
+                        <span className="block text-xs font-semibold text-slate-900 truncate" title={s.name}>
+                          {s.name}
+                        </span>
+                        {idx < 6 ? (
+                          <kbd className="shrink-0 rounded border border-slate-200 bg-slate-50 px-1 font-mono text-xs text-slate-500">
+                            Alt+{idx + 1}
+                          </kbd>
+                        ) : null}
+                      </div>
+                      <span className="block text-xs text-slate-500 font-mono truncate">{s.sku}</span>
                     </div>
                     <div className="mt-2">
-                      <span className="inline-block rounded bg-slate-100 px-1.5 py-0.5 text-xs font-semibold text-slate-800">
+                      <span className="inline-block rounded bg-slate-100 px-1.5 py-0.5 text-xs font-semibold text-slate-800 tabular-nums">
                         {fmt(s.price)}
                       </span>
                     </div>
@@ -452,10 +533,20 @@ export function SellPage() {
             <span>{fmt(subtotal)}</span>
           </div>
           <label className="flex items-center justify-between gap-2">
-            <span>{t("sell.discount")}</span>
-            <Input className="w-28 text-right" data-testid="discount" inputMode="decimal" value={discountText} onChange={(e) => setDiscountText(e.target.value)} />
+            <span className="flex items-center gap-1.5">
+              <span>{t("sell.discount")}</span>
+              <kbd className="rounded border border-slate-200 bg-slate-50 px-1 font-mono text-xs text-slate-500">F4</kbd>
+            </span>
+            <Input
+              ref={discountInputRef}
+              className="w-28 text-right tabular-nums"
+              data-testid="discount"
+              inputMode="decimal"
+              value={discountText}
+              onChange={(e) => setDiscountText(e.target.value)}
+            />
           </label>
-          <div className="flex justify-between text-base font-semibold" data-testid="cart-total">
+          <div className="flex justify-between text-base font-semibold tabular-nums" data-testid="cart-total">
             <span>{t("sell.total")}</span>
             <span>{fmt(total)}</span>
           </div>
@@ -463,7 +554,7 @@ export function SellPage() {
 
         <div className="grid gap-2 border-t border-slate-200 pt-3 text-sm">
           <span className="font-semibold">{t("sell.payment")}</span>
-          <Select aria-label={t("sell.payment")} data-testid="pay-method" value={method} onChange={(e) => setMethod(e.target.value as PayMethod)}>
+          <Select ref={payMethodSelectRef} aria-label={t("sell.payment")} data-testid="pay-method" value={method} onChange={(e) => setMethod(e.target.value as PayMethod)}>
             <option value="cash">{t("sell.cash")}</option>
             <option value="ewallet">{t("sell.ewallet")}</option>
             <option value="card">{t("sell.card")}</option>
@@ -513,8 +604,18 @@ export function SellPage() {
           {method === "cash" ? (
             <>
               <label className="flex items-center justify-between gap-2">
-                <span>{t("sell.tendered")}</span>
-                <Input className="w-28 text-right" data-testid="tendered" inputMode="decimal" value={tenderedText} onChange={(e) => setTenderedText(e.target.value)} />
+                <span className="flex items-center gap-1.5">
+                  <span>{t("sell.tendered")}</span>
+                  <kbd className="rounded border border-slate-200 bg-slate-50 px-1 font-mono text-xs text-slate-500">F8</kbd>
+                </span>
+                <Input
+                  ref={tenderedInputRef}
+                  className="w-28 text-right tabular-nums"
+                  data-testid="tendered"
+                  inputMode="decimal"
+                  value={tenderedText}
+                  onChange={(e) => setTenderedText(e.target.value)}
+                />
               </label>
               {change > 0 ? (
                 <div className="flex justify-between">
@@ -541,8 +642,9 @@ export function SellPage() {
           ) : null}
         </div>
         {problem ? <Alert>{problem}</Alert> : null}
-        <Button data-testid="charge" disabled={cart.length === 0 || charge.isPending} onClick={handleCharge}>
-          {charge.isPending ? t("sell.charging") : t("sell.charge", { total: fmt(total) })}
+        <Button data-testid="charge" disabled={cart.length === 0 || charge.isPending} onClick={handleCharge} className="justify-between">
+          <span>{charge.isPending ? t("sell.charging") : t("sell.charge", { total: fmt(total) })}</span>
+          <kbd className="rounded bg-brand-700 px-1.5 py-0.5 font-mono text-xs text-brand-100">F9</kbd>
         </Button>
         {cart.length > 0 ? (
           <Button variant="ghost" size="sm" onClick={reset}>

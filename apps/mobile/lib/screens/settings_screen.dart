@@ -373,14 +373,13 @@ class SettingsScreen extends StatelessWidget {
                     FilledButton.tonal(
                       key: const Key('settings-upgrade-full'),
                       style: FilledButton.styleFrom(
-                        shape: const StadiumBorder(),
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                         minimumSize: const Size(0, 36),
                       ),
                       onPressed: () => _showUpgradeDialog(context, t),
                       child: Text(
                         t.upgradeFullAction,
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                       ),
                     ),
                   ],
@@ -487,8 +486,13 @@ class _PrinterSettingsCardState extends State<_PrinterSettingsCard> {
     final t = AppLocalizations.of(context);
     final scheme = Theme.of(context).colorScheme;
     final cfg = activePrinterConfig;
-    final isEscPos = cfg.engine == PrinterEngineType.networkEscPos;
-    final subtitle = isEscPos ? 'ESC/POS (${cfg.ipAddress}:${cfg.port})' : t.printerEnginePdf;
+    final subtitle = switch (cfg.engine) {
+      PrinterEngineType.networkEscPos => 'ESC/POS (${cfg.ipAddress}:${cfg.port})',
+      PrinterEngineType.bluetoothEscPos => cfg.btAddress.isEmpty
+          ? t.printerBtNotSelected
+          : 'Bluetooth (${cfg.btName.isNotEmpty ? cfg.btName : cfg.btAddress})',
+      PrinterEngineType.systemPdf => t.printerEnginePdf,
+    };
 
     return AppCard(
       padding: const EdgeInsets.all(Gap.l),
@@ -502,7 +506,7 @@ class _PrinterSettingsCardState extends State<_PrinterSettingsCard> {
               children: [
                 Text(
                   t.printerSection,
-                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
                 ),
                 Text(
                   subtitle,
@@ -514,7 +518,6 @@ class _PrinterSettingsCardState extends State<_PrinterSettingsCard> {
           OutlinedButton(
             key: const Key('settings-configure-printer'),
             style: OutlinedButton.styleFrom(
-              shape: const StadiumBorder(),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               minimumSize: const Size(0, 36),
             ),
@@ -524,7 +527,7 @@ class _PrinterSettingsCardState extends State<_PrinterSettingsCard> {
             },
             child: Text(
               t.change,
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -538,7 +541,7 @@ Future<void> showPrinterSettingsSheet(BuildContext context, String storeName) {
     context: context,
     isScrollControlled: true,
     shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      borderRadius: BorderRadius.vertical(top: Radius.circular(Gap.radiusXL)),
     ),
     builder: (ctx) => Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
@@ -564,6 +567,10 @@ class _PrinterSettingsSheetContentState extends State<_PrinterSettingsSheetConte
   late PrinterConfig _config;
   late TextEditingController _ipController;
   late TextEditingController _portController;
+  late TextEditingController _btAddressController;
+  List<BluetoothPrinterDevice> _bondedDevices = const [];
+  bool _scanningBt = false;
+  String? _btScanError;
   bool _testing = false;
 
   @override
@@ -572,12 +579,17 @@ class _PrinterSettingsSheetContentState extends State<_PrinterSettingsSheetConte
     _config = activePrinterConfig;
     _ipController = TextEditingController(text: _config.ipAddress);
     _portController = TextEditingController(text: _config.port.toString());
+    _btAddressController = TextEditingController(text: _config.btAddress);
+    if (_config.engine == PrinterEngineType.bluetoothEscPos) {
+      _scanPairedBluetooth();
+    }
   }
 
   @override
   void dispose() {
     _ipController.dispose();
     _portController.dispose();
+    _btAddressController.dispose();
     super.dispose();
   }
 
@@ -585,6 +597,27 @@ class _PrinterSettingsSheetContentState extends State<_PrinterSettingsSheetConte
     setState(() => _config = next);
     await next.save();
     applyPrinterConfig(next);
+  }
+
+  Future<void> _scanPairedBluetooth() async {
+    setState(() {
+      _scanningBt = true;
+      _btScanError = null;
+    });
+    try {
+      final found = await activeBluetoothAdapter.getBondedDevices();
+      if (!mounted) return;
+      setState(() {
+        _bondedDevices = found;
+        _scanningBt = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _btScanError = e.toString();
+        _scanningBt = false;
+      });
+    }
   }
 
   Future<void> _testPrint() async {
@@ -605,7 +638,9 @@ class _PrinterSettingsSheetContentState extends State<_PrinterSettingsSheetConte
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
     final scheme = Theme.of(context).colorScheme;
-    final isEscPos = _config.engine == PrinterEngineType.networkEscPos;
+    final isNetEscPos = _config.engine == PrinterEngineType.networkEscPos;
+    final isBtEscPos = _config.engine == PrinterEngineType.bluetoothEscPos;
+    final isThermal = _config.isThermal;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -621,7 +656,7 @@ class _PrinterSettingsSheetContentState extends State<_PrinterSettingsSheetConte
                 children: [
                   Text(
                     t.printerSection,
-                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
                   ),
                   Text(
                     t.printerSectionHint,
@@ -635,27 +670,40 @@ class _PrinterSettingsSheetContentState extends State<_PrinterSettingsSheetConte
         const SizedBox(height: Gap.m),
 
         // Engine Selector
-        SegmentedButton<PrinterEngineType>(
-          key: const Key('printer-engine-selector'),
-          segments: [
-            ButtonSegment(
-              value: PrinterEngineType.systemPdf,
-              label: Text(t.printerEnginePdf, style: const TextStyle(fontSize: 12)),
-            ),
-            ButtonSegment(
-              value: PrinterEngineType.networkEscPos,
-              label: Text(t.printerEngineEscPos, style: const TextStyle(fontSize: 12)),
-            ),
-          ],
-          selected: {_config.engine},
-          onSelectionChanged: (s) {
-            if (s.isNotEmpty) {
-              _update(_config.copyWith(engine: s.first));
-            }
-          },
+        SizedBox(
+          width: double.infinity,
+          child: SegmentedButton<PrinterEngineType>(
+            key: const Key('printer-engine-selector'),
+            segments: [
+              ButtonSegment(
+                value: PrinterEngineType.systemPdf,
+                label: Text(t.printerEnginePdf, style: const TextStyle(fontSize: 12)),
+              ),
+              ButtonSegment(
+                value: PrinterEngineType.networkEscPos,
+                label: Text(t.printerEngineEscPos, style: const TextStyle(fontSize: 12)),
+              ),
+              ButtonSegment(
+                value: PrinterEngineType.bluetoothEscPos,
+                label: Text(t.printerEngineBluetooth, style: const TextStyle(fontSize: 12)),
+              ),
+            ],
+            selected: {_config.engine},
+            onSelectionChanged: (s) {
+              if (s.isNotEmpty) {
+                final nextEngine = s.first;
+                _update(_config.copyWith(engine: nextEngine));
+                if (nextEngine == PrinterEngineType.bluetoothEscPos &&
+                    _bondedDevices.isEmpty &&
+                    !_scanningBt) {
+                  _scanPairedBluetooth();
+                }
+              }
+            },
+          ),
         ),
 
-        if (isEscPos) ...[
+        if (isNetEscPos) ...[
           const SizedBox(height: Gap.m),
           Row(
             children: [
@@ -695,6 +743,94 @@ class _PrinterSettingsSheetContentState extends State<_PrinterSettingsSheetConte
               ),
             ],
           ),
+        ],
+
+        if (isBtEscPos) ...[
+          const SizedBox(height: Gap.m),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                t.printerBtPairedTitle,
+                style: TextStyle(fontSize: 12, color: scheme.outline, fontWeight: FontWeight.w600),
+              ),
+              TextButton.icon(
+                key: const Key('printer-bt-scan-btn'),
+                onPressed: _scanningBt ? null : _scanPairedBluetooth,
+                icon: _scanningBt
+                    ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Icon(Icons.bluetooth_searching_rounded, size: 16),
+                label: Text(t.printerBtScan, style: const TextStyle(fontSize: 12)),
+              ),
+            ],
+          ),
+          if (_btScanError != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: Gap.s),
+              child: Text(
+                t.printerBtHint,
+                style: TextStyle(fontSize: 12, color: scheme.outline),
+              ),
+            ),
+          if (_bondedDevices.isNotEmpty)
+            Container(
+              margin: const EdgeInsets.only(bottom: Gap.m),
+              decoration: BoxDecoration(
+                border: Border.all(color: scheme.outlineVariant),
+                borderRadius: BorderRadius.circular(Gap.radiusS),
+              ),
+              child: Column(
+                children: [
+                  for (final dev in _bondedDevices)
+                    ListTile(
+                      key: Key('printer-bt-device-${dev.address}'),
+                      dense: true,
+                      leading: Icon(
+                        _config.btAddress.toUpperCase() == dev.address.toUpperCase()
+                            ? Icons.bluetooth_connected_rounded
+                            : Icons.bluetooth_rounded,
+                        color: _config.btAddress.toUpperCase() == dev.address.toUpperCase()
+                            ? scheme.primary
+                            : scheme.outline,
+                        size: 20,
+                      ),
+                      title: Text(
+                        dev.name,
+                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                      ),
+                      subtitle: Text(dev.address, style: const TextStyle(fontSize: 12)),
+                      trailing: _config.btAddress.toUpperCase() == dev.address.toUpperCase()
+                          ? Icon(Icons.check_circle_rounded, color: scheme.primary, size: 18)
+                          : null,
+                      onTap: () {
+                        _btAddressController.text = dev.address;
+                        _update(_config.copyWith(btName: dev.name, btAddress: dev.address));
+                      },
+                    ),
+                ],
+              ),
+            )
+          else if (!_scanningBt && _btScanError == null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: Gap.m),
+              child: Text(
+                t.printerBtEmpty,
+                style: TextStyle(fontSize: 12, color: scheme.outline),
+              ),
+            ),
+          TextField(
+            key: const Key('printer-bt-address-field'),
+            controller: _btAddressController,
+            decoration: InputDecoration(
+              labelText: t.printerBtAddress,
+              hintText: 'DC:0D:30:01:02:03',
+              isDense: true,
+            ),
+            onChanged: (v) => _update(_config.copyWith(btAddress: v.trim())),
+          ),
+        ],
+
+        if (isThermal) ...[
           const SizedBox(height: Gap.m),
 
           // Roll width selector
@@ -719,14 +855,14 @@ class _PrinterSettingsSheetContentState extends State<_PrinterSettingsSheetConte
           SwitchListTile(
             key: const Key('printer-drawer-switch'),
             contentPadding: EdgeInsets.zero,
-            title: Text(t.printerDrawerKick, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+            title: Text(t.printerDrawerKick, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
             value: _config.drawerKick,
             onChanged: (v) => _update(_config.copyWith(drawerKick: v)),
           ),
           SwitchListTile(
             key: const Key('printer-autoprint-switch'),
             contentPadding: EdgeInsets.zero,
-            title: Text(t.printerAutoPrint, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+            title: Text(t.printerAutoPrint, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
             value: _config.autoPrint,
             onChanged: (v) => _update(_config.copyWith(autoPrint: v)),
           ),
@@ -740,7 +876,9 @@ class _PrinterSettingsSheetContentState extends State<_PrinterSettingsSheetConte
                   ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
                   : const Icon(Icons.print_outlined, size: 18),
               label: Text(t.printerTestPrint),
-              onPressed: _testing ? null : _testPrint,
+              onPressed: _testing || (isBtEscPos && _config.btAddress.trim().isEmpty)
+                  ? null
+                  : _testPrint,
             ),
           ),
         ],

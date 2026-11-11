@@ -23,7 +23,13 @@ jobs:
           node-version: 22
           cache: pnpm
 
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
       - run: pnpm install --frozen-lockfile
+      - run: cd apps/mobile && flutter pub get
 
       # Start only what pgTAP needs to keep CI fast.
       - name: Start local Supabase

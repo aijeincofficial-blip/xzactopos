@@ -293,12 +293,38 @@ mixin DriftSales implements SalesStore {
     if (!paymentWallets.contains(wallet)) throw ArgumentError('Unknown wallet: $wallet');
   }
 
+  static String _returnMetaKey(String saleId) => 'sale_returns:$saleId';
+
+  Future<({int refundedTotal, Map<String, double> byVariant})> _readLocalReturns(String saleId) async {
+    final raw = await meta(_returnMetaKey(saleId));
+    if (raw == null || raw.isEmpty) {
+      return (refundedTotal: 0, byVariant: <String, double>{});
+    }
+    try {
+      final decoded = jsonDecode(raw) as Map<String, dynamic>;
+      final total = (decoded['refunded_total'] as num?)?.toInt() ?? 0;
+      final byVarRaw = (decoded['by_variant'] as Map<String, dynamic>?) ?? const {};
+      return (
+        refundedTotal: total,
+        byVariant: <String, double>{
+          for (final e in byVarRaw.entries) e.key: (e.value as num).toDouble(),
+        },
+      );
+    } catch (_) {
+      return (refundedTotal: 0, byVariant: <String, double>{});
+    }
+  }
+
   @override
   Future<void> voidSale(String saleId, {required String opId, String? reason}) {
     return db.transaction(() async {
       final sale = await (db.select(db.sales)..where((s) => s.id.equals(saleId))).getSingleOrNull();
       if (sale == null) throw StateError('Unknown sale');
       if (sale.status == 'voided') throw StateError('Sale is already cancelled');
+      final prevRet = await _readLocalReturns(saleId);
+      if (prevRet.refundedTotal > 0 || prevRet.byVariant.isNotEmpty) {
+        throw StateError('Sale already has partial returns');
+      }
       // its effects go back where the sale was made (the active store only for an old row that does not know its store)
       final loc = sale.locationId ?? await activeStoreNow();
       final now = _iso(DateTime.now());
@@ -335,6 +361,145 @@ mixin DriftSales implements SalesStore {
             opId: opId, txnId: saleId, wallet: p.wallet!, amount: -p.amount, locationId: Value(loc)));
       }
       await enqueue(opId, 'void_sale', saleId, {'sale_id': saleId, 'reason': ?reason, 'location_id': ?loc});
+    });
+  }
+
+  @override
+  Future<int> returnSaleItems(
+    String saleId, {
+    required List<SaleReturnLine> items,
+    required String refundMethod,
+    String? reason,
+    String? approvalId,
+    Map<String, dynamic>? offlineApproval,
+    required String opId,
+  }) {
+    if (!const {'cash', 'utang', 'ewallet', 'card'}.contains(refundMethod)) {
+      throw ArgumentError('Invalid refund method: $refundMethod');
+    }
+    if (items.isEmpty) {
+      throw ArgumentError('At least one item is required for return');
+    }
+    return db.transaction(() async {
+      final sale = await (db.select(db.sales)..where((s) => s.id.equals(saleId))).getSingleOrNull();
+      if (sale == null) throw StateError('Unknown sale');
+      if (sale.status == 'voided') throw StateError('Sale is already cancelled');
+      if (refundMethod == 'utang' && sale.customerId == null) {
+        throw ArgumentError('Utang refund requires a customer on the sale');
+      }
+
+      final dbItems = await (db.select(db.saleItems)
+            ..where((i) => i.saleId.equals(saleId))
+            ..orderBy([(i) => OrderingTerm.asc(i.id)]))
+          .get();
+      final prev = await _readLocalReturns(saleId);
+      final reqByVar = <String, double>{};
+      for (final r in items) {
+        if (r.qty <= 0) throw ArgumentError('Return quantity must be positive');
+        reqByVar[r.variantId] = (reqByVar[r.variantId] ?? 0) + r.qty;
+      }
+
+      // Validate against sold minus already returned per variant
+      final soldByVar = <String, double>{};
+      final trackedByVar = <String, bool>{};
+      for (final si in dbItems) {
+        soldByVar[si.variantId] = (soldByVar[si.variantId] ?? 0) + si.qty;
+        trackedByVar[si.variantId] = si.tracked;
+      }
+      for (final entry in reqByVar.entries) {
+        final sold = soldByVar[entry.key] ?? 0;
+        final already = prev.byVariant[entry.key] ?? 0;
+        if (sold <= 0) throw ArgumentError('Unknown variant on sale: ${entry.key}');
+        if (SaleLine.milli(already + entry.value) > SaleLine.milli(sold)) {
+          throw StateError('Return quantity exceeds remaining sold quantity');
+        }
+      }
+
+      // Build view items aggregated per line for exact pro-rata refund computation
+      final remPrevAlloc = Map<String, double>.from(prev.byVariant);
+      final viewItems = <SaleItemView>[];
+      for (final si in dbItems) {
+        final pLeft = remPrevAlloc[si.variantId] ?? 0;
+        final pAlloc = pLeft > si.qty ? si.qty : pLeft;
+        remPrevAlloc[si.variantId] = pLeft - pAlloc;
+        viewItems.add(SaleItemView(
+          si.name,
+          si.qty,
+          si.unitPrice,
+          si.lineTotal,
+          discount: si.discount,
+          variantId: si.variantId,
+          returnedQty: pAlloc,
+        ));
+      }
+
+      final refundTotal = computePartialReturnRefund(
+        saleSubtotal: sale.subtotal,
+        saleDiscount: sale.discount,
+        saleTotal: sale.total,
+        alreadyRefundedTotal: prev.refundedTotal,
+        items: viewItems,
+        returnByVariant: reqByVar,
+      );
+
+      final loc = sale.locationId ?? await activeStoreNow();
+      final now = _iso(DateTime.now());
+      final trimmedReason = (reason != null && reason.trim().isNotEmpty) ? reason.trim() : null;
+
+      for (final entry in reqByVar.entries) {
+        if (trackedByVar[entry.key] == true) {
+          await db.into(db.localMovements).insert(
+                LocalMovementsCompanion.insert(
+                  opId: opId,
+                  variantId: entry.key,
+                  qty: entry.value,
+                  locationId: Value(loc),
+                ),
+              );
+        }
+      }
+
+      if (refundMethod == 'utang' && refundTotal > 0 && sale.customerId != null) {
+        await db.into(db.localLedger).insert(
+              LocalLedgerCompanion.insert(
+                opId: opId,
+                customerId: sale.customerId!,
+                kind: 'adjust',
+                amount: -refundTotal,
+                saleId: Value(saleId),
+                note: Value(trimmedReason ?? 'return'),
+                occurredAt: now,
+                locationId: Value(loc),
+              ),
+            );
+      }
+
+      final updatedByVar = Map<String, double>.from(prev.byVariant);
+      for (final entry in reqByVar.entries) {
+        updatedByVar[entry.key] = (updatedByVar[entry.key] ?? 0) + entry.value;
+      }
+      await setMeta(
+        _returnMetaKey(saleId),
+        jsonEncode({
+          'refunded_total': prev.refundedTotal + refundTotal,
+          'by_variant': updatedByVar,
+        }),
+      );
+
+      await enqueue(opId, 'return_sale_items', saleId, {
+        'sale_id': saleId,
+        'location_id': ?loc,
+        'refund_method': refundMethod,
+        'reason': ?trimmedReason,
+        'returned_at': now,
+        'items': [
+          for (final e in reqByVar.entries) {'variant_id': e.key, 'qty': e.value},
+        ],
+        'approval_id': ?approvalId,
+        'offline_approval': ?offlineApproval,
+      });
+
+      return refundTotal;
     });
   }
 
@@ -567,20 +732,39 @@ mixin DriftSales implements SalesStore {
           ..where((p) => p.saleId.equals(saleId))
           ..orderBy([(p) => OrderingTerm.asc(p.id)]))
         .get();
+    final ret = await _readLocalReturns(saleId);
+    final remRet = Map<String, double>.from(ret.byVariant);
+    final itemViews = <SaleItemView>[];
+    for (final i in items) {
+      final rLeft = remRet[i.variantId] ?? 0;
+      final rAlloc = rLeft > i.qty ? i.qty : rLeft;
+      remRet[i.variantId] = rLeft - rAlloc;
+      itemViews.add(SaleItemView(
+        i.name,
+        i.qty,
+        i.unitPrice,
+        i.lineTotal,
+        discount: i.discount,
+        variantId: i.variantId,
+        returnedQty: rAlloc,
+      ));
+    }
     return SaleDetail(
       summary: _summary(rows.first),
       subtotal: s.subtotal,
       discount: s.discount,
       tax: s.tax,
       customerId: s.customerId,
-      items: [for (final i in items) SaleItemView(i.name, i.qty, i.unitPrice, i.lineTotal, discount: i.discount)],
+      refundedTotal: ret.refundedTotal,
+      items: itemViews,
       payments: [for (final p in pays) SalePaymentView(p.method, p.amount, p.tendered, p.reference, wallet: p.wallet)],
     );
   }
 
   @override
   Stream<SaleDetail?> watchSale(String saleId) => db
-      .customSelect('select 1 as watch_sales_sale_items_sale_payments_outbox_customers', readsFrom: {db.sales, db.saleItems, db.salePayments, db.outbox, db.customers})
+      .customSelect('select 1 as watch_sales_sale_items_sale_payments_outbox_customers',
+          readsFrom: {db.sales, db.saleItems, db.salePayments, db.outbox, db.customers, db.meta})
       .watch()
       .asyncMap((_) => getSale(saleId));
 

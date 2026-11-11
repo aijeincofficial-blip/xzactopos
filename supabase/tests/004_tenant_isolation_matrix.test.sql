@@ -210,6 +210,13 @@ insert into expected (who, tbl, own_rows, own_updated)
 select w.who, 'location_reorder_points', case when w.who in ('superadmin', 'warehouse') then 1 else 0 end, -1
 from (values ('superadmin'), ('admin'), ('cashier'), ('warehouse'), ('inactive')) w(who);
 
+-- Phase P-Retail+ sale_returns & sale_return_items: store-scoped like sales/sale_items (S01 + S02 = 2 for superadmin/admin, S01 = 1 for cashier, 0 for warehouse/inactive); append-only (-1)
+insert into expected (who, tbl, own_rows, own_updated)
+select w.who, t.tbl,
+       case w.who when 'superadmin' then 2 when 'admin' then 2 when 'cashier' then 1 else 0 end, -1
+from (values ('superadmin'), ('admin'), ('cashier'), ('warehouse'), ('inactive')) w(who)
+cross join (values ('sale_returns'), ('sale_return_items')) t(tbl);
+
 -- 2 tenants x (who, table) pairs x 5 metrics, plus 8 targeted checks
 select plan((select count(*)::int * 2 * 5 from expected) + 8);
 
@@ -290,9 +297,15 @@ begin
     insert into public.sales (id, tenant_id, location_id, local_no, subtotal, total, sold_at) values
       (md5('sale:' || t.label || ':1')::uuid, pg_temp.tid(t.label), pg_temp.lid(t.label, 'S01'), 'D1-0001', 2500, 2500, now()),
       (md5('sale:' || t.label || ':2')::uuid, pg_temp.tid(t.label), pg_temp.lid(t.label, 'S02'), 'D1-0002', 2500, 2500, now());
-    insert into public.sale_items (tenant_id, sale_id, location_id, variant_id, product_name, qty, unit_price, line_total) values
-      (pg_temp.tid(t.label), md5('sale:' || t.label || ':1')::uuid, pg_temp.lid(t.label, 'S01'), md5('var:' || t.label || ':1')::uuid, 'Cola', 1, 2500, 2500),
-      (pg_temp.tid(t.label), md5('sale:' || t.label || ':2')::uuid, pg_temp.lid(t.label, 'S02'), md5('var:' || t.label || ':1')::uuid, 'Cola', 1, 2500, 2500);
+    insert into public.sale_items (id, tenant_id, sale_id, location_id, variant_id, product_name, qty, unit_price, line_total) values
+      (md5('si:' || t.label || ':1')::uuid, pg_temp.tid(t.label), md5('sale:' || t.label || ':1')::uuid, pg_temp.lid(t.label, 'S01'), md5('var:' || t.label || ':1')::uuid, 'Cola', 1, 2500, 2500),
+      (md5('si:' || t.label || ':2')::uuid, pg_temp.tid(t.label), md5('sale:' || t.label || ':2')::uuid, pg_temp.lid(t.label, 'S02'), md5('var:' || t.label || ':1')::uuid, 'Cola', 1, 2500, 2500);
+    insert into public.sale_returns (id, tenant_id, location_id, sale_id, client_op_id, refund_method, subtotal_refund, refund_total) values
+      (md5('sr:' || t.label || ':1')::uuid, pg_temp.tid(t.label), pg_temp.lid(t.label, 'S01'), md5('sale:' || t.label || ':1')::uuid, md5('srop:1')::uuid, 'cash', 2500, 2500),
+      (md5('sr:' || t.label || ':2')::uuid, pg_temp.tid(t.label), pg_temp.lid(t.label, 'S02'), md5('sale:' || t.label || ':2')::uuid, md5('srop:2')::uuid, 'utang', 2500, 2500);
+    insert into public.sale_return_items (tenant_id, return_id, sale_id, sale_item_id, location_id, variant_id, product_name, qty, unit_price, refund_amount) values
+      (pg_temp.tid(t.label), md5('sr:' || t.label || ':1')::uuid, md5('sale:' || t.label || ':1')::uuid, md5('si:' || t.label || ':1')::uuid, pg_temp.lid(t.label, 'S01'), md5('var:' || t.label || ':1')::uuid, 'Cola', 1, 2500, 2500),
+      (pg_temp.tid(t.label), md5('sr:' || t.label || ':2')::uuid, md5('sale:' || t.label || ':2')::uuid, md5('si:' || t.label || ':2')::uuid, pg_temp.lid(t.label, 'S02'), md5('var:' || t.label || ':1')::uuid, 'Cola', 1, 2500, 2500);
     insert into public.payments (tenant_id, sale_id, location_id, method, amount) values
       (pg_temp.tid(t.label), md5('sale:' || t.label || ':1')::uuid, pg_temp.lid(t.label, 'S01'), 'cash', 2500),
       (pg_temp.tid(t.label), md5('sale:' || t.label || ':2')::uuid, pg_temp.lid(t.label, 'S02'), 'utang', 2500);
@@ -461,7 +474,9 @@ begin
     ('goods_receipt_items', 'tenant_id', 'qty = qty'),
     ('stock_counts',      'tenant_id', 'notes = notes'),
     ('stock_count_items', 'tenant_id', 'qty_counted = qty_counted'),
-    ('location_reorder_points', 'tenant_id', 'reorder_point = reorder_point')
+    ('location_reorder_points', 'tenant_id', 'reorder_point = reorder_point'),
+    ('sale_returns',      'tenant_id', 'refund_total = refund_total'),
+    ('sale_return_items', 'tenant_id', 'qty = qty')
   ) v(tbl, tcol, upd) loop
     begin
       execute format(

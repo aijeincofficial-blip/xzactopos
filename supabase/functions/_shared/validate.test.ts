@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { parseCreateUser, parseInviteUser, syntheticEmail } from "./validate.ts";
+import { corsHeadersFor, isOriginAllowed, parseAllowedOrigins, preflight } from "./http.ts";
 
 describe("syntheticEmail", () => {
   it("namespaces usernames by tenant slug", () => {
@@ -97,5 +98,40 @@ describe("parseInviteUser", () => {
   it("rejects non-http redirect targets", () => {
     expect(parseInviteUser({ email: "a@b.co", username: "abc", role: "admin", redirect_to: "javascript:alert(1)" }))
       .toMatchObject({ ok: false, field: "redirect_to" });
+  });
+});
+
+describe("CORS origin allowlist", () => {
+  it("defaults to wildcard when ALLOWED_ORIGINS is unset or '*'", () => {
+    expect(parseAllowedOrigins("")).toBeNull();
+    expect(parseAllowedOrigins("*")).toBeNull();
+    const req = new Request("https://fn.test/create_user", { method: "POST", headers: { Origin: "https://evil.example" } });
+    expect(isOriginAllowed(req, "")).toBe(true);
+    expect(corsHeadersFor(req, "")["Access-Control-Allow-Origin"]).toBe("*");
+  });
+
+  it("enforces comma-separated ALLOWED_ORIGINS for browser requests while allowing native requests without Origin", () => {
+    const allowed = "https://pos.xzacto.com, https://admin.xzacto.com";
+    const okReq = new Request("https://fn.test/create_user", {
+      method: "OPTIONS",
+      headers: { Origin: "https://admin.xzacto.com" },
+    });
+    expect(isOriginAllowed(okReq, allowed)).toBe(true);
+    const okRes = preflight(okReq, allowed);
+    expect(okRes?.status).toBe(200);
+    expect(okRes?.headers.get("Access-Control-Allow-Origin")).toBe("https://admin.xzacto.com");
+    expect(okRes?.headers.get("Vary")).toBe("Origin");
+
+    const badReq = new Request("https://fn.test/create_user", {
+      method: "POST",
+      headers: { Origin: "https://evil.example" },
+    });
+    expect(isOriginAllowed(badReq, allowed)).toBe(false);
+    const badRes = preflight(badReq, allowed);
+    expect(badRes?.status).toBe(403);
+
+    const mobileReq = new Request("https://fn.test/create_user", { method: "POST" });
+    expect(isOriginAllowed(mobileReq, allowed)).toBe(true);
+    expect(preflight(mobileReq, allowed)).toBeNull();
   });
 });

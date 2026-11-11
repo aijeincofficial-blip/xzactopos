@@ -10,6 +10,7 @@ import '../l10n/app_localizations.dart';
 enum PrinterEngineType {
   systemPdf,
   networkEscPos,
+  bluetoothEscPos,
 }
 
 class PrinterConfig {
@@ -17,6 +18,8 @@ class PrinterConfig {
     this.engine = PrinterEngineType.systemPdf,
     this.ipAddress = '192.168.1.100',
     this.port = 9100,
+    this.btName = '',
+    this.btAddress = '',
     this.paperWidth = PaperWidth.mm58,
     this.drawerKick = true,
     this.autoPrint = false,
@@ -25,14 +28,22 @@ class PrinterConfig {
   final PrinterEngineType engine;
   final String ipAddress;
   final int port;
+  final String btName;
+  final String btAddress;
   final PaperWidth paperWidth;
   final bool drawerKick;
   final bool autoPrint;
+
+  bool get isThermal =>
+      engine == PrinterEngineType.networkEscPos ||
+      engine == PrinterEngineType.bluetoothEscPos;
 
   PrinterConfig copyWith({
     PrinterEngineType? engine,
     String? ipAddress,
     int? port,
+    String? btName,
+    String? btAddress,
     PaperWidth? paperWidth,
     bool? drawerKick,
     bool? autoPrint,
@@ -41,6 +52,8 @@ class PrinterConfig {
         engine: engine ?? this.engine,
         ipAddress: ipAddress ?? this.ipAddress,
         port: port ?? this.port,
+        btName: btName ?? this.btName,
+        btAddress: btAddress ?? this.btAddress,
         paperWidth: paperWidth ?? this.paperWidth,
         drawerKick: drawerKick ?? this.drawerKick,
         autoPrint: autoPrint ?? this.autoPrint,
@@ -49,6 +62,8 @@ class PrinterConfig {
   static const _keyEngine = 'printer_engine';
   static const _keyIp = 'printer_ip';
   static const _keyPort = 'printer_port';
+  static const _keyBtName = 'printer_bt_name';
+  static const _keyBtAddress = 'printer_bt_address';
   static const _keyWidth = 'printer_paper_width';
   static const _keyDrawer = 'printer_drawer_kick';
   static const _keyAutoPrint = 'printer_auto_print';
@@ -57,9 +72,15 @@ class PrinterConfig {
     try {
       final p = await SharedPreferences.getInstance();
       final engineStr = p.getString(_keyEngine) ?? 'systemPdf';
-      final engine = engineStr == 'networkEscPos' ? PrinterEngineType.networkEscPos : PrinterEngineType.systemPdf;
+      final engine = switch (engineStr) {
+        'networkEscPos' => PrinterEngineType.networkEscPos,
+        'bluetoothEscPos' => PrinterEngineType.bluetoothEscPos,
+        _ => PrinterEngineType.systemPdf,
+      };
       final ip = p.getString(_keyIp) ?? '192.168.1.100';
       final port = p.getInt(_keyPort) ?? 9100;
+      final btName = p.getString(_keyBtName) ?? '';
+      final btAddress = p.getString(_keyBtAddress) ?? '';
       final widthStr = p.getString(_keyWidth) ?? 'mm58';
       final paperWidth = widthStr == 'mm80' ? PaperWidth.mm80 : PaperWidth.mm58;
       final drawer = p.getBool(_keyDrawer) ?? true;
@@ -68,6 +89,8 @@ class PrinterConfig {
         engine: engine,
         ipAddress: ip,
         port: port,
+        btName: btName,
+        btAddress: btAddress,
         paperWidth: paperWidth,
         drawerKick: drawer,
         autoPrint: auto,
@@ -80,9 +103,16 @@ class PrinterConfig {
   Future<void> save() async {
     try {
       final p = await SharedPreferences.getInstance();
-      await p.setString(_keyEngine, engine == PrinterEngineType.networkEscPos ? 'networkEscPos' : 'systemPdf');
+      final engineStr = switch (engine) {
+        PrinterEngineType.networkEscPos => 'networkEscPos',
+        PrinterEngineType.bluetoothEscPos => 'bluetoothEscPos',
+        PrinterEngineType.systemPdf => 'systemPdf',
+      };
+      await p.setString(_keyEngine, engineStr);
       await p.setString(_keyIp, ipAddress);
       await p.setInt(_keyPort, port);
+      await p.setString(_keyBtName, btName);
+      await p.setString(_keyBtAddress, btAddress);
       await p.setString(_keyWidth, paperWidth == PaperWidth.mm80 ? 'mm80' : 'mm58');
       await p.setBool(_keyDrawer, drawerKick);
       await p.setBool(_keyAutoPrint, autoPrint);
@@ -92,6 +122,18 @@ class PrinterConfig {
 
 /// Active config holder.
 PrinterConfig activePrinterConfig = const PrinterConfig();
+
+/// Resolves the physical or test ESC/POS transport for [config].
+EscPosTransport resolveEscPosTransport(
+  PrinterConfig config, {
+  EscPosTransport? customTransport,
+}) {
+  if (customTransport != null) return customTransport;
+  if (config.engine == PrinterEngineType.bluetoothEscPos) {
+    return BluetoothEscPosTransport(address: config.btAddress);
+  }
+  return NetworkEscPosTransport(host: config.ipAddress, port: config.port);
+}
 
 /// EscPos implementation of [ReceiptPrinter].
 class EscPosReceiptPrinter implements ReceiptPrinter {
@@ -104,7 +146,7 @@ class EscPosReceiptPrinter implements ReceiptPrinter {
   bool get available => true;
 
   EscPosTransport _resolveTransport() =>
-      transport ?? NetworkEscPosTransport(host: config.ipAddress, port: config.port);
+      resolveEscPosTransport(config, customTransport: transport);
 
   @override
   Future<void> print(
@@ -157,7 +199,7 @@ class EscPosShiftPrinter implements ShiftPrinter {
   bool get available => true;
 
   EscPosTransport _resolveTransport() =>
-      transport ?? NetworkEscPosTransport(host: config.ipAddress, port: config.port);
+      resolveEscPosTransport(config, customTransport: transport);
 
   @override
   Future<void> printShift({
@@ -218,7 +260,7 @@ class EscPosShiftPrinter implements ShiftPrinter {
 /// Applies [PrinterConfig] by wiring the active [receiptPrinter] and [shiftPrinter] globals.
 void applyPrinterConfig(PrinterConfig config, {EscPosTransport? customTransport}) {
   activePrinterConfig = config;
-  if (config.engine == PrinterEngineType.networkEscPos) {
+  if (config.isThermal) {
     receiptPrinter = EscPosReceiptPrinter(config, transport: customTransport);
     shiftPrinter = EscPosShiftPrinter(config, transport: customTransport);
   } else {
@@ -249,7 +291,14 @@ Future<void> printTestSlip({
   encoder.line(DateTime.now().toLocal().toString().split('.').first);
   encoder.divider();
   encoder.setAlignLeft();
-  encoder.line('IP: ${config.ipAddress}:${config.port}');
+  if (config.engine == PrinterEngineType.bluetoothEscPos) {
+    final label = config.btName.isNotEmpty
+        ? '${config.btName} (${config.btAddress})'
+        : config.btAddress;
+    encoder.line('BT: $label');
+  } else {
+    encoder.line('IP: ${config.ipAddress}:${config.port}');
+  }
   encoder.line('Roll: ${config.paperWidth == PaperWidth.mm80 ? "80mm" : "58mm"}');
   encoder.line('Drawer: ${config.drawerKick ? "Enabled" : "Disabled"}');
   encoder.feed(3);
@@ -257,6 +306,6 @@ Future<void> printTestSlip({
     encoder.drawerKick();
   }
   encoder.cut();
-  final t = transport ?? NetworkEscPosTransport(host: config.ipAddress, port: config.port);
+  final t = resolveEscPosTransport(config, customTransport: transport);
   await t.send(encoder.toBytes());
 }

@@ -2479,4 +2479,66 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get totalCalculated => 'Total Cash Counted';
+
+  @override
+  String get printerEngineBluetooth => 'Bluetooth';
+
+  @override
+  String get printerBtNotSelected => 'Bluetooth (No printer selected)';
+
+  @override
+  String get printerBtPairedTitle => 'Paired Bluetooth Printers';
+
+  @override
+  String get printerBtScan => 'Scan Paired';
+
+  @override
+  String get printerBtHint =>
+      'Turn on Bluetooth and pair your 58mm/80mm printer in Android Settings first.';
+
+  @override
+  String get printerBtEmpty => 'No paired Bluetooth printers found yet.';
+
+  @override
+  String get printerBtAddress => 'Bluetooth MAC Address';
+
+  @override
+  String get saleReturnButton => 'Return Items';
+
+  @override
+  String get saleReturnTitle => 'Return Items & Refund';
+
+  @override
+  String get saleReturnSubtitle =>
+      'Select quantities returning to stock and refund method.';
+
+  @override
+  String get saleReturnMethod => 'Refund Method';
+
+  @override
+  String get saleReturnReason => 'Reason (optional)';
+
+  @override
+  String get saleReturnReasonHint => 'e.g. Defective item, wrong size';
+
+  @override
+  String get saleReturnTotal => 'Total Refund';
+
+  @override
+  String get saleReturnConfirm => 'Confirm Return';
+
+  @override
+  String saleReturnRefunded(String amount) {
+    return 'Refunded: -$amount';
+  }
+
+  @override
+  String saleReturnSuccess(String amount) {
+    return 'Return recorded ($amount refunded)';
+  }
+
+  @override
+  String saleReturnRemaining(String qty) {
+    return '$qty returnable';
+  }
 }

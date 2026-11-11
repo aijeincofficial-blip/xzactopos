@@ -73,6 +73,50 @@ export async function signIn(slug: string, identifier: string, password: string)
   if (error) throw new ApiError("invalid_credentials", error.message);
 }
 
+/** Direct email sign-in for Solo store owners or Full-mode owners/managers without typing a tenant slug first. */
+export async function signInWithEmail(email: string, password: string) {
+  const { error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
+  if (error) throw new ApiError("invalid_credentials", error.message);
+}
+
+/** Self-serve Solo account creation. Returns hasSession=false when email confirmation is required by Auth config. */
+export async function signUpSolo(email: string, password: string): Promise<{ hasSession: boolean }> {
+  const { data, error } = await supabase.auth.signUp({ email: email.trim().toLowerCase(), password });
+  if (error) {
+    const exists = error.message.toLowerCase().includes("already");
+    throw new ApiError(exists ? "duplicate" : "unknown", error.message);
+  }
+  return { hasSession: data.session !== null };
+}
+
+/** Creates the one-store Solo tenant for the signed-in user and refreshes JWT claims so tenant_id is active. */
+export async function provisionSoloStore(params: {
+  tenantId: string;
+  locationId: string;
+  storeName: string;
+  locale: "en" | "fil";
+}): Promise<string> {
+  const id = await rpc<string>("provision_solo_store", {
+    p_tenant_id: params.tenantId,
+    p_location_id: params.locationId,
+    p_store_name: params.storeName.trim(),
+    p_locale: params.locale,
+  });
+  await supabase.auth.refreshSession();
+  return id;
+}
+
+/** Sends a password recovery link. Caller shows an anti-enumeration confirmation regardless of existence. */
+export async function sendPasswordReset(email: string, redirectTo?: string): Promise<void> {
+  await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), redirectTo ? { redirectTo } : undefined);
+}
+
+/** Sets a new password for the active session (including right after opening a password recovery link). */
+export async function updatePassword(newPassword: string): Promise<void> {
+  const { error } = await supabase.auth.updateUser({ password: newPassword });
+  if (error) throw new ApiError("unknown", error.message);
+}
+
 /** Own profile locale: allowed by the column grant (full_name, locale) and the own-row policy. */
 export async function saveMyLocale(userId: string, locale: "en" | "fil") {
   const { error } = await supabase.from("profiles").update({ locale }).eq("user_id", userId);

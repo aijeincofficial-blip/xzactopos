@@ -54,6 +54,8 @@
     "location_code": "Hanggang 20 letra, numero, gitling o underscore.",
     "username": "3-40 character: a-z, 0-9, tuldok, gitling, underscore. Dapat nagsisimula at nagtatapos sa letra o numero.",
     "password": "8 hanggang 72 character.",
+    "password_min6": "Kahit 6 na character.",
+    "password_match": "Hindi magkatugma ang mga password.",
     "position_required": "Pumili ng posisyon para sa tindahang ito.",
     "location_required": "Pumili ng lokasyon.",
     "email": "Maglagay ng wastong email address.",
@@ -98,5 +100,8 @@
   "bin_not_allowed": "Hindi gumagamit ng bin ang bodegang ito.",
   "pick_required": "I-pick muna ang mga aytem papunta sa staging bago ipadala.",
   "insufficient_stock": "Kulang ang stock sa pinagmumulan para sa padalang ito. Suriin ang dami o bilangin muna ang stock.",
-  "op_id_reused": "Nagamit na ang request na iyon sa ibang bagay."
+  "op_id_reused": "Nagamit na ang request na iyon sa ibang bagay.",
+  "return_exceeds_sold": "Hindi maaaring lumampas ang daming ibabalik sa natitirang nabiling dami.",
+  "has_partial_returns": "May bahagyang naibalik na sa resibong ito. Ibalik na lang ang natitirang mga item.",
+  "sale_voided": "Hindi maaaring magbalik ng item mula sa kinanselang benta."
 }

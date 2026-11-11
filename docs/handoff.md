@@ -8,7 +8,7 @@ Updated at the end of every task. Read this first in a fresh session. New sessio
 | Agent | Branch and worktree | Working on | Status |
 | --- | --- | --- | --- |
 | Claude | `claude/phase3-sell-8261d3`, `.claude/worktrees/phase3-sell-8261d3` | Priority 3: cashier shifts and X/Z on the phone done (`docs/tasks/F-05m-cashier-shifts.md`); staff on the phone done (`docs/tasks/F-04m-phone-staff.md`); priority 4 (web design system) started: tokens, dark mode, sidebar, components (`docs/web-design-system.md`). | stopped (owner switched to Antigravity 2026-11-10; branch equals main, clean) |
-| Antigravity | `ag/work`, `.claude/worktrees/ag-work` | Batch Barcode Labels (Opt 1), Offline Warehouse Counting H7 (Opt 2), and POS Quick Fast-Keys Bar (Opt 3) | done |
+| Antigravity | `ag/work`, `.claude/worktrees/ag-work` | Phase P-Launch (Web Auth Parity + Release Hardening), Phase P-Design (Theme Unification + Dark WCAG + Reports/Hotkeys), Phase P-Retail+ (Bin Barcode Labels, Partial Returns, Bluetooth ESC/POS) | done |
 | Owner | merges branches into `main`; makes the git remote and the keystore | | |
 
 Row status words: `waiting`, `in progress`, `done`, `stopped` / `limit reached` (the other agent may take over, see `docs/START-HERE-antigravity.md` "Working together").
@@ -30,6 +30,21 @@ Row status words: `waiting`, `in progress`, `done`, `stopped` / `limit reached` 
 6. ~~F-13h H2 to H8, the warehouse phone~~ **Done 2026-11-09** (receive offline, count online, bin stock, offline start). Offline counting (H7) is still item 8.
 7. ~~**Web Solo/Full gaps:** a stored mode flag, pick-list and put-away screens, editing a draft purchase order, product search by typing.~~ **Done 2026-11-10.**
 8. **Later:** offline counting (H7), web offline, per-warehouse reorder points, card payments.
+- **Phases P-Launch, P-Design, and P-Retail+ (Production Readiness, Cross-Platform Design Unification, and Operational Loops): done (2026-11-11, branch `ag/work`).**
+  - **Phase P-Launch (Production & Auth Readiness):**
+    - Web Auth parity (`apps/client/src/routes/public.tsx`, `router.tsx`, `main.tsx`, `api.ts`, `schemas.ts`): Self-Serve Solo Sign-Up (`/signup` calling `self_signup_solo` RPC), Direct Owner Email Sign-In tab on `/`, Forgot Password modal (`resetPasswordForEmail` with anti-enumeration), and Reset Password screen (`/reset-password` + `PASSWORD_RECOVERY` auth listener).
+    - Release hardening: Android `key.properties` signing config with debug fallback (`apps/mobile/android/app/build.gradle.kts`), `AndroidManifest.xml` cleanup (`XZACTO` label, optional camera hardware, Bluetooth permissions, `xzactopos://auth-callback` deep link), PWA manifest icons & branding (`apps/client/vite.config.ts`, `index.html`, `public/pwa-*.png`), Edge Function `ALLOWED_ORIGINS` CORS allowlist (`supabase/functions/_shared/http.ts`, `create_user`, `invite_user`), and Flutter CI step (`.github/workflows/ci.yml`).
+  - **Phase P-Design (Cross-Platform Design Unification & POS Ergonomics):**
+    - Mobile `apps/mobile/lib/core/theme.dart` unified with Refactoring UI warm-gray (`#fbfaf9`–`#3b3226`) + indigo (`#3419d2` / `#a38cf8`) palette, `6px` control / `10px` card radii, and `AppPreferencesStorage` (`SharedPreferences`) persisting palette, theme mode, and locale across launches (`app.dart`, `main.dart`, `theme_test.dart`).
+    - Web `public.tsx` redesigned with XZACTO branding, theme switcher, language selector, strict `400`/`600` weights, and max 1 solid primary button per view.
+    - Dark-mode WCAG AA contrast audit & token fixes (`apps/client/src/index.css`) verified programmatically in `apps/client/src/lib/theme.test.ts` (23/23 tests).
+    - Token-styled daily trend bar chart & payment tender share bars in `apps/client/src/routes/reports.tsx`.
+    - Cashier keyboard hotkeys (`F2`/`/`, `Alt+1..6`, `F4`, `F8`, `F9`) in `apps/client/src/routes/sell.tsx` + `sell-hotkeys.ts` (`sell-hotkeys.test.ts`).
+  - **Phase P-Retail+ (Closing Operational Loops):**
+    - Warehouse Bin Barcode Labels (`apps/client/src/routes/bins.tsx`, `barcode-labels-dialog.tsx`, `barcode-svg.test.ts`): multi-select batch printing and per-bin Code 128 label sheets/thermal rolls (`50mm x 30mm` & 30-up).
+    - Bluetooth ESC/POS Printer Adapter on Mobile (`MainActivity.kt`, `esc_pos_printer.dart`, `printer_config.dart`, `settings_screen.dart`, `printer_config_test.dart`): native Android RFCOMM SPP (`00001101-0000-1000-8000-00805F9B34FB`) channel with paired printer scan, manual MAC entry, and Android 12+ `BLUETOOTH_CONNECT` permission handling.
+    - Partial Item Returns / Refunds across DB, Web, and Mobile: append-only `public.sale_returns` & `public.sale_return_items`, `op_return_sale_items` RPC (`supabase/migrations/20261111000100_partial_returns.sql`, `004_tenant_isolation_matrix.test.sql`, `049_partial_returns.test.sql`) with pro-rata cart discount math, stock restoration (`sale_return`), utang ledger credit, daily rollup & expected shift cash adjustments, supervisor PIN escalation, Web return modal (`sales.tsx`, `sell-api.ts`, `sale-math.ts`), and offline-first Mobile return flow (`drift_sales.dart`, `sales_models.dart`, `receipt_screen.dart`, `partial_returns_test.dart`).
+  - **Verification:** Full `pnpm check` and `pnpm build` passed 100% cleanly (`eslint` 0 issues, `tsc` 0 issues, 54 `core` tests, 176 `client` tests across 21 files, 22 `functions` tests, 49/49 pgTAP test files, `flutter analyze` 0 issues, and 590/590 Flutter tests).
 - **Mobile Continuous Barcode Scanning, Cash Denomination Breakdown Calculator (Web & Mobile), and Printable Barcode & Shelf Tag Generator (Web): done (2026-11-10, branch `ag/work`).**
   - **Option 1 (Mobile Continuous Barcode Scanning & Scan-to-Cart Engine - sell_screen.dart & camera_scanner.dart):**
     - Extended `ScanFeedback` with optional `subtext` in `apps/mobile/lib/core/camera_scanner.dart`.

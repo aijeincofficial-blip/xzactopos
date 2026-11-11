@@ -17,6 +17,35 @@ export const loginSchema = z.object({
   password: z.string().min(1, "validation.required"),
 });
 
+export const emailSignInSchema = z.object({
+  email: z.string().trim().email("validation.email"),
+  password: z.string().min(1, "validation.required"),
+});
+
+export const soloSignUpSchema = z.object({
+  storeName: required.max(120, "validation.max120"),
+  email: z.string().trim().email("validation.email"),
+  password: z.string().min(6, "validation.password_min6").max(72, "validation.password"),
+});
+
+export const storeNameOnlySchema = z.object({
+  storeName: required.max(120, "validation.max120"),
+});
+
+export const forgotPasswordSchema = z.object({
+  email: z.string().trim().email("validation.email"),
+});
+
+export const resetPasswordSchema = z
+  .object({
+    password: z.string().min(6, "validation.password_min6").max(72, "validation.password"),
+    confirmPassword: z.string(),
+  })
+  .refine((v) => v.password === v.confirmPassword, {
+    path: ["confirmPassword"],
+    message: "validation.password_match",
+  });
+
 export const setupBusinessSchema = z.object({
   name: required.max(120, "validation.max120"),
   baseCurrency: z.string().regex(/^[A-Z]{3}$/, "validation.required"),

@@ -90,6 +90,7 @@
     "fastKeysEmpty": "Wala pang naka-pin na mabilisang pindot",
     "pinToFastKeys": "I-pin sa Mabilisang Pindot",
     "unpinFromFastKeys": "Alisin sa Mabilisang Pindot",
+    "shortcutsHint": "F2 Hanapin · Alt+1–6 Mabilisang Pindot · F4 Diskwento · F9 Singilin",
     "clear": "I-clear ang cart",
     "done": "Na-save ang benta",
     "receiptNo": "Resibo",
@@ -122,7 +123,24 @@
     "voidSale": "Kanselahin ang benta",
     "voidWarning": "Babalik sa stock ang mga item at aalisin sa customer ang utang mula sa benta na ito. Hindi na ito mababawi.",
     "reason": "Dahilan (opsyonal)",
-    "confirmVoid": "Oo, kanselahin ang benta"
+    "confirmVoid": "Oo, kanselahin ang benta",
+    "return": {
+      "action": "Magbalik ng Item",
+      "dialogTitle": "Magbalik ng Item at Refund",
+      "dialogDesc": "Piliin ang daming ibabalik sa stock at kung paano ibibigay ang refund.",
+      "remainingQty": "{{qty}} maaaring ibalik",
+      "returnedQty": "{{qty}} naibalik",
+      "fullyReturnedItem": "Naibalik na",
+      "refundMethod": "Paraan ng Refund",
+      "reasonPlaceholder": "hal. Sirang item, maling sukat",
+      "refundAmount": "Kabuuang Refund",
+      "refundedTotal": "Na-refund",
+      "historyTitle": "Kasaysayan ng Pagbabalik",
+      "badgePartial": "Bahagyang Naibalik",
+      "badgeFull": "Lahat ay Naibalik",
+      "confirm": "Kumpirmahin ang Pagbabalik",
+      "success": "Naitala ang pagbabalik ({{amount}} na-refund)."
+    }
   },
   "products": {
     "title": "Mga produkto at stock",
@@ -786,6 +804,8 @@
     "currentStockValue": "Halaga ng Stock",
     "stockUnits": "Mga Yunit",
     "dailyTrendTitle": "Takbo ng Araw-araw na Benta",
+    "dailyPeak": "Pinakamataas na araw",
+    "dailyAvg": "Karaniwan bawat araw",
     "noSalesInRange": "Walang naitalang benta sa panahong ito.",
     "date": "Petsa",
     "cash": "Cash",
@@ -891,7 +911,16 @@
     "toBin": "Papunta sa Bin (Patutunguhan)",
     "selectDestBin": "— Pumili ng Patutunguhang Bin —",
     "reason": "Dahilan / Gawain",
-    "confirmMove": "Ilipat ang Stock"
+    "confirmMove": "Ilipat ang Stock",
+    "printLabel": "I-print ang Label",
+    "printLabels": "I-print ang mga Label ng Bin",
+    "selectedCount": "{{count}} bin ang napili",
+    "barcodeTitle": "I-print ang Barcode Label ng Bin",
+    "barcodeBatchTitle": "I-print ang mga Label ng Bin ({{count}} bin)",
+    "barcodeSubtitle": "Gumawa at mag-print ng Code 128 rack, istante, o thermal na sticker ng bin",
+    "includeWarehouse": "Isama ang Pangalan ng Bodega",
+    "includeBinCode": "Isama ang Code ng Bin",
+    "copiesPerBin": "Kopya bawat Bin"
   },
   "platform": {
     "title": "Pamamahala ng Plataporma",

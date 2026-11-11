@@ -1399,5 +1399,44 @@
   "coins": "Coins",
   "applyCount": "Use Count",
   "clearCount": "Clear All",
-  "totalCalculated": "Total Cash Counted"
+  "totalCalculated": "Total Cash Counted",
+  "printerEngineBluetooth": "Bluetooth",
+  "printerBtNotSelected": "Bluetooth (No printer selected)",
+  "printerBtPairedTitle": "Paired Bluetooth Printers",
+  "printerBtScan": "Scan Paired",
+  "printerBtHint": "Turn on Bluetooth and pair your 58mm/80mm printer in Android Settings first.",
+  "printerBtEmpty": "No paired Bluetooth printers found yet.",
+  "printerBtAddress": "Bluetooth MAC Address",
+  "saleReturnButton": "Return Items",
+  "saleReturnTitle": "Return Items & Refund",
+  "saleReturnSubtitle": "Select quantities returning to stock and refund method.",
+  "saleReturnMethod": "Refund Method",
+  "saleReturnReason": "Reason (optional)",
+  "saleReturnReasonHint": "e.g. Defective item, wrong size",
+  "saleReturnTotal": "Total Refund",
+  "saleReturnConfirm": "Confirm Return",
+  "saleReturnRefunded": "Refunded: -{amount}",
+  "@saleReturnRefunded": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "saleReturnSuccess": "Return recorded ({amount} refunded)",
+  "@saleReturnSuccess": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "saleReturnRemaining": "{qty} returnable",
+  "@saleReturnRemaining": {
+    "placeholders": {
+      "qty": {
+        "type": "String"
+      }
+    }
+  }
 }

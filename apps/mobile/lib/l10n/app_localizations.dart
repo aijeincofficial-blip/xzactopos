@@ -4261,6 +4261,114 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Total Cash Counted'**
   String get totalCalculated;
+
+  /// No description provided for @printerEngineBluetooth.
+  ///
+  /// In en, this message translates to:
+  /// **'Bluetooth'**
+  String get printerEngineBluetooth;
+
+  /// No description provided for @printerBtNotSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Bluetooth (No printer selected)'**
+  String get printerBtNotSelected;
+
+  /// No description provided for @printerBtPairedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Paired Bluetooth Printers'**
+  String get printerBtPairedTitle;
+
+  /// No description provided for @printerBtScan.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan Paired'**
+  String get printerBtScan;
+
+  /// No description provided for @printerBtHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on Bluetooth and pair your 58mm/80mm printer in Android Settings first.'**
+  String get printerBtHint;
+
+  /// No description provided for @printerBtEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No paired Bluetooth printers found yet.'**
+  String get printerBtEmpty;
+
+  /// No description provided for @printerBtAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Bluetooth MAC Address'**
+  String get printerBtAddress;
+
+  /// No description provided for @saleReturnButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Return Items'**
+  String get saleReturnButton;
+
+  /// No description provided for @saleReturnTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Return Items & Refund'**
+  String get saleReturnTitle;
+
+  /// No description provided for @saleReturnSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select quantities returning to stock and refund method.'**
+  String get saleReturnSubtitle;
+
+  /// No description provided for @saleReturnMethod.
+  ///
+  /// In en, this message translates to:
+  /// **'Refund Method'**
+  String get saleReturnMethod;
+
+  /// No description provided for @saleReturnReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason (optional)'**
+  String get saleReturnReason;
+
+  /// No description provided for @saleReturnReasonHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Defective item, wrong size'**
+  String get saleReturnReasonHint;
+
+  /// No description provided for @saleReturnTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Refund'**
+  String get saleReturnTotal;
+
+  /// No description provided for @saleReturnConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Return'**
+  String get saleReturnConfirm;
+
+  /// No description provided for @saleReturnRefunded.
+  ///
+  /// In en, this message translates to:
+  /// **'Refunded: -{amount}'**
+  String saleReturnRefunded(String amount);
+
+  /// No description provided for @saleReturnSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Return recorded ({amount} refunded)'**
+  String saleReturnSuccess(String amount);
+
+  /// No description provided for @saleReturnRemaining.
+  ///
+  /// In en, this message translates to:
+  /// **'{qty} returnable'**
+  String saleReturnRemaining(String qty);
 }
 
 class _AppLocalizationsDelegate

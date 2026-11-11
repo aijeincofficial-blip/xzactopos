@@ -4,6 +4,7 @@ import {
   cartSubtotal,
   cartTotal,
   changeDue,
+  computePartialReturnRefund,
   draftProblem,
   lineTax,
   lineTotal,
@@ -208,5 +209,35 @@ describe("record_sale payload", () => {
     expect(parseAmount("-5", "PHP")).toBeNull();
     expect(parseAmount("abc", "PHP")).toBeNull();
     expect(parseAmount("500", "JPY")).toBe(500);
+  });
+});
+
+describe("computePartialReturnRefund", () => {
+  it("computes pro-rata refund including cart discount and reconciles exact remainder", () => {
+    // 3x Cola (21,000) + 1x Bread (5,000) = 26,000 subtotal - 2,600 discount = 23,400 net
+    const r1 = computePartialReturnRefund({
+      saleSubtotal: 26000,
+      saleDiscount: 2600,
+      saleTotal: 23400,
+      alreadyRefundedTotal: 0,
+      items: [
+        { variantId: "cola", soldQty: 3, alreadyReturnedQty: 0, lineTotal: 21000, returnQty: 1 },
+        { variantId: "bread", soldQty: 1, alreadyReturnedQty: 0, lineTotal: 5000, returnQty: 0 },
+      ],
+    });
+    expect(r1).toBe(6300);
+
+    // Return remaining 2x Cola + 1x Bread -> exact 17,100 remainder
+    const r2 = computePartialReturnRefund({
+      saleSubtotal: 26000,
+      saleDiscount: 2600,
+      saleTotal: 23400,
+      alreadyRefundedTotal: 6300,
+      items: [
+        { variantId: "cola", soldQty: 3, alreadyReturnedQty: 1, lineTotal: 21000, returnQty: 2 },
+        { variantId: "bread", soldQty: 1, alreadyReturnedQty: 0, lineTotal: 5000, returnQty: 1 },
+      ],
+    });
+    expect(r2).toBe(17100);
   });
 });

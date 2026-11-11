@@ -2492,4 +2492,67 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get totalCalculated => 'Kabuuang Nabilang na Pera';
+
+  @override
+  String get printerEngineBluetooth => 'Bluetooth';
+
+  @override
+  String get printerBtNotSelected => 'Bluetooth (Walang napiling printer)';
+
+  @override
+  String get printerBtPairedTitle => 'Mga Naka-pair na Bluetooth Printer';
+
+  @override
+  String get printerBtScan => 'Mag-scan';
+
+  @override
+  String get printerBtHint =>
+      'Buksan ang Bluetooth at i-pair muna ang iyong 58mm/80mm printer sa Android Settings.';
+
+  @override
+  String get printerBtEmpty =>
+      'Wala pang nahanap na naka-pair na Bluetooth printer.';
+
+  @override
+  String get printerBtAddress => 'Bluetooth MAC Address';
+
+  @override
+  String get saleReturnButton => 'Magbalik ng Item';
+
+  @override
+  String get saleReturnTitle => 'Magbalik ng Item at Refund';
+
+  @override
+  String get saleReturnSubtitle =>
+      'Piliin ang daming ibabalik sa stock at paraan ng refund.';
+
+  @override
+  String get saleReturnMethod => 'Paraan ng Refund';
+
+  @override
+  String get saleReturnReason => 'Dahilan (opsyonal)';
+
+  @override
+  String get saleReturnReasonHint => 'hal. Sirang item, maling sukat';
+
+  @override
+  String get saleReturnTotal => 'Kabuuang Refund';
+
+  @override
+  String get saleReturnConfirm => 'Kumpirmahin ang Pagbabalik';
+
+  @override
+  String saleReturnRefunded(String amount) {
+    return 'Na-refund: -$amount';
+  }
+
+  @override
+  String saleReturnSuccess(String amount) {
+    return 'Naitala ang pagbabalik ($amount na-refund)';
+  }
+
+  @override
+  String saleReturnRemaining(String qty) {
+    return '$qty maaaring ibalik';
+  }
 }

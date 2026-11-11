@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { encodeCode128, CODE128_PATTERNS } from "./barcode-svg.tsx";
-import { buildPrintItems, type BarcodeProduct } from "../components/barcode-labels-dialog.tsx";
+import {
+  buildPrintItems,
+  formatBinBarcodeItem,
+  type BarcodeProduct,
+} from "../components/barcode-labels-dialog.tsx";
 
 describe("encodeCode128", () => {
   it("has exactly 107 ISO patterns", () => {
@@ -84,5 +88,32 @@ describe("buildPrintItems", () => {
     const items = buildPrintItems(noPriceProduct, 2, "PHP", "en");
     expect(items).toHaveLength(2);
     expect(items[0]!.priceDisplay).toBe("");
+  });
+
+  it("formats warehouse bin location stickers with Code 128 code and no retail price", () => {
+    const binItem = formatBinBarcodeItem({
+      code: "A-01-S2",
+      zone_code: "PICK",
+      aisle: "1",
+      rack: "01",
+      shelf: "2",
+      position: "B",
+      type: "shelf",
+    });
+    expect(binItem.sku).toBe("A-01-S2");
+    expect(binItem.barcode).toBe("A-01-S2");
+    expect(binItem.price).toBeNull();
+    expect(binItem.name).toBe("PICK · A1-R01-S2-PB");
+
+    const encoded = encodeCode128(binItem.barcode!, 10);
+    expect(encoded.rawText).toBe("A-01-S2");
+    expect(encoded.bars.length).toBeGreaterThan(10);
+
+    const fallbackBin = formatBinBarcodeItem({
+      code: "RECV-01",
+      zone_code: "RECV",
+      type: "floor",
+    });
+    expect(fallbackBin.name).toBe("RECV · FLOOR");
   });
 });

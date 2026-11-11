@@ -54,6 +54,8 @@
     "location_code": "Up to 20 letters, digits, dash or underscore.",
     "username": "3-40 characters: a-z, 0-9, dot, dash, underscore. Start and end with a letter or digit.",
     "password": "8 to 72 characters.",
+    "password_min6": "At least 6 characters.",
+    "password_match": "Passwords do not match.",
     "position_required": "Choose a position for this store.",
     "location_required": "Choose a location.",
     "email": "Enter a valid email address.",
@@ -98,5 +100,8 @@
   "bin_not_allowed": "This warehouse does not use bins.",
   "pick_required": "Pick the items into staging before shipping.",
   "insufficient_stock": "There is not enough stock at the sending place for this shipment. Check the quantity or count the stock first.",
-  "op_id_reused": "That request was already used for something else."
+  "op_id_reused": "That request was already used for something else.",
+  "return_exceeds_sold": "Return quantity cannot exceed the remaining sold quantity.",
+  "has_partial_returns": "This receipt already has partial returns. Return the remaining items instead.",
+  "sale_voided": "Cannot return items from a cancelled sale."
 }

@@ -19,34 +19,34 @@ Deno.serve(async (req) => {
   const svc = serviceClient();
   const asService = isServiceRoleRequest(req);
   const callerId = asService ? null : await getCallerId(req, svc);
-  if (!asService && !callerId) return fail(401, "unauthenticated", "sign in first");
+  if (!asService && !callerId) return fail(401, "unauthenticated", "sign in first", {}, req);
 
   let body: unknown;
   try {
     body = await req.json();
   } catch {
-    return fail(400, "invalid_json", "body must be JSON");
+    return fail(400, "invalid_json", "body must be JSON", {}, req);
   }
   const parsed = parseInviteUser(body);
-  if (!parsed.ok) return fail(400, "invalid_argument", parsed.error, { field: parsed.field });
+  if (!parsed.ok) return fail(400, "invalid_argument", parsed.error, { field: parsed.field }, req);
   const input = parsed.value;
 
   if (input.provision) {
     if (!asService) {
       const { data: op } = await svc.from("platform_admins").select("user_id").eq("user_id", callerId!).maybeSingle();
-      if (!op) return fail(403, "forbidden", "platform operator only", { hint: "platform_only" });
+      if (!op) return fail(403, "forbidden", "platform operator only", { hint: "platform_only" }, req);
     }
   } else {
-    if (asService || !callerId) return fail(400, "invalid_argument", "service role may only provision tenants");
+    if (asService || !callerId) return fail(400, "invalid_argument", "service role may only provision tenants", {}, req);
     const caller = await getCallerProfile(svc, callerId);
     if (!caller || !caller.active || caller.role !== "superadmin") {
-      return fail(403, "forbidden", "superadmin only", { hint: "superadmin_only" });
+      return fail(403, "forbidden", "superadmin only", { hint: "superadmin_only" }, req);
     }
     if (caller.tenants.status !== "active") {
-      return fail(403, "forbidden", `tenant is ${caller.tenants.status}`, { hint: `tenant_${caller.tenants.status}` });
+      return fail(403, "forbidden", `tenant is ${caller.tenants.status}`, { hint: `tenant_${caller.tenants.status}` }, req);
     }
     if (input.role === "cashier") {
-      return fail(400, "invalid_argument", "cashiers are created with create_user", { field: "role" });
+      return fail(400, "invalid_argument", "cashiers are created with create_user", { field: "role" }, req);
     }
   }
 
@@ -56,9 +56,9 @@ Deno.serve(async (req) => {
   });
   if (inviteErr || !invited.user) {
     const exists = inviteErr?.message?.toLowerCase().includes("already") ?? false;
-    if (exists) return fail(409, "conflict", "email already registered", { hint: "duplicate" });
+    if (exists) return fail(409, "conflict", "email already registered", { hint: "duplicate" }, req);
     console.error("inviteUserByEmail failed", inviteErr);
-    return fail(500, "internal", "could not send the invite");
+    return fail(500, "internal", "could not send the invite", {}, req);
   }
   const userId = invited.user.id;
 
@@ -80,9 +80,9 @@ Deno.serve(async (req) => {
     });
     if (error) {
       await rollback();
-      return fromDbError(error);
+      return fromDbError(error, req);
     }
-    return json(201, { user_id: userId, email: input.email, tenant_id: tenantId });
+    return json(201, { user_id: userId, email: input.email, tenant_id: tenantId }, req);
   }
 
   const { data: tenantId, error } = await svc.rpc("admin_register_user", {
@@ -97,7 +97,7 @@ Deno.serve(async (req) => {
   });
   if (error) {
     await rollback();
-    return fromDbError(error);
+    return fromDbError(error, req);
   }
-  return json(201, { user_id: userId, email: input.email, tenant_id: tenantId });
+  return json(201, { user_id: userId, email: input.email, tenant_id: tenantId }, req);
 });

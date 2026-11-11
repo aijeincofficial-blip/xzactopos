@@ -2,13 +2,17 @@ import { describe, expect, it } from "vitest";
 import {
   createTransferSchema,
   createUserSchema,
+  emailSignInSchema,
   fieldErrors,
+  forgotPasswordSchema,
   inviteUserSchema,
   locationSchema,
   receiveTransferSchema,
+  resetPasswordSchema,
   setPinSchema,
   setupLanguagesSchema,
   slugSchema,
+  soloSignUpSchema,
   tenantSettingsSchema,
   upgradeSchema,
 } from "./schemas.ts";
@@ -178,6 +182,26 @@ describe("schemas", () => {
     expect(receiveTransferSchema.safeParse({ items: [{ variantId: "var-1", qtyReceived: 0 }] }).success).toBe(true);
     expect(receiveTransferSchema.safeParse({ items: [{ variantId: "var-1", qtyReceived: -1 }] }).success).toBe(false);
     expect(receiveTransferSchema.safeParse({ items: [] }).success).toBe(false);
+  });
+
+  it("validates solo sign-up, email sign-in, forgot password, and reset password schemas", () => {
+    expect(
+      soloSignUpSchema.safeParse({ storeName: "Aling Nena Store", email: "nena@example.com", password: "secret" }).success,
+    ).toBe(true);
+    expect(soloSignUpSchema.safeParse({ storeName: "", email: "nena@example.com", password: "secret" }).success).toBe(false);
+    expect(soloSignUpSchema.safeParse({ storeName: "Store", email: "bad", password: "secret" }).success).toBe(false);
+    expect(soloSignUpSchema.safeParse({ storeName: "Store", email: "nena@example.com", password: "123" }).success).toBe(false);
+
+    expect(emailSignInSchema.safeParse({ email: "owner@shop.ph", password: "pw" }).success).toBe(true);
+    expect(emailSignInSchema.safeParse({ email: "not-an-email", password: "pw" }).success).toBe(false);
+
+    expect(forgotPasswordSchema.safeParse({ email: "owner@shop.ph" }).success).toBe(true);
+    expect(forgotPasswordSchema.safeParse({ email: "" }).success).toBe(false);
+
+    expect(resetPasswordSchema.safeParse({ password: "secret", confirmPassword: "secret" }).success).toBe(true);
+    const mismatch = resetPasswordSchema.safeParse({ password: "secret", confirmPassword: "other" });
+    expect(mismatch.success).toBe(false);
+    if (!mismatch.success) expect(fieldErrors(mismatch.error)["confirmPassword"]).toBe("validation.password_match");
   });
 });
 

@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../data/sales_models.dart';
@@ -333,5 +334,94 @@ class NetworkEscPosTransport implements EscPosTransport {
     } finally {
       await socket.close();
     }
+  }
+}
+
+/// Paired classic Bluetooth (SPP / RFCOMM) thermal printer descriptor.
+class BluetoothPrinterDevice {
+  const BluetoothPrinterDevice({
+    required this.name,
+    required this.address,
+  });
+
+  final String name;
+  final String address;
+}
+
+/// Platform adapter for enumerating bonded Bluetooth printers and writing RFCOMM bytes.
+abstract class BluetoothEscPosAdapter {
+  Future<List<BluetoothPrinterDevice>> getBondedDevices();
+  Future<void> sendBytes(String address, Uint8List bytes);
+}
+
+/// Production Android RFCOMM SPP adapter backed by MainActivity MethodChannel.
+class MethodChannelBluetoothAdapter implements BluetoothEscPosAdapter {
+  const MethodChannelBluetoothAdapter();
+
+  static const MethodChannel _channel =
+      MethodChannel('com.xzactopos.mobile/bluetooth_printer');
+
+  @override
+  Future<List<BluetoothPrinterDevice>> getBondedDevices() async {
+    final raw = await _channel.invokeMethod<List<dynamic>>('getBondedDevices');
+    if (raw == null) return const [];
+    return raw.map((entry) {
+      final map = Map<String, dynamic>.from(entry as Map);
+      return BluetoothPrinterDevice(
+        name: (map['name'] as String?)?.trim().isNotEmpty == true
+            ? (map['name'] as String).trim()
+            : 'Bluetooth Printer',
+        address: (map['address'] as String? ?? '').trim(),
+      );
+    }).where((d) => d.address.isNotEmpty).toList();
+  }
+
+  @override
+  Future<void> sendBytes(String address, Uint8List bytes) async {
+    await _channel.invokeMethod<void>('sendBytes', <String, dynamic>{
+      'address': address.trim(),
+      'bytes': bytes,
+    });
+  }
+}
+
+/// Deterministic in-memory Bluetooth adapter for unit and widget tests.
+class FakeBluetoothEscPosAdapter implements BluetoothEscPosAdapter {
+  FakeBluetoothEscPosAdapter({List<BluetoothPrinterDevice>? devices})
+      : devices = devices ?? const [];
+
+  final List<BluetoothPrinterDevice> devices;
+  final Map<String, List<Uint8List>> sentByAddress = {};
+
+  @override
+  Future<List<BluetoothPrinterDevice>> getBondedDevices() async => devices;
+
+  @override
+  Future<void> sendBytes(String address, Uint8List bytes) async {
+    sentByAddress.putIfAbsent(address, () => []).add(bytes);
+  }
+}
+
+/// Swappable global Bluetooth adapter (overridable in tests).
+BluetoothEscPosAdapter activeBluetoothAdapter = const MethodChannelBluetoothAdapter();
+
+/// Classic Bluetooth SPP transport for router-less market stalls & sari-sari stores.
+class BluetoothEscPosTransport implements EscPosTransport {
+  BluetoothEscPosTransport({
+    required this.address,
+    this.adapter,
+  });
+
+  final String address;
+  final BluetoothEscPosAdapter? adapter;
+
+  @override
+  Future<void> send(Uint8List bytes) async {
+    final trimmed = address.trim();
+    if (trimmed.isEmpty) {
+      throw StateError('Bluetooth printer MAC address is not configured.');
+    }
+    final resolved = adapter ?? activeBluetoothAdapter;
+    await resolved.sendBytes(trimmed, bytes);
   }
 }

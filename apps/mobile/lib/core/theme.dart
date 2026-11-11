@@ -1,17 +1,81 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// The two colour sets the owner can pick from (light and dark exist for both).
 enum AppPalette { freshTide, goldenIndigo }
 
-/// Spacing and radius scale for the whole app.
+/// Refactoring UI spacing (4, 8, 12, 16, 24, 32) and corner radius scale (6px controls, 10px cards).
 class Gap {
-  static const double xs = 4, s = 8, m = 12, l = 16, xl = 20, xxl = 28;
-  static const double radiusS = 12, radiusM = 18, radiusL = 24, radiusXL = 30;
+  static const double xs = 4, s = 8, m = 12, l = 16, xl = 24, xxl = 32;
+  static const double radiusS = 6, radiusM = 8, radiusL = 10, radiusXL = 12;
+}
+
+/// Persisted UI preferences across launches (palette, theme mode, and UI language).
+class AppPreferences {
+  const AppPreferences({
+    this.palette = AppPalette.goldenIndigo,
+    this.mode = ThemeMode.system,
+    this.locale = 'en',
+  });
+
+  final AppPalette palette;
+  final ThemeMode mode;
+  final String locale;
+
+  AppPreferences copyWith({AppPalette? palette, ThemeMode? mode, String? locale}) => AppPreferences(
+        palette: palette ?? this.palette,
+        mode: mode ?? this.mode,
+        locale: locale ?? this.locale,
+      );
+}
+
+class AppPreferencesStorage {
+  const AppPreferencesStorage();
+
+  static const _keyPalette = 'ui_palette';
+  static const _keyMode = 'ui_theme_mode';
+  static const _keyLocale = 'ui_locale';
+
+  Future<AppPreferences> load() async {
+    try {
+      final p = await SharedPreferences.getInstance();
+      final rawPalette = p.getString(_keyPalette);
+      final palette = rawPalette == AppPalette.freshTide.name ? AppPalette.freshTide : AppPalette.goldenIndigo;
+      final rawMode = p.getString(_keyMode);
+      final mode = switch (rawMode) {
+        'light' => ThemeMode.light,
+        'dark' => ThemeMode.dark,
+        _ => ThemeMode.system,
+      };
+      final rawLocale = p.getString(_keyLocale);
+      final locale = (rawLocale == 'fil' || rawLocale == 'en') ? rawLocale! : 'en';
+      return AppPreferences(palette: palette, mode: mode, locale: locale);
+    } catch (_) {
+      return const AppPreferences();
+    }
+  }
+
+  Future<void> save(AppPreferences prefs) async {
+    try {
+      final p = await SharedPreferences.getInstance();
+      await p.setString(_keyPalette, prefs.palette.name);
+      await p.setString(
+        _keyMode,
+        switch (prefs.mode) {
+          ThemeMode.light => 'light',
+          ThemeMode.dark => 'dark',
+          ThemeMode.system => 'system',
+        },
+      );
+      await p.setString(_keyLocale, prefs.locale);
+    } catch (_) {}
+  }
 }
 
 class _P {
   const _P({
     required this.primary,
+    required this.onPrimary,
     required this.primaryContainer,
     required this.onPrimaryContainer,
     required this.secondary,
@@ -25,79 +89,84 @@ class _P {
     required this.text,
     required this.textMuted,
   });
-  final Color primary, primaryContainer, onPrimaryContainer;
+  final Color primary, onPrimary, primaryContainer, onPrimaryContainer;
   final Color secondary, onSecondary, secondaryContainer, onSecondaryContainer;
   final Color tertiary; // warning (low stock)
   final Color background, surface, cardBorder, text, textMuted;
 }
 
-// Utang owed, void, errors
-const _errorLight = Color(0xFFD6334A);
-const _errorDark = Color(0xFFFF8A94);
+// Danger 600 (light) and Danger 300 (dark) from Vibecheck / Refactoring UI kit (>= 4.5:1)
+const _errorLight = Color(0xFFCD201D);
+const _errorDark = Color(0xFFF5978E);
 
-// Fresh cool porcelain aesthetic inspired by modern fintech/Web3
-const _freshLight = _P(
-  primary: Color(0xFF1E6FF2),
-  primaryContainer: Color(0xFFEDF4FF),
-  onPrimaryContainer: Color(0xFF0F3980),
-  secondary: Color(0xFF10B981), // mint / emerald aligned with brand
-  onSecondary: Color(0xFF042F23), // dark text on mint: white was 2.5:1, this is above 4.5:1
-  secondaryContainer: Color(0xFFE6F8F3),
-  onSecondaryContainer: Color(0xFF064E3B),
-  tertiary: Color(0xFFF59E0B), // solar amber
-  background: Color(0xFFF6F8FC), // cool crisp porcelain
-  surface: Colors.white,
-  cardBorder: Color(0xFFE2E8F0),
-  text: Color(0xFF0F172A),
-  textMuted: Color(0xFF64748B),
-);
-
-const _freshDark = _P(
-  primary: Color(0xFF38BDF8),
-  primaryContainer: Color(0xFF0C2444),
-  onPrimaryContainer: Color(0xFFBAE6FD),
-  secondary: Color(0xFF2DD4BF),
-  onSecondary: Color(0xFF04241C),
-  secondaryContainer: Color(0xFF0F3B32),
-  onSecondaryContainer: Color(0xFFCCFBF1),
-  tertiary: Color(0xFFFBBF24),
-  background: Color(0xFF0F172A), // deep obsidian matching brand logo
-  surface: Color(0xFF1E293B),
-  cardBorder: Color(0xFF334155),
-  text: Color(0xFFF8FAFC),
-  textMuted: Color(0xFF94A3B8),
-);
-
+// Unified Refactoring UI / Vibecheck Warm Gray + Primary Indigo (#3419d2)
 const _goldLight = _P(
-  primary: Color(0xFF3B52E8),
-  primaryContainer: Color(0xFFEEF1FF),
-  onPrimaryContainer: Color(0xFF1A277A),
-  secondary: Color(0xFFF59E0B),
-  onSecondary: Color(0xFF261900),
-  secondaryContainer: Color(0xFFFEF3C7),
-  onSecondaryContainer: Color(0xFF78350F),
-  tertiary: Color(0xFFEA580C),
-  background: Color(0xFFF2F2FA),
+  primary: Color(0xFF3419D2), // Primary 600
+  onPrimary: Colors.white,
+  primaryContainer: Color(0xFFF4F0FF), // Primary 50
+  onPrimaryContainer: Color(0xFF160A8A), // Primary 800
+  secondary: Color(0xFF31B973), // Success 600
+  onSecondary: Color(0xFF062915),
+  secondaryContainer: Color(0xFFF1FDF9), // Success 50
+  onSecondaryContainer: Color(0xFF0E532A), // Success 900
+  tertiary: Color(0xFFF7AE1D), // Warning 500
+  background: Color(0xFFFBFAF9), // Warm Gray 50
   surface: Colors.white,
-  cardBorder: Color(0xFFE5E8F3),
-  text: Color(0xFF0F172A),
-  textMuted: Color(0xFF64748B),
+  cardBorder: Color(0xFFE3DDD3), // Warm Gray 200
+  text: Color(0xFF3B3226), // Warm Gray 900
+  textMuted: Color(0xFF716450), // Warm Gray 700
 );
 
 const _goldDark = _P(
-  primary: Color(0xFF8197FF),
-  primaryContainer: Color(0xFF222B60),
-  onPrimaryContainer: Color(0xFFDDE2FF),
-  secondary: Color(0xFFFFD25E),
-  onSecondary: Color(0xFF2B2000),
-  secondaryContainer: Color(0xFF4D3800),
-  onSecondaryContainer: Color(0xFFFFEFC2),
-  tertiary: Color(0xFFFF9D5C),
-  background: Color(0xFF131833),
-  surface: Color(0xFF212844),
-  cardBorder: Color(0xFF222D52),
-  text: Color(0xFFF1F5F9),
-  textMuted: Color(0xFF94A3B8),
+  primary: Color(0xFFA38CF8), // Primary 300
+  onPrimary: Color(0xFF0A045D), // Primary 900
+  primaryContainer: Color(0xFF191438),
+  onPrimaryContainer: Color(0xFFE5DCFE), // Primary 100
+  secondary: Color(0xFF6BDBA7), // Success 400
+  onSecondary: Color(0xFF072B16),
+  secondaryContainer: Color(0xFF0E532A), // Success 900
+  onSecondaryContainer: Color(0xFFE0FBF0), // Success 100
+  tertiary: Color(0xFFFDC749), // Warning 400
+  background: Color(0xFF12100E), // Warm Dark 50
+  surface: Color(0xFF1E1B18), // Warm Dark Card
+  cardBorder: Color(0xFF2B2721), // Warm Dark 200
+  text: Color(0xFFFBFAF9), // Warm Gray 50
+  textMuted: Color(0xFFB3A694), // Warm Gray 400
+);
+
+// Fresh Tide alternative palette (electric blue + mint on warm-compatible surfaces)
+const _freshLight = _P(
+  primary: Color(0xFF1A5ED4),
+  onPrimary: Colors.white,
+  primaryContainer: Color(0xFFEDF4FF),
+  onPrimaryContainer: Color(0xFF0F3980),
+  secondary: Color(0xFF31B973),
+  onSecondary: Color(0xFF062915),
+  secondaryContainer: Color(0xFFF1FDF9),
+  onSecondaryContainer: Color(0xFF0E532A),
+  tertiary: Color(0xFFF7AE1D),
+  background: Color(0xFFFBFAF9),
+  surface: Colors.white,
+  cardBorder: Color(0xFFE3DDD3),
+  text: Color(0xFF3B3226),
+  textMuted: Color(0xFF716450),
+);
+
+const _freshDark = _P(
+  primary: Color(0xFF60C5FA),
+  onPrimary: Color(0xFF061E38),
+  primaryContainer: Color(0xFF0C2444),
+  onPrimaryContainer: Color(0xFFBAE6FD),
+  secondary: Color(0xFF6BDBA7),
+  onSecondary: Color(0xFF072B16),
+  secondaryContainer: Color(0xFF0E532A),
+  onSecondaryContainer: Color(0xFFE0FBF0),
+  tertiary: Color(0xFFFDC749),
+  background: Color(0xFF12100E),
+  surface: Color(0xFF1E1B18),
+  cardBorder: Color(0xFF2B2721),
+  text: Color(0xFFFBFAF9),
+  textMuted: Color(0xFFB3A694),
 );
 
 /// Semantic colors derived from the active palette, so screens never hard-code hex values.
@@ -107,27 +176,26 @@ extension AppColors on ColorScheme {
   /// Positive state (online, healthy, paid).
   Color get success => secondary;
 
-  /// The solid surface of the signature brand action buttons (obsidian navy).
-  Color get obsidian => isDark ? const Color(0xFF1E293B) : const Color(0xFF0F172A);
+  /// Solid surface of primary brand action buttons (Primary 600 in light, Primary 300/dark surface in dark).
+  Color get obsidian => isDark ? const Color(0xFF261F59) : const Color(0xFF3419D2);
 
   /// Text/icons on [obsidian].
   Color get onObsidian => Colors.white;
 
-  /// Signature glowing cyan border for action buttons and accents.
-  Color get glow => const Color(0xFF22D3EE);
+  /// Accent border for raised POS action buttons.
+  Color get glow => isDark ? const Color(0xFFA38CF8) : const Color(0xFF7658EE);
 
-  /// Quiet fill for small circular chips (arrows, counters).
+  /// Quiet fill for small chips (arrows, counters).
   Color get chipFill => isDark ? surface : primaryContainer;
 
   /// Accent used for the language/reports badges (follows the palette).
   Color get accent => tertiary;
 
   /// Payment-type colors for reports: cash, e-wallet, utang, expenses.
-  /// Strictly unified to the official 3 brand logo colors (Blue, Mint/Teal, Orange/Amber).
-  Color get payCash => const Color(0xFF10B981); // Brand Mint/Teal (Logo Checkmark)
-  Color get payEwallet => const Color(0xFF1E6FF2); // Brand Electric Blue (Logo X)
-  Color get payUtang => const Color(0xFFF59E0B); // Brand Amber/Orange (Logo Card & Barcode)
-  Color get payExpense => const Color(0xFFFF7A00); // Brand Vibrant Orange (Logo Accents)
+  Color get payCash => const Color(0xFF31B973); // Success 600
+  Color get payEwallet => const Color(0xFF4D2FE4); // Primary 500
+  Color get payUtang => const Color(0xFFF7AE1D); // Warning 500
+  Color get payExpense => const Color(0xFFDF3A34); // Danger 500
 }
 
 ThemeData buildTheme(AppPalette palette, Brightness brightness) {
@@ -138,7 +206,7 @@ ThemeData buildTheme(AppPalette palette, Brightness brightness) {
   };
   final scheme = ColorScheme.fromSeed(seedColor: p.primary, brightness: brightness).copyWith(
     primary: p.primary,
-    onPrimary: dark ? const Color(0xFF06122E) : Colors.white,
+    onPrimary: p.onPrimary,
     primaryContainer: p.primaryContainer,
     onPrimaryContainer: p.onPrimaryContainer,
     secondary: p.secondary,
@@ -155,9 +223,9 @@ ThemeData buildTheme(AppPalette palette, Brightness brightness) {
     outlineVariant: p.cardBorder,
   );
 
-  const shape = StadiumBorder();
+  final controlShape = RoundedRectangleBorder(borderRadius: BorderRadius.circular(Gap.radiusS));
   final cardShape = RoundedRectangleBorder(
-    borderRadius: BorderRadius.circular(Gap.radiusXL),
+    borderRadius: BorderRadius.circular(Gap.radiusL),
     side: BorderSide(color: p.cardBorder, width: 1.0),
   );
 
@@ -172,78 +240,77 @@ ThemeData buildTheme(AppPalette palette, Brightness brightness) {
       elevation: 0,
       scrolledUnderElevation: 0,
       centerTitle: false,
-      titleTextStyle: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, letterSpacing: -0.3, color: p.text),
+      titleTextStyle: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, letterSpacing: -0.2, color: p.text),
     ),
     cardTheme: CardThemeData(color: p.surface, elevation: 0, surfaceTintColor: Colors.transparent, shape: cardShape),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
-        minimumSize: const Size(64, 56),
-        shape: shape,
-        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+        minimumSize: const Size(64, 48),
+        shape: controlShape,
+        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
       ),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        minimumSize: const Size(64, 56),
-        shape: shape,
+        minimumSize: const Size(64, 48),
+        shape: controlShape,
         elevation: 0,
-        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
-        minimumSize: const Size(64, 56),
-        shape: shape,
-        side: BorderSide(color: p.cardBorder, width: 1.5),
-        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+        minimumSize: const Size(64, 48),
+        shape: controlShape,
+        side: BorderSide(color: p.cardBorder, width: 1.0),
+        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
       ),
     ),
-    // the navy + cyan of the raised POS button, so every floating action matches it
     floatingActionButtonTheme: FloatingActionButtonThemeData(
-      backgroundColor: dark ? const Color(0xFF1E293B) : const Color(0xFF0F172A),
-      foregroundColor: const Color(0xFF22D3EE),
-      shape: const StadiumBorder(side: BorderSide(color: Color(0xFF22D3EE), width: 1.6)),
-      elevation: 6,
-      extendedTextStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white),
+      backgroundColor: p.primary,
+      foregroundColor: p.onPrimary,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Gap.radiusL)),
+      elevation: 3,
+      extendedTextStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: p.onPrimary),
     ),
     inputDecorationTheme: InputDecorationTheme(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       filled: true,
       fillColor: p.surface,
-      hintStyle: TextStyle(color: p.textMuted, fontSize: 15),
+      hintStyle: TextStyle(color: p.textMuted, fontSize: 14),
       prefixIconColor: p.textMuted,
       suffixIconColor: p.textMuted,
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(Gap.radiusXL),
+        borderRadius: BorderRadius.circular(Gap.radiusS),
         borderSide: BorderSide(color: p.cardBorder, width: 1.0),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(Gap.radiusXL),
+        borderRadius: BorderRadius.circular(Gap.radiusS),
         borderSide: BorderSide(color: p.cardBorder, width: 1.0),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(Gap.radiusXL),
+        borderRadius: BorderRadius.circular(Gap.radiusS),
         borderSide: BorderSide(color: p.primary, width: 2.0),
       ),
     ),
     chipTheme: ChipThemeData(
       selectedColor: p.primaryContainer,
       labelStyle: TextStyle(color: p.text, fontWeight: FontWeight.w600, fontSize: 14),
-      shape: const StadiumBorder(),
+      shape: controlShape,
       side: BorderSide(color: p.cardBorder, width: 1.0),
       backgroundColor: p.surface,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
     ),
     navigationBarTheme: NavigationBarThemeData(
       backgroundColor: p.surface,
       surfaceTintColor: Colors.transparent,
       indicatorColor: p.primaryContainer,
       elevation: 0,
-      height: 68,
+      height: 64,
       labelTextStyle: WidgetStateProperty.resolveWith(
         (s) => TextStyle(
           fontSize: 12,
-          fontWeight: s.contains(WidgetState.selected) ? FontWeight.w800 : FontWeight.w600,
+          fontWeight: s.contains(WidgetState.selected) ? FontWeight.w600 : FontWeight.w400,
           color: s.contains(WidgetState.selected) ? p.text : p.textMuted,
         ),
       ),

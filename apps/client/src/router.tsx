@@ -11,7 +11,7 @@ import { can, contextFromAccess } from "@pos/core";
 import { hasSession, loadAccess, SessionProvider } from "./lib/session.tsx";
 import { LocationProvider } from "./lib/location-context.tsx";
 import { signOut } from "./lib/api.ts";
-import { HomePage, LoginPage } from "./routes/public.tsx";
+import { HomePage, LoginPage, ResetPasswordPage, SoloSignUpPage } from "./routes/public.tsx";
 import { AppLayout, DashboardPage, ForbiddenPage } from "./routes/app-layout.tsx";
 import { TodayPage } from "./routes/today.tsx";
 import { SellPage } from "./routes/sell.tsx";
@@ -46,9 +46,27 @@ const home = createRoute({
   getParentRoute: () => root,
   path: "/",
   beforeLoad: async ({ context }) => {
+    if (typeof window !== "undefined" && window.location.hash.includes("type=recovery")) {
+      throw redirect({ to: "/reset-password" });
+    }
     if (await loadAccess(context.queryClient)) throw redirect({ to: "/app" });
   },
   component: HomePage,
+});
+
+const signup = createRoute({
+  getParentRoute: () => root,
+  path: "/signup",
+  beforeLoad: async ({ context }) => {
+    if (await loadAccess(context.queryClient)) throw redirect({ to: "/app" });
+  },
+  component: SoloSignUpPage,
+});
+
+const resetPassword = createRoute({
+  getParentRoute: () => root,
+  path: "/reset-password",
+  component: ResetPasswordPage,
 });
 
 const login = createRoute({
@@ -136,6 +154,8 @@ const forbidden = createRoute({ getParentRoute: () => app, path: "/forbidden", c
 
 const routeTree = root.addChildren([
   home,
+  signup,
+  resetPassword,
   login,
   app.addChildren([dashboard, setup, sell, sales, products, utang, expenses, dayClose, upgrade, settings, transfers, bins, purchasing, counts, overview, reports, locations, users, modules, platform, forbidden]),
 ]);
