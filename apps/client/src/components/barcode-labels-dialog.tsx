@@ -312,7 +312,7 @@ export function BarcodeLabelsDialog({
 
       {/* Printable Area (Visible strictly on window.print()) */}
       <div
-        className={`printable-barcode-labels format-${format}`}
+        className={`hidden print:block printable-barcode-labels format-${format}`}
         aria-hidden="true"
       >
         {printItems.map((pItem, idx) => (

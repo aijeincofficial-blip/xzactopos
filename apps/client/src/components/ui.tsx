@@ -120,10 +120,10 @@ export function Dialog({
   return (
     <RadixDialog.Root open={open} onOpenChange={onOpenChange}>
       <RadixDialog.Portal>
-        <RadixDialog.Overlay className="fixed inset-0 bg-black/50" />
+        <RadixDialog.Overlay className="fixed inset-0 z-50 bg-black/50" />
         <RadixDialog.Content
           aria-describedby={undefined}
-          className="fixed top-1/2 left-1/2 max-h-[90vh] w-[min(32rem,92vw)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-lg border border-slate-200 bg-white p-6 shadow-xl"
+          className="fixed top-1/2 left-1/2 z-50 max-h-[90vh] w-[min(32rem,92vw)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-lg border border-slate-200 bg-white p-6 shadow-xl"
         >
           <div className="mb-4 flex items-center justify-between">
             <RadixDialog.Title className="text-lg font-semibold tracking-tight text-slate-900">{title}</RadixDialog.Title>

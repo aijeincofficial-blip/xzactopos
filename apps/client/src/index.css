@@ -397,6 +397,12 @@ body {
 }
 
 /* POS Thermal Receipt Slip, Barcode Labels & Document Printing */
+@media screen {
+  .printable-barcode-labels {
+    display: none;
+  }
+}
+
 @media print {
   body * {
     visibility: hidden;
