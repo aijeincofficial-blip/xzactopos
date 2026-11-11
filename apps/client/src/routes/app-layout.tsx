@@ -13,7 +13,9 @@ import {
   Home,
   type LucideIcon,
   MapPin,
+  Maximize2,
   Menu,
+  Minimize2,
   Monitor,
   Moon,
   Package,
@@ -99,10 +101,37 @@ export function AppLayout() {
     }
   });
   const [theme, setTheme] = useState<ThemeChoice>(readTheme);
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(
+    () => typeof document !== "undefined" && Boolean(document.fullscreenElement),
+  );
   const path = useRouterState({ select: (s) => s.location.pathname });
   const isSellRoute = path === "/app/sell" || path.startsWith("/app/sell/");
   const hideDockedSidebar = isSellRoute && kioskMode;
   const ThemeIcon = THEME_ICON[theme];
+
+  useEffect(() => {
+    const onFsChange = () => setIsFullscreen(Boolean(document.fullscreenElement));
+    document.addEventListener("fullscreenchange", onFsChange);
+    return () => document.removeEventListener("fullscreenchange", onFsChange);
+  }, []);
+
+  async function toggleFullscreenKiosk() {
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      } else {
+        setKioskMode(true);
+        try {
+          localStorage.setItem("pos.kioskMode", "1");
+        } catch {
+          /* ignore storage failure */
+        }
+        await document.documentElement.requestFullscreen();
+      }
+    } catch {
+      /* fullscreen disallowed or unsupported */
+    }
+  }
 
   function toggleKioskMode() {
     setKioskMode((prev) => {
@@ -287,26 +316,47 @@ export function AppLayout() {
             </>
           )}
           {isSellRoute && showNav ? (
-            <Button
-              variant="outline"
-              size="sm"
-              data-testid="kiosk-mode-toggle"
-              onClick={toggleKioskMode}
-              className="hidden md:inline-flex"
-              title={hideDockedSidebar ? t("admin:sell.dockSidebar") : t("admin:sell.kioskMode")}
-            >
-              {hideDockedSidebar ? (
-                <>
-                  <PanelLeft size={16} className="text-slate-500" aria-hidden />
-                  <span>{t("admin:sell.dockSidebar")}</span>
-                </>
-              ) : (
-                <>
-                  <PanelLeftClose size={16} className="text-slate-500" aria-hidden />
-                  <span>{t("admin:sell.kioskMode")}</span>
-                </>
-              )}
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                data-testid="fullscreen-kiosk-btn"
+                onClick={() => void toggleFullscreenKiosk()}
+                title={isFullscreen ? t("admin:sell.exitFullscreen") : t("admin:sell.enterFullscreen")}
+              >
+                {isFullscreen ? (
+                  <>
+                    <Minimize2 size={16} className="text-slate-500" aria-hidden />
+                    <span>{t("admin:sell.exitFullscreen")}</span>
+                  </>
+                ) : (
+                  <>
+                    <Maximize2 size={16} className="text-slate-500" aria-hidden />
+                    <span>{t("admin:sell.enterFullscreen")}</span>
+                  </>
+                )}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                data-testid="kiosk-mode-toggle"
+                onClick={toggleKioskMode}
+                className="hidden md:inline-flex"
+                title={hideDockedSidebar ? t("admin:sell.dockSidebar") : t("admin:sell.kioskMode")}
+              >
+                {hideDockedSidebar ? (
+                  <>
+                    <PanelLeft size={16} className="text-slate-500" aria-hidden />
+                    <span>{t("admin:sell.dockSidebar")}</span>
+                  </>
+                ) : (
+                  <>
+                    <PanelLeftClose size={16} className="text-slate-500" aria-hidden />
+                    <span>{t("admin:sell.kioskMode")}</span>
+                  </>
+                )}
+              </Button>
+            </>
           ) : null}
           {stores.length > 1 ? (
             <div className="flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-1 text-xs">

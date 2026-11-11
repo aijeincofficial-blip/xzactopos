@@ -19,6 +19,7 @@ export default defineConfig({
         short_name: "XZACTO",
         description: "Multi-store retail POS, inventory, and warehouse platform",
         display: "standalone",
+        display_override: ["fullscreen", "standalone"],
         start_url: "/",
         theme_color: "#3419d2",
         background_color: "#fbfaf9",
