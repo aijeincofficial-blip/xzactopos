@@ -262,7 +262,7 @@ export function Tabs({
 }) {
   return (
     <RadixTabs.Root value={value} onValueChange={onValueChange} className="grid gap-4">
-      <RadixTabs.List aria-label={label} className="flex gap-1 overflow-x-auto border-b border-slate-200">
+      <RadixTabs.List aria-label={label} className="flex gap-1 overflow-x-auto overflow-y-hidden border-b border-slate-200 [scrollbar-width:none]">
         {tabs.map((tab) => (
           <RadixTabs.Trigger
             key={tab.value}
