@@ -8,7 +8,7 @@ Updated at the end of every task. Read this first in a fresh session. New sessio
 | Agent | Branch and worktree | Working on | Status |
 | --- | --- | --- | --- |
 | Claude | `claude/phase3-sell-8261d3`, `.claude/worktrees/phase3-sell-8261d3` | Priority 3: cashier shifts and X/Z on the phone done (`docs/tasks/F-05m-cashier-shifts.md`); staff on the phone done (`docs/tasks/F-04m-phone-staff.md`); priority 4 (web design system) started: tokens, dark mode, sidebar, components (`docs/web-design-system.md`). | stopped (owner switched to Antigravity 2026-11-10; branch equals main, clean) |
-| Antigravity | `ag/work`, `.claude/worktrees/ag-work` | Phase P-Launch, Phase P-Design (Kiosk POS + Separate Warehouse Portal & POS Stock Receiving), Phase P-Retail+ | done |
+| Antigravity | `ag/work`, `.claude/worktrees/ag-work` | Web UI Redesign & Decluttering (`index.css`, `theme.ts`, `ui.tsx`, `app-layout.tsx`, `public.tsx`, `sell.tsx`, `today.tsx`, `products.tsx`, `inventory.tsx`, `day-close.tsx`, `expenses.tsx`, `overview.tsx`, `modules.tsx`, `i18n`) + Mobile emulator APK install & sign-in | in progress |
 | Owner | merges branches into `main`; makes the git remote and the keystore | | |
 
 Row status words: `waiting`, `in progress`, `done`, `stopped` / `limit reached` (the other agent may take over, see `docs/START-HERE-antigravity.md` "Working together").
