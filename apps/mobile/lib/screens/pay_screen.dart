@@ -270,43 +270,63 @@ class _PayScreenState extends State<PayScreen> {
           ),
           const SizedBox(height: Gap.s),
 
-          // Payment Method Segmented Switcher
-          SegmentedButton<String>(
-            showSelectedIcon: false,
-            style: SegmentedButton.styleFrom(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Gap.radiusS)),
-              visualDensity: VisualDensity.compact,
+          // Payment Method Recessed Pill Selector (single-line, Cobalt active card, zero text clipping)
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: scheme.chipFill,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: scheme.outlineVariant, width: 1.0),
             ),
-            segments: [
-              ButtonSegment(value: 'cash', label: Text(t.payCash), icon: const Icon(Icons.payments_outlined, size: 17)),
-              ButtonSegment(
-                value: 'ewallet',
-                label: Text(t.payEwallet),
-                icon: const Icon(Icons.phone_android_rounded, size: 17),
-              ),
-              ButtonSegment(
-                value: 'card',
-                label: Text(t.payCard),
-                icon: const Icon(Icons.credit_card_rounded, size: 17),
-              ),
-            ],
-            selected: {_method},
-            onSelectionChanged: (s) => setState(() => _method = s.first),
+            child: Row(
+              children: [
+                _MethodTab(
+                  icon: Icons.payments_outlined,
+                  label: t.payCash,
+                  selected: _method == 'cash',
+                  onTap: () => setState(() => _method = 'cash'),
+                ),
+                const SizedBox(width: 4),
+                _MethodTab(
+                  icon: Icons.phone_android_rounded,
+                  label: t.payEwallet,
+                  selected: _method == 'ewallet',
+                  onTap: () => setState(() => _method = 'ewallet'),
+                ),
+                const SizedBox(width: 4),
+                _MethodTab(
+                  icon: Icons.credit_card_rounded,
+                  label: t.payCard,
+                  selected: _method == 'card',
+                  onTap: () => setState(() => _method = 'card'),
+                ),
+              ],
+            ),
           ),
           if (_method == 'ewallet') ...[
             const SizedBox(height: Gap.s),
-            Text(t.payWalletTitle, style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.outline)),
-            const SizedBox(height: 4),
-            Wrap(
-              spacing: 8,
+            Row(
               children: [
-                for (final w in paymentWallets)
-                  ChoiceChip(
-                    key: Key('pay-wallet-$w'),
-                    label: Text(walletLabel(t, w)),
-                    selected: _wallet == w,
-                    onSelected: (_) => setState(() => _wallet = w),
+                Text(
+                  t.payWalletTitle,
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: scheme.outline),
+                ),
+                const SizedBox(width: Gap.s),
+                Expanded(
+                  child: Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: [
+                      for (final w in paymentWallets)
+                        _WalletPill(
+                          key: Key('pay-wallet-$w'),
+                          label: walletLabel(t, w),
+                          selected: _wallet == w,
+                          onTap: () => setState(() => _wallet = w),
+                        ),
+                    ],
                   ),
+                ),
               ],
             ),
           ],
@@ -335,42 +355,47 @@ class _PayScreenState extends State<PayScreen> {
             style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w900, letterSpacing: -0.5),
             decoration: InputDecoration(
               isDense: true,
+              floatingLabelBehavior: FloatingLabelBehavior.always,
               labelText: _method == 'cash'
                   ? t.payReceivedCash
                   : (_method == 'card' ? t.payCardReceived : t.payReceivedEwallet),
               hintText: Money(_total, _ccy).toDecimalString(),
               prefixText:
                   '${NumberFormat.simpleCurrency(locale: Localizations.localeOf(context).languageCode, name: _ccy).currencySymbol} ',
-              prefixStyle: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+              prefixStyle: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: scheme.onSurface),
               errorText: _receivedRaw == -1 ? t.errBadAmount : null,
             ),
             onChanged: (_) => setState(() {}),
           ),
           const SizedBox(height: Gap.s),
 
-          // Quick Bill Pill Chips
+          // Quick Bill & Tender Pill Chips
           Wrap(
-            spacing: Gap.s,
-            runSpacing: Gap.s,
+            spacing: 8,
+            runSpacing: 8,
             children: [
-              ActionChip(
+              _PayPill(
                 key: const Key('quick-exact'),
-                avatar: const Icon(Icons.check_rounded, size: 16),
-                label: Text(t.payExact),
-                onPressed: () => setState(_received.clear),
+                icon: Icons.check_circle_rounded,
+                label: t.payExact,
+                selected: _received.text.trim().isEmpty,
+                onTap: () => setState(_received.clear),
               ),
               if (_method == 'cash')
                 for (final b in _quick)
-                  ActionChip(
+                  _PayPill(
                     key: Key('quick-$b'),
-                    label: Text(_money(b)),
-                    onPressed: () => setState(() => _received.text = Money(b, _ccy).toDecimalString()),
+                    label: _money(b),
+                    selected: _receivedRaw == b,
+                    onTap: () => setState(() => _received.text = Money(b, _ccy).toDecimalString()),
                   ),
-              ActionChip(
+              _PayPill(
                 key: const Key('all-utang'),
-                avatar: const Icon(Icons.menu_book_rounded, size: 16),
-                label: Text(t.payAllUtang),
-                onPressed: () => setState(() => _received.text = '0'),
+                icon: Icons.menu_book_rounded,
+                label: t.payAllUtang,
+                selected: _received.text.trim() == '0',
+                accentColor: scheme.payUtang,
+                onTap: () => setState(() => _received.text = '0'),
               ),
             ],
           ),
@@ -543,6 +568,221 @@ class _PayScreenState extends State<PayScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Single-line tactile segment inside the payment method switcher.
+class _MethodTab extends StatelessWidget {
+  const _MethodTab({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final fg = selected ? scheme.primary : scheme.outline;
+    final r = BorderRadius.circular(12);
+
+    return Expanded(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        height: 42,
+        decoration: BoxDecoration(
+          color: selected ? scheme.surface : Colors.transparent,
+          borderRadius: r,
+          border: selected ? Border.all(color: scheme.primary.withValues(alpha: 0.45), width: 1.3) : null,
+          boxShadow: selected
+              ? [
+                  BoxShadow(
+                    color: scheme.primary.withValues(alpha: scheme.isDark ? 0.25 : 0.12),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Material(
+          type: MaterialType.transparency,
+          borderRadius: r,
+          child: InkWell(
+            borderRadius: r,
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(icon, size: 16, color: fg),
+                    const SizedBox(width: 5),
+                    Text(
+                      label,
+                      maxLines: 1,
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                        color: selected ? (scheme.isDark ? scheme.onSurface : scheme.primary) : scheme.outline,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Sleek pill selector for GCash / Maya / Other wallet sub-choice.
+class _WalletPill extends StatelessWidget {
+  const _WalletPill({
+    super.key,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final r = BorderRadius.circular(20);
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 150),
+      decoration: BoxDecoration(
+        color: selected ? scheme.obsidian : scheme.surface,
+        borderRadius: r,
+        border: Border.all(
+          color: selected ? scheme.obsidian : scheme.outlineVariant,
+          width: 1.0,
+        ),
+        boxShadow: selected
+            ? [
+                BoxShadow(
+                  color: scheme.obsidian.withValues(alpha: 0.24),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ]
+            : null,
+      ),
+      child: Material(
+        type: MaterialType.transparency,
+        borderRadius: r,
+        child: InkWell(
+          borderRadius: r,
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                color: selected ? Colors.white : scheme.onSurface,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Tactile state-aware pill button for Exact, Quick Cash Bills, and All on Utang.
+class _PayPill extends StatelessWidget {
+  const _PayPill({
+    super.key,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    this.icon,
+    this.accentColor,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  final IconData? icon;
+  final Color? accentColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final active = accentColor ?? scheme.primary;
+    final r = BorderRadius.circular(20);
+
+    final bg = selected
+        ? active.withValues(alpha: scheme.isDark ? 0.24 : 0.12)
+        : scheme.surface;
+    final border = selected
+        ? active.withValues(alpha: scheme.isDark ? 0.70 : 0.55)
+        : scheme.outlineVariant;
+    final fg = selected
+        ? (scheme.isDark ? Colors.white : Color.lerp(active, Colors.black, 0.18)!)
+        : scheme.onSurface;
+    final iconColor = selected ? active : (accentColor ?? scheme.primary);
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 150),
+      height: 36,
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: r,
+        border: Border.all(color: border, width: selected ? 1.4 : 1.0),
+        boxShadow: [
+          BoxShadow(
+            color: selected
+                ? active.withValues(alpha: 0.14)
+                : (scheme.isDark ? Colors.black.withValues(alpha: 0.20) : const Color(0x080F172A)),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        type: MaterialType.transparency,
+        borderRadius: r,
+        child: InkWell(
+          borderRadius: r,
+          onTap: onTap,
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: icon != null ? 12 : 14),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (icon != null) ...[
+                  Icon(icon, size: 15, color: iconColor),
+                  const SizedBox(width: 6),
+                ],
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                    color: fg,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

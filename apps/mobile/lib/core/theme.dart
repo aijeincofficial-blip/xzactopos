@@ -301,13 +301,37 @@ ThemeData buildTheme(AppPalette palette, Brightness brightness) {
     chipTheme: ChipThemeData(
       selectedColor: p.primaryContainer,
       secondarySelectedColor: p.primaryContainer,
-      checkmarkColor: p.onPrimaryContainer,
+      showCheckmark: false,
+      checkmarkColor: p.primary,
       labelStyle: TextStyle(color: p.text, fontWeight: FontWeight.w600, fontSize: 13),
-      secondaryLabelStyle: TextStyle(color: p.onPrimaryContainer, fontWeight: FontWeight.w600, fontSize: 13),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      side: BorderSide(color: p.cardBorder, width: 1.0),
+      secondaryLabelStyle: TextStyle(color: p.primary, fontWeight: FontWeight.w700, fontSize: 13),
+      shape: const StadiumBorder(),
+      side: WidgetStateBorderSide.resolveWith(
+        (s) => BorderSide(
+          color: s.contains(WidgetState.selected) ? p.primary.withValues(alpha: 0.45) : p.cardBorder,
+          width: s.contains(WidgetState.selected) ? 1.4 : 1.0,
+        ),
+      ),
       backgroundColor: p.surface,
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+    ),
+    segmentedButtonTheme: SegmentedButtonThemeData(
+      style: ButtonStyle(
+        backgroundColor: WidgetStateProperty.resolveWith(
+          (s) => s.contains(WidgetState.selected) ? p.primaryContainer : p.surface,
+        ),
+        foregroundColor: WidgetStateProperty.resolveWith(
+          (s) => s.contains(WidgetState.selected) ? p.primary : p.textMuted,
+        ),
+        textStyle: const WidgetStatePropertyAll(
+          TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600),
+        ),
+        side: WidgetStatePropertyAll(BorderSide(color: p.cardBorder, width: 1.0)),
+        shape: WidgetStatePropertyAll(
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(Gap.radiusS)),
+        ),
+        visualDensity: VisualDensity.compact,
+      ),
     ),
     navigationBarTheme: NavigationBarThemeData(
       backgroundColor: p.surface,
