@@ -30,6 +30,8 @@ export interface Sellable {
   cost: number;
   taxRate: number;
   tracked: boolean;
+  categoryId?: string | null;
+  reorderPoint?: number;
 }
 
 /** Joins products, their default variant and the price in `currency`; hides inactive, deleted and unpriced items. */
@@ -52,6 +54,8 @@ export function toSellables(pull: CatalogPull, currency: string): Sellable[] {
       cost: v.cost,
       taxRate: Number(p.tax_rate),
       tracked: p.track_stock,
+      ...(p.category_id !== undefined ? { categoryId: p.category_id } : {}),
+      ...(v.reorder_point !== undefined ? { reorderPoint: Number(v.reorder_point) } : {}),
     });
   }
   return out.sort((a, b) => a.name.localeCompare(b.name));

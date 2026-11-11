@@ -8,7 +8,7 @@ Updated at the end of every task. Read this first in a fresh session. New sessio
 | Agent | Branch and worktree | Working on | Status |
 | --- | --- | --- | --- |
 | Claude | `claude/phase3-sell-8261d3`, `.claude/worktrees/phase3-sell-8261d3` | Priority 3: cashier shifts and X/Z on the phone done (`docs/tasks/F-05m-cashier-shifts.md`); staff on the phone done (`docs/tasks/F-04m-phone-staff.md`); priority 4 (web design system) started: tokens, dark mode, sidebar, components (`docs/web-design-system.md`). | stopped (owner switched to Antigravity 2026-11-10; branch equals main, clean) |
-| Antigravity | `ag/work`, `.claude/worktrees/ag-work` | Phase P-Launch (Web Auth Parity + Release Hardening), Phase P-Design (Theme Unification + Dark WCAG + Reports/Hotkeys), Phase P-Retail+ (Bin Barcode Labels, Partial Returns, Bluetooth ESC/POS) | done |
+| Antigravity | `ag/work`, `.claude/worktrees/ag-work` | Phase P-Launch, Phase P-Design (incl. Kiosk Web POS Terminal & Searchbar), Phase P-Retail+ | done |
 | Owner | merges branches into `main`; makes the git remote and the keystore | | |
 
 Row status words: `waiting`, `in progress`, `done`, `stopped` / `limit reached` (the other agent may take over, see `docs/START-HERE-antigravity.md` "Working together").
@@ -39,7 +39,7 @@ Row status words: `waiting`, `in progress`, `done`, `stopped` / `limit reached` 
     - Web `public.tsx` redesigned with XZACTO branding, theme switcher, language selector, strict `400`/`600` weights, and max 1 solid primary button per view.
     - Dark-mode WCAG AA contrast audit & token fixes (`apps/client/src/index.css`) verified programmatically in `apps/client/src/lib/theme.test.ts` (23/23 tests).
     - Token-styled daily trend bar chart & payment tender share bars in `apps/client/src/routes/reports.tsx`.
-    - Cashier keyboard hotkeys (`F2`/`/`, `Alt+1..6`, `F4`, `F8`, `F9`) in `apps/client/src/routes/sell.tsx` + `sell-hotkeys.ts` (`sell-hotkeys.test.ts`).
+    - Cashier keyboard hotkeys (`F2`/`/`, `Alt+1..6`, `F4`, `F8`, `F9`) and full-bleed **Kiosk Web POS Terminal** (`apps/client/src/routes/sell.tsx`, `app-layout.tsx`, `sell-api.ts`, `sell-hotkeys.ts`): collapsible docked sidebar (`pos.kioskMode` with `Show Menu Bar` / `Kiosk View` toggle & shared nav drawer), sticky `h-12` Web POS Search & Barcode bar, live category filter pills, tactile multi-column product tiles with monogram & stock/low-stock badges, and fixed `420px` right-hand Order Register with `-`/`qty`/`+` steppers, 4-way tender buttons, Quick Cash denomination presets (`Exact`, `₱50`–`₱1,000`), and Change Due callout.
   - **Phase P-Retail+ (Closing Operational Loops):**
     - Warehouse Bin Barcode Labels (`apps/client/src/routes/bins.tsx`, `barcode-labels-dialog.tsx`, `barcode-svg.test.ts`): multi-select batch printing and per-bin Code 128 label sheets/thermal rolls (`50mm x 30mm` & 30-up).
     - Bluetooth ESC/POS Printer Adapter on Mobile (`MainActivity.kt`, `esc_pos_printer.dart`, `printer_config.dart`, `settings_screen.dart`, `printer_config_test.dart`): native Android RFCOMM SPP (`00001101-0000-1000-8000-00805F9B34FB`) channel with paired printer scan, manual MAC entry, and Android 12+ `BLUETOOTH_CONNECT` permission handling.

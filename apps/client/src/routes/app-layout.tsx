@@ -17,6 +17,8 @@ import {
   Monitor,
   Moon,
   Package,
+  PanelLeft,
+  PanelLeftClose,
   PowerOff,
   Receipt,
   Rocket,
@@ -88,9 +90,31 @@ export function AppLayout() {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [kioskMode, setKioskMode] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem("pos.kioskMode");
+      return saved === null ? true : saved === "1";
+    } catch {
+      return true;
+    }
+  });
   const [theme, setTheme] = useState<ThemeChoice>(readTheme);
   const path = useRouterState({ select: (s) => s.location.pathname });
+  const isSellRoute = path === "/app/sell" || path.startsWith("/app/sell/");
+  const hideDockedSidebar = isSellRoute && kioskMode;
   const ThemeIcon = THEME_ICON[theme];
+
+  function toggleKioskMode() {
+    setKioskMode((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem("pos.kioskMode", next ? "1" : "0");
+      } catch {
+        /* ignore storage failure */
+      }
+      return next;
+    });
+  }
 
   useEffect(() => applyTheme(theme), [theme]);
   // a phone user picks a screen and the drawer gets out of the way
@@ -165,20 +189,22 @@ export function AppLayout() {
   );
 
   return (
-    <div className="min-h-screen md:grid md:grid-cols-[15rem_1fr]">
+    <div className={hideDockedSidebar ? "min-h-screen" : "min-h-screen md:grid md:grid-cols-[15rem_1fr]"}>
       {showNav ? (
         <>
-          <aside className="sticky top-0 hidden h-screen grid-rows-[auto_1fr] border-r border-slate-200 bg-white md:grid">
-            {identity}
-            {sidebar}
-          </aside>
+          {!hideDockedSidebar ? (
+            <aside className="sticky top-0 hidden h-screen grid-rows-[auto_1fr] border-r border-slate-200 bg-white md:grid">
+              {identity}
+              {sidebar}
+            </aside>
+          ) : null}
           {menuOpen ? (
-            <div className="fixed inset-0 z-40 md:hidden">
+            <div className={hideDockedSidebar ? "fixed inset-0 z-50" : "fixed inset-0 z-50 md:hidden"}>
               <button aria-label={t("common:actions.close")} className="absolute inset-0 bg-black/50" onClick={() => setMenuOpen(false)} />
               <aside className="absolute inset-y-0 left-0 grid w-64 grid-rows-[auto_1fr] bg-white shadow-xl">
                 <div className="flex items-center justify-between">
                   {identity}
-                  <button aria-label={t("common:actions.close")} className="mr-2 rounded p-1 hover:bg-slate-100" onClick={() => setMenuOpen(false)}>
+                  <button aria-label={t("common:actions.close")} className="mr-2 rounded-md p-1 text-slate-600 hover:bg-slate-100 hover:text-slate-900" onClick={() => setMenuOpen(false)}>
                     <X size={18} />
                   </button>
                 </div>
@@ -188,18 +214,103 @@ export function AppLayout() {
           ) : null}
         </>
       ) : null}
-      <div className="min-w-0">
+      <div className={isSellRoute ? "flex min-h-screen min-w-0 flex-col lg:h-screen lg:overflow-hidden" : "min-w-0"}>
         <header className="sticky top-0 z-30 flex flex-wrap items-center gap-2 border-b border-slate-200 bg-white/95 px-4 py-2 backdrop-blur">
           {showNav ? (
-            <Button variant="ghost" size="sm" className="md:hidden" aria-label={t("admin:nav.menu")} onClick={() => setMenuOpen(true)}>
-              <Menu size={18} />
+            <Button
+              variant="outline"
+              size="sm"
+              className={hideDockedSidebar ? "" : "md:hidden"}
+              aria-label={t("admin:nav.menu")}
+              data-testid="nav-drawer-btn"
+              onClick={() => setMenuOpen(true)}
+            >
+              <Menu size={16} className="text-slate-600" aria-hidden />
             </Button>
           ) : null}
-          <div className="mr-auto font-semibold md:hidden">{access.tenant.name}</div>
-          <div className="mr-auto hidden md:block" />
+          {hideDockedSidebar ? (
+            <div className="mr-auto flex min-w-0 items-center gap-2">
+              <img
+                src="/logo_squircle.png"
+                alt="XZACTO POS"
+                width={28}
+                height={28}
+                className="h-7 w-7 shrink-0 rounded-md border border-slate-200 object-cover"
+              />
+              <div className="flex items-center gap-2 truncate">
+                <span className="text-sm font-semibold tracking-tight text-slate-900">XZACTO</span>
+                <Badge tone="neutral">POS</Badge>
+                <span className="hidden text-xs text-slate-400 sm:inline">·</span>
+                <span className="hidden truncate text-sm font-semibold text-slate-700 sm:inline">
+                  {access.tenant.name}
+                </span>
+              </div>
+              {showNav ? (
+                <nav aria-label="POS quick links" className="ml-3 hidden items-center gap-1 lg:flex">
+                  <Link
+                    to="/app/sell"
+                    className="rounded-md px-3 py-1 text-xs text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                    activeProps={{ className: "bg-brand-50 font-semibold text-brand-text" }}
+                  >
+                    {t("admin:nav.sell")}
+                  </Link>
+                  <Link
+                    to="/app/sales"
+                    className="rounded-md px-3 py-1 text-xs text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                    activeProps={{ className: "bg-brand-50 font-semibold text-brand-text" }}
+                  >
+                    {t("admin:nav.sales")}
+                  </Link>
+                  <Link
+                    to="/app/utang"
+                    className="rounded-md px-3 py-1 text-xs text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                    activeProps={{ className: "bg-brand-50 font-semibold text-brand-text" }}
+                  >
+                    {t("admin:nav.utang")}
+                  </Link>
+                  {can("shift.manage") ? (
+                    <Link
+                      to="/app/day-close"
+                      className="rounded-md px-3 py-1 text-xs text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                      activeProps={{ className: "bg-brand-50 font-semibold text-brand-text" }}
+                    >
+                      {t("admin:nav.dayClose")}
+                    </Link>
+                  ) : null}
+                </nav>
+              ) : null}
+            </div>
+          ) : (
+            <>
+              <div className="mr-auto font-semibold md:hidden">{access.tenant.name}</div>
+              <div className="mr-auto hidden md:block" />
+            </>
+          )}
+          {isSellRoute && showNav ? (
+            <Button
+              variant="outline"
+              size="sm"
+              data-testid="kiosk-mode-toggle"
+              onClick={toggleKioskMode}
+              className="hidden md:inline-flex"
+              title={hideDockedSidebar ? t("admin:sell.dockSidebar") : t("admin:sell.kioskMode")}
+            >
+              {hideDockedSidebar ? (
+                <>
+                  <PanelLeft size={16} className="text-slate-500" aria-hidden />
+                  <span>{t("admin:sell.dockSidebar")}</span>
+                </>
+              ) : (
+                <>
+                  <PanelLeftClose size={16} className="text-slate-500" aria-hidden />
+                  <span>{t("admin:sell.kioskMode")}</span>
+                </>
+              )}
+            </Button>
+          ) : null}
           {stores.length > 1 ? (
-            <div className="flex items-center gap-1.5 rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs">
-              <span className="font-semibold text-slate-500">🏪 {t("admin:users.store")}:</span>
+            <div className="flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-1 text-xs">
+              <span className="font-semibold text-slate-500">{t("admin:users.store")}:</span>
               <select
                 value={activeStoreId ?? ""}
                 onChange={(e) => setActiveStoreId(e.target.value)}
@@ -218,7 +329,7 @@ export function AppLayout() {
             <div data-testid="offline-badge">
               <Badge tone="warn">
                 <span className="flex items-center gap-1">
-                  <WifiOff size={13} aria-hidden />
+                  <WifiOff size={14} aria-hidden />
                   <span>{t("common:offline.badge")}</span>
                 </span>
               </Badge>
@@ -239,23 +350,29 @@ export function AppLayout() {
             {t("common:actions.signOut")}
           </Button>
         </header>
-        <main className="mx-auto grid max-w-6xl gap-4 px-4 py-6">
+        <main
+          className={
+            isSellRoute
+              ? "grid min-h-0 flex-1 lg:overflow-hidden"
+              : "mx-auto grid max-w-6xl gap-4 px-4 py-6"
+          }
+        >
           {!isOnline ? (
             <div
               role="status"
               aria-live="polite"
               data-testid="offline-banner"
-              className="flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 p-3.5 text-sm text-amber-900 shadow-xs dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200"
+              className="m-4 flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 shadow-xs dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200"
             >
               <WifiOff className="mt-0.5 size-5 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden />
               <div>
                 <p className="font-semibold">{t("common:offline.bannerTitle")}</p>
-                <p className="mt-0.5 text-xs text-amber-800 dark:text-amber-300/90">{t("common:offline.bannerDescription")}</p>
+                <p className="mt-1 text-xs text-amber-800 dark:text-amber-300/90">{t("common:offline.bannerDescription")}</p>
               </div>
             </div>
           ) : null}
           {access.tenant.status !== "active" ? (
-            <p role="alert" className="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900">
+            <p role="alert" className="m-4 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900">
               {t("admin:suspended")}
             </p>
           ) : null}

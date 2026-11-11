@@ -2,7 +2,25 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatMoney, money, uuidv7 } from "@pos/core";
-import { Alert, Button, Card, Input, Select, PageHeader } from "../components/ui.tsx";
+import {
+  Banknote,
+  CheckCircle2,
+  CreditCard,
+  HandCoins,
+  Minus,
+  Plus,
+  Printer,
+  ScanBarcode,
+  Search,
+  ShoppingBag,
+  Smartphone,
+  Star,
+  Store,
+  Trash2,
+  UserPlus,
+  X,
+} from "lucide-react";
+import { Alert, Badge, Button, Card, EmptyState, Input, Select } from "../components/ui.tsx";
 import { useSession } from "../lib/session.tsx";
 import { useActiveLocation } from "../lib/location-context.tsx";
 import { useErrorMessage } from "../lib/i18n-helpers.ts";
@@ -21,12 +39,22 @@ import {
   type SaleDraft,
   type Wallet,
 } from "../lib/sale-math.ts";
-import { createCustomer, fetchCustomers, fetchSellables, nextLocalNo, registerWebDevice, submitSale, webDevice, type Sellable, type SoldReceipt } from "../lib/sell-api.ts";
+import {
+  createCustomer,
+  fetchCustomers,
+  fetchSellables,
+  nextLocalNo,
+  registerWebDevice,
+  submitSale,
+  webDevice,
+  type Sellable,
+  type SoldReceipt,
+} from "../lib/sell-api.ts";
+import { fetchCategories, fetchStockLevels } from "../lib/stock-api.ts";
 import { supabase } from "../lib/supabase.ts";
 import { SupervisorPinDialog } from "../components/supervisor-pin-dialog.tsx";
 import { ReceiptSlipView, type ReceiptData } from "../components/receipt-slip.tsx";
 import type { OfflineApprovalPayload } from "../lib/offline-pin-api.ts";
-
 import {
   getStoredPinned,
   saveStoredPinned,
@@ -37,6 +65,7 @@ import {
 import { resolvePosHotkey } from "../lib/sell-hotkeys.ts";
 
 const WALLETS: Wallet[] = ["gcash", "maya", "other"];
+const CASH_BILLS_MAJOR = [50, 100, 200, 500, 1000] as const;
 
 interface Done extends SoldReceipt {
   total: number;
@@ -45,7 +74,19 @@ interface Done extends SoldReceipt {
   receiptData?: ReceiptData;
 }
 
-/** Sell (Solo web): search, cart, cash or e-wallet payment, one `record_sale` op through `sync_push`. Online only. */
+function productInitials(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return "PR";
+  if (words.length === 1) return words[0]!.slice(0, 2).toUpperCase();
+  return `${words[0]![0] ?? ""}${words[1]![0] ?? ""}`.toUpperCase();
+}
+
+function formatMajorInput(minorAmount: number): string {
+  const major = minorAmount / 100;
+  return Number.isInteger(major) ? String(major) : major.toFixed(2);
+}
+
+/** Kiosk-style Web POS Terminal: prominent search & barcode bar, category tabs, touch product grid, and docked order register. */
 export function SellPage() {
   const { t, i18n } = useTranslation("admin");
   const msg = useErrorMessage();
@@ -54,10 +95,32 @@ export function SellPage() {
   const fmt = (n: number) => formatMoney(money(n, currency), i18n.language);
 
   const { activeStore } = useActiveLocation();
-  const store = (activeStore && can("sale.create", activeStore.id)) ? activeStore : access.locations.find((l) => l.type === "store" && can("sale.create", l.id));
-  const catalog = useQuery({ queryKey: ["sellables", currency], queryFn: () => fetchSellables(currency), staleTime: 30_000 });
+  const store =
+    activeStore && can("sale.create", activeStore.id)
+      ? activeStore
+      : access.locations.find((l) => l.type === "store" && can("sale.create", l.id));
+
+  const catalog = useQuery({
+    queryKey: ["sellables", currency],
+    queryFn: () => fetchSellables(currency),
+    staleTime: 30_000,
+  });
+
+  const categoriesQuery = useQuery({
+    queryKey: ["categories"],
+    queryFn: fetchCategories,
+    staleTime: 60_000,
+  });
+
+  const stockQuery = useQuery({
+    queryKey: ["pos-stock-levels", store?.id],
+    queryFn: () => fetchStockLevels(store!.id),
+    enabled: Boolean(store?.id),
+    staleTime: 15_000,
+  });
 
   const [search, setSearch] = useState("");
+  const [activeFilter, setActiveFilter] = useState<string>("all");
   const [cart, setCart] = useState<CartLine[]>([]);
   const [discountText, setDiscountText] = useState("");
   const [method, setMethod] = useState<PayMethod>("cash");
@@ -111,17 +174,14 @@ export function SellPage() {
 
   const paidNow = paidText.trim() === "" ? null : parseAmount(paidText, currency);
   const paidInvalid = paidText.trim() !== "" && paidNow === null;
-  const payments = paidInvalid || discount === null ? null : buildPayments(total, { method, paidNow, tendered, wallet, reference: reference.trim() });
+  const payments =
+    paidInvalid || discount === null
+      ? null
+      : buildPayments(total, { method, paidNow, tendered, wallet, reference: reference.trim() });
   const onUtang = payments?.find((p) => p.method === "utang")?.amount ?? 0;
   const cashPay = payments?.find((p) => p.method === "cash");
   const change = cashPay && tendered !== null && tendered > 0 ? changeDue(tendered, cashPay.amount) : 0;
   const customers = useQuery({ queryKey: ["customers"], queryFn: fetchCustomers, staleTime: 30_000 });
-
-  const shown = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    const all = catalog.data ?? [];
-    return (q ? all.filter((s) => s.name.toLowerCase().includes(q) || s.sku.toLowerCase().includes(q) || s.barcode?.toLowerCase() === q) : all).slice(0, 60);
-  }, [catalog.data, search]);
 
   const [customPinned, setCustomPinned] = useState<string[] | null>(() => getStoredPinned());
 
@@ -129,6 +189,48 @@ export function SellPage() {
     () => resolveFastKeyProducts(catalog.data ?? [], customPinned),
     [catalog.data, customPinned],
   );
+
+  const activeCategories = useMemo(() => {
+    const allItems = catalog.data ?? [];
+    const usedIds = new Set(allItems.map((s) => s.categoryId).filter(Boolean));
+    return (categoriesQuery.data ?? []).filter((c) => usedIds.has(c.id));
+  }, [catalog.data, categoriesQuery.data]);
+
+  const cartQtyByVariant = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const l of cart) m.set(l.variantId, l.qty);
+    return m;
+  }, [cart]);
+
+  const totalOrderUnits = useMemo(
+    () => cart.reduce((sum, l) => sum + (Number.isFinite(l.qty) && l.qty > 0 ? l.qty : 0), 0),
+    [cart],
+  );
+
+  const shown = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    let pool = catalog.data ?? [];
+    if (activeFilter === "pinned") {
+      pool = fastKeyProducts;
+    } else if (activeFilter !== "all") {
+      pool = pool.filter((s) => s.categoryId === activeFilter);
+    }
+    if (q) {
+      pool = pool.filter(
+        (s) =>
+          s.name.toLowerCase().includes(q) ||
+          s.sku.toLowerCase().includes(q) ||
+          s.barcode?.toLowerCase() === q,
+      );
+    }
+    return pool.slice(0, 80);
+  }, [catalog.data, fastKeyProducts, activeFilter, search]);
+
+  const fastKeyIndexBySku = useMemo(() => {
+    const m = new Map<string, number>();
+    fastKeyProducts.slice(0, 6).forEach((s, idx) => m.set(s.sku, idx));
+    return m;
+  }, [fastKeyProducts]);
 
   function isPinned(sku: string): boolean {
     return isSkuPinned(sku, catalog.data ?? [], customPinned);
@@ -144,14 +246,27 @@ export function SellPage() {
     setProblem(null);
     setCart((c) => {
       const i = c.findIndex((l) => l.variantId === s.variantId);
-      if (i >= 0) return c.map((l, k) => (k === i ? { ...l, qty: l.qty + qty } : l));
-      return [...c, { variantId: s.variantId, name: s.name, qty, unitPrice: s.price, unitCost: s.cost, taxRate: s.taxRate, tracked: s.tracked }];
+      if (i >= 0) return c.map((l, k) => (k === i ? { ...l, qty: Number((l.qty + qty).toFixed(3)) } : l));
+      return [
+        ...c,
+        {
+          variantId: s.variantId,
+          name: s.name,
+          qty,
+          unitPrice: s.price,
+          unitCost: s.cost,
+          taxRate: s.taxRate,
+          tracked: s.tracked,
+        },
+      ];
     });
   }
 
   function onSearchEnter() {
     const q = search.trim().toLowerCase();
-    const hit = q ? (catalog.data ?? []).find((s) => s.barcode?.toLowerCase() === q || s.sku.toLowerCase() === q) : undefined;
+    const hit = q
+      ? (catalog.data ?? []).find((s) => s.barcode?.toLowerCase() === q || s.sku.toLowerCase() === q)
+      : undefined;
     if (hit) {
       add(hit);
       setSearch("");
@@ -161,6 +276,18 @@ export function SellPage() {
   function setQty(variantId: string, text: string) {
     const qty = Number(text);
     setCart((c) => c.map((l) => (l.variantId === variantId ? { ...l, qty: Number.isFinite(qty) ? qty : 0 } : l)));
+  }
+
+  function stepCartQty(variantId: string, delta: number) {
+    setCart((c) =>
+      c
+        .map((l) => {
+          if (l.variantId !== variantId) return l;
+          const next = Number((l.qty + delta).toFixed(3));
+          return { ...l, qty: next };
+        })
+        .filter((l) => l.qty > 0),
+    );
   }
 
   function reset() {
@@ -192,7 +319,9 @@ export function SellPage() {
   const charge = useMutation({
     mutationFn: async (override?: { approvalId?: string; offlineApproval?: OfflineApprovalPayload }): Promise<Done> => {
       if (!store) throw new ApiError("not_allowed", "no store");
-      if (discount === null || payments === null || (method === "cash" && tendered === null)) throw new ApiError("amount_invalid", "amount");
+      if (discount === null || payments === null || (method === "cash" && tendered === null)) {
+        throw new ApiError("amount_invalid", "amount");
+      }
       const day = dayInTimezone(access.tenant.timezone);
       const key = JSON.stringify([cart, discount, payments, store.id, customerId]);
       if (attempt.current?.key !== key) attempt.current = { key, id: uuidv7(), opId: uuidv7() };
@@ -212,14 +341,13 @@ export function SellPage() {
       };
       const bad = draftProblem({ ...base, localNo: "X-000000-0000" });
       if (bad) throw new ApiError(bad, bad);
-      // a clash of the provisional number is the only retry case; the same op id keeps the retry safe
       for (let n = 0; ; n++) {
         const draft: SaleDraft = { ...base, localNo: nextLocalNo(day) };
         try {
           const r = await submitSale(draft, attempt.current.opId);
           const cash = payments.find((p) => p.method === "cash");
-          const change = cash ? changeDue(cash.tendered ?? cash.amount, cash.amount) : 0;
-          const onUtang = payments.find((p) => p.method === "utang")?.amount ?? 0;
+          const changeAmt = cash ? changeDue(cash.tendered ?? cash.amount, cash.amount) : 0;
+          const utangAmt = payments.find((p) => p.method === "utang")?.amount ?? 0;
           const receiptData: ReceiptData = {
             tenantName: access.tenant.name,
             storeName: store.name,
@@ -232,7 +360,7 @@ export function SellPage() {
               product_name: line.name,
               qty: line.qty,
               unit_price: line.unitPrice,
-              line_total: line.qty * line.unitPrice,
+              line_total: lineTotal(line.qty, line.unitPrice),
             })),
             subtotal,
             discount,
@@ -243,18 +371,19 @@ export function SellPage() {
               wallet: p.wallet,
               reference: p.reference,
             })),
-            change,
-            onUtang,
+            change: changeAmt,
+            onUtang: utangAmt,
             currency,
             timezone: access.tenant.timezone,
           };
-          return { ...r, total, change, onUtang, receiptData };
+          return { ...r, total, change: changeAmt, onUtang: utangAmt, receiptData };
         } catch (e) {
           if (!(e instanceof ApiError && e.key === "duplicate_local_no" && n < 3)) throw e;
         }
       }
     },
     onSuccess: (r) => {
+      void qc.invalidateQueries({ queryKey: ["pos-stock-levels", store?.id] });
       setDone(r);
       reset();
     },
@@ -263,7 +392,11 @@ export function SellPage() {
         setShowApprovalDialog(true);
         return;
       }
-      setProblem(e instanceof ApiError && i18n.exists(`admin:sell.problem.${e.key}`) ? t(`sell.problem.${e.key}` as never) : msg(e));
+      setProblem(
+        e instanceof ApiError && i18n.exists(`admin:sell.problem.${e.key}`)
+          ? t(`sell.problem.${e.key}` as never)
+          : msg(e),
+      );
     },
   });
 
@@ -275,7 +408,7 @@ export function SellPage() {
       setShowApprovalDialog(true);
       return;
     }
-    charge.mutate();
+    charge.mutate(undefined);
   }
 
   useEffect(() => {
@@ -335,102 +468,214 @@ export function SellPage() {
 
   if (!store) {
     return (
-      <Card>
-        <p>{t("sell.noStore")}</p>
-      </Card>
+      <div className="mx-auto w-full max-w-lg p-6">
+        <EmptyState title={t("sell.noStore")} />
+      </div>
     );
   }
 
   if (done) {
     return (
-      <div className="grid max-w-md gap-4">
-        <Card className="grid gap-3" data-testid="sale-done">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-emerald-700">✓ {t("sell.done")}</h2>
-            <div className="text-sm font-mono text-slate-500">
-              {t("sell.receiptNo")} <span className="font-semibold text-slate-900">{done.saleNo ?? done.localNo}</span>
+      <div className="h-full overflow-y-auto">
+        <div className="mx-auto grid w-full max-w-4xl content-start gap-6 p-6 md:grid-cols-[1fr_auto]">
+        <Card className="grid gap-6" data-testid="sale-done">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
+                <CheckCircle2 size={24} aria-hidden />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-slate-900">{t("sell.done")}</h2>
+                <div className="text-xs font-mono text-slate-600">
+                  {t("sell.receiptNo")}{" "}
+                  <span className="font-semibold text-slate-900">{done.saleNo ?? done.localNo}</span>
+                </div>
+              </div>
             </div>
+            <Badge tone="good">{store.code}</Badge>
           </div>
-          <div className="text-2xl font-semibold text-slate-900">{fmt(done.total)}</div>
-          {done.onUtang > 0 ? (
-            <div className="flex justify-between text-sm text-amber-800">
-              <span>{t("sell.onUtang")}</span>
-              <strong>{fmt(done.onUtang)}</strong>
-            </div>
-          ) : null}
-          {done.change > 0 ? (
-            <div className="flex justify-between text-sm text-slate-600">
-              <span>{t("sell.change")}</span>
-              <strong>{fmt(done.change)}</strong>
-            </div>
-          ) : null}
-          <div className="flex gap-2 pt-2 border-t border-slate-100 no-print">
-            <Button variant="outline" data-testid="print-receipt-btn" onClick={() => window.print()} className="flex-1">
-              🖨️ {t("sell.printReceipt")}
+
+          <div className="rounded-lg bg-slate-50 p-4 grid gap-2">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-600">
+              {t("sell.total")}
+            </span>
+            <div className="text-3xl font-semibold text-slate-900 tabular-nums">{fmt(done.total)}</div>
+            {done.change > 0 ? (
+              <div className="mt-2 flex items-baseline justify-between border-t border-slate-200 pt-2 text-base">
+                <span className="text-slate-700">{t("sell.change")}</span>
+                <span className="text-xl font-semibold text-emerald-700 tabular-nums">{fmt(done.change)}</span>
+              </div>
+            ) : null}
+            {done.onUtang > 0 ? (
+              <div className="mt-2 flex items-baseline justify-between border-t border-slate-200 pt-2 text-sm text-amber-800">
+                <span>{t("sell.onUtang")}</span>
+                <span className="font-semibold tabular-nums">{fmt(done.onUtang)}</span>
+              </div>
+            ) : null}
+          </div>
+
+          <div className="flex gap-3 no-print">
+            <Button
+              variant="outline"
+              data-testid="print-receipt-btn"
+              onClick={() => window.print()}
+              className="h-12 flex-1"
+            >
+              <Printer size={16} className="text-slate-500" aria-hidden />
+              <span>{t("sell.printReceipt")}</span>
             </Button>
-            <Button data-testid="new-sale" onClick={() => setDone(null)} className="flex-1">
+            <Button data-testid="new-sale" onClick={() => setDone(null)} className="h-12 flex-1">
               {t("sell.newSale")}
             </Button>
           </div>
         </Card>
 
         {done.receiptData ? (
-          <div className="bg-slate-50 p-2 rounded-lg border border-slate-200">
+          <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
             <ReceiptSlipView receipt={done.receiptData} />
           </div>
         ) : null}
+        </div>
       </div>
     );
   }
 
+  const stockMap = stockQuery.data;
+  const cashTarget = paidNow !== null ? paidNow : total;
+
   return (
-    <div className="grid gap-4 lg:grid-cols-[1fr_380px]">
-      <section className="grid content-start gap-3">
-        <PageHeader
-          title={t("sell.title")}
-          actions={
-            <span className="hidden text-xs text-slate-600 sm:inline" data-testid="pos-shortcuts-hint">
-              {t("sell.shortcutsHint")}
-            </span>
-          }
-        />
-        <div className="relative">
-          <Input
-            ref={searchInputRef}
-            data-testid="sell-search"
-            placeholder={t("sell.search")}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && onSearchEnter()}
-            className="pr-14"
-          />
-          <kbd className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 rounded border border-slate-200 bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-slate-600">
-            F2
-          </kbd>
-        </div>
-        {/* Fast-Keys Quick Bar */}
-        {fastKeyProducts.length > 0 || (customPinned !== null && customPinned.length === 0) ? (
-          <div data-testid="fast-keys-bar" className="grid gap-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-600">
-                {t("sell.fastKeys")}
+    <div className="grid h-full min-h-0 lg:grid-cols-[1fr_420px]">
+      {/* LEFT TERMINAL: Prominent POS Searchbar + Category Filter Strip + Kiosk Product Grid */}
+      <section className="flex min-h-0 min-w-0 flex-col bg-slate-50">
+        {/* Sticky POS Search & Category Header */}
+        <div className="border-b border-slate-200 bg-white px-4 py-3 shadow-xs">
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Prominent Web POS Search & Barcode Bar */}
+            <div className="relative min-w-[240px] flex-1">
+              <Search
+                size={18}
+                className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-slate-500"
+                aria-hidden
+              />
+              <Input
+                ref={searchInputRef}
+                type="search"
+                data-testid="sell-search"
+                placeholder={t("sell.search")}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && onSearchEnter()}
+                className="h-12 border-slate-300 bg-slate-50 pr-28 pl-10 text-base focus:bg-white"
+              />
+              <div className=" absolute top-1/2 right-2.5 flex -translate-y-1/2 items-center gap-1.5">
+                {search.length > 0 ? (
+                  <button
+                    type="button"
+                    aria-label={t("sell.clearSearch")}
+                    data-testid="clear-sell-search"
+                    onClick={() => {
+                      setSearch("");
+                      searchInputRef.current?.focus();
+                    }}
+                    className="rounded-md p-1 text-slate-500 hover:bg-slate-200 hover:text-slate-900"
+                  >
+                    <X size={15} aria-hidden />
+                  </button>
+                ) : null}
+                <span className="pointer-events-none hidden items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-xs text-slate-600 sm:inline-flex">
+                  <ScanBarcode size={14} className="text-slate-500" aria-hidden />
+                  <kbd className="font-mono font-semibold">F2</kbd>
+                </span>
+              </div>
+            </div>
+
+            {/* Active Terminal Badge + Shortcut Hint */}
+            <div className="hidden items-center gap-2 xl:flex">
+              <div className="flex items-center gap-1.5 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+                <Store size={14} className="text-slate-500" aria-hidden />
+                <span className="font-semibold">{store.code}</span>
+                <span className="text-slate-500">·</span>
+                <span className="max-w-[160px] truncate">{store.name}</span>
+              </div>
+              <span className="text-xs text-slate-500" data-testid="pos-shortcuts-hint">
+                {t("sell.shortcutsHint")}
               </span>
             </div>
-            {fastKeyProducts.length === 0 ? (
-              <p className="text-xs text-slate-500 py-1">{t("sell.fastKeysEmpty")}</p>
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
-                {fastKeyProducts.map((s, idx) => (
-                  <button
-                    key={s.variantId}
-                    type="button"
-                    data-testid={`fast-key-${s.sku}`}
-                    onClick={() => add(s)}
-                    className="flex flex-col justify-between p-2 rounded-md border border-slate-200 bg-white text-left hover:border-slate-300 hover:bg-slate-50 transition-colors shadow-xs"
-                  >
-                    <div className="w-full">
-                      <div className="flex items-start justify-between gap-1">
-                        <span className="block text-xs font-semibold text-slate-900 truncate" title={s.name}>
+          </div>
+
+          {/* Kiosk Category & Quick-Keys Filter Pills */}
+          <div className="mt-3 flex items-center gap-2 overflow-x-auto overflow-y-hidden pb-0.5 [scrollbar-width:none]">
+            <button
+              type="button"
+              data-testid="pos-cat-all"
+              onClick={() => setActiveFilter("all")}
+              className={`shrink-0 rounded-md border px-3 py-1.5 text-xs transition-colors ${
+                activeFilter === "all"
+                  ? "border-brand-200 bg-brand-50 font-semibold text-brand-text"
+                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+              }`}
+            >
+              {t("sell.allItems")} ({(catalog.data ?? []).length})
+            </button>
+            <button
+              type="button"
+              data-testid="pos-cat-pinned"
+              onClick={() => setActiveFilter("pinned")}
+              className={`inline-flex shrink-0 items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs transition-colors ${
+                activeFilter === "pinned"
+                  ? "border-brand-200 bg-brand-50 font-semibold text-brand-text"
+                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+              }`}
+            >
+              <Star size={13} className="text-amber-500" aria-hidden />
+              <span>
+                {t("sell.pinnedTab")} ({fastKeyProducts.length})
+              </span>
+            </button>
+            {activeCategories.map((cat) => (
+              <button
+                key={cat.id}
+                type="button"
+                data-testid={`pos-cat-${cat.id}`}
+                onClick={() => setActiveFilter(cat.id)}
+                className={`shrink-0 rounded-md border px-3 py-1.5 text-xs transition-colors ${
+                  activeFilter === cat.id
+                    ? "border-brand-200 bg-brand-50 font-semibold text-brand-text"
+                    : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                }`}
+              >
+                {cat.name}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Scrollable Kiosk Product Canvas */}
+        <div className="flex-1 overflow-y-auto p-4 grid content-start gap-4">
+          {/* Pinned Fast-Keys Shortcut Bar (Alt+1..6) */}
+          {activeFilter === "all" &&
+          search.trim() === "" &&
+          (fastKeyProducts.length > 0 || (customPinned !== null && customPinned.length === 0)) ? (
+            <div data-testid="fast-keys-bar" className="grid gap-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold uppercase tracking-wider text-slate-600">
+                  {t("sell.fastKeys")}
+                </span>
+              </div>
+              {fastKeyProducts.length === 0 ? (
+                <p className="py-1 text-xs text-slate-500">{t("sell.fastKeysEmpty")}</p>
+              ) : (
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
+                  {fastKeyProducts.map((s, idx) => (
+                    <button
+                      key={s.variantId}
+                      type="button"
+                      data-testid={`fast-key-${s.sku}`}
+                      onClick={() => add(s)}
+                      className="flex flex-col justify-between rounded-md border border-slate-200 bg-white p-2.5 text-left shadow-xs transition-colors hover:border-brand-500 hover:bg-brand-50/30"
+                    >
+                      <div className="flex w-full items-start justify-between gap-1">
+                        <span className="truncate text-xs font-semibold text-slate-900" title={s.name}>
                           {s.name}
                         </span>
                         {idx < 6 ? (
@@ -439,142 +684,190 @@ export function SellPage() {
                           </kbd>
                         ) : null}
                       </div>
-                      <span className="block text-xs text-slate-500 font-mono truncate">{s.sku}</span>
-                    </div>
-                    <div className="mt-2">
-                      <span className="inline-block rounded bg-slate-100 px-1.5 py-0.5 text-xs font-semibold text-slate-800 tabular-nums">
-                        {fmt(s.price)}
-                      </span>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        ) : null}
+                      <div className="mt-2 flex items-baseline justify-between gap-1">
+                        <span className="truncate font-mono text-xs text-slate-500">{s.sku}</span>
+                        <span className="text-xs font-semibold text-slate-900 tabular-nums">
+                          {fmt(s.price)}
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : null}
 
-        {catalog.isPending ? (
-          <ul className="grid gap-2 sm:grid-cols-2">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <li key={i} className="h-14 rounded-md border border-slate-200 bg-slate-100 animate-pulse" />
-            ))}
-          </ul>
-        ) : null}
-        {catalog.isError ? <Alert>{t("sell.loadError")}</Alert> : null}
-        {catalog.data && catalog.data.length === 0 ? <Card>{t("sell.noProducts")}</Card> : null}
-        {catalog.data && catalog.data.length > 0 && shown.length === 0 ? <Card>{t("sell.noMatch")}</Card> : null}
-        <ul className="grid gap-2 sm:grid-cols-2">
-          {shown.map((s) => {
-            const pinned = isPinned(s.sku);
-            return (
-              <li key={s.variantId} className="flex items-stretch gap-1">
-                <button
-                  type="button"
-                  data-testid={`product-${s.sku}`}
-                  onClick={() => add(s)}
-                  className="flex flex-1 items-center justify-between gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-left text-sm hover:bg-slate-50 focus:outline-none"
-                >
-                  <span className="min-w-0 flex-1">
-                    <span className="block font-semibold truncate">{s.name}</span>
-                    <span className="text-xs text-slate-500 font-mono">{s.sku}</span>
-                  </span>
-                  <span className="font-semibold whitespace-nowrap">{fmt(s.price)}</span>
-                </button>
-                <button
-                  type="button"
-                  data-testid={`pin-toggle-${s.sku}`}
-                  title={pinned ? t("sell.unpinFromFastKeys") : t("sell.pinToFastKeys")}
-                  aria-label={pinned ? t("sell.unpinFromFastKeys") : t("sell.pinToFastKeys")}
-                  onClick={() => togglePin(s.sku)}
-                  className={`flex items-center justify-center w-9 rounded-md border text-sm transition-colors ${
-                    pinned
-                      ? "border-amber-300 bg-amber-50 text-amber-600 hover:bg-amber-100"
-                      : "border-slate-200 bg-white text-slate-400 hover:text-slate-600 hover:bg-slate-50"
-                  }`}
-                >
-                  ★
-                </button>
-              </li>
-            );
-          })}
-        </ul>
+          {catalog.isPending ? (
+            <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+              {Array.from({ length: 10 }).map((_, i) => (
+                <li key={i} className="h-32 animate-pulse rounded-lg border border-slate-200 bg-white" />
+              ))}
+            </ul>
+          ) : null}
+          {catalog.isError ? <Alert>{t("sell.loadError")}</Alert> : null}
+          {catalog.data && catalog.data.length === 0 ? <EmptyState title={t("sell.noProducts")} /> : null}
+          {catalog.data && catalog.data.length > 0 && shown.length === 0 ? (
+            <EmptyState title={t("sell.noMatch")} />
+          ) : null}
+
+          {shown.length > 0 ? (
+            <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+              {shown.map((s) => {
+                const pinned = isPinned(s.sku);
+                const inCartQty = cartQtyByVariant.get(s.variantId) ?? 0;
+                const stockQty = s.tracked && stockMap ? (stockMap.get(s.variantId) ?? 0) : null;
+                const isOut = stockQty !== null && stockQty <= 0;
+                const isLow =
+                  stockQty !== null &&
+                  stockQty > 0 &&
+                  (s.reorderPoint ?? 0) > 0 &&
+                  stockQty <= (s.reorderPoint ?? 0);
+                const fkIdx = fastKeyIndexBySku.get(s.sku);
+
+                return (
+                  <li
+                    key={s.variantId}
+                    className={`group relative flex flex-col rounded-lg border bg-white shadow-sm transition-colors ${
+                      inCartQty > 0
+                        ? "border-brand-500 ring-1 ring-brand-500"
+                        : "border-slate-200 hover:border-slate-300"
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      data-testid={`product-${s.sku}`}
+                      onClick={() => add(s)}
+                      className="flex flex-1 flex-col justify-between gap-3 p-3 text-left focus:outline-none"
+                    >
+                      <div className="flex w-full items-start justify-between gap-2 pr-7">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-slate-100 text-xs font-semibold text-slate-700">
+                          {productInitials(s.name)}
+                        </div>
+                        {inCartQty > 0 ? (
+                          <Badge tone="good">×{inCartQty}</Badge>
+                        ) : fkIdx !== undefined ? (
+                          <kbd className="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 font-mono text-xs text-slate-500">
+                            Alt+{fkIdx + 1}
+                          </kbd>
+                        ) : null}
+                      </div>
+
+                      <div className="min-w-0">
+                        <div className="line-clamp-2 text-sm font-semibold leading-snug text-slate-900">
+                          {s.name}
+                        </div>
+                        <div className="mt-1 truncate font-mono text-xs text-slate-500">{s.sku}</div>
+                      </div>
+
+                      <div className="flex w-full items-baseline justify-between gap-2 border-t border-slate-100 pt-2">
+                        <span className="text-base font-semibold text-slate-900 tabular-nums">
+                          {fmt(s.price)}
+                        </span>
+                        {stockQty !== null ? (
+                          isOut ? (
+                            <Badge tone="danger">{t("sell.outOfStock")}</Badge>
+                          ) : isLow ? (
+                            <Badge tone="warn">{t("sell.lowStock", { qty: stockQty })}</Badge>
+                          ) : (
+                            <span className="text-xs text-slate-500 tabular-nums">
+                              {t("sell.stockLeft", { qty: stockQty })}
+                            </span>
+                          )
+                        ) : null}
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      data-testid={`pin-toggle-${s.sku}`}
+                      title={pinned ? t("sell.unpinFromFastKeys") : t("sell.pinToFastKeys")}
+                      aria-label={pinned ? t("sell.unpinFromFastKeys") : t("sell.pinToFastKeys")}
+                      onClick={() => togglePin(s.sku)}
+                      className={`absolute top-2.5 right-2.5 flex h-7 w-7 items-center justify-center rounded-md border text-xs transition-colors ${
+                        pinned
+                          ? "border-amber-300 bg-amber-50 text-amber-600 hover:bg-amber-100"
+                          : "border-transparent bg-transparent text-slate-400 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-700"
+                      }`}
+                    >
+                      ★
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : null}
+        </div>
       </section>
 
-      <Card className="grid content-start gap-3" data-testid="cart">
-        <h3 className="font-semibold">{t("sell.cart")}</h3>
-        {cart.length === 0 ? (
-          <p className="text-sm text-slate-500">{t("sell.emptyCart")}</p>
-        ) : (
-          <ul className="grid gap-2">
-            {cart.map((l) => (
-              <li key={l.variantId} className="grid grid-cols-[1fr_84px_auto] items-center gap-2 text-sm">
-                <span className="truncate">{l.name}</span>
-                <Input
-                  aria-label={t("sell.qty")}
-                  data-testid={`qty-${l.variantId}`}
-                  inputMode="decimal"
-                  value={String(l.qty)}
-                  onChange={(e) => setQty(l.variantId, e.target.value)}
-                />
-                <span className="flex items-center gap-1">
-                  <span className="w-20 text-right">{fmt(lineTotal(l.qty, l.unitPrice))}</span>
-                  <Button variant="ghost" size="sm" aria-label={t("sell.remove")} onClick={() => setCart((c) => c.filter((x) => x.variantId !== l.variantId))}>
-                    ×
-                  </Button>
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-
-        <div className="grid gap-1 border-t border-slate-200 pt-3 text-sm">
-          <div className="flex justify-between">
-            <span>{t("sell.subtotal")}</span>
-            <span>{fmt(subtotal)}</span>
+      {/* RIGHT TERMINAL: Fixed-Width POS Order Register & Tender Pad */}
+      <aside
+        className="flex min-h-0 flex-col border-t border-slate-200 bg-white lg:border-t-0 lg:border-l"
+        data-testid="cart"
+      >
+        {/* Order Ticket Header + Customer Bar */}
+        <div className="grid gap-3 border-b border-slate-200 px-4 py-3">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <h2 className="text-base font-semibold text-slate-900">{t("sell.cart")}</h2>
+              {totalOrderUnits > 0 ? (
+                <Badge tone="neutral">{t("sell.itemsInOrder", { count: totalOrderUnits })}</Badge>
+              ) : null}
+            </div>
+            {cart.length > 0 ? (
+              <Button variant="ghost" size="sm" onClick={reset}>
+                <Trash2 size={14} className="text-slate-500" aria-hidden />
+                <span>{t("sell.clear")}</span>
+              </Button>
+            ) : null}
           </div>
-          <label className="flex items-center justify-between gap-2">
-            <span className="flex items-center gap-1.5">
-              <span>{t("sell.discount")}</span>
-              <kbd className="rounded border border-slate-200 bg-slate-50 px-1 font-mono text-xs text-slate-500">F4</kbd>
-            </span>
-            <Input
-              ref={discountInputRef}
-              className="w-28 text-right tabular-nums"
-              data-testid="discount"
-              inputMode="decimal"
-              value={discountText}
-              onChange={(e) => setDiscountText(e.target.value)}
-            />
-          </label>
-          <div className="flex justify-between text-base font-semibold tabular-nums" data-testid="cart-total">
-            <span>{t("sell.total")}</span>
-            <span>{fmt(total)}</span>
+
+          {/* Customer Selector Row */}
+          <div className="flex items-center gap-2">
+            <Select
+              aria-label={t("sell.customer")}
+              data-testid="customer"
+              value={customerId}
+              onChange={(e) => setCustomerId(e.target.value)}
+              className="flex-1"
+            >
+              <option value="">{method === "utang" ? t("sell.chooseCustomer") : t("sell.noCustomer")}</option>
+              {(customers.data ?? []).map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </Select>
+            {!showNew ? (
+              <Button variant="outline" size="sm" data-testid="new-customer" onClick={() => setShowNew(true)}>
+                <UserPlus size={14} className="text-slate-500" aria-hidden />
+                <span>{t("sell.newCustomer")}</span>
+              </Button>
+            ) : null}
           </div>
-        </div>
 
-        <div className="grid gap-2 border-t border-slate-200 pt-3 text-sm">
-          <span className="font-semibold">{t("sell.payment")}</span>
-          <Select ref={payMethodSelectRef} aria-label={t("sell.payment")} data-testid="pay-method" value={method} onChange={(e) => setMethod(e.target.value as PayMethod)}>
-            <option value="cash">{t("sell.cash")}</option>
-            <option value="ewallet">{t("sell.ewallet")}</option>
-            <option value="card">{t("sell.card")}</option>
-            <option value="utang">{t("sell.utang")}</option>
-          </Select>
-
-          <Select aria-label={t("sell.customer")} data-testid="customer" value={customerId} onChange={(e) => setCustomerId(e.target.value)}>
-            <option value="">{method === "utang" ? t("sell.chooseCustomer") : t("sell.noCustomer")}</option>
-            {(customers.data ?? []).map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </Select>
           {showNew ? (
-            <div className="grid gap-2 rounded-md border border-slate-200 p-2">
-              <Input data-testid="new-customer-name" placeholder={t("sell.customerName")} value={newName} maxLength={80} onChange={(e) => setNewName(e.target.value)} />
-              <Input placeholder={t("sell.customerPhone")} value={newPhone} maxLength={32} onChange={(e) => setNewPhone(e.target.value)} />
+            <div className="grid gap-2 rounded-md border border-slate-200 bg-slate-50 p-3">
+              <Input
+                data-testid="new-customer-name"
+                placeholder={t("sell.customerName")}
+                value={newName}
+                maxLength={80}
+                onChange={(e) => setNewName(e.target.value)}
+              />
+              <Input
+                placeholder={t("sell.customerPhone")}
+                value={newPhone}
+                maxLength={32}
+                onChange={(e) => setNewPhone(e.target.value)}
+              />
               <div className="flex gap-2">
-                <Button size="sm" data-testid="save-customer" disabled={newName.trim() === "" || addCustomer.isPending} onClick={() => addCustomer.mutate()}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  data-testid="save-customer"
+                  disabled={newName.trim() === "" || addCustomer.isPending}
+                  onClick={() => addCustomer.mutate()}
+                >
                   {t("sell.addCustomer")}
                 </Button>
                 <Button size="sm" variant="ghost" onClick={() => setShowNew(false)}>
@@ -582,76 +875,286 @@ export function SellPage() {
                 </Button>
               </div>
             </div>
-          ) : (
-            <Button variant="ghost" size="sm" data-testid="new-customer" onClick={() => setShowNew(true)}>
-              {t("sell.newCustomer")}
-            </Button>
-          )}
-
-          {method !== "utang" ? (
-            <label className="flex items-center justify-between gap-2">
-              <span>{t("sell.paidNow")}</span>
-              <Input className="w-28 text-right" data-testid="paid-now" inputMode="decimal" placeholder={fmt(total)} value={paidText} onChange={(e) => setPaidText(e.target.value)} />
-            </label>
-          ) : null}
-          {onUtang > 0 ? (
-            <div className="flex justify-between">
-              <span>{t("sell.onUtang")}</span>
-              <strong data-testid="on-utang">{fmt(onUtang)}</strong>
-            </div>
-          ) : null}
-
-          {method === "cash" ? (
-            <>
-              <label className="flex items-center justify-between gap-2">
-                <span className="flex items-center gap-1.5">
-                  <span>{t("sell.tendered")}</span>
-                  <kbd className="rounded border border-slate-200 bg-slate-50 px-1 font-mono text-xs text-slate-500">F8</kbd>
-                </span>
-                <Input
-                  ref={tenderedInputRef}
-                  className="w-28 text-right tabular-nums"
-                  data-testid="tendered"
-                  inputMode="decimal"
-                  value={tenderedText}
-                  onChange={(e) => setTenderedText(e.target.value)}
-                />
-              </label>
-              {change > 0 ? (
-                <div className="flex justify-between">
-                  <span>{t("sell.change")}</span>
-                  <strong data-testid="change">{fmt(change)}</strong>
-                </div>
-              ) : null}
-            </>
-          ) : null}
-          {method === "ewallet" ? (
-            <>
-              <Select aria-label={t("sell.wallet")} data-testid="pay-wallet" value={wallet} onChange={(e) => setWallet(e.target.value as Wallet)}>
-                {WALLETS.map((w) => (
-                  <option key={w} value={w}>
-                    {t(`sell.wallets.${w}`)}
-                  </option>
-                ))}
-              </Select>
-              <Input placeholder={t("sell.reference")} value={reference} maxLength={64} onChange={(e) => setReference(e.target.value)} />
-            </>
-          ) : null}
-          {method === "card" ? (
-            <Input data-testid="pay-card-ref" placeholder={t("sell.cardRefPlaceholder")} value={reference} maxLength={64} onChange={(e) => setReference(e.target.value)} />
           ) : null}
         </div>
-        {problem ? <Alert>{problem}</Alert> : null}
-        <Button data-testid="charge" disabled={cart.length === 0 || charge.isPending} onClick={handleCharge} className="justify-between">
-          <span>{charge.isPending ? t("sell.charging") : t("sell.charge", { total: fmt(total) })}</span>
-          <kbd className="rounded bg-brand-700 px-1.5 py-0.5 font-mono text-xs text-brand-100">F9</kbd>
-        </Button>
-        {cart.length > 0 ? (
-          <Button variant="ghost" size="sm" onClick={reset}>
-            {t("sell.clear")}
+
+        {/* Scrollable Ticket Line Items */}
+        <div className="min-h-[160px] flex-1 overflow-y-auto px-4 py-3">
+          {cart.length === 0 ? (
+            <div className="flex h-full flex-col items-center justify-center gap-2 py-8 text-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
+                <ShoppingBag size={22} aria-hidden />
+              </div>
+              <p className="text-sm font-semibold text-slate-900">{t("sell.emptyCart")}</p>
+              <p className="max-w-[260px] text-xs text-slate-500">{t("sell.emptyCartHint")}</p>
+            </div>
+          ) : (
+            <ul className="divide-y divide-slate-100">
+              {cart.map((l) => (
+                <li key={l.variantId} className="grid gap-2 py-2.5 first:pt-0 last:pb-0">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-semibold text-slate-900">{l.name}</div>
+                      <div className="text-xs text-slate-500 tabular-nums">{fmt(l.unitPrice)}</div>
+                    </div>
+                    <span className="text-sm font-semibold text-slate-900 tabular-nums">
+                      {fmt(lineTotal(l.qty, l.unitPrice))}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        aria-label={`Decrease ${l.name}`}
+                        onClick={() => stepCartQty(l.variantId, -1)}
+                        className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                      >
+                        <Minus size={14} aria-hidden />
+                      </button>
+                      <Input
+                        aria-label={t("sell.qty")}
+                        data-testid={`qty-${l.variantId}`}
+                        inputMode="decimal"
+                        value={String(l.qty)}
+                        onChange={(e) => setQty(l.variantId, e.target.value)}
+                        className="h-8 w-16 px-2 py-1 text-center text-sm tabular-nums"
+                      />
+                      <button
+                        type="button"
+                        aria-label={`Increase ${l.name}`}
+                        onClick={() => stepCartQty(l.variantId, 1)}
+                        className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                      >
+                        <Plus size={14} aria-hidden />
+                      </button>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      aria-label={t("sell.remove")}
+                      onClick={() => setCart((c) => c.filter((x) => x.variantId !== l.variantId))}
+                    >
+                      ×
+                    </Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* Pinned Register Checkout & Tender Pad */}
+        <div className="grid gap-3 border-t border-slate-200 bg-slate-50 px-4 py-3 text-sm">
+          {/* Totals & Discount */}
+          <div className="grid gap-2">
+            <div className="flex items-baseline justify-between text-slate-700">
+              <span>{t("sell.subtotal")}</span>
+              <span className="tabular-nums">{fmt(subtotal)}</span>
+            </div>
+            <label className="flex items-center justify-between gap-2 text-slate-700">
+              <span className="flex items-center gap-1.5">
+                <span>{t("sell.discount")}</span>
+                <kbd className="rounded border border-slate-200 bg-white px-1 font-mono text-xs text-slate-500">
+                  F4
+                </kbd>
+              </span>
+              <Input
+                ref={discountInputRef}
+                className="h-8 w-28 bg-white text-right tabular-nums"
+                data-testid="discount"
+                inputMode="decimal"
+                placeholder="0.00"
+                value={discountText}
+                onChange={(e) => setDiscountText(e.target.value)}
+              />
+            </label>
+            <div
+              className="flex items-baseline justify-between border-t border-slate-200 pt-2 text-lg font-semibold text-slate-900 tabular-nums"
+              data-testid="cart-total"
+            >
+              <span>{t("sell.total")}</span>
+              <span>{fmt(total)}</span>
+            </div>
+          </div>
+
+          {/* Tactile Payment Method Selector + Hidden Native Select for Accessibility/Automation */}
+          <div className="grid gap-2">
+            <select
+              ref={payMethodSelectRef}
+              aria-label={t("sell.payment")}
+              data-testid="pay-method"
+              value={method}
+              onChange={(e) => setMethod(e.target.value as PayMethod)}
+              className="sr-only"
+            >
+              <option value="cash">{t("sell.cash")}</option>
+              <option value="ewallet">{t("sell.ewallet")}</option>
+              <option value="card">{t("sell.card")}</option>
+              <option value="utang">{t("sell.utang")}</option>
+            </select>
+
+            <div className="grid grid-cols-4 gap-1.5" role="group" aria-label={t("sell.payment")}>
+              {(
+                [
+                  ["cash", t("sell.cash"), Banknote],
+                  ["ewallet", t("sell.ewallet"), Smartphone],
+                  ["card", "Card", CreditCard],
+                  ["utang", "Utang", HandCoins],
+                ] as const
+              ).map(([val, label, Icon]) => {
+                const active = method === val;
+                return (
+                  <button
+                    key={val}
+                    type="button"
+                    data-testid={`tender-btn-${val}`}
+                    onClick={() => setMethod(val)}
+                    className={`flex flex-col items-center justify-center gap-1 rounded-md border px-2 py-2 text-xs transition-colors ${
+                      active
+                        ? "border-brand-500 bg-brand-50 font-semibold text-brand-text"
+                        : "border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
+                    }`}
+                  >
+                    <Icon size={16} className={active ? "text-brand-600" : "text-slate-500"} aria-hidden />
+                    <span className="truncate">{label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {method !== "utang" ? (
+              <div className="grid grid-cols-2 gap-2">
+                <label className="grid gap-1 text-xs text-slate-600">
+                  <span>{t("sell.paidNow")}</span>
+                  <Input
+                    className="h-8 bg-white text-right tabular-nums"
+                    data-testid="paid-now"
+                    inputMode="decimal"
+                    placeholder={fmt(total)}
+                    value={paidText}
+                    onChange={(e) => setPaidText(e.target.value)}
+                  />
+                </label>
+
+                {method === "cash" ? (
+                  <label className="grid gap-1 text-xs text-slate-600">
+                    <span className="flex items-center justify-between">
+                      <span>{t("sell.tendered")}</span>
+                      <kbd className="rounded border border-slate-200 bg-white px-1 font-mono text-xs text-slate-500">
+                        F8
+                      </kbd>
+                    </span>
+                    <Input
+                      ref={tenderedInputRef}
+                      className="h-8 bg-white text-right tabular-nums"
+                      data-testid="tendered"
+                      inputMode="decimal"
+                      placeholder={fmt(cashTarget)}
+                      value={tenderedText}
+                      onChange={(e) => setTenderedText(e.target.value)}
+                    />
+                  </label>
+                ) : (
+                  <div />
+                )}
+              </div>
+            ) : null}
+
+            {/* Quick Cash Denomination Presets on Touch / Kiosk */}
+            {method === "cash" && cashTarget > 0 ? (
+              <div className="flex flex-wrap gap-1.5" data-testid="quick-cash-presets">
+                <button
+                  type="button"
+                  onClick={() => setTenderedText(formatMajorInput(cashTarget))}
+                  className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-100 tabular-nums"
+                >
+                  {t("sell.exactCash")}
+                </button>
+                {CASH_BILLS_MAJOR.filter((b) => b * 100 >= cashTarget)
+                  .slice(0, 4)
+                  .map((bill) => (
+                    <button
+                      key={bill}
+                      type="button"
+                      onClick={() => setTenderedText(String(bill))}
+                      className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-100 tabular-nums"
+                    >
+                      {fmt(bill * 100)}
+                    </button>
+                  ))}
+              </div>
+            ) : null}
+
+            {method === "cash" && change > 0 ? (
+              <div className="flex items-baseline justify-between rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-900">
+                <span className="text-xs font-semibold uppercase tracking-wider">{t("sell.change")}</span>
+                <span className="text-base font-semibold tabular-nums" data-testid="change">
+                  {fmt(change)}
+                </span>
+              </div>
+            ) : null}
+
+            {onUtang > 0 ? (
+              <div className="flex items-baseline justify-between rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-amber-900">
+                <span className="text-xs font-semibold uppercase tracking-wider">{t("sell.onUtang")}</span>
+                <span className="text-sm font-semibold tabular-nums" data-testid="on-utang">
+                  {fmt(onUtang)}
+                </span>
+              </div>
+            ) : null}
+
+            {method === "ewallet" ? (
+              <div className="grid grid-cols-2 gap-2">
+                <Select
+                  aria-label={t("sell.wallet")}
+                  data-testid="pay-wallet"
+                  value={wallet}
+                  onChange={(e) => setWallet(e.target.value as Wallet)}
+                  className="h-8 bg-white text-xs"
+                >
+                  {WALLETS.map((w) => (
+                    <option key={w} value={w}>
+                      {t(`sell.wallets.${w}`)}
+                    </option>
+                  ))}
+                </Select>
+                <Input
+                  placeholder={t("sell.reference")}
+                  value={reference}
+                  maxLength={64}
+                  onChange={(e) => setReference(e.target.value)}
+                  className="h-8 bg-white text-xs"
+                />
+              </div>
+            ) : null}
+
+            {method === "card" ? (
+              <Input
+                data-testid="pay-card-ref"
+                placeholder={t("sell.cardRefPlaceholder")}
+                value={reference}
+                maxLength={64}
+                onChange={(e) => setReference(e.target.value)}
+                className="h-8 bg-white text-xs"
+              />
+            ) : null}
+          </div>
+
+          {problem ? <Alert>{problem}</Alert> : null}
+
+          <Button
+            data-testid="charge"
+            disabled={cart.length === 0 || charge.isPending}
+            onClick={handleCharge}
+            className="h-12 w-full justify-between text-base"
+          >
+            <span className="tabular-nums">
+              {charge.isPending ? t("sell.charging") : t("sell.charge", { total: fmt(total) })}
+            </span>
+            <kbd className="rounded bg-brand-700 px-2 py-0.5 font-mono text-xs text-brand-100">F9</kbd>
           </Button>
-        ) : null}
-      </Card>
+        </div>
+      </aside>
 
       <SupervisorPinDialog
         open={showApprovalDialog}
