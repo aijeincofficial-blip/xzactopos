@@ -17,6 +17,7 @@ import { TodayPage } from "./routes/today.tsx";
 import { SellPage } from "./routes/sell.tsx";
 import { ReceiveStockPage } from "./routes/receive-stock.tsx";
 import { SalesPage } from "./routes/sales.tsx";
+import { InventoryPage } from "./routes/inventory.tsx";
 import { ProductsPage } from "./routes/products.tsx";
 import { UtangPage } from "./routes/utang.tsx";
 import { ExpensesPage } from "./routes/expenses.tsx";
@@ -155,6 +156,19 @@ const modules = createRoute({ getParentRoute: () => app, path: "/modules", befor
 const sell = createRoute({ getParentRoute: () => app, path: "/sell", beforeLoad: requires("sale.create"), component: SellPage });
 const receiveStock = createRoute({ getParentRoute: () => app, path: "/receive-stock", beforeLoad: requires("sale.create"), component: ReceiveStockPage });
 const sales = createRoute({ getParentRoute: () => app, path: "/sales", beforeLoad: requires("sale.create"), component: SalesPage });
+const inventory = createRoute({
+  getParentRoute: () => app,
+  path: "/inventory",
+  beforeLoad: requiresAny(
+    "sale.create",
+    "catalog.manage",
+    "stock.adjust_store",
+    "stock.adjust_warehouse",
+    "reports.warehouse",
+    "transfer.manage",
+  ),
+  component: InventoryPage,
+});
 const products = createRoute({ getParentRoute: () => app, path: "/products", beforeLoad: requires("catalog.manage"), component: ProductsPage });
 const utang = createRoute({ getParentRoute: () => app, path: "/utang", beforeLoad: requires("sale.create"), component: UtangPage });
 const expenses = createRoute({ getParentRoute: () => app, path: "/expenses", beforeLoad: requires("shift.manage"), component: ExpensesPage });
@@ -183,7 +197,7 @@ const routeTree = root.addChildren([
   resetPassword,
   warehouseLogin,
   login,
-  app.addChildren([dashboard, setup, sell, receiveStock, sales, products, utang, expenses, dayClose, upgrade, settings, transfers, bins, purchasing, counts, overview, reports, locations, users, modules, platform, forbidden]),
+  app.addChildren([dashboard, setup, sell, receiveStock, sales, inventory, products, utang, expenses, dayClose, upgrade, settings, transfers, bins, purchasing, counts, overview, reports, locations, users, modules, platform, forbidden]),
 ]);
 
 export function makeRouter(queryClient: QueryClient) {

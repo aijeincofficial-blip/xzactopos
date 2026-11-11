@@ -10,6 +10,7 @@ import {
   Blocks,
   Boxes,
   ClipboardCheck,
+  ClipboardList,
   HandCoins,
   Home,
   type LucideIcon,
@@ -77,6 +78,23 @@ const NAV = [
   { to: "/app/counts", key: "counts", icon: ClipboardCheck, group: "warehouseOps", portal: "warehouse", perm: "stock.adjust_warehouse", fullOnly: true },
 
   // Catalog & Business routes
+  {
+    to: "/app/inventory",
+    key: "inventory",
+    icon: ClipboardList,
+    group: "stock",
+    portal: "both",
+    perm: null,
+    perms: [
+      "sale.create",
+      "catalog.manage",
+      "stock.adjust_store",
+      "stock.adjust_warehouse",
+      "reports.warehouse",
+      "transfer.manage",
+    ] as const,
+    fullOnly: false,
+  },
   { to: "/app/products", key: "products", icon: Package, group: "stock", portal: "both", perm: "catalog.manage", fullOnly: false },
   { to: "/app/reports", key: "reports", icon: BarChart3, group: "business", portal: "both", perm: null, perms: ["reports.store", "reports.warehouse"] as const, fullOnly: true },
   { to: "/app/upgrade", key: "upgrade", icon: Rocket, group: "business", portal: "pos", perm: "tenant.modules", fullOnly: false, soloOnly: true },
@@ -387,6 +405,14 @@ export function AppLayout() {
                   >
                     {t("admin:nav.sell")}
                   </Link>
+                  <Link
+                    to="/app/inventory"
+                    data-testid="kiosk-inventory-link"
+                    className="rounded-md px-3 py-1 text-xs text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                    activeProps={{ className: "bg-brand-50 font-semibold text-brand-text" }}
+                  >
+                    {t("admin:nav.inventory")}
+                  </Link>
                   {mode === "full" && access.modules.warehouse ? (
                     <Link
                       to="/app/receive-stock"
@@ -664,6 +690,15 @@ export function DashboardPage() {
                 >
                   {t("portal.openPosBtn")}
                 </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    saveStoredPortal("pos");
+                    void navigate({ to: "/app/inventory" });
+                  }}
+                >
+                  {t("inventory.storeTitle")}
+                </Button>
                 {access.modules.warehouse ? (
                   <Button
                     variant="outline"
@@ -702,6 +737,15 @@ export function DashboardPage() {
                   }}
                 >
                   {t("portal.openWarehouseBtn")}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    saveStoredPortal("warehouse");
+                    void navigate({ to: "/app/inventory" });
+                  }}
+                >
+                  {t("inventory.warehouseTitle")}
                 </Button>
               </div>
             </Card>

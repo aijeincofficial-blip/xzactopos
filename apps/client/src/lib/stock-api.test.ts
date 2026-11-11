@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getExpiryStatus, toProductRows } from "./stock-api.ts";
+import { classifyMovementCategory, getExpiryStatus, toProductRows, toStockMovementRows } from "./stock-api.ts";
 
 const cat = (id: string, name: string, over: Record<string, unknown> = {}) => ({ id, name, parent_id: null, updated_at: "2026-01-01", deleted_at: null, ...over });
 const prod = (id: string, over: Record<string, unknown> = {}) => ({ id, name: `P-${id}`, unit: "pc", tax_rate: "0.1200", track_stock: true, active: true, deleted_at: null, ...over });
@@ -77,5 +77,76 @@ describe("getExpiryStatus", () => {
     // Date tomorrow
     const tomorrow = new Date(Date.now() + 86400 * 1000).toISOString().slice(0, 10);
     expect(getExpiryStatus(tomorrow)).toBe("expiring_soon");
+  });
+});
+
+describe("stock movement ledger helpers", () => {
+  it("classifies every movement type into its filter category", () => {
+    expect(classifyMovementCategory("sale")).toBe("sales");
+    expect(classifyMovementCategory("sale_return")).toBe("sales");
+    expect(classifyMovementCategory("sale_void")).toBe("sales");
+    expect(classifyMovementCategory("transfer_in")).toBe("transfers");
+    expect(classifyMovementCategory("transfer_out")).toBe("transfers");
+    expect(classifyMovementCategory("bin_move")).toBe("transfers");
+    expect(classifyMovementCategory("opening")).toBe("restock");
+    expect(classifyMovementCategory("receipt")).toBe("restock");
+    expect(classifyMovementCategory("count_correction")).toBe("adjustments");
+    expect(classifyMovementCategory("damage")).toBe("adjustments");
+    expect(classifyMovementCategory("conversion_in")).toBe("adjustments");
+  });
+
+  it("joins catalog product names and SKUs onto raw movement rows", () => {
+    const pull = {
+      products: page([prod("p1", { name: "Nescafe 3-in-1", unit: "sachet" })]),
+      product_variants: page([vari("v1", "p1", { sku: "NES-01" })]),
+      variant_prices: page([]),
+    } as never;
+
+    const rows = toStockMovementRows(
+      [
+        {
+          id: "m1",
+          variant_id: "v1",
+          qty_delta: "24.000",
+          type: "transfer_in",
+          ref_type: "transfer",
+          occurred_at: "2026-11-11T04:00:00Z",
+        },
+        {
+          id: "m2",
+          variant_id: "unknown-variant-id",
+          qty_delta: "-2",
+          type: "sale",
+          ref_type: "sale",
+          occurred_at: "2026-11-11T04:05:00Z",
+        },
+      ],
+      pull,
+    );
+
+    expect(rows).toEqual([
+      {
+        id: "m1",
+        variantId: "v1",
+        productName: "Nescafe 3-in-1",
+        sku: "NES-01",
+        unit: "sachet",
+        qtyDelta: 24,
+        type: "transfer_in",
+        category: "transfers",
+        occurredAt: "2026-11-11T04:00:00Z",
+      },
+      {
+        id: "m2",
+        variantId: "unknown-variant-id",
+        productName: "unknown-",
+        sku: "—",
+        unit: "pc",
+        qtyDelta: -2,
+        type: "sale",
+        category: "sales",
+        occurredAt: "2026-11-11T04:05:00Z",
+      },
+    ]);
   });
 });

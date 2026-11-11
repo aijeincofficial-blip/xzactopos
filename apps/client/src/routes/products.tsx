@@ -1,11 +1,14 @@
 import { useState, type ChangeEvent } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatMoney, money, toMajorNumber } from "@pos/core";
 import { Alert, Badge, Button, Card, Dialog, EmptyState, ErrorState, Field, Input, PageHeader, Select, useToast } from "../components/ui.tsx";
 import { BarcodeLabelsDialog } from "../components/barcode-labels-dialog.tsx";
 import { useSession } from "../lib/session.tsx";
 import { useActiveLocation } from "../lib/location-context.tsx";
+import { tenantMode } from "../lib/mode.ts";
+import { readStoredPortal, resolveEffectivePortal } from "../lib/portal.ts";
 import { useErrorMessage } from "../lib/i18n-helpers.ts";
 import { parseAmount } from "../lib/sale-math.ts";
 import { formatQty, parseQty, parseTaxPercent, stockStatus, taxPercentText } from "../lib/product-math.ts";
@@ -837,13 +840,25 @@ function ImportDialog({
 export function ProductsPage() {
   const { t, i18n } = useTranslation(["admin", "common"]);
   const msg = useErrorMessage();
+  const navigate = useNavigate();
+  const path = useRouterState({ select: (s) => s.location.pathname });
   const { access, can } = useSession();
   const qc = useQueryClient();
   const toast = useToast();
   const currency = access.tenant.base_currency;
   const fmt = (n: number) => formatMoney(money(n, currency), i18n.language);
-  const { activeStore } = useActiveLocation();
-  const store = (activeStore && can("catalog.manage", activeStore.id)) ? activeStore : access.locations.find((l) => l.type === "store" && can("catalog.manage", l.id));
+  const { activeStore, activeWarehouse } = useActiveLocation();
+  const activePortal = resolveEffectivePortal(access, tenantMode(access), path, readStoredPortal());
+  const store =
+    activePortal === "warehouse"
+      ? (activeWarehouse && can("catalog.manage", activeWarehouse.id)
+          ? activeWarehouse
+          : access.locations.find((l) => l.type === "warehouse" && can("catalog.manage", l.id)) ??
+            access.locations.find((l) => can("catalog.manage", l.id)))
+      : (activeStore && can("catalog.manage", activeStore.id)
+          ? activeStore
+          : access.locations.find((l) => l.type === "store" && can("catalog.manage", l.id)) ??
+            access.locations.find((l) => can("catalog.manage", l.id)));
 
   const [search, setSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
@@ -903,7 +918,7 @@ export function ProductsPage() {
   });
 
   const open = q.data?.find((r) => r.variantId === openId) ?? null;
-  const canStock = can("stock.adjust_store", store.id);
+  const canStock = store.type === "store" && can("stock.adjust_store", store.id);
   const categories = categoriesQuery.data ?? [];
 
   const handleExportCsv = () => {
@@ -917,8 +932,17 @@ export function ProductsPage() {
       <section className="grid content-start gap-3">
         <PageHeader
           title={t("admin:products.title")}
+          subtitle={`${store.code} · ${store.name}`}
           actions={
             <>
+              <Button
+                variant="outline"
+                size="sm"
+                data-testid="products-view-inventory-btn"
+                onClick={() => void navigate({ to: "/app/inventory" })}
+              >
+                {t("admin:inventory.viewInventoryBtn")}
+              </Button>
               <Button variant="outline" size="sm" onClick={() => setCategoryModal(true)}>
                 📁 {t("admin:products.categories")}
               </Button>

@@ -105,9 +105,88 @@ export async function fetchProductRows(currency: string, locationId: string): Pr
   const [pull, levels, expiries] = await Promise.all([
     pullCatalog(),
     fetchStockLevels(locationId),
-    fetchStockExpiries(locationId),
+    fetchStockExpiries(locationId).catch(() => new Map<string, string | null>()),
   ]);
   return toProductRows(pull, currency, levels, expiries);
+}
+
+export type StockMovementType =
+  | "opening"
+  | "sale"
+  | "sale_void"
+  | "sale_return"
+  | "receipt"
+  | "count_correction"
+  | "damage"
+  | "conversion_out"
+  | "conversion_in"
+  | "conversion_void"
+  | "transfer_out"
+  | "transfer_in"
+  | "bin_move";
+
+export type MovementFilterCategory = "sales" | "transfers" | "restock" | "adjustments";
+
+export interface RawStockMovement {
+  id: string;
+  variant_id: string;
+  qty_delta: number | string;
+  type: string;
+  ref_type: string | null;
+  occurred_at: string;
+}
+
+export interface StockMovementRow {
+  id: string;
+  variantId: string;
+  productName: string;
+  sku: string;
+  unit: string;
+  qtyDelta: number;
+  type: StockMovementType | string;
+  category: MovementFilterCategory;
+  occurredAt: string;
+}
+
+export function classifyMovementCategory(type: string): MovementFilterCategory {
+  if (type === "sale" || type === "sale_void" || type === "sale_return") return "sales";
+  if (type === "transfer_in" || type === "transfer_out" || type === "bin_move") return "transfers";
+  if (type === "opening" || type === "receipt") return "restock";
+  return "adjustments";
+}
+
+export function toStockMovementRows(raw: ReadonlyArray<RawStockMovement>, pull: CatalogPull): StockMovementRow[] {
+  const products = new Map(pull.products.rows.map((p) => [p.id, p]));
+  const variants = new Map(pull.product_variants.rows.map((v) => [v.id, v]));
+  return raw.map((m) => {
+    const v = variants.get(m.variant_id);
+    const p = v ? products.get(v.product_id) : undefined;
+    return {
+      id: m.id,
+      variantId: m.variant_id,
+      productName: p?.name ?? m.variant_id.slice(0, 8),
+      sku: v?.sku ?? "—",
+      unit: p?.unit ?? "pc",
+      qtyDelta: Number(m.qty_delta),
+      type: m.type,
+      category: classifyMovementCategory(m.type),
+      occurredAt: m.occurred_at,
+    };
+  });
+}
+
+export async function fetchStockMovements(locationId: string, limit = 150): Promise<StockMovementRow[]> {
+  const [pull, movRes] = await Promise.all([
+    pullCatalog(),
+    supabase
+      .from("stock_movements")
+      .select("id, variant_id, qty_delta, type, ref_type, occurred_at")
+      .eq("location_id", locationId)
+      .order("occurred_at", { ascending: false })
+      .limit(limit),
+  ]);
+  if (movRes.error) throw fromRaw(movRes.error);
+  return toStockMovementRows((movRes.data ?? []) as RawStockMovement[], pull);
 }
 
 export async function fetchCategories(): Promise<Category[]> {
