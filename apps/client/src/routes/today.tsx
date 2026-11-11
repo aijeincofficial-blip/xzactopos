@@ -2,21 +2,13 @@ import { useTranslation } from "react-i18next";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { formatMoney, money } from "@pos/core";
-import { Button, Card, EmptyState, ErrorState, PageHeader } from "../components/ui.tsx";
+import { Banknote, CreditCard, HandCoins, Rocket, Smartphone, TrendingDown } from "lucide-react";
+import { Badge, Button, Card, EmptyState, ErrorState, PageHeader, Skeleton } from "../components/ui.tsx";
 import { useSession } from "../lib/session.tsx";
 import { tenantMode } from "../lib/mode.ts";
 import { dayInTimezone, getDaySummary } from "../lib/today.ts";
 
-function Stat({ label, value, id }: { label: string; value: string; id: string }) {
-  return (
-    <Card data-testid={id}>
-      <div className="text-xs text-slate-500">{label}</div>
-      <div className="mt-1 text-xl font-semibold">{value}</div>
-    </Card>
-  );
-}
-
-/** Solo home: today's sales, how they were paid, expenses and what customers still owe (read-only). */
+/** Solo home: today's sales, tender breakdown, expenses, and customer utang in a calm, grouped layout. */
 export function TodayPage() {
   const { t, i18n } = useTranslation(["admin", "common"]);
   const { access, can } = useSession();
@@ -25,64 +17,147 @@ export function TodayPage() {
   const q = useQuery({ queryKey: ["day-summary", day], queryFn: () => getDaySummary(day), refetchInterval: 120_000 });
   const fmt = (n: number) => formatMoney(money(n, access.tenant.base_currency), i18n.language);
 
-  if (q.isPending) return <Card>{t("today.loading")}</Card>;
-  if (q.isError) return <ErrorState message={t("today.error")} onRetry={() => void q.refetch()} retryLabel={t("common:actions.retry")} />;
+  if (q.isPending) {
+    return (
+      <div className="grid gap-5">
+        <Skeleton className="h-8 w-48" />
+        <div className="grid gap-4 sm:grid-cols-3">
+          <Skeleton className="h-28" />
+          <Skeleton className="h-28" />
+          <Skeleton className="h-28" />
+        </div>
+        <Skeleton className="h-44" />
+      </div>
+    );
+  }
+  if (q.isError) {
+    return <ErrorState message={t("today.error")} onRetry={() => void q.refetch()} retryLabel={t("common:actions.retry")} />;
+  }
 
   const s = q.data;
   const cashLeft = s.totals.cash - s.expenses.cash;
+
   return (
-    <>
-      {can("tenant.modules") && mode === "solo" ? (
-        <Card className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-brand-100 bg-brand-50 p-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="rounded bg-brand-600 px-1.5 py-0.5 text-xs font-semibold text-white uppercase tracking-wider">
-                {t("upgrade.badge")}
-              </span>
-              <h3 className="font-semibold text-slate-900">{t("upgrade.soloBannerTitle")}</h3>
-            </div>
-            <p className="text-sm text-slate-600 max-w-2xl">
-              {t("upgrade.soloBannerText")}
-            </p>
+    <div className="grid gap-5">
+      <PageHeader
+        title={t("today.title")}
+        subtitle={day}
+        actions={
+          can("tenant.modules") && mode === "solo" ? (
+            <Link to="/app/upgrade">
+              <Button variant="outline" size="sm">
+                <Rocket size={14} className="text-brand-600" aria-hidden />
+                <span>{t("upgrade.soloBannerAction")}</span>
+              </Button>
+            </Link>
+          ) : null
+        }
+      />
+
+      {/* Primary Hero KPIs */}
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Card data-testid="today-net" className="grid gap-1.5 border-brand-200/70 bg-brand-50/35 p-5">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs font-semibold tracking-wider text-slate-500 uppercase">{t("today.sales")}</span>
+            <span data-testid="today-txns">
+              <Badge tone="neutral">
+                {s.totals.txns} {t("today.transactions")}
+              </Badge>
+            </span>
           </div>
-          <Link to="/app/upgrade" className="inline-flex shrink-0">
-            <Button variant="primary" size="sm">
-              {t("upgrade.soloBannerAction")}
-            </Button>
-          </Link>
+          <div className="text-3xl font-semibold tracking-tight text-slate-900 tabular-nums">{fmt(s.totals.net)}</div>
         </Card>
-      ) : null}
-      <PageHeader title={t("today.title")} subtitle={day} />
-      <div className="grid gap-3 sm:grid-cols-3">
-        <Stat id="today-net" label={t("today.sales")} value={fmt(s.totals.net)} />
-        <Stat id="today-txns" label={t("today.transactions")} value={String(s.totals.txns)} />
-        <Stat id="today-owed" label={t("today.owed")} value={fmt(s.utang.owed)} />
-        <Stat id="today-cash" label={t("today.cash")} value={fmt(s.totals.cash)} />
-        <Stat id="today-ewallet" label={t("today.ewallet")} value={fmt(s.totals.ewallet)} />
-        <Stat id="today-card" label={t("today.card")} value={fmt(s.totals.card ?? 0)} />
-        <Stat id="today-expenses" label={t("today.expenses")} value={fmt(s.expenses.total)} />
+
+        <Card data-testid="today-cash-after-expenses" className="grid gap-1.5 p-5">
+          <span className="text-xs font-semibold tracking-wider text-slate-500 uppercase">
+            {t("today.cashAfterExpenses")}
+          </span>
+          <div className="text-2xl font-semibold tracking-tight text-emerald-700 tabular-nums">{fmt(cashLeft)}</div>
+        </Card>
+
+        <Card data-testid="today-owed" className="grid gap-1.5 p-5">
+          <span className="text-xs font-semibold tracking-wider text-slate-500 uppercase">{t("today.owed")}</span>
+          <div
+            className={`text-2xl font-semibold tracking-tight tabular-nums ${
+              s.utang.owed > 0 ? "text-amber-700" : "text-slate-900"
+            }`}
+          >
+            {fmt(s.utang.owed)}
+          </div>
+        </Card>
       </div>
-      <Card data-testid="today-cash-after-expenses">
-        <div className="text-xs text-slate-500">{t("today.cashAfterExpenses")}</div>
-        <div className="mt-1 text-xl font-semibold">{fmt(cashLeft)}</div>
-      </Card>
-      <Card>
-        <h3 className="mb-2 font-medium">{t("today.topItems")}</h3>
-        {s.top_items.length === 0 ? (
-          <EmptyState title={t("today.noSales")} />
-        ) : (
-          <ul className="grid gap-1 text-sm">
-            {s.top_items.slice(0, 5).map((i) => (
-              <li key={i.variant_id} className="flex justify-between gap-2">
-                <span>
-                  {i.name} × {i.qty}
-                </span>
-                <span>{fmt(i.revenue)}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Card>
-    </>
+
+      {/* Grouped Tender Breakdown & Top Items */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card className="grid content-start gap-3">
+          <h2 className="text-xs font-semibold tracking-wider text-slate-500 uppercase">{t("sell.payment")}</h2>
+          <div className="divide-y divide-slate-100 text-sm">
+            <div data-testid="today-cash" className="flex items-center justify-between py-2.5 first:pt-0">
+              <span className="flex items-center gap-2.5 text-slate-600">
+                <Banknote size={16} className="text-emerald-600" aria-hidden />
+                <span>{t("today.cash")}</span>
+              </span>
+              <span className="font-semibold text-slate-900 tabular-nums">{fmt(s.totals.cash)}</span>
+            </div>
+            <div data-testid="today-ewallet" className="flex items-center justify-between py-2.5">
+              <span className="flex items-center gap-2.5 text-slate-600">
+                <Smartphone size={16} className="text-brand-600" aria-hidden />
+                <span>{t("today.ewallet")}</span>
+              </span>
+              <span className="font-semibold text-slate-900 tabular-nums">{fmt(s.totals.ewallet)}</span>
+            </div>
+            <div data-testid="today-card" className="flex items-center justify-between py-2.5">
+              <span className="flex items-center gap-2.5 text-slate-600">
+                <CreditCard size={16} className="text-slate-500" aria-hidden />
+                <span>{t("today.card")}</span>
+              </span>
+              <span className="font-semibold text-slate-900 tabular-nums">{fmt(s.totals.card ?? 0)}</span>
+            </div>
+            <div data-testid="today-expenses" className="flex items-center justify-between py-2.5 last:pb-0">
+              <span className="flex items-center gap-2.5 text-slate-600">
+                <TrendingDown size={16} className="text-red-500" aria-hidden />
+                <span>{t("today.expenses")}</span>
+              </span>
+              <span className="font-semibold text-red-700 tabular-nums">{fmt(s.expenses.total)}</span>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="grid content-start gap-3">
+          <h2 className="text-xs font-semibold tracking-wider text-slate-500 uppercase">{t("today.topItems")}</h2>
+          {s.top_items.length === 0 ? (
+            <EmptyState title={t("today.noSales")} />
+          ) : (
+            <ul className="divide-y divide-slate-100 text-sm">
+              {s.top_items.slice(0, 5).map((i, idx) => (
+                <li key={i.variant_id} className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
+                  <div className="flex min-w-0 items-center gap-2.5">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-slate-100 text-xs font-semibold text-slate-500">
+                      {idx + 1}
+                    </span>
+                    <span className="truncate font-medium text-slate-900">{i.name}</span>
+                    <span className="shrink-0 text-xs text-slate-400 tabular-nums">×{i.qty}</span>
+                  </div>
+                  <span className="font-semibold text-slate-900 tabular-nums">{fmt(i.revenue)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      </div>
+
+      {can("tenant.modules") && mode === "solo" ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200/80 bg-white px-4 py-3 text-xs text-slate-600">
+          <div className="flex items-center gap-2">
+            <HandCoins size={15} className="text-brand-600" aria-hidden />
+            <span className="font-semibold text-slate-800">{t("upgrade.soloBannerTitle")}</span>
+            <span className="hidden text-slate-500 sm:inline">— {t("upgrade.soloBannerText")}</span>
+          </div>
+          <Link to="/app/upgrade" className="font-semibold text-brand-text hover:underline">
+            {t("upgrade.soloBannerAction")} →
+          </Link>
+        </div>
+      ) : null}
+    </div>
   );
 }

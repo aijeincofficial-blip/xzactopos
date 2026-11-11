@@ -1,4 +1,4 @@
-// Small shadcn-style primitives. Dialog is Radix; the rest are plain elements with Tailwind classes.
+// Small shadcn-style primitives. Dialog, Tabs, and Toast use Radix; the rest are clean semantic Tailwind components.
 import { createContext, useCallback, useContext, useMemo, useState, type ComponentProps, type ReactNode } from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { Dialog as RadixDialog, Tabs as RadixTabs, Toast as RadixToast } from "radix-ui";
@@ -6,16 +6,17 @@ import { AlertTriangle, CheckCircle2, Inbox, Info, X } from "lucide-react";
 import { cn } from "../lib/utils.ts";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 rounded-md text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg text-sm font-semibold transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
-        primary: "bg-brand-600 text-white shadow-xs hover:bg-brand-700",
-        outline: "border border-slate-200 bg-white text-slate-800 shadow-xs hover:bg-slate-100 hover:text-slate-900",
-        danger: "bg-red-600 text-white shadow-xs hover:bg-red-700",
-        ghost: "text-slate-700 hover:bg-slate-100 hover:text-slate-900",
+        primary: "bg-brand-600 text-white shadow-xs hover:bg-brand-700 active:translate-y-[0.5px]",
+        outline:
+          "border border-slate-200/90 bg-white text-slate-700 shadow-xs hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900",
+        danger: "bg-red-600 text-white shadow-xs hover:bg-red-700 active:translate-y-[0.5px]",
+        ghost: "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
       },
-      size: { md: "h-9 px-4", sm: "h-8 px-3 text-xs" },
+      size: { md: "h-9.5 px-4", sm: "h-8 px-3 text-xs" },
     },
     defaultVariants: { variant: "primary", size: "md" },
   },
@@ -32,7 +33,7 @@ export function Button({
 }
 
 const field =
-  "h-9 w-full rounded-md border border-slate-200 bg-white px-3 text-sm font-normal text-slate-900 placeholder:text-slate-400 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand-600 disabled:bg-slate-100 disabled:text-slate-500";
+  "h-9.5 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-normal text-slate-900 shadow-2xs transition-colors placeholder:text-slate-400 hover:border-slate-300 focus-visible:border-brand-500 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand-600 disabled:bg-slate-100 disabled:text-slate-500";
 
 export function Input({ className, ...props }: ComponentProps<"input">) {
   return <input className={cn(field, className)} {...props} />;
@@ -54,12 +55,12 @@ export function Field({
   children: ReactNode;
 }) {
   return (
-    <label className="grid gap-1 text-sm">
-      <span className="font-semibold text-slate-900">{label}</span>
+    <label className="grid gap-1.5 text-sm">
+      <span className="text-xs font-semibold text-slate-700">{label}</span>
       {children}
-      {hint && !error ? <span className="text-xs text-slate-600">{hint}</span> : null}
+      {hint && !error ? <span className="text-xs text-slate-500">{hint}</span> : null}
       {error ? (
-        <span role="alert" className="text-xs font-normal text-red-700">
+        <span role="alert" className="text-xs font-medium text-red-700">
           {error}
         </span>
       ) : null}
@@ -68,7 +69,12 @@ export function Field({
 }
 
 export function Card({ className, ...props }: ComponentProps<"section">) {
-  return <section className={cn("rounded-lg border border-slate-200 bg-white p-6 shadow-sm", className)} {...props} />;
+  return (
+    <section
+      className={cn("rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs sm:p-6", className)}
+      {...props}
+    />
+  );
 }
 
 export function Alert({ tone = "error", children }: { tone?: "error" | "info" | "warn" | "good"; children: ReactNode }) {
@@ -76,11 +82,11 @@ export function Alert({ tone = "error", children }: { tone?: "error" | "info" | 
     <div
       role={tone === "error" ? "alert" : "status"}
       className={cn(
-        "rounded-md border-l-4 p-4 text-sm font-normal shadow-xs",
-        tone === "error" && "border-red-500 bg-red-50 text-red-900 border-y border-r border-red-200",
-        tone === "info" && "border-brand-500 bg-brand-50 text-slate-900 border-y border-r border-brand-200",
-        tone === "warn" && "border-amber-500 bg-amber-50 text-amber-900 border-y border-r border-amber-200",
-        tone === "good" && "border-emerald-500 bg-emerald-50 text-emerald-900 border-y border-r border-emerald-200",
+        "rounded-lg border-l-4 px-4 py-3 text-sm font-normal shadow-2xs",
+        tone === "error" && "border-red-500 border-y border-r border-y-red-200 border-r-red-200 bg-red-50 text-red-900",
+        tone === "info" && "border-brand-500 border-y border-r border-y-brand-200 border-r-brand-200 bg-brand-50 text-slate-900",
+        tone === "warn" && "border-amber-500 border-y border-r border-y-amber-200 border-r-amber-200 bg-amber-50 text-amber-900",
+        tone === "good" && "border-emerald-500 border-y border-r border-y-emerald-200 border-r-emerald-200 bg-emerald-50 text-emerald-900",
       )}
     >
       {children}
@@ -88,15 +94,21 @@ export function Alert({ tone = "error", children }: { tone?: "error" | "info" | 
   );
 }
 
-export function Badge({ children, tone = "neutral" }: { children: ReactNode; tone?: "neutral" | "good" | "warn" | "danger" }) {
+export function Badge({
+  children,
+  tone = "neutral",
+}: {
+  children: ReactNode;
+  tone?: "neutral" | "good" | "warn" | "danger";
+}) {
   return (
     <span
       className={cn(
-        "inline-block rounded-md px-2 py-0.5 text-xs font-semibold border",
-        tone === "good" && "bg-green-50 text-green-900 border-green-200",
-        tone === "warn" && "bg-amber-50 text-amber-900 border-amber-200",
-        tone === "danger" && "bg-red-50 text-red-900 border-red-200",
-        tone === "neutral" && "bg-slate-100 text-slate-800 border-slate-200",
+        "inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-semibold",
+        tone === "good" && "border-green-200/80 bg-green-50 text-green-900",
+        tone === "warn" && "border-amber-200/80 bg-amber-50 text-amber-900",
+        tone === "danger" && "border-red-200/80 bg-red-50 text-red-900",
+        tone === "neutral" && "border-slate-200/80 bg-slate-100 text-slate-800",
       )}
     >
       {children}
@@ -120,14 +132,17 @@ export function Dialog({
   return (
     <RadixDialog.Root open={open} onOpenChange={onOpenChange}>
       <RadixDialog.Portal>
-        <RadixDialog.Overlay className="fixed inset-0 z-50 bg-black/50" />
+        <RadixDialog.Overlay className="fixed inset-0 z-50 bg-slate-950/45 backdrop-blur-[1px]" />
         <RadixDialog.Content
           aria-describedby={undefined}
-          className="fixed top-1/2 left-1/2 z-50 max-h-[90vh] w-[min(32rem,92vw)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-lg border border-slate-200 bg-white p-6 shadow-xl"
+          className="fixed top-1/2 left-1/2 z-50 max-h-[90vh] w-[min(32rem,92vw)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl"
         >
-          <div className="mb-4 flex items-center justify-between">
+          <div className="mb-4 flex items-center justify-between gap-3">
             <RadixDialog.Title className="text-lg font-semibold tracking-tight text-slate-900">{title}</RadixDialog.Title>
-            <RadixDialog.Close aria-label={closeLabel} className="rounded p-1 text-slate-600 hover:bg-slate-100 hover:text-slate-900">
+            <RadixDialog.Close
+              aria-label={closeLabel}
+              className="rounded-lg p-1.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
+            >
               <X size={18} />
             </RadixDialog.Close>
           </div>
@@ -138,36 +153,49 @@ export function Dialog({
   );
 }
 
-/** Page title with an optional line under it and actions on the right. One per screen. */
+/** Page title with an optional calm subtitle and right-aligned primary/secondary actions. */
 export function PageHeader({ title, subtitle, actions }: { title: string; subtitle?: string; actions?: ReactNode }) {
   return (
-    <div className="flex flex-wrap items-end justify-between gap-3">
-      <div>
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="grid gap-0.5">
         <h1 className="text-xl font-semibold tracking-tight text-slate-900">{title}</h1>
-        {subtitle ? <p className="text-sm text-slate-600">{subtitle}</p> : null}
+        {subtitle ? <p className="text-sm text-slate-500">{subtitle}</p> : null}
       </div>
       {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
     </div>
   );
 }
 
-/** Nothing here yet: say so, and offer the next step. */
+/** Nothing here yet: say so calmly, and offer the next step. */
 export function EmptyState({ title, hint, action }: { title: string; hint?: string; action?: ReactNode }) {
   return (
-    <div className="grid justify-items-center gap-2 rounded-lg border border-dashed border-slate-200 bg-slate-50/50 px-4 py-8 text-center">
-      <Inbox size={28} className="text-slate-400" aria-hidden />
-      <p className="font-semibold text-slate-900">{title}</p>
-      {hint ? <p className="max-w-sm text-sm text-slate-600">{hint}</p> : null}
-      {action}
+    <div className="grid justify-items-center gap-2.5 rounded-xl border border-dashed border-slate-200 bg-slate-50/60 px-6 py-10 text-center">
+      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-slate-400">
+        <Inbox size={22} aria-hidden />
+      </div>
+      <p className="text-sm font-semibold text-slate-900">{title}</p>
+      {hint ? <p className="max-w-sm text-xs text-slate-500">{hint}</p> : null}
+      {action ? <div className="mt-1">{action}</div> : null}
     </div>
   );
 }
 
 /** A load or save failed: the reason, and a way to try again. */
-export function ErrorState({ message, retryLabel, onRetry }: { message: string; retryLabel?: string; onRetry?: () => void }) {
+export function ErrorState({
+  message,
+  retryLabel,
+  onRetry,
+}: {
+  message: string;
+  retryLabel?: string;
+  onRetry?: () => void;
+}) {
   return (
-    <div role="alert" className="flex flex-wrap items-center gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-900 shadow-xs">
-      <AlertTriangle size={18} className="text-red-600 shrink-0" aria-hidden />
+    <div
+      role="alert"
+      className="flex flex-wrap items-center gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-900 shadow-2xs"
+    >
+      <AlertTriangle size={18} className="shrink-0 text-red-600" aria-hidden />
       <span className="mr-auto font-normal">{message}</span>
       {onRetry && retryLabel ? (
         <Button variant="outline" size="sm" onClick={onRetry}>
@@ -179,35 +207,39 @@ export function ErrorState({ message, retryLabel, onRetry }: { message: string; 
 }
 
 const tableClass =
-  "w-full text-left text-sm [&_thead_th]:bg-slate-50 [&_thead_th]:px-3 [&_thead_th]:py-2 [&_thead_th]:text-xs [&_thead_th]:font-semibold [&_thead_th]:tracking-wider [&_thead_th]:text-slate-600 [&_thead_th]:uppercase [&_tbody_tr]:border-t [&_tbody_tr]:border-slate-100 [&_tbody_tr:hover]:bg-slate-50";
+  "w-full text-left text-sm [&_thead_th]:bg-slate-50/90 [&_thead_th]:px-3.5 [&_thead_th]:py-2.5 [&_thead_th]:text-xs [&_thead_th]:font-semibold [&_thead_th]:tracking-wider [&_thead_th]:text-slate-500 [&_thead_th]:uppercase [&_tbody_tr]:border-t [&_tbody_tr]:border-slate-100 [&_tbody_tr]:transition-colors [&_tbody_tr:hover]:bg-slate-50/80";
 
 /**
- * Data table: quiet uppercase header, row dividers, hover row. Header and row styling comes from the table itself,
- * so plain th/td work. `bare` skips the bordered scroll wrapper, for a table that already sits in a Card.
+ * Data table: quiet uppercase header, subtle row dividers, calm hover row.
+ * `bare` skips the bordered scroll wrapper, for a table that already sits inside a Card.
  */
 export function Table({ className, bare, ...props }: ComponentProps<"table"> & { bare?: boolean }) {
   const table = <table className={cn(tableClass, className)} {...props} />;
   if (bare) return table;
-  return <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">{table}</div>;
+  return <div className="overflow-x-auto rounded-xl border border-slate-200/90 bg-white shadow-xs">{table}</div>;
 }
 
 export function Th({ className, numeric, ...props }: ComponentProps<"th"> & { numeric?: boolean }) {
   return (
     <th
       scope="col"
-      className={cn("bg-slate-50 px-3 py-2 text-xs font-semibold tracking-wider text-slate-600 uppercase", numeric && "text-right", className)}
+      className={cn(
+        "bg-slate-50/90 px-3.5 py-2.5 text-xs font-semibold tracking-wider text-slate-500 uppercase",
+        numeric && "text-right",
+        className,
+      )}
       {...props}
     />
   );
 }
 
 export function Td({ className, numeric, ...props }: ComponentProps<"td"> & { numeric?: boolean }) {
-  return <td className={cn("px-3 py-2 text-slate-900", numeric && "text-right tabular-nums", className)} {...props} />;
+  return <td className={cn("px-3.5 py-2.5 text-slate-900", numeric && "text-right tabular-nums", className)} {...props} />;
 }
 
 /** Loading skeleton block: matches content layout and size to prevent layout shift */
 export function Skeleton({ className, ...props }: ComponentProps<"div">) {
-  return <div className={cn("animate-pulse rounded-md bg-slate-200", className)} {...props} />;
+  return <div className={cn("animate-pulse rounded-lg bg-slate-200/80", className)} {...props} />;
 }
 
 /** Pre-built table loading skeleton matching common data table column layouts */
@@ -238,10 +270,10 @@ export function StatCard({
   className?: string;
 }) {
   return (
-    <div className={cn("rounded-lg border border-slate-200 bg-white p-4 shadow-sm", className)}>
-      <div className="text-xs font-semibold tracking-wider text-slate-600 uppercase">{label}</div>
-      <div className="mt-1 text-2xl font-semibold tracking-tight text-slate-900">{value}</div>
-      {subtext ? <div className="mt-1 text-xs text-slate-600">{subtext}</div> : null}
+    <div className={cn("rounded-xl border border-slate-200/90 bg-white p-4 shadow-xs sm:p-5", className)}>
+      <div className="text-xs font-semibold tracking-wider text-slate-500 uppercase">{label}</div>
+      <div className="mt-1.5 text-2xl font-semibold tracking-tight text-slate-900 tabular-nums">{value}</div>
+      {subtext ? <div className="mt-1 text-xs text-slate-500">{subtext}</div> : null}
     </div>
   );
 }
@@ -262,13 +294,16 @@ export function Tabs({
 }) {
   return (
     <RadixTabs.Root value={value} onValueChange={onValueChange} className="grid gap-4">
-      <RadixTabs.List aria-label={label} className="flex gap-1 overflow-x-auto overflow-y-hidden border-b border-slate-200 [scrollbar-width:none]">
+      <RadixTabs.List
+        aria-label={label}
+        className="flex gap-1 overflow-x-auto overflow-y-hidden border-b border-slate-200 [scrollbar-width:none]"
+      >
         {tabs.map((tab) => (
           <RadixTabs.Trigger
             key={tab.value}
             value={tab.value}
             data-testid={tab.testId}
-            className="-mb-px border-b-2 border-transparent px-3 py-2 text-sm whitespace-nowrap text-slate-600 hover:text-slate-900 data-[state=active]:border-brand-600 data-[state=active]:font-semibold data-[state=active]:text-slate-900"
+            className="-mb-px cursor-pointer border-b-2 border-transparent px-3.5 py-2 text-sm whitespace-nowrap text-slate-500 transition-colors hover:text-slate-900 data-[state=active]:border-brand-600 data-[state=active]:font-semibold data-[state=active]:text-brand-text"
           >
             {tab.label}
           </RadixTabs.Trigger>
@@ -350,15 +385,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 if (!open) dismiss(t.id);
               }}
               className={cn(
-                "group pointer-events-auto relative flex w-full items-start gap-3 rounded-lg border p-3.5 shadow-lg transition-all",
-                "bg-white",
-                isGood && "border-green-200 text-green-900 bg-green-50/50",
-                isError && "border-red-200 text-red-900 bg-red-50/50",
-                isWarn && "border-amber-200 text-amber-900 bg-amber-50/50",
+                "group pointer-events-auto relative flex w-full items-start gap-3 rounded-xl border bg-white p-3.5 shadow-lg transition-all",
+                isGood && "border-green-200 bg-green-50/70 text-green-900",
+                isError && "border-red-200 bg-red-50/70 text-red-900",
+                isWarn && "border-amber-200 bg-amber-50/70 text-amber-900",
                 !isGood && !isError && !isWarn && "border-slate-200 text-slate-900",
               )}
             >
-              <span className="shrink-0 mt-0.5">
+              <span className="mt-0.5 shrink-0">
                 {isGood ? (
                   <CheckCircle2 size={18} className="text-emerald-600" aria-hidden />
                 ) : isError ? (
@@ -369,26 +403,24 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                   <Info size={18} className="text-brand-600" aria-hidden />
                 )}
               </span>
-              <div className="grid gap-0.5 flex-1 text-sm">
+              <div className="grid flex-1 gap-0.5 text-sm">
                 {t.title ? (
-                  <RadixToast.Title className="font-semibold text-xs tracking-wide uppercase">
+                  <RadixToast.Title className="text-xs font-semibold tracking-wide uppercase">
                     {t.title}
                   </RadixToast.Title>
                 ) : null}
-                <RadixToast.Description className="text-sm font-medium">
-                  {t.message}
-                </RadixToast.Description>
+                <RadixToast.Description className="text-sm font-medium">{t.message}</RadixToast.Description>
               </div>
               <RadixToast.Close
                 aria-label="Close"
-                className="shrink-0 rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+                className="shrink-0 rounded-lg p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
               >
                 <X size={16} />
               </RadixToast.Close>
             </RadixToast.Root>
           );
         })}
-        <RadixToast.Viewport className="fixed bottom-4 right-4 z-50 flex max-h-screen w-full max-w-sm flex-col gap-2 p-4 pointer-events-none outline-none sm:bottom-6 sm:right-6" />
+        <RadixToast.Viewport className="pointer-events-none fixed right-4 bottom-4 z-50 flex max-h-screen w-full max-w-sm flex-col gap-2 p-4 outline-none sm:right-6 sm:bottom-6" />
       </RadixToast.Provider>
     </ToastContext.Provider>
   );

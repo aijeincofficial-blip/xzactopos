@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   CreditCard,
   HandCoins,
+  Keyboard,
   Minus,
   Plus,
   Printer,
@@ -15,7 +16,6 @@ import {
   ShoppingBag,
   Smartphone,
   Star,
-  Store,
   Trash2,
   UserPlus,
   X,
@@ -86,7 +86,7 @@ function formatMajorInput(minorAmount: number): string {
   return Number.isInteger(major) ? String(major) : major.toFixed(2);
 }
 
-/** Kiosk-style Web POS Terminal: prominent search & barcode bar, category tabs, touch product grid, and docked order register. */
+/** Kiosk-style Web POS Terminal: calm search & category bar, crisp product grid, and focused order register. */
 export function SellPage() {
   const { t, i18n } = useTranslation("admin");
   const msg = useErrorMessage();
@@ -225,12 +225,6 @@ export function SellPage() {
     }
     return pool.slice(0, 80);
   }, [catalog.data, fastKeyProducts, activeFilter, search]);
-
-  const fastKeyIndexBySku = useMemo(() => {
-    const m = new Map<string, number>();
-    fastKeyProducts.slice(0, 6).forEach((s, idx) => m.set(s.sku, idx));
-    return m;
-  }, [fastKeyProducts]);
 
   function isPinned(sku: string): boolean {
     return isSkuPinned(sku, catalog.data ?? [], customPinned);
@@ -478,63 +472,63 @@ export function SellPage() {
     return (
       <div className="h-full overflow-y-auto">
         <div className="mx-auto grid w-full max-w-4xl content-start gap-6 p-6 md:grid-cols-[1fr_auto]">
-        <Card className="grid gap-6" data-testid="sale-done">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
-                <CheckCircle2 size={24} aria-hidden />
-              </div>
-              <div>
-                <h2 className="text-lg font-semibold text-slate-900">{t("sell.done")}</h2>
-                <div className="text-xs font-mono text-slate-600">
-                  {t("sell.receiptNo")}{" "}
-                  <span className="font-semibold text-slate-900">{done.saleNo ?? done.localNo}</span>
+          <Card className="grid gap-6" data-testid="sale-done">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+                  <CheckCircle2 size={24} aria-hidden />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-slate-900">{t("sell.done")}</h2>
+                  <div className="font-mono text-xs text-slate-500">
+                    {t("sell.receiptNo")}{" "}
+                    <span className="font-semibold text-slate-900">{done.saleNo ?? done.localNo}</span>
+                  </div>
                 </div>
               </div>
+              <Badge tone="good">{store.code}</Badge>
             </div>
-            <Badge tone="good">{store.code}</Badge>
-          </div>
 
-          <div className="rounded-lg bg-slate-50 p-4 grid gap-2">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-600">
-              {t("sell.total")}
-            </span>
-            <div className="text-3xl font-semibold text-slate-900 tabular-nums">{fmt(done.total)}</div>
-            {done.change > 0 ? (
-              <div className="mt-2 flex items-baseline justify-between border-t border-slate-200 pt-2 text-base">
-                <span className="text-slate-700">{t("sell.change")}</span>
-                <span className="text-xl font-semibold text-emerald-700 tabular-nums">{fmt(done.change)}</span>
-              </div>
-            ) : null}
-            {done.onUtang > 0 ? (
-              <div className="mt-2 flex items-baseline justify-between border-t border-slate-200 pt-2 text-sm text-amber-800">
-                <span>{t("sell.onUtang")}</span>
-                <span className="font-semibold tabular-nums">{fmt(done.onUtang)}</span>
-              </div>
-            ) : null}
-          </div>
+            <div className="grid gap-2 rounded-xl border border-slate-200/80 bg-slate-50/70 p-4">
+              <span className="text-xs font-semibold tracking-wider text-slate-500 uppercase">
+                {t("sell.total")}
+              </span>
+              <div className="text-3xl font-semibold text-slate-900 tabular-nums">{fmt(done.total)}</div>
+              {done.change > 0 ? (
+                <div className="mt-2 flex items-baseline justify-between border-t border-slate-200 pt-2 text-base">
+                  <span className="text-slate-600">{t("sell.change")}</span>
+                  <span className="text-xl font-semibold text-emerald-700 tabular-nums">{fmt(done.change)}</span>
+                </div>
+              ) : null}
+              {done.onUtang > 0 ? (
+                <div className="mt-2 flex items-baseline justify-between border-t border-slate-200 pt-2 text-sm text-amber-800">
+                  <span>{t("sell.onUtang")}</span>
+                  <span className="font-semibold tabular-nums">{fmt(done.onUtang)}</span>
+                </div>
+              ) : null}
+            </div>
 
-          <div className="flex gap-3 no-print">
-            <Button
-              variant="outline"
-              data-testid="print-receipt-btn"
-              onClick={() => window.print()}
-              className="h-12 flex-1"
-            >
-              <Printer size={16} className="text-slate-500" aria-hidden />
-              <span>{t("sell.printReceipt")}</span>
-            </Button>
-            <Button data-testid="new-sale" onClick={() => setDone(null)} className="h-12 flex-1">
-              {t("sell.newSale")}
-            </Button>
-          </div>
-        </Card>
+            <div className="no-print flex gap-3">
+              <Button
+                variant="outline"
+                data-testid="print-receipt-btn"
+                onClick={() => window.print()}
+                className="h-11 flex-1"
+              >
+                <Printer size={16} className="text-slate-500" aria-hidden />
+                <span>{t("sell.printReceipt")}</span>
+              </Button>
+              <Button data-testid="new-sale" onClick={() => setDone(null)} className="h-11 flex-1">
+                {t("sell.newSale")}
+              </Button>
+            </div>
+          </Card>
 
-        {done.receiptData ? (
-          <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-            <ReceiptSlipView receipt={done.receiptData} />
-          </div>
-        ) : null}
+          {done.receiptData ? (
+            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-xs">
+              <ReceiptSlipView receipt={done.receiptData} />
+            </div>
+          ) : null}
         </div>
       </div>
     );
@@ -544,17 +538,15 @@ export function SellPage() {
   const cashTarget = paidNow !== null ? paidNow : total;
 
   return (
-    <div className="grid h-full min-h-0 lg:grid-cols-[1fr_420px]">
-      {/* LEFT TERMINAL: Prominent POS Searchbar + Category Filter Strip + Kiosk Product Grid */}
+    <div className="grid h-full min-h-0 lg:grid-cols-[1fr_400px]">
+      {/* LEFT TERMINAL: Calm Search Header + Category Filter Strip + Clean Product Grid */}
       <section className="flex min-h-0 min-w-0 flex-col bg-slate-50">
-        {/* Sticky POS Search & Category Header */}
-        <div className="border-b border-slate-200 bg-white px-4 py-3 shadow-xs">
-          <div className="flex flex-wrap items-center gap-3">
-            {/* Prominent Web POS Search & Barcode Bar */}
-            <div className="relative min-w-[240px] flex-1">
+        <div className="border-b border-slate-200/80 bg-white px-4 py-3">
+          <div className="flex items-center gap-2.5">
+            <div className="relative min-w-0 flex-1">
               <Search
-                size={18}
-                className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-slate-500"
+                size={17}
+                className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-slate-400"
                 aria-hidden
               />
               <Input
@@ -565,9 +557,9 @@ export function SellPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && onSearchEnter()}
-                className="h-12 border-slate-300 bg-slate-50 pr-28 pl-10 text-base focus:bg-white"
+                className="h-10.5 border-slate-200 bg-slate-50/70 pr-24 pl-10 text-sm focus:bg-white"
               />
-              <div className=" absolute top-1/2 right-2.5 flex -translate-y-1/2 items-center gap-1.5">
+              <div className="absolute top-1/2 right-2.5 flex -translate-y-1/2 items-center gap-1.5">
                 {search.length > 0 ? (
                   <button
                     type="button"
@@ -577,42 +569,38 @@ export function SellPage() {
                       setSearch("");
                       searchInputRef.current?.focus();
                     }}
-                    className="rounded-md p-1 text-slate-500 hover:bg-slate-200 hover:text-slate-900"
+                    className="rounded-md p-1 text-slate-400 hover:bg-slate-200/70 hover:text-slate-800"
                   >
-                    <X size={15} aria-hidden />
+                    <X size={14} aria-hidden />
                   </button>
                 ) : null}
-                <span className="pointer-events-none hidden items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-xs text-slate-600 sm:inline-flex">
-                  <ScanBarcode size={14} className="text-slate-500" aria-hidden />
-                  <kbd className="font-mono font-semibold">F2</kbd>
+                <span className="pointer-events-none hidden items-center gap-1 rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-xs text-slate-400 sm:inline-flex">
+                  <ScanBarcode size={13} aria-hidden />
+                  <kbd className="font-mono">F2</kbd>
                 </span>
               </div>
             </div>
 
-            {/* Active Terminal Badge + Shortcut Hint */}
-            <div className="hidden items-center gap-2 xl:flex">
-              <div className="flex items-center gap-1.5 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
-                <Store size={14} className="text-slate-500" aria-hidden />
-                <span className="font-semibold">{store.code}</span>
-                <span className="text-slate-500">·</span>
-                <span className="max-w-[160px] truncate">{store.name}</span>
-              </div>
-              <span className="text-xs text-slate-500" data-testid="pos-shortcuts-hint">
-                {t("sell.shortcutsHint")}
-              </span>
-            </div>
+            <span
+              className="hidden shrink-0 items-center gap-1.5 rounded-lg border border-slate-200/80 bg-slate-50 px-2.5 py-2 text-xs text-slate-500 xl:inline-flex"
+              data-testid="pos-shortcuts-hint"
+              title={t("sell.shortcutsHint")}
+            >
+              <Keyboard size={14} className="text-slate-400" aria-hidden />
+              <span className="font-mono">Alt+1–6 · F4 · F8 · F9</span>
+            </span>
           </div>
 
-          {/* Kiosk Category & Quick-Keys Filter Pills */}
-          <div className="mt-3 flex items-center gap-2 overflow-x-auto overflow-y-hidden pb-0.5 [scrollbar-width:none]">
+          {/* Category & Favorites Filter Pills */}
+          <div className="mt-2.5 flex items-center gap-1.5 overflow-x-auto overflow-y-hidden pb-0.5 [scrollbar-width:none]">
             <button
               type="button"
               data-testid="pos-cat-all"
               onClick={() => setActiveFilter("all")}
-              className={`shrink-0 rounded-md border px-3 py-1.5 text-xs transition-colors ${
+              className={`shrink-0 cursor-pointer rounded-lg border px-3 py-1.5 text-xs transition-colors ${
                 activeFilter === "all"
                   ? "border-brand-200 bg-brand-50 font-semibold text-brand-text"
-                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                  : "border-slate-200/80 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900"
               }`}
             >
               {t("sell.allItems")} ({(catalog.data ?? []).length})
@@ -621,10 +609,10 @@ export function SellPage() {
               type="button"
               data-testid="pos-cat-pinned"
               onClick={() => setActiveFilter("pinned")}
-              className={`inline-flex shrink-0 items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs transition-colors ${
+              className={`inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs transition-colors ${
                 activeFilter === "pinned"
                   ? "border-brand-200 bg-brand-50 font-semibold text-brand-text"
-                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                  : "border-slate-200/80 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900"
               }`}
             >
               <Star size={13} className="text-amber-500" aria-hidden />
@@ -638,10 +626,10 @@ export function SellPage() {
                 type="button"
                 data-testid={`pos-cat-${cat.id}`}
                 onClick={() => setActiveFilter(cat.id)}
-                className={`shrink-0 rounded-md border px-3 py-1.5 text-xs transition-colors ${
+                className={`shrink-0 cursor-pointer rounded-lg border px-3 py-1.5 text-xs transition-colors ${
                   activeFilter === cat.id
                     ? "border-brand-200 bg-brand-50 font-semibold text-brand-text"
-                    : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                    : "border-slate-200/80 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                 }`}
               >
                 {cat.name}
@@ -650,49 +638,36 @@ export function SellPage() {
           </div>
         </div>
 
-        {/* Scrollable Kiosk Product Canvas */}
-        <div className="flex-1 overflow-y-auto p-4 grid content-start gap-4">
-          {/* Pinned Fast-Keys Shortcut Bar (Alt+1..6) */}
+        {/* Scrollable Product Canvas */}
+        <div className="grid flex-1 content-start gap-3.5 overflow-y-auto p-4">
+          {/* Sleek Compact Fast-Keys Pill Strip (Alt+1..6) */}
           {activeFilter === "all" &&
           search.trim() === "" &&
           (fastKeyProducts.length > 0 || (customPinned !== null && customPinned.length === 0)) ? (
-            <div data-testid="fast-keys-bar" className="grid gap-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-wider text-slate-600">
-                  {t("sell.fastKeys")}
-                </span>
-              </div>
+            <div data-testid="fast-keys-bar" className="flex items-center gap-2 overflow-x-auto pb-0.5 [scrollbar-width:none]">
+              <span className="shrink-0 text-xs font-semibold tracking-wider text-slate-400 uppercase">
+                {t("sell.fastKeys")}
+              </span>
               {fastKeyProducts.length === 0 ? (
-                <p className="py-1 text-xs text-slate-500">{t("sell.fastKeysEmpty")}</p>
+                <span className="text-xs text-slate-400">{t("sell.fastKeysEmpty")}</span>
               ) : (
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
-                  {fastKeyProducts.map((s, idx) => (
-                    <button
-                      key={s.variantId}
-                      type="button"
-                      data-testid={`fast-key-${s.sku}`}
-                      onClick={() => add(s)}
-                      className="flex flex-col justify-between rounded-md border border-slate-200 bg-white p-2.5 text-left shadow-xs transition-colors hover:border-brand-500 hover:bg-brand-50/30"
-                    >
-                      <div className="flex w-full items-start justify-between gap-1">
-                        <span className="truncate text-xs font-semibold text-slate-900" title={s.name}>
-                          {s.name}
-                        </span>
-                        {idx < 6 ? (
-                          <kbd className="shrink-0 rounded border border-slate-200 bg-slate-50 px-1 font-mono text-xs text-slate-500">
-                            Alt+{idx + 1}
-                          </kbd>
-                        ) : null}
-                      </div>
-                      <div className="mt-2 flex items-baseline justify-between gap-1">
-                        <span className="truncate font-mono text-xs text-slate-500">{s.sku}</span>
-                        <span className="text-xs font-semibold text-slate-900 tabular-nums">
-                          {fmt(s.price)}
-                        </span>
-                      </div>
-                    </button>
-                  ))}
-                </div>
+                fastKeyProducts.map((s, idx) => (
+                  <button
+                    key={s.variantId}
+                    type="button"
+                    data-testid={`fast-key-${s.sku}`}
+                    onClick={() => add(s)}
+                    className="inline-flex shrink-0 cursor-pointer items-center gap-2 rounded-lg border border-slate-200/90 bg-white px-2.5 py-1.5 text-xs shadow-2xs transition-colors hover:border-brand-400 hover:bg-brand-50/40"
+                  >
+                    {idx < 6 ? (
+                      <kbd className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-slate-500">
+                        Alt+{idx + 1}
+                      </kbd>
+                    ) : null}
+                    <span className="max-w-[140px] truncate font-semibold text-slate-800">{s.name}</span>
+                    <span className="text-slate-500 tabular-nums">{fmt(s.price)}</span>
+                  </button>
+                ))
               )}
             </div>
           ) : null}
@@ -700,7 +675,7 @@ export function SellPage() {
           {catalog.isPending ? (
             <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
               {Array.from({ length: 10 }).map((_, i) => (
-                <li key={i} className="h-32 animate-pulse rounded-lg border border-slate-200 bg-white" />
+                <li key={i} className="h-28 animate-pulse rounded-xl border border-slate-200/80 bg-white" />
               ))}
             </ul>
           ) : null}
@@ -722,54 +697,49 @@ export function SellPage() {
                   stockQty > 0 &&
                   (s.reorderPoint ?? 0) > 0 &&
                   stockQty <= (s.reorderPoint ?? 0);
-                const fkIdx = fastKeyIndexBySku.get(s.sku);
 
                 return (
                   <li
                     key={s.variantId}
-                    className={`group relative flex flex-col rounded-lg border bg-white shadow-sm transition-colors ${
+                    className={`group relative flex flex-col rounded-xl border bg-white transition-all ${
                       inCartQty > 0
-                        ? "border-brand-500 ring-1 ring-brand-500"
-                        : "border-slate-200 hover:border-slate-300"
+                        ? "border-brand-500 shadow-sm ring-1 ring-brand-500/40"
+                        : "border-slate-200/90 shadow-2xs hover:border-slate-300 hover:shadow-xs"
                     }`}
                   >
                     <button
                       type="button"
                       data-testid={`product-${s.sku}`}
                       onClick={() => add(s)}
-                      className="flex flex-1 flex-col justify-between gap-3 p-3 text-left focus:outline-none"
+                      className="flex flex-1 cursor-pointer flex-col justify-between gap-3 p-3.5 text-left focus:outline-none"
                     >
-                      <div className="flex w-full items-start justify-between gap-2 pr-7">
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-slate-100 text-xs font-semibold text-slate-700">
+                      <div className="flex w-full items-start justify-between gap-2 pr-6">
+                        <div
+                          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-semibold ${
+                            inCartQty > 0 ? "bg-brand-50 text-brand-text" : "bg-slate-100 text-slate-600"
+                          }`}
+                        >
                           {productInitials(s.name)}
                         </div>
-                        {inCartQty > 0 ? (
-                          <Badge tone="good">×{inCartQty}</Badge>
-                        ) : fkIdx !== undefined ? (
-                          <kbd className="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 font-mono text-xs text-slate-500">
-                            Alt+{fkIdx + 1}
-                          </kbd>
-                        ) : null}
+                        {inCartQty > 0 ? <Badge tone="good">×{inCartQty}</Badge> : null}
                       </div>
 
                       <div className="min-w-0">
-                        <div className="line-clamp-2 text-sm font-semibold leading-snug text-slate-900">
+                        <div className="line-clamp-2 text-sm leading-snug font-semibold text-slate-900">
                           {s.name}
                         </div>
-                        <div className="mt-1 truncate font-mono text-xs text-slate-500">{s.sku}</div>
+                        <div className="mt-0.5 truncate font-mono text-xs text-slate-400">{s.sku}</div>
                       </div>
 
-                      <div className="flex w-full items-baseline justify-between gap-2 border-t border-slate-100 pt-2">
-                        <span className="text-base font-semibold text-slate-900 tabular-nums">
-                          {fmt(s.price)}
-                        </span>
+                      <div className="flex w-full items-baseline justify-between gap-2 pt-1">
+                        <span className="text-base font-semibold text-slate-900 tabular-nums">{fmt(s.price)}</span>
                         {stockQty !== null ? (
                           isOut ? (
                             <Badge tone="danger">{t("sell.outOfStock")}</Badge>
                           ) : isLow ? (
                             <Badge tone="warn">{t("sell.lowStock", { qty: stockQty })}</Badge>
                           ) : (
-                            <span className="text-xs text-slate-500 tabular-nums">
+                            <span className="text-xs text-slate-400 tabular-nums">
                               {t("sell.stockLeft", { qty: stockQty })}
                             </span>
                           )
@@ -783,10 +753,10 @@ export function SellPage() {
                       title={pinned ? t("sell.unpinFromFastKeys") : t("sell.pinToFastKeys")}
                       aria-label={pinned ? t("sell.unpinFromFastKeys") : t("sell.pinToFastKeys")}
                       onClick={() => togglePin(s.sku)}
-                      className={`absolute top-2.5 right-2.5 flex h-7 w-7 items-center justify-center rounded-md border text-xs transition-colors ${
+                      className={`absolute top-2.5 right-2.5 flex h-6.5 w-6.5 cursor-pointer items-center justify-center rounded-md text-xs transition-all ${
                         pinned
-                          ? "border-amber-300 bg-amber-50 text-amber-600 hover:bg-amber-100"
-                          : "border-transparent bg-transparent text-slate-400 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-700"
+                          ? "bg-amber-50 text-amber-500 hover:bg-amber-100"
+                          : "text-slate-300 opacity-0 group-hover:opacity-100 focus:opacity-100 hover:bg-slate-100 hover:text-slate-600"
                       }`}
                     >
                       ★
@@ -799,36 +769,34 @@ export function SellPage() {
         </div>
       </section>
 
-      {/* RIGHT TERMINAL: Fixed-Width POS Order Register & Tender Pad */}
+      {/* RIGHT TERMINAL: Clean Focused POS Order Register */}
       <aside
-        className="flex min-h-0 flex-col border-t border-slate-200 bg-white lg:border-t-0 lg:border-l"
+        className="flex min-h-0 flex-col border-t border-slate-200/90 bg-white lg:border-t-0 lg:border-l"
         data-testid="cart"
       >
-        {/* Order Ticket Header + Customer Bar */}
-        <div className="grid gap-3 border-b border-slate-200 px-4 py-3">
+        <div className="grid gap-2.5 border-b border-slate-100 px-4 py-3">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <h2 className="text-base font-semibold text-slate-900">{t("sell.cart")}</h2>
+              <h2 className="text-sm font-semibold text-slate-900">{t("sell.cart")}</h2>
               {totalOrderUnits > 0 ? (
                 <Badge tone="neutral">{t("sell.itemsInOrder", { count: totalOrderUnits })}</Badge>
               ) : null}
             </div>
             {cart.length > 0 ? (
               <Button variant="ghost" size="sm" onClick={reset}>
-                <Trash2 size={14} className="text-slate-500" aria-hidden />
+                <Trash2 size={14} className="text-slate-400" aria-hidden />
                 <span>{t("sell.clear")}</span>
               </Button>
             ) : null}
           </div>
 
-          {/* Customer Selector Row */}
           <div className="flex items-center gap-2">
             <Select
               aria-label={t("sell.customer")}
               data-testid="customer"
               value={customerId}
               onChange={(e) => setCustomerId(e.target.value)}
-              className="flex-1"
+              className="h-8.5 flex-1 text-xs"
             >
               <option value="">{method === "utang" ? t("sell.chooseCustomer") : t("sell.noCustomer")}</option>
               {(customers.data ?? []).map((c) => (
@@ -838,27 +806,35 @@ export function SellPage() {
               ))}
             </Select>
             {!showNew ? (
-              <Button variant="outline" size="sm" data-testid="new-customer" onClick={() => setShowNew(true)}>
+              <Button
+                variant="outline"
+                size="sm"
+                data-testid="new-customer"
+                onClick={() => setShowNew(true)}
+                title={t("sell.newCustomer")}
+              >
                 <UserPlus size={14} className="text-slate-500" aria-hidden />
-                <span>{t("sell.newCustomer")}</span>
+                <span className="sr-only sm:not-sr-only">{t("sell.newCustomer")}</span>
               </Button>
             ) : null}
           </div>
 
           {showNew ? (
-            <div className="grid gap-2 rounded-md border border-slate-200 bg-slate-50 p-3">
+            <div className="grid gap-2 rounded-xl border border-slate-200/80 bg-slate-50 p-3">
               <Input
                 data-testid="new-customer-name"
                 placeholder={t("sell.customerName")}
                 value={newName}
                 maxLength={80}
                 onChange={(e) => setNewName(e.target.value)}
+                className="h-8.5 text-xs"
               />
               <Input
                 placeholder={t("sell.customerPhone")}
                 value={newPhone}
                 maxLength={32}
                 onChange={(e) => setNewPhone(e.target.value)}
+                className="h-8.5 text-xs"
               />
               <div className="flex gap-2">
                 <Button
@@ -879,37 +855,35 @@ export function SellPage() {
         </div>
 
         {/* Scrollable Ticket Line Items */}
-        <div className="min-h-[160px] flex-1 overflow-y-auto px-4 py-3">
+        <div className="min-h-[140px] flex-1 overflow-y-auto px-4 py-2.5">
           {cart.length === 0 ? (
             <div className="flex h-full flex-col items-center justify-center gap-2 py-8 text-center">
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
-                <ShoppingBag size={22} aria-hidden />
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-slate-400">
+                <ShoppingBag size={20} aria-hidden />
               </div>
-              <p className="text-sm font-semibold text-slate-900">{t("sell.emptyCart")}</p>
-              <p className="max-w-[260px] text-xs text-slate-500">{t("sell.emptyCartHint")}</p>
+              <p className="text-sm font-semibold text-slate-700">{t("sell.emptyCart")}</p>
+              <p className="max-w-[240px] text-xs text-slate-400">{t("sell.emptyCartHint")}</p>
             </div>
           ) : (
             <ul className="divide-y divide-slate-100">
               {cart.map((l) => (
-                <li key={l.variantId} className="grid gap-2 py-2.5 first:pt-0 last:pb-0">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-sm font-semibold text-slate-900">{l.name}</div>
-                      <div className="text-xs text-slate-500 tabular-nums">{fmt(l.unitPrice)}</div>
-                    </div>
+                <li key={l.variantId} className="grid gap-1.5 py-2.5 first:pt-0 last:pb-0">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="truncate text-sm font-semibold text-slate-900">{l.name}</span>
                     <span className="text-sm font-semibold text-slate-900 tabular-nums">
                       {fmt(lineTotal(l.qty, l.unitPrice))}
                     </span>
                   </div>
                   <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs text-slate-400 tabular-nums">{fmt(l.unitPrice)}</span>
                     <div className="flex items-center gap-1">
                       <button
                         type="button"
                         aria-label={`Decrease ${l.name}`}
                         onClick={() => stepCartQty(l.variantId, -1)}
-                        className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                        className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
                       >
-                        <Minus size={14} aria-hidden />
+                        <Minus size={13} aria-hidden />
                       </button>
                       <Input
                         aria-label={t("sell.qty")}
@@ -917,25 +891,25 @@ export function SellPage() {
                         inputMode="decimal"
                         value={String(l.qty)}
                         onChange={(e) => setQty(l.variantId, e.target.value)}
-                        className="h-8 w-16 px-2 py-1 text-center text-sm tabular-nums"
+                        className="h-7 w-14 px-1.5 py-0.5 text-center text-xs tabular-nums"
                       />
                       <button
                         type="button"
                         aria-label={`Increase ${l.name}`}
                         onClick={() => stepCartQty(l.variantId, 1)}
-                        className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                        className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
                       >
-                        <Plus size={14} aria-hidden />
+                        <Plus size={13} aria-hidden />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={t("sell.remove")}
+                        onClick={() => setCart((c) => c.filter((x) => x.variantId !== l.variantId))}
+                        className="ml-1 flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-slate-400 hover:bg-red-50 hover:text-red-600"
+                      >
+                        <X size={14} aria-hidden />
                       </button>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      aria-label={t("sell.remove")}
-                      onClick={() => setCart((c) => c.filter((x) => x.variantId !== l.variantId))}
-                    >
-                      ×
-                    </Button>
                   </div>
                 </li>
               ))}
@@ -944,23 +918,20 @@ export function SellPage() {
         </div>
 
         {/* Pinned Register Checkout & Tender Pad */}
-        <div className="grid gap-3 border-t border-slate-200 bg-slate-50 px-4 py-3 text-sm">
-          {/* Totals & Discount */}
-          <div className="grid gap-2">
-            <div className="flex items-baseline justify-between text-slate-700">
+        <div className="grid gap-3 border-t border-slate-200/90 bg-slate-50/70 px-4 py-3.5 text-sm">
+          <div className="grid gap-1.5">
+            <div className="flex items-baseline justify-between text-xs text-slate-500">
               <span>{t("sell.subtotal")}</span>
               <span className="tabular-nums">{fmt(subtotal)}</span>
             </div>
-            <label className="flex items-center justify-between gap-2 text-slate-700">
+            <label className="flex items-center justify-between gap-2 text-xs text-slate-500">
               <span className="flex items-center gap-1.5">
                 <span>{t("sell.discount")}</span>
-                <kbd className="rounded border border-slate-200 bg-white px-1 font-mono text-xs text-slate-500">
-                  F4
-                </kbd>
+                <kbd className="rounded bg-slate-200/60 px-1 font-mono text-xs text-slate-500">F4</kbd>
               </span>
               <Input
                 ref={discountInputRef}
-                className="h-8 w-28 bg-white text-right tabular-nums"
+                className="h-7.5 w-24 bg-white text-right text-xs tabular-nums"
                 data-testid="discount"
                 inputMode="decimal"
                 placeholder="0.00"
@@ -969,7 +940,7 @@ export function SellPage() {
               />
             </label>
             <div
-              className="flex items-baseline justify-between border-t border-slate-200 pt-2 text-lg font-semibold text-slate-900 tabular-nums"
+              className="flex items-baseline justify-between border-t border-slate-200/80 pt-2 text-lg font-semibold text-slate-900 tabular-nums"
               data-testid="cart-total"
             >
               <span>{t("sell.total")}</span>
@@ -977,7 +948,6 @@ export function SellPage() {
             </div>
           </div>
 
-          {/* Tactile Payment Method Selector + Hidden Native Select for Accessibility/Automation */}
           <div className="grid gap-2">
             <select
               ref={payMethodSelectRef}
@@ -998,8 +968,8 @@ export function SellPage() {
                 [
                   ["cash", t("sell.cash"), Banknote],
                   ["ewallet", t("sell.ewallet"), Smartphone],
-                  ["card", "Card", CreditCard],
-                  ["utang", "Utang", HandCoins],
+                  ["card", t("sell.card"), CreditCard],
+                  ["utang", t("sell.utang"), HandCoins],
                 ] as const
               ).map(([val, label, Icon]) => {
                 const active = method === val;
@@ -1009,13 +979,13 @@ export function SellPage() {
                     type="button"
                     data-testid={`tender-btn-${val}`}
                     onClick={() => setMethod(val)}
-                    className={`flex flex-col items-center justify-center gap-1 rounded-md border px-2 py-2 text-xs transition-colors ${
+                    className={`flex cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border px-2 py-2 text-xs transition-all ${
                       active
-                        ? "border-brand-500 bg-brand-50 font-semibold text-brand-text"
-                        : "border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
+                        ? "border-brand-500 bg-brand-50 font-semibold text-brand-text shadow-2xs"
+                        : "border-slate-200/90 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                     }`}
                   >
-                    <Icon size={16} className={active ? "text-brand-600" : "text-slate-500"} aria-hidden />
+                    <Icon size={15} className={active ? "text-brand-600" : "text-slate-400"} aria-hidden />
                     <span className="truncate">{label}</span>
                   </button>
                 );
@@ -1024,10 +994,10 @@ export function SellPage() {
 
             {method !== "utang" ? (
               <div className="grid grid-cols-2 gap-2">
-                <label className="grid gap-1 text-xs text-slate-600">
+                <label className="grid gap-1 text-xs text-slate-500">
                   <span>{t("sell.paidNow")}</span>
                   <Input
-                    className="h-8 bg-white text-right tabular-nums"
+                    className="h-8 bg-white text-right text-xs tabular-nums"
                     data-testid="paid-now"
                     inputMode="decimal"
                     placeholder={fmt(total)}
@@ -1037,16 +1007,14 @@ export function SellPage() {
                 </label>
 
                 {method === "cash" ? (
-                  <label className="grid gap-1 text-xs text-slate-600">
+                  <label className="grid gap-1 text-xs text-slate-500">
                     <span className="flex items-center justify-between">
                       <span>{t("sell.tendered")}</span>
-                      <kbd className="rounded border border-slate-200 bg-white px-1 font-mono text-xs text-slate-500">
-                        F8
-                      </kbd>
+                      <kbd className="rounded bg-slate-200/60 px-1 font-mono text-xs text-slate-500">F8</kbd>
                     </span>
                     <Input
                       ref={tenderedInputRef}
-                      className="h-8 bg-white text-right tabular-nums"
+                      className="h-8 bg-white text-right text-xs tabular-nums"
                       data-testid="tendered"
                       inputMode="decimal"
                       placeholder={fmt(cashTarget)}
@@ -1060,13 +1028,12 @@ export function SellPage() {
               </div>
             ) : null}
 
-            {/* Quick Cash Denomination Presets on Touch / Kiosk */}
             {method === "cash" && cashTarget > 0 ? (
               <div className="flex flex-wrap gap-1.5" data-testid="quick-cash-presets">
                 <button
                   type="button"
                   onClick={() => setTenderedText(formatMajorInput(cashTarget))}
-                  className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-100 tabular-nums"
+                  className="cursor-pointer rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-100 tabular-nums"
                 >
                   {t("sell.exactCash")}
                 </button>
@@ -1077,7 +1044,7 @@ export function SellPage() {
                       key={bill}
                       type="button"
                       onClick={() => setTenderedText(String(bill))}
-                      className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-100 tabular-nums"
+                      className="cursor-pointer rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-100 tabular-nums"
                     >
                       {fmt(bill * 100)}
                     </button>
@@ -1086,8 +1053,8 @@ export function SellPage() {
             ) : null}
 
             {method === "cash" && change > 0 ? (
-              <div className="flex items-baseline justify-between rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-900">
-                <span className="text-xs font-semibold uppercase tracking-wider">{t("sell.change")}</span>
+              <div className="flex items-baseline justify-between rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-900">
+                <span className="text-xs font-semibold tracking-wider uppercase">{t("sell.change")}</span>
                 <span className="text-base font-semibold tabular-nums" data-testid="change">
                   {fmt(change)}
                 </span>
@@ -1095,8 +1062,8 @@ export function SellPage() {
             ) : null}
 
             {onUtang > 0 ? (
-              <div className="flex items-baseline justify-between rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-amber-900">
-                <span className="text-xs font-semibold uppercase tracking-wider">{t("sell.onUtang")}</span>
+              <div className="flex items-baseline justify-between rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-amber-900">
+                <span className="text-xs font-semibold tracking-wider uppercase">{t("sell.onUtang")}</span>
                 <span className="text-sm font-semibold tabular-nums" data-testid="on-utang">
                   {fmt(onUtang)}
                 </span>
@@ -1146,12 +1113,12 @@ export function SellPage() {
             data-testid="charge"
             disabled={cart.length === 0 || charge.isPending}
             onClick={handleCharge}
-            className="h-12 w-full justify-between text-base"
+            className="h-11.5 w-full justify-between text-base"
           >
             <span className="tabular-nums">
               {charge.isPending ? t("sell.charging") : t("sell.charge", { total: fmt(total) })}
             </span>
-            <kbd className="rounded bg-brand-700 px-2 py-0.5 font-mono text-xs text-brand-100">F9</kbd>
+            <kbd className="rounded bg-white/15 px-2 py-0.5 font-mono text-xs text-white">F9</kbd>
           </Button>
         </div>
       </aside>

@@ -13,6 +13,7 @@ import {
   ClipboardList,
   HandCoins,
   Home,
+  LogOut,
   type LucideIcon,
   MapPin,
   Maximize2,
@@ -29,6 +30,7 @@ import {
   Settings,
   ShieldCheck,
   ShoppingCart,
+  Store,
   Sun,
   Truck,
   Users,
@@ -36,12 +38,11 @@ import {
   WifiOff,
   X,
 } from "lucide-react";
-import { accessQuery } from "../lib/session.tsx";
-import { PERMISSION_KEYS, type PermissionKey } from "@pos/core";
+import { accessQuery, useSession } from "../lib/session.tsx";
+import type { PermissionKey } from "@pos/core";
 import { saveMyLocale, signOut } from "../lib/api.ts";
 import { tenantMode } from "../lib/mode.ts";
 import { pickLocale, storeLocale } from "../i18n/index.ts";
-import { useSession } from "../lib/session.tsx";
 import { useActiveLocation } from "../lib/location-context.tsx";
 import {
   portalForPath,
@@ -53,7 +54,7 @@ import {
 } from "../lib/portal.ts";
 import { listStoreIncomingTransfers } from "../lib/transfers-api.ts";
 import { applyTheme, nextTheme, readTheme, type ThemeChoice } from "../lib/theme.ts";
-import { Badge, Button, Card } from "../components/ui.tsx";
+import { Badge, Button, Card, PageHeader } from "../components/ui.tsx";
 import { LanguageSelect } from "../components/LanguageSelect.tsx";
 import { useOnlineStatus } from "../lib/network.ts";
 
@@ -118,6 +119,13 @@ const NAV = [
 
 const GROUPS: readonly NavGroup[] = ["daily", "warehouseOps", "stock", "business"];
 const THEME_ICON: Record<ThemeChoice, LucideIcon> = { system: Monitor, light: Sun, dark: Moon };
+
+function userInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "U";
+  if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase();
+  return `${parts[0]![0] ?? ""}${parts[1]![0] ?? ""}`.toUpperCase();
+}
 
 export function AppLayout() {
   const { t, i18n } = useTranslation(["common", "admin"]);
@@ -268,6 +276,28 @@ export function AppLayout() {
     return permOk && (!n.fullOnly || mode === "full") && (!("soloOnly" in n && n.soloOnly) || mode === "solo");
   });
   const showNav = access.tenant.setup_completed;
+  const displayName = access.full_name || access.username;
+
+  const identity = (
+    <div className="grid gap-1 border-b border-slate-100 px-4 py-3.5">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2.5 truncate">
+          <img
+            src="/logo_squircle.png"
+            alt="XZACTO"
+            width={28}
+            height={28}
+            className="h-7 w-7 shrink-0 rounded-lg border border-slate-200/80 object-cover shadow-2xs"
+          />
+          <span className="text-sm font-semibold tracking-tight text-slate-900">XZACTO</span>
+        </div>
+        <Badge tone={isWarehousePortal ? "warn" : "neutral"}>
+          {isWarehousePortal ? t("admin:portal.warehouseBadge") : t("admin:portal.posBadge")}
+        </Badge>
+      </div>
+      <div className="truncate pt-0.5 text-xs font-medium text-slate-500">{access.tenant.name}</div>
+    </div>
+  );
 
   const sidebar = (
     <nav aria-label={t("admin:nav.label")} className="grid content-start gap-5 overflow-y-auto px-3 py-4">
@@ -276,7 +306,7 @@ export function AppLayout() {
         if (items.length === 0) return null;
         return (
           <div key={g} className="grid gap-0.5">
-            <div className="px-2 pb-1 text-xs font-semibold tracking-wider text-slate-400 uppercase">
+            <div className="px-2.5 pb-1 text-xs font-semibold tracking-wider text-slate-400 uppercase">
               {t(`admin:nav.group.${g}`)}
             </div>
             {items.map((n) => {
@@ -287,14 +317,14 @@ export function AppLayout() {
                   key={n.to}
                   to={n.to}
                   activeOptions={{ exact: n.to === "/app" }}
-                  className="flex items-center justify-between gap-2 rounded-md px-2.5 py-1.5 text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                  className="flex items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-sm text-slate-600 transition-colors hover:bg-slate-100/80 hover:text-slate-900"
                   activeProps={{
                     className: "bg-brand-50 font-semibold text-brand-text hover:bg-brand-50 hover:text-brand-text",
                     "aria-current": "page",
                   }}
                 >
                   <span className="flex items-center gap-2.5 truncate">
-                    <Icon size={17} aria-hidden />
+                    <Icon size={17} className="shrink-0 opacity-85" aria-hidden />
                     <span className="truncate">{t(`admin:nav.${n.key}`)}</span>
                   </span>
                   {showReceiveBadge ? <Badge tone="warn">{incomingCount}</Badge> : null}
@@ -307,100 +337,104 @@ export function AppLayout() {
     </nav>
   );
 
-  const identity = (
-    <div className="grid gap-1.5 border-b border-slate-200 px-4 py-3">
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 truncate">
-          <img
-            src="/logo_squircle.png"
-            alt="XZACTO"
-            width={24}
-            height={24}
-            className="h-6 w-6 shrink-0 rounded-md border border-slate-200 object-cover"
-          />
-          <span className="text-sm font-semibold tracking-tight text-slate-900">XZACTO</span>
+  const sidebarFooter = (
+    <div className="grid gap-2.5 border-t border-slate-100 bg-slate-50/50 p-3">
+      <div className="flex items-center gap-2.5 px-1">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-xs font-semibold text-brand-text">
+          {userInitials(displayName)}
         </div>
-        <Badge tone={isWarehousePortal ? "warn" : "neutral"}>
-          {isWarehousePortal ? t("admin:portal.warehouseBadge") : t("admin:portal.posBadge")}
-        </Badge>
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-xs font-semibold text-slate-900">{displayName}</div>
+          <div className="truncate text-xs text-slate-500">{t(`admin:roles.${access.role}`)}</div>
+        </div>
       </div>
-      <div className="truncate text-sm font-semibold text-slate-800">{access.tenant.name}</div>
-      <div className="truncate text-xs text-slate-500">
-        {access.full_name || access.username} · {t(`admin:roles.${access.role}`)}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex-1 [&_select]:h-8 [&_select]:w-full [&_select]:text-xs">
+          <LanguageSelect onChoose={(l) => void chooseLocale(l)} />
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => void leave()}
+          title={t("common:actions.signOut")}
+          className="shrink-0"
+        >
+          <LogOut size={14} className="text-slate-500" aria-hidden />
+          <span>{t("common:actions.signOut")}</span>
+        </Button>
       </div>
     </div>
   );
 
   return (
-    <div className={hideDockedSidebar ? "min-h-screen" : "min-h-screen md:grid md:grid-cols-[15rem_1fr]"}>
+    <div className={hideDockedSidebar ? "min-h-screen" : "min-h-screen md:grid md:grid-cols-[15.5rem_1fr]"}>
       {showNav ? (
         <>
           {!hideDockedSidebar ? (
-            <aside className="sticky top-0 hidden h-screen grid-rows-[auto_1fr] border-r border-slate-200 bg-white md:grid">
+            <aside className="sticky top-0 hidden h-screen grid-rows-[auto_1fr_auto] border-r border-slate-200/90 bg-white md:grid">
               {identity}
               {sidebar}
+              {sidebarFooter}
             </aside>
           ) : null}
           {menuOpen ? (
             <div className={hideDockedSidebar ? "fixed inset-0 z-50" : "fixed inset-0 z-50 md:hidden"}>
               <button
                 aria-label={t("common:actions.close")}
-                className="absolute inset-0 bg-black/50"
+                className="absolute inset-0 bg-slate-950/45 backdrop-blur-[1px]"
                 onClick={() => setMenuOpen(false)}
               />
-              <aside className="absolute inset-y-0 left-0 grid w-64 grid-rows-[auto_1fr] bg-white shadow-xl">
-                <div className="flex items-center justify-between">
-                  {identity}
+              <aside className="absolute inset-y-0 left-0 grid w-68 grid-rows-[auto_1fr_auto] bg-white shadow-xl">
+                <div className="flex items-center justify-between pr-2">
+                  <div className="min-w-0 flex-1">{identity}</div>
                   <button
                     aria-label={t("common:actions.close")}
-                    className="mr-2 rounded-md p-1 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                    className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
                     onClick={() => setMenuOpen(false)}
                   >
                     <X size={18} />
                   </button>
                 </div>
                 {sidebar}
+                {sidebarFooter}
               </aside>
             </div>
           ) : null}
         </>
       ) : null}
+
       <div className={isSellRoute ? "flex min-h-screen min-w-0 flex-col lg:h-screen lg:overflow-hidden" : "min-w-0"}>
-        <header className="sticky top-0 z-30 flex flex-wrap items-center gap-2 border-b border-slate-200 bg-white/95 px-4 py-2 backdrop-blur">
+        <header className="sticky top-0 z-30 flex h-13 items-center gap-2 border-b border-slate-200/80 bg-white/95 px-4 backdrop-blur">
           {showNav ? (
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
-              className={hideDockedSidebar ? "" : "md:hidden"}
+              className={hideDockedSidebar ? "px-2" : "px-2 md:hidden"}
               aria-label={t("admin:nav.menu")}
               data-testid="nav-drawer-btn"
               onClick={() => setMenuOpen(true)}
             >
-              <Menu size={16} className="text-slate-600" aria-hidden />
+              <Menu size={18} className="text-slate-600" aria-hidden />
             </Button>
           ) : null}
+
           {hideDockedSidebar ? (
             <div className="mr-auto flex min-w-0 items-center gap-2">
               <img
                 src="/logo_squircle.png"
                 alt="XZACTO POS"
-                width={28}
-                height={28}
-                className="h-7 w-7 shrink-0 rounded-md border border-slate-200 object-cover"
+                width={26}
+                height={26}
+                className="h-6.5 w-6.5 shrink-0 rounded-lg border border-slate-200 object-cover"
               />
-              <div className="flex items-center gap-2 truncate">
-                <span className="text-sm font-semibold tracking-tight text-slate-900">XZACTO</span>
-                <Badge tone="neutral">{t("admin:portal.posBadge")}</Badge>
-                <span className="hidden text-xs text-slate-400 sm:inline">·</span>
-                <span className="hidden truncate text-sm font-semibold text-slate-700 sm:inline">
-                  {access.tenant.name}
-                </span>
-              </div>
+              <span className="hidden text-sm font-semibold tracking-tight text-slate-900 sm:inline">
+                {access.tenant.name}
+              </span>
               {showNav ? (
-                <nav aria-label="POS quick links" className="ml-3 hidden items-center gap-1 lg:flex">
+                <nav aria-label="POS quick links" className="ml-2 hidden items-center gap-0.5 lg:flex">
                   <Link
                     to="/app/sell"
-                    className="rounded-md px-3 py-1 text-xs text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                    className="rounded-lg px-2.5 py-1.5 text-xs text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
                     activeProps={{ className: "bg-brand-50 font-semibold text-brand-text" }}
                   >
                     {t("admin:nav.sell")}
@@ -408,7 +442,7 @@ export function AppLayout() {
                   <Link
                     to="/app/inventory"
                     data-testid="kiosk-inventory-link"
-                    className="rounded-md px-3 py-1 text-xs text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                    className="rounded-lg px-2.5 py-1.5 text-xs text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
                     activeProps={{ className: "bg-brand-50 font-semibold text-brand-text" }}
                   >
                     {t("admin:nav.inventory")}
@@ -417,7 +451,7 @@ export function AppLayout() {
                     <Link
                       to="/app/receive-stock"
                       data-testid="kiosk-receive-stock-link"
-                      className="inline-flex items-center gap-1.5 rounded-md px-3 py-1 text-xs text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                      className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
                       activeProps={{ className: "bg-brand-50 font-semibold text-brand-text" }}
                     >
                       <span>{t("admin:nav.receiveStock")}</span>
@@ -426,14 +460,14 @@ export function AppLayout() {
                   ) : null}
                   <Link
                     to="/app/sales"
-                    className="rounded-md px-3 py-1 text-xs text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                    className="rounded-lg px-2.5 py-1.5 text-xs text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
                     activeProps={{ className: "bg-brand-50 font-semibold text-brand-text" }}
                   >
                     {t("admin:nav.sales")}
                   </Link>
                   <Link
                     to="/app/utang"
-                    className="rounded-md px-3 py-1 text-xs text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                    className="rounded-lg px-2.5 py-1.5 text-xs text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
                     activeProps={{ className: "bg-brand-50 font-semibold text-brand-text" }}
                   >
                     {t("admin:nav.utang")}
@@ -441,7 +475,7 @@ export function AppLayout() {
                   {can("shift.manage") ? (
                     <Link
                       to="/app/day-close"
-                      className="rounded-md px-3 py-1 text-xs text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                      className="rounded-lg px-2.5 py-1.5 text-xs text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
                       activeProps={{ className: "bg-brand-50 font-semibold text-brand-text" }}
                     >
                       {t("admin:nav.dayClose")}
@@ -451,114 +485,62 @@ export function AppLayout() {
               ) : null}
             </div>
           ) : (
-            <>
-              <div className="mr-auto flex items-center gap-2 font-semibold md:hidden">
-                <span>{access.tenant.name}</span>
-                <Badge tone={isWarehousePortal ? "warn" : "neutral"}>
-                  {isWarehousePortal ? t("admin:portal.warehouseBadge") : t("admin:portal.posBadge")}
-                </Badge>
-              </div>
-              <div className="mr-auto hidden md:block" />
-            </>
+            <div className="mr-auto flex min-w-0 items-center gap-2">
+              <span className="truncate text-sm font-semibold text-slate-900 md:hidden">{access.tenant.name}</span>
+              {/* Active Location Context Pill */}
+              {isWarehousePortal && warehouses.length >= 1 ? (
+                <div className="flex items-center gap-2 rounded-lg border border-slate-200/80 bg-slate-50 px-2.5 py-1 text-xs">
+                  <Warehouse size={14} className="shrink-0 text-amber-600" aria-hidden />
+                  {warehouses.length > 1 ? (
+                    <select
+                      value={activeWarehouseId ?? ""}
+                      onChange={(e) => setActiveWarehouseId(e.target.value)}
+                      className="cursor-pointer bg-transparent font-semibold text-slate-800 focus:outline-none"
+                      aria-label="Active warehouse"
+                      data-testid="active-warehouse-select"
+                    >
+                      {warehouses.map((w) => (
+                        <option key={w.id} value={w.id}>
+                          {w.code} · {w.name}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <span className="font-semibold text-slate-800">
+                      {warehouses[0]!.code} · {warehouses[0]!.name}
+                    </span>
+                  )}
+                </div>
+              ) : !isWarehousePortal && stores.length >= 1 ? (
+                <div className="hidden items-center gap-2 rounded-lg border border-slate-200/80 bg-slate-50 px-2.5 py-1 text-xs sm:flex">
+                  <Store size={14} className="shrink-0 text-brand-600" aria-hidden />
+                  {stores.length > 1 ? (
+                    <select
+                      value={activeStoreId ?? ""}
+                      onChange={(e) => setActiveStoreId(e.target.value)}
+                      className="cursor-pointer bg-transparent font-semibold text-slate-800 focus:outline-none"
+                      aria-label="Active store"
+                    >
+                      {stores.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.code} · {s.name}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <span className="font-semibold text-slate-800">
+                      {stores[0]!.code} · {stores[0]!.name}
+                    </span>
+                  )}
+                </div>
+              ) : null}
+            </div>
           )}
 
-          {/* Portal Switcher for Owners / Multi-Portal Roles */}
-          {showNav && canSwitchPortal ? (
-            isWarehousePortal ? (
-              <Button
-                variant="outline"
-                size="sm"
-                data-testid="switch-pos-portal"
-                onClick={() => switchPortal("pos")}
-              >
-                <ShoppingCart size={15} className="text-slate-500" aria-hidden />
-                <span>{t("admin:portal.switchToPos")}</span>
-              </Button>
-            ) : (
-              <Button
-                variant="outline"
-                size="sm"
-                data-testid="switch-warehouse-portal"
-                onClick={() => switchPortal("warehouse")}
-              >
-                <Warehouse size={15} className="text-slate-500" aria-hidden />
-                <span>{t("admin:portal.switchToWarehouse")}</span>
-              </Button>
-            )
-          ) : null}
-
-          {isSellRoute && showNav ? (
-            <>
-              <Button
-                variant="outline"
-                size="sm"
-                data-testid="fullscreen-kiosk-btn"
-                onClick={() => void toggleFullscreenKiosk()}
-                title={isFullscreen ? t("admin:sell.exitFullscreen") : t("admin:sell.enterFullscreen")}
-              >
-                {isFullscreen ? (
-                  <>
-                    <Minimize2 size={16} className="text-slate-500" aria-hidden />
-                    <span>{t("admin:sell.exitFullscreen")}</span>
-                  </>
-                ) : (
-                  <>
-                    <Maximize2 size={16} className="text-slate-500" aria-hidden />
-                    <span>{t("admin:sell.enterFullscreen")}</span>
-                  </>
-                )}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                data-testid="kiosk-mode-toggle"
-                onClick={toggleKioskMode}
-                className="hidden md:inline-flex"
-                title={hideDockedSidebar ? t("admin:sell.dockSidebar") : t("admin:sell.kioskMode")}
-              >
-                {hideDockedSidebar ? (
-                  <>
-                    <PanelLeft size={16} className="text-slate-500" aria-hidden />
-                    <span>{t("admin:sell.dockSidebar")}</span>
-                  </>
-                ) : (
-                  <>
-                    <PanelLeftClose size={16} className="text-slate-500" aria-hidden />
-                    <span>{t("admin:sell.kioskMode")}</span>
-                  </>
-                )}
-              </Button>
-            </>
-          ) : null}
-
-          {/* Location Selector scoped to Active Portal */}
-          {isWarehousePortal && warehouses.length >= 1 ? (
-            <div className="flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-1 text-xs">
-              <Warehouse size={14} className="text-slate-500" aria-hidden />
-              <span className="font-semibold text-slate-500">{t("admin:portal.activeWarehouse")}:</span>
-              {warehouses.length > 1 ? (
-                <select
-                  value={activeWarehouseId ?? ""}
-                  onChange={(e) => setActiveWarehouseId(e.target.value)}
-                  className="cursor-pointer bg-transparent font-semibold text-slate-800 focus:outline-none"
-                  aria-label="Active warehouse"
-                  data-testid="active-warehouse-select"
-                >
-                  {warehouses.map((w) => (
-                    <option key={w.id} value={w.id}>
-                      {w.code} · {w.name}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <span className="font-semibold text-slate-800">
-                  {warehouses[0]!.code} · {warehouses[0]!.name}
-                </span>
-              )}
-            </div>
-          ) : !isWarehousePortal && stores.length > 1 ? (
-            <div className="flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-1 text-xs">
-              <span className="font-semibold text-slate-500">{t("admin:users.store")}:</span>
+          {/* Store Selector when in Kiosk Mode with multiple stores */}
+          {hideDockedSidebar && stores.length > 1 ? (
+            <div className="hidden items-center gap-1.5 rounded-lg border border-slate-200/80 bg-slate-50 px-2.5 py-1 text-xs sm:flex">
+              <Store size={13} className="text-brand-600" aria-hidden />
               <select
                 value={activeStoreId ?? ""}
                 onChange={(e) => setActiveStoreId(e.target.value)}
@@ -577,17 +559,68 @@ export function AppLayout() {
           {!isOnline ? (
             <div data-testid="offline-badge">
               <Badge tone="warn">
-                <span className="flex items-center gap-1">
-                  <WifiOff size={14} aria-hidden />
-                  <span>{t("common:offline.badge")}</span>
-                </span>
+                <WifiOff size={13} aria-hidden />
+                <span>{t("common:offline.badge")}</span>
               </Badge>
             </div>
           ) : null}
-          <LanguageSelect onChoose={(l) => void chooseLocale(l)} />
+
+          {/* Portal Switcher for Owners / Multi-Portal Roles */}
+          {showNav && canSwitchPortal ? (
+            isWarehousePortal ? (
+              <Button
+                variant="outline"
+                size="sm"
+                data-testid="switch-pos-portal"
+                onClick={() => switchPortal("pos")}
+              >
+                <ShoppingCart size={14} className="text-brand-600" aria-hidden />
+                <span className="hidden sm:inline">{t("admin:portal.switchToPos")}</span>
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                data-testid="switch-warehouse-portal"
+                onClick={() => switchPortal("warehouse")}
+              >
+                <Warehouse size={14} className="text-amber-600" aria-hidden />
+                <span className="hidden sm:inline">{t("admin:portal.switchToWarehouse")}</span>
+              </Button>
+            )
+          ) : null}
+
+          {isSellRoute && showNav ? (
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="px-2"
+                data-testid="fullscreen-kiosk-btn"
+                onClick={() => void toggleFullscreenKiosk()}
+                aria-label={isFullscreen ? t("admin:sell.exitFullscreen") : t("admin:sell.enterFullscreen")}
+                title={isFullscreen ? t("admin:sell.exitFullscreen") : t("admin:sell.enterFullscreen")}
+              >
+                {isFullscreen ? <Minimize2 size={16} aria-hidden /> : <Maximize2 size={16} aria-hidden />}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="hidden px-2 md:inline-flex"
+                data-testid="kiosk-mode-toggle"
+                onClick={toggleKioskMode}
+                aria-label={hideDockedSidebar ? t("admin:sell.dockSidebar") : t("admin:sell.kioskMode")}
+                title={hideDockedSidebar ? t("admin:sell.dockSidebar") : t("admin:sell.kioskMode")}
+              >
+                {hideDockedSidebar ? <PanelLeft size={16} aria-hidden /> : <PanelLeftClose size={16} aria-hidden />}
+              </Button>
+            </>
+          ) : null}
+
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
+            className="px-2"
             data-testid="theme-toggle"
             aria-label={`${t("common:theme.label")}: ${t(`common:theme.${theme}`)}`}
             title={`${t("common:theme.label")}: ${t(`common:theme.${theme}`)}`}
@@ -595,15 +628,19 @@ export function AppLayout() {
           >
             <ThemeIcon size={16} aria-hidden />
           </Button>
-          <Button variant="outline" size="sm" onClick={() => void leave()}>
-            {t("common:actions.signOut")}
-          </Button>
+
+          {!showNav ? (
+            <Button variant="outline" size="sm" onClick={() => void leave()}>
+              {t("common:actions.signOut")}
+            </Button>
+          ) : null}
         </header>
+
         <main
           className={
             isSellRoute
               ? "grid min-h-0 flex-1 lg:overflow-hidden"
-              : "mx-auto grid max-w-6xl gap-4 px-4 py-6"
+              : "mx-auto grid w-full max-w-6xl gap-6 px-4 py-6 sm:px-6"
           }
         >
           {!isOnline ? (
@@ -611,19 +648,17 @@ export function AppLayout() {
               role="status"
               aria-live="polite"
               data-testid="offline-banner"
-              className="m-4 flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 shadow-xs dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200"
+              className="m-4 flex items-start gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 shadow-2xs"
             >
-              <WifiOff className="mt-0.5 size-5 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden />
+              <WifiOff className="mt-0.5 size-5 shrink-0 text-amber-600" aria-hidden />
               <div>
                 <p className="font-semibold">{t("common:offline.bannerTitle")}</p>
-                <p className="mt-1 text-xs text-amber-800 dark:text-amber-300/90">
-                  {t("common:offline.bannerDescription")}
-                </p>
+                <p className="mt-1 text-xs text-amber-800">{t("common:offline.bannerDescription")}</p>
               </div>
             </div>
           ) : null}
           {access.tenant.status !== "active" ? (
-            <p role="alert" className="m-4 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900">
+            <p role="alert" className="m-4 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900">
               {t("admin:suspended")}
             </p>
           ) : null}
@@ -634,11 +669,11 @@ export function AppLayout() {
   );
 }
 
-/** Home: Portal launcher + what this user can do, store/warehouse by location. */
+/** Home: Clean workspace launcher and assigned locations overview without debug permission clutter. */
 export function DashboardPage() {
   const { t } = useTranslation("admin");
   const navigate = useNavigate();
-  const { access, can, check } = useSession();
+  const { access, can } = useSession();
   const mode = tenantMode(access);
   const allowedPortals = resolveAllowedPortals(access, mode);
   const modules = (["inventory", "pos", "warehouse"] as const).filter((m) => access.modules[m]);
@@ -652,34 +687,36 @@ export function DashboardPage() {
   }
 
   return (
-    <>
-      <Card className="flex flex-wrap items-center gap-2">
-        <span className="text-sm font-semibold">{t("dashboard.modules")}</span>
-        {modules.map((m) => (
-          <Badge key={m} tone="good">
-            {t(`modules.${m}`)}
-          </Badge>
-        ))}
-        <span className="ml-auto text-sm text-slate-500">
-          {access.tenant.base_currency} · {access.tenant.timezone}
-        </span>
-      </Card>
+    <div className="grid gap-6">
+      <PageHeader
+        title={access.tenant.name}
+        subtitle={`${access.tenant.base_currency} · ${access.tenant.timezone}`}
+        actions={
+          <div className="flex flex-wrap items-center gap-1.5">
+            {modules.map((m) => (
+              <Badge key={m} tone="good">
+                {t(`modules.${m}`)}
+              </Badge>
+            ))}
+          </div>
+        }
+      />
 
       {mode === "full" && allowedPortals.length > 0 ? (
         <div className="grid gap-4 sm:grid-cols-2">
           {allowedPortals.includes("pos") && can("sale.create") ? (
-            <Card className="grid content-between gap-4" data-testid="portal-card-pos">
-              <div className="grid gap-1.5">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <ShoppingCart size={18} className="text-brand-600" aria-hidden />
-                    <h2 className="text-base font-semibold text-slate-900">
-                      {t("portal.posPortalTitle")}
-                    </h2>
-                  </div>
-                  <Badge tone="neutral">{t("portal.posBadge")}</Badge>
+            <Card className="grid content-between gap-5" data-testid="portal-card-pos">
+              <div className="flex items-start gap-3.5">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
+                  <ShoppingCart size={20} aria-hidden />
                 </div>
-                <p className="text-sm text-slate-600">{t("portal.posPortalDesc")}</p>
+                <div className="grid gap-1">
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-base font-semibold text-slate-900">{t("portal.posPortalTitle")}</h2>
+                    <Badge tone="neutral">{t("portal.posBadge")}</Badge>
+                  </div>
+                  <p className="text-sm text-slate-500">{t("portal.posPortalDesc")}</p>
+                </div>
               </div>
               <div className="flex flex-wrap gap-2">
                 <Button
@@ -715,22 +752,22 @@ export function DashboardPage() {
           ) : null}
 
           {allowedPortals.includes("warehouse") ? (
-            <Card className="grid content-between gap-4" data-testid="portal-card-warehouse">
-              <div className="grid gap-1.5">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <Warehouse size={18} className="text-amber-700" aria-hidden />
-                    <h2 className="text-base font-semibold text-slate-900">
-                      {t("portal.warehousePortalTitle")}
-                    </h2>
-                  </div>
-                  <Badge tone="warn">{t("portal.warehouseBadge")}</Badge>
+            <Card className="grid content-between gap-5" data-testid="portal-card-warehouse">
+              <div className="flex items-start gap-3.5">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+                  <Warehouse size={20} aria-hidden />
                 </div>
-                <p className="text-sm text-slate-600">{t("portal.warehousePortalDesc")}</p>
+                <div className="grid gap-1">
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-base font-semibold text-slate-900">{t("portal.warehousePortalTitle")}</h2>
+                    <Badge tone="warn">{t("portal.warehouseBadge")}</Badge>
+                  </div>
+                  <p className="text-sm text-slate-500">{t("portal.warehousePortalDesc")}</p>
+                </div>
               </div>
               <div className="flex flex-wrap gap-2">
                 <Button
-                  variant="outline"
+                  variant={allowedPortals.includes("pos") && can("sale.create") ? "outline" : "primary"}
                   onClick={() => {
                     saveStoredPortal("warehouse");
                     void navigate({ to: "/app/warehouses" });
@@ -753,46 +790,41 @@ export function DashboardPage() {
         </div>
       ) : null}
 
-      <h2 className="text-lg font-semibold">{t("dashboard.yourLocations")}</h2>
-      {access.locations.length === 0 ? (
-        <Card>
-          <p className="text-sm text-slate-600">{t("dashboard.noLocations")}</p>
-        </Card>
-      ) : (
-        <div className="grid gap-3 sm:grid-cols-2">
-          {access.locations.map((loc) => {
-            const allowed = PERMISSION_KEYS.map((key) => ({ key, d: check(key, loc.id) })).filter(
-              (x) => x.d.allowed,
-            );
-            return (
-              <Card key={loc.id} data-testid={`loc-${loc.code}`}>
-                <div className="mb-2 flex flex-wrap items-center gap-2">
-                  <h3 className="font-semibold">
-                    {loc.code} · {loc.name}
-                  </h3>
-                  <Badge>{t(`locations.type.${loc.type}`)}</Badge>
-                  {loc.position ? <Badge tone="warn">{t(`positions.${loc.position}`)}</Badge> : null}
-                </div>
-                {allowed.length === 0 ? (
-                  <p className="text-sm text-slate-500">{t("dashboard.noActions")}</p>
-                ) : (
-                  <ul className="flex flex-wrap gap-1.5">
-                    {allowed.map(({ key, d }) => (
-                      <li key={key}>
-                        <Badge>
-                          {t(`perm.${key}`)}
-                          {d.allowed && d.condition ? ` (${t(`condition.${d.condition}`)})` : ""}
-                        </Badge>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </Card>
-            );
-          })}
-        </div>
-      )}
-    </>
+      <section className="grid gap-3">
+        <h2 className="text-sm font-semibold tracking-wider text-slate-500 uppercase">{t("dashboard.yourLocations")}</h2>
+        {access.locations.length === 0 ? (
+          <Card>
+            <p className="text-sm text-slate-500">{t("dashboard.noLocations")}</p>
+          </Card>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {access.locations.map((loc) => {
+              const isWh = loc.type === "warehouse";
+              return (
+                <Card key={loc.id} data-testid={`loc-${loc.code}`} className="flex items-start gap-3 p-4 sm:p-4">
+                  <div
+                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
+                      isWh ? "bg-amber-50 text-amber-600" : "bg-brand-50 text-brand-600"
+                    }`}
+                  >
+                    {isWh ? <Warehouse size={17} aria-hidden /> : <Store size={17} aria-hidden />}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-semibold text-slate-900">{loc.name}</div>
+                    <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
+                      <span className="font-mono">{loc.code}</span>
+                      <span>·</span>
+                      <span>{t(`locations.type.${loc.type}`)}</span>
+                      {loc.position ? <Badge tone="neutral">{t(`positions.${loc.position}`)}</Badge> : null}
+                    </div>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+      </section>
+    </div>
   );
 }
 

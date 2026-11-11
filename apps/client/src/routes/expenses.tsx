@@ -2,7 +2,21 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatMoney, money } from "@pos/core";
-import { Alert, Badge, Button, Card, EmptyState, ErrorState, Field, Input, PageHeader, Select, useToast } from "../components/ui.tsx";
+import { Plus, X } from "lucide-react";
+import {
+  Alert,
+  Badge,
+  Button,
+  Card,
+  EmptyState,
+  ErrorState,
+  Field,
+  Input,
+  PageHeader,
+  Select,
+  TableSkeleton,
+  useToast,
+} from "../components/ui.tsx";
 import { useSession } from "../lib/session.tsx";
 import { useActiveLocation } from "../lib/location-context.tsx";
 import { useErrorMessage } from "../lib/i18n-helpers.ts";
@@ -28,7 +42,10 @@ export function ExpensesPage() {
   const currency = access.tenant.base_currency;
   const fmt = (n: number) => formatMoney(money(n, currency), i18n.language);
   const { activeStore } = useActiveLocation();
-  const store = (activeStore && can("shift.manage", activeStore.id)) ? activeStore : access.locations.find((l) => l.type === "store" && can("shift.manage", l.id));
+  const store =
+    activeStore && can("shift.manage", activeStore.id)
+      ? activeStore
+      : access.locations.find((l) => l.type === "store" && can("shift.manage", l.id));
 
   const [showAdd, setShowAdd] = useState(false);
   const [amountText, setAmountText] = useState("");
@@ -106,27 +123,32 @@ export function ExpensesPage() {
   });
 
   if (!store) {
-    return (
-      <EmptyState title={t("sell.noStore")} />
-    );
+    return <EmptyState title={t("sell.noStore")} />;
   }
 
   const items = expensesQuery.data ?? [];
 
   return (
-    <div className="grid max-w-3xl gap-4">
+    <div className="grid max-w-3xl gap-5">
       <PageHeader
         title={t("expenses.title")}
+        subtitle={`${store.code} · ${store.name}`}
         actions={
-          <Button data-testid="add-expense-btn" onClick={() => setShowAdd(!showAdd)}>
-            {showAdd ? t("sell.cancel") : t("expenses.add")}
+          <Button
+            variant={showAdd ? "outline" : "primary"}
+            size="sm"
+            data-testid="add-expense-btn"
+            onClick={() => setShowAdd(!showAdd)}
+          >
+            {showAdd ? <X size={15} aria-hidden /> : <Plus size={15} aria-hidden />}
+            <span>{showAdd ? t("sell.cancel") : t("expenses.add")}</span>
           </Button>
         }
       />
 
       {showAdd ? (
-        <Card className="grid gap-3 border-slate-900" data-testid="add-expense-card">
-          <h3 className="font-medium">{t("expenses.recordNew")}</h3>
+        <Card className="grid gap-4 border-brand-200/80" data-testid="add-expense-card">
+          <h3 className="text-sm font-semibold text-slate-900">{t("expenses.recordNew")}</h3>
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label={t("expenses.amount")}>
               <Input
@@ -186,7 +208,10 @@ export function ExpensesPage() {
             />
           </Field>
           {addError ? <Alert>{addError}</Alert> : null}
-          <div className="flex gap-2">
+          <div className="flex justify-end gap-2 border-t border-slate-100 pt-3">
+            <Button variant="ghost" onClick={() => setShowAdd(false)}>
+              {t("sell.cancel")}
+            </Button>
             <Button
               data-testid="save-expense-btn"
               disabled={addMut.isPending || amountText.trim() === ""}
@@ -194,92 +219,111 @@ export function ExpensesPage() {
             >
               {t("products.save")}
             </Button>
-            <Button variant="ghost" onClick={() => setShowAdd(false)}>
-              {t("sell.cancel")}
-            </Button>
           </div>
         </Card>
       ) : null}
 
-      {expensesQuery.isPending ? <Card>{t("expenses.loading")}</Card> : null}
       {expensesQuery.isError ? (
-        <ErrorState message={t("expenses.error")} onRetry={() => void expensesQuery.refetch()} retryLabel={t("common:actions.retry")} />
+        <ErrorState
+          message={t("expenses.error")}
+          onRetry={() => void expensesQuery.refetch()}
+          retryLabel={t("common:actions.retry")}
+        />
       ) : null}
-      {expensesQuery.data && items.length === 0 ? <EmptyState title={t("expenses.empty")} /> : null}
 
-      <ul className="grid gap-2">
-        {items.map((exp: ExpenseRow) => {
-          const isVoided = Boolean(exp.voided_at);
-          return (
-            <li key={exp.id}>
-              <Card className="grid gap-2 text-sm" data-testid={`expense-row-${exp.id}`}>
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-base">{fmt(exp.amount)}</span>
-                    <Badge>{t(`expenses.categories.${exp.category}`)}</Badge>
-                    <span className="text-xs text-slate-500">
-                      {exp.paid_from === "ewallet" && exp.wallet
-                        ? `${t("sell.ewallet")} (${t(`sell.wallets.${exp.wallet}`)})`
-                        : t("sell.cash")}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {isVoided ? (
-                      <Badge tone="warn">{t("expenses.voided")}</Badge>
-                    ) : (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        data-testid={`void-expense-btn-${exp.id}`}
-                        onClick={() => {
-                          setVoidingId(exp.id);
-                          setVoidReason("");
-                          setVoidError(null);
-                        }}
+      {expensesQuery.isPending ? (
+        <Card className="p-0">
+          <TableSkeleton rows={4} cols={3} />
+        </Card>
+      ) : items.length === 0 ? (
+        <EmptyState title={t("expenses.empty")} />
+      ) : (
+        <Card className="overflow-hidden p-0 sm:p-0">
+          <ul className="divide-y divide-slate-100">
+            {items.map((exp: ExpenseRow) => {
+              const isVoided = Boolean(exp.voided_at);
+              return (
+                <li
+                  key={exp.id}
+                  data-testid={`expense-row-${exp.id}`}
+                  className={`grid gap-2 px-5 py-3.5 text-sm transition-colors hover:bg-slate-50/70 ${
+                    isVoided ? "opacity-65" : ""
+                  }`}
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex flex-wrap items-center gap-2.5">
+                      <span
+                        className={`text-base font-semibold tabular-nums ${
+                          isVoided ? "text-slate-400 line-through" : "text-slate-900"
+                        }`}
                       >
-                        {t("expenses.void")}
-                      </Button>
-                    )}
-                    <span className="text-xs text-slate-400">
-                      {exp.spent_at.slice(0, 10)} {exp.spent_at.slice(11, 16)}
-                    </span>
-                  </div>
-                </div>
-
-                {exp.note ? <p className="text-xs text-slate-600 italic">"{exp.note}"</p> : null}
-
-                {voidingId === exp.id ? (
-                  <div className="grid gap-2 rounded border border-red-200 bg-red-50 p-2 mt-2">
-                    <p className="text-xs text-red-900">{t("expenses.voidPrompt")}</p>
-                    <Input
-                      data-testid="void-expense-reason"
-                      placeholder={t("sales.reason")}
-                      maxLength={200}
-                      value={voidReason}
-                      onChange={(e) => setVoidReason(e.target.value)}
-                    />
-                    {voidError ? <Alert>{voidError}</Alert> : null}
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="danger"
-                        data-testid="confirm-void-expense"
-                        disabled={voidMut.isPending}
-                        onClick={() => voidMut.mutate(exp.id)}
-                      >
-                        {t("sales.confirmVoid")}
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={() => setVoidingId(null)}>
-                        {t("sell.cancel")}
-                      </Button>
+                        {fmt(exp.amount)}
+                      </span>
+                      <Badge>{t(`expenses.categories.${exp.category}`)}</Badge>
+                      <span className="text-xs text-slate-500">
+                        {exp.paid_from === "ewallet" && exp.wallet
+                          ? `${t("sell.ewallet")} (${t(`sell.wallets.${exp.wallet}`)})`
+                          : t("sell.cash")}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="font-mono text-xs text-slate-400">
+                        {exp.spent_at.slice(0, 10)} {exp.spent_at.slice(11, 16)}
+                      </span>
+                      {isVoided ? (
+                        <Badge tone="warn">{t("expenses.voided")}</Badge>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          data-testid={`void-expense-btn-${exp.id}`}
+                          onClick={() => {
+                            setVoidingId(exp.id);
+                            setVoidReason("");
+                            setVoidError(null);
+                          }}
+                        >
+                          {t("expenses.void")}
+                        </Button>
+                      )}
                     </div>
                   </div>
-                ) : null}
-              </Card>
-            </li>
-          );
-        })}
-      </ul>
+
+                  {exp.note ? <p className="text-xs text-slate-500">{exp.note}</p> : null}
+
+                  {voidingId === exp.id ? (
+                    <div className="mt-1 grid gap-2.5 rounded-xl border border-red-200 bg-red-50/70 p-3">
+                      <p className="text-xs font-medium text-red-900">{t("expenses.voidPrompt")}</p>
+                      <Input
+                        data-testid="void-expense-reason"
+                        placeholder={t("sales.reason")}
+                        maxLength={200}
+                        value={voidReason}
+                        onChange={(e) => setVoidReason(e.target.value)}
+                      />
+                      {voidError ? <Alert>{voidError}</Alert> : null}
+                      <div className="flex justify-end gap-2">
+                        <Button size="sm" variant="ghost" onClick={() => setVoidingId(null)}>
+                          {t("sell.cancel")}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="danger"
+                          data-testid="confirm-void-expense"
+                          disabled={voidMut.isPending}
+                          onClick={() => voidMut.mutate(exp.id)}
+                        >
+                          {t("sales.confirmVoid")}
+                        </Button>
+                      </div>
+                    </div>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
+        </Card>
+      )}
     </div>
   );
 }

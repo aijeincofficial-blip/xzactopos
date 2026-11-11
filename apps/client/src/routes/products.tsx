@@ -3,7 +3,8 @@ import { useTranslation } from "react-i18next";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatMoney, money, toMajorNumber } from "@pos/core";
-import { Alert, Badge, Button, Card, Dialog, EmptyState, ErrorState, Field, Input, PageHeader, Select, useToast } from "../components/ui.tsx";
+import { AlertCircle, Clock, Download, FolderTree, PackageOpen, Plus, Tag, Upload, X } from "lucide-react";
+import { Alert, Badge, Button, Card, Dialog, EmptyState, ErrorState, Field, Input, PageHeader, Select, TableSkeleton, useToast } from "../components/ui.tsx";
 import { BarcodeLabelsDialog } from "../components/barcode-labels-dialog.tsx";
 import { useSession } from "../lib/session.tsx";
 import { useActiveLocation } from "../lib/location-context.tsx";
@@ -928,8 +929,8 @@ export function ProductsPage() {
   };
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[1fr_440px]">
-      <section className="grid content-start gap-3">
+    <div className={adding || open ? "grid items-start gap-5 lg:grid-cols-[1fr_420px]" : "grid gap-5"}>
+      <section className="grid content-start gap-4">
         <PageHeader
           title={t("admin:products.title")}
           subtitle={`${store.code} · ${store.name}`}
@@ -944,24 +945,34 @@ export function ProductsPage() {
                 {t("admin:inventory.viewInventoryBtn")}
               </Button>
               <Button variant="outline" size="sm" onClick={() => setCategoryModal(true)}>
-                📁 {t("admin:products.categories")}
+                <FolderTree size={14} className="text-slate-500" aria-hidden />
+                <span>{t("admin:products.categories")}</span>
               </Button>
               <Button variant="outline" size="sm" onClick={handleExportCsv} disabled={!q.data?.length}>
-                ⬇️ {t("admin:products.exportCsv")}
+                <Download size={14} className="text-slate-500" aria-hidden />
+                <span>{t("admin:products.exportCsv")}</span>
               </Button>
               <Button variant="outline" size="sm" onClick={() => setImportModal(true)}>
-                ⬆️ {t("admin:products.importCsv")}
+                <Upload size={14} className="text-slate-500" aria-hidden />
+                <span>{t("admin:products.importCsv")}</span>
               </Button>
               <Button size="sm" data-testid="add-product" onClick={() => { setAdding(true); setOpenId(null); }}>
-                + {t("admin:products.add")}
+                <Plus size={15} aria-hidden />
+                <span>{t("admin:products.add")}</span>
               </Button>
             </>
           }
         />
 
-        <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
-          <Input data-testid="products-search" placeholder={t("admin:sell.search")} value={search} onChange={(e) => setSearch(e.target.value)} />
-          <Select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} className="sm:w-48">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <Input
+            data-testid="products-search"
+            placeholder={t("admin:sell.search")}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="min-w-[220px] flex-1"
+          />
+          <Select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} className="w-44">
             <option value="">{t("admin:products.allCategories")}</option>
             {categories.map((c) => (
               <option key={c.id} value={c.id}>
@@ -969,19 +980,14 @@ export function ProductsPage() {
               </option>
             ))}
           </Select>
-        </div>
-
-        <div className="flex flex-wrap items-center justify-between gap-4 text-sm">
-          <div className="flex items-center gap-4">
-            <label className="flex items-center gap-2">
-              <input type="checkbox" checked={onlyLow} onChange={(e) => setOnlyLow(e.target.checked)} />
-              {t("admin:products.onlyLow")}
-            </label>
-            <label className="flex items-center gap-2">
-              <input type="checkbox" checked={onlyExpiring} onChange={(e) => setOnlyExpiring(e.target.checked)} />
-              {t("admin:products.onlyExpiring")}
-            </label>
-          </div>
+          <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200/80 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50">
+            <input type="checkbox" checked={onlyLow} onChange={(e) => setOnlyLow(e.target.checked)} className="rounded border-slate-300 text-brand-600" />
+            <span>{t("admin:products.onlyLow")}</span>
+          </label>
+          <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200/80 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50">
+            <input type="checkbox" checked={onlyExpiring} onChange={(e) => setOnlyExpiring(e.target.checked)} className="rounded border-slate-300 text-brand-600" />
+            <span>{t("admin:products.onlyExpiring")}</span>
+          </label>
           {rows.length > 0 ? (
             <Button
               size="sm"
@@ -1004,17 +1010,16 @@ export function ProductsPage() {
 
         {selectedSkus.size > 0 ? (
           <div
-            className="flex items-center justify-between p-3 rounded-[6px] bg-slate-900 text-white shadow-md text-sm"
+            className="flex items-center justify-between rounded-xl border border-brand-200 bg-brand-50 px-4 py-2.5 text-sm text-slate-900 shadow-xs"
             data-testid="batch-action-bar"
           >
-            <span className="font-medium">
+            <span className="font-semibold text-brand-text">
               {t("admin:barcodeLabels.selectedCount", { count: selectedSkus.size })}
             </span>
             <div className="flex items-center gap-2">
               <Button
                 size="sm"
                 variant="outline"
-                className="border-slate-700 bg-slate-800 text-white hover:bg-slate-700"
                 data-testid="clear-selection-btn"
                 onClick={() => setSelectedSkus(new Set())}
               >
@@ -1029,147 +1034,190 @@ export function ProductsPage() {
                   setBatchPrinting(chosen);
                 }}
               >
-                🏷️ {t("admin:barcodeLabels.print")}
+                <Tag size={14} aria-hidden />
+                <span>{t("admin:barcodeLabels.print")}</span>
               </Button>
             </div>
           </div>
         ) : null}
 
-        {q.isPending ? <Card className="p-8 text-center text-sm text-slate-500">{t("admin:sell.loading")}</Card> : null}
+        {q.isPending ? (
+          <Card className="p-0">
+            <TableSkeleton rows={6} cols={4} />
+          </Card>
+        ) : null}
         {q.isError ? <ErrorState message={t("admin:sell.loadError")} onRetry={() => q.refetch()} retryLabel={t("common:actions.retry")} /> : null}
         {q.data && q.data.length === 0 ? (
           <EmptyState
             title={t("admin:products.empty")}
             action={
               <Button size="sm" onClick={() => { setAdding(true); setOpenId(null); }}>
-                + {t("admin:products.add")}
+                <Plus size={15} aria-hidden />
+                <span>{t("admin:products.add")}</span>
               </Button>
             }
           />
         ) : null}
 
-        <ul className="grid gap-2">
-          {rows.map((r) => {
-            const status = stockStatus(r);
-            const expiry = getExpiryStatus(r.expiresOn);
-            const isSelected = r.variantId === openId;
-            return (
-              <li key={r.variantId}>
-                <div
-                  className={`flex w-full items-center justify-between gap-3 rounded-lg border bg-white p-3 text-left text-sm transition-all hover:bg-slate-100/70 hover:border-slate-300 ${isSelected ? "border-brand-600 ring-2 ring-brand-600/20 bg-brand-50/20" : "border-slate-200"}`}
-                >
-                  <label className="flex items-center cursor-pointer p-0.5" onClick={(e) => e.stopPropagation()}>
-                    <input
-                      type="checkbox"
-                      data-testid={`select-product-${r.sku}`}
-                      checked={selectedSkus.has(r.sku)}
-                      onChange={(e) => {
-                        e.stopPropagation();
-                        setSelectedSkus((prev) => {
-                          const next = new Set(prev);
-                          if (next.has(r.sku)) next.delete(r.sku);
-                          else next.add(r.sku);
-                          return next;
-                        });
-                      }}
-                      className="h-4 w-4 rounded-[4px] border-slate-300 text-brand-600 focus:ring-brand-500 cursor-pointer"
-                    />
-                  </label>
-                  <button
-                    type="button"
-                    data-testid={`row-${r.sku}`}
-                    onClick={() => { setOpenId(r.variantId); setAdding(false); setArchiveError(null); }}
-                    className="flex flex-1 items-center justify-between gap-3 text-left"
-                  >
-                    <span className="min-w-0">
-                      <span className="block font-medium truncate text-slate-900">{r.name}</span>
-                      <span className="flex flex-wrap items-center gap-1.5 text-xs text-slate-500 mt-1">
-                        <span className="font-mono">{r.sku}</span>
-                        {r.categoryName ? <span className="bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-medium">{r.categoryName}</span> : null}
-                        {r.breaksIntoVariantId ? <span className="text-brand-text font-medium">📦 Pack (1→{r.breaksIntoQty})</span> : null}
-                        {r.active ? "" : <span className="text-slate-400">· {t("admin:products.inactive")}</span>}
-                      </span>
-                    </span>
-                    <span className="flex shrink-0 items-center gap-2">
-                      {expiry === "expired" ? <Badge tone="danger">⚠️ {t("admin:products.expired")}</Badge> : null}
-                      {expiry === "expiring_soon" ? <Badge tone="warn">⏳ {t("admin:products.expiringSoon")}</Badge> : null}
-                      {status === "out" ? <Badge tone="danger">{t("admin:products.out")}</Badge> : null}
-                      {status === "low" ? <Badge tone="warn">{t("admin:products.low")}</Badge> : null}
-                      <span className="text-right">
-                        <span className="block font-semibold tabular-nums">{r.price === null ? t("admin:products.noPrice") : fmt(r.price)}</span>
-                        {r.tracked ? (
-                          <span className="text-xs text-slate-500 tabular-nums">
-                            {formatQty(r.qty)} {r.unit}
+        {rows.length > 0 ? (
+          <Card className="overflow-hidden p-0 sm:p-0">
+            <ul className="divide-y divide-slate-100">
+              {rows.map((r) => {
+                const status = stockStatus(r);
+                const expiry = getExpiryStatus(r.expiresOn);
+                const isSelected = r.variantId === openId;
+                return (
+                  <li key={r.variantId}>
+                    <div
+                      className={`flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm transition-colors ${
+                        isSelected ? "bg-brand-50/60" : "hover:bg-slate-50/80"
+                      }`}
+                    >
+                      <label className="flex cursor-pointer items-center p-0.5" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          data-testid={`select-product-${r.sku}`}
+                          checked={selectedSkus.has(r.sku)}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            setSelectedSkus((prev) => {
+                              const next = new Set(prev);
+                              if (next.has(r.sku)) next.delete(r.sku);
+                              else next.add(r.sku);
+                              return next;
+                            });
+                          }}
+                          className="h-4 w-4 cursor-pointer rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        data-testid={`row-${r.sku}`}
+                        onClick={() => { setOpenId(r.variantId); setAdding(false); setArchiveError(null); }}
+                        className="flex flex-1 cursor-pointer items-center justify-between gap-3 text-left"
+                      >
+                        <span className="min-w-0">
+                          <span className="block truncate font-semibold text-slate-900">{r.name}</span>
+                          <span className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                            <span className="font-mono text-slate-400">{r.sku}</span>
+                            {r.categoryName ? (
+                              <span className="rounded-md bg-slate-100 px-1.5 py-0.5 font-medium text-slate-600">
+                                {r.categoryName}
+                              </span>
+                            ) : null}
+                            {r.breaksIntoVariantId ? (
+                              <span className="inline-flex items-center gap-1 font-medium text-brand-text">
+                                <PackageOpen size={12} aria-hidden />
+                                <span>1→{r.breaksIntoQty}</span>
+                              </span>
+                            ) : null}
+                            {r.active ? "" : <span className="text-slate-400">· {t("admin:products.inactive")}</span>}
                           </span>
-                        ) : null}
-                      </span>
-                    </span>
-                  </button>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+                        </span>
+                        <span className="flex shrink-0 items-center gap-2.5">
+                          {expiry === "expired" ? (
+                            <Badge tone="danger">
+                              <AlertCircle size={12} aria-hidden />
+                              <span>{t("admin:products.expired")}</span>
+                            </Badge>
+                          ) : null}
+                          {expiry === "expiring_soon" ? (
+                            <Badge tone="warn">
+                              <Clock size={12} aria-hidden />
+                              <span>{t("admin:products.expiringSoon")}</span>
+                            </Badge>
+                          ) : null}
+                          {status === "out" ? <Badge tone="danger">{t("admin:products.out")}</Badge> : null}
+                          {status === "low" ? <Badge tone="warn">{t("admin:products.low")}</Badge> : null}
+                          <span className="min-w-[80px] text-right">
+                            <span className="block font-semibold text-slate-900 tabular-nums">
+                              {r.price === null ? t("admin:products.noPrice") : fmt(r.price)}
+                            </span>
+                            {r.tracked ? (
+                              <span className="text-xs text-slate-400 tabular-nums">
+                                {formatQty(r.qty)} {r.unit}
+                              </span>
+                            ) : null}
+                          </span>
+                        </span>
+                      </button>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </Card>
+        ) : null}
       </section>
 
-      <section className="grid content-start gap-3">
-        {adding ? (
-          <ProductForm
-            row={null}
-            currency={currency}
-            locationId={store.id}
-            categories={categories}
-            availablePieces={q.data ?? []}
-            onSaved={() => setAdding(false)}
-            onCancel={() => setAdding(false)}
-          />
-        ) : open ? (
-          <>
-            <div className="flex items-center justify-between pb-1">
-              <span className="text-xs font-mono font-medium text-slate-500">
-                {open.sku}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                data-testid="print-barcode-btn"
-                onClick={() => setPrintingProduct(open)}
-              >
-                🏷️ {t("admin:barcodeLabels.title")}
-              </Button>
-            </div>
+      {adding || open ? (
+        <section className="grid content-start gap-3 lg:sticky lg:top-16">
+          {adding ? (
             <ProductForm
-              key={open.variantId}
-              row={open}
+              row={null}
               currency={currency}
               locationId={store.id}
               categories={categories}
               availablePieces={q.data ?? []}
-              onSaved={() => undefined}
-              onCancel={() => setOpenId(null)}
+              onSaved={() => setAdding(false)}
+              onCancel={() => setAdding(false)}
             />
-            {canStock ? (
-              <StockPanel
-                key={`s-${open.variantId}`}
+          ) : open ? (
+            <>
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-mono text-xs font-medium text-slate-500">{open.sku}</span>
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    data-testid="print-barcode-btn"
+                    onClick={() => setPrintingProduct(open)}
+                  >
+                    <Tag size={14} className="text-slate-500" aria-hidden />
+                    <span>{t("admin:barcodeLabels.title")}</span>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="px-2"
+                    aria-label={t("common:actions.close")}
+                    onClick={() => setOpenId(null)}
+                  >
+                    <X size={16} aria-hidden />
+                  </Button>
+                </div>
+              </div>
+              <ProductForm
+                key={open.variantId}
                 row={open}
                 currency={currency}
                 locationId={store.id}
-                fmt={fmt}
+                categories={categories}
                 availablePieces={q.data ?? []}
+                onSaved={() => undefined}
+                onCancel={() => setOpenId(null)}
               />
-            ) : null}
-            <Card className="grid gap-2">
-              {archiveError ? <Alert>{archiveError}</Alert> : null}
-              <Button variant="danger" data-testid="archive" disabled={archive.isPending} onClick={() => archive.mutate(open.productId)}>
-                {t("products.archive")}
-              </Button>
-              <p className="text-xs text-slate-500">{t("products.archiveHint")}</p>
-            </Card>
-          </>
-        ) : (
-          <Card className="text-sm text-slate-500">{t("products.pick")}</Card>
-        )}
-      </section>
+              {canStock ? (
+                <StockPanel
+                  key={`s-${open.variantId}`}
+                  row={open}
+                  currency={currency}
+                  locationId={store.id}
+                  fmt={fmt}
+                  availablePieces={q.data ?? []}
+                />
+              ) : null}
+              <Card className="grid gap-2">
+                {archiveError ? <Alert>{archiveError}</Alert> : null}
+                <Button variant="danger" data-testid="archive" disabled={archive.isPending} onClick={() => archive.mutate(open.productId)}>
+                  {t("products.archive")}
+                </Button>
+                <p className="text-xs text-slate-500">{t("products.archiveHint")}</p>
+              </Card>
+            </>
+          ) : null}
+        </section>
+      ) : null}
 
       {/* Category Manager Modal */}
       <CategoryDialog

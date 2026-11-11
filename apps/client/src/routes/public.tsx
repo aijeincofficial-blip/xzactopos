@@ -36,8 +36,9 @@ function ThemeCycleButton() {
   const Icon = choice === "dark" ? Moon : choice === "light" ? Sun : Monitor;
   return (
     <Button
-      variant="outline"
+      variant="ghost"
       size="sm"
+      className="px-2.5"
       aria-label={`${t("theme.label")}: ${t(`theme.${choice}`)}`}
       title={`${t("theme.label")}: ${t(`theme.${choice}`)}`}
       onClick={() => {
@@ -46,8 +47,7 @@ function ThemeCycleButton() {
         setChoice(next);
       }}
     >
-      <Icon size={16} className="text-slate-500" aria-hidden />
-      <span>{t(`theme.${choice}`)}</span>
+      <Icon size={16} aria-hidden />
     </Button>
   );
 }
@@ -62,7 +62,7 @@ function Shell({
   const { t } = useTranslation("auth");
   const isWh = portal === "warehouse";
   return (
-    <main className="mx-auto grid min-h-screen w-full max-w-md content-center gap-6 px-4 py-8">
+    <main className="mx-auto grid min-h-screen w-full max-w-md content-center gap-6 px-4 py-10">
       <header className="flex items-center justify-between gap-3">
         <Link to={isWh ? "/warehouse" : "/"} className="flex items-center gap-3 text-slate-900">
           <img
@@ -70,7 +70,7 @@ function Shell({
             alt="XZACTO POS"
             width={40}
             height={40}
-            className="h-10 w-10 rounded-lg border border-slate-200 object-cover shadow-xs"
+            className="h-10 w-10 rounded-xl border border-slate-200/90 object-cover shadow-xs"
           />
           <div>
             <div className="flex items-center gap-2">
@@ -79,12 +79,12 @@ function Shell({
                 {isWh ? t("warehouse.badge") : "POS"}
               </Badge>
             </div>
-            <p className="text-xs text-slate-600">
+            <p className="text-xs text-slate-500">
               {isWh ? t("warehouse.tagline") : t("brand.tagline")}
             </p>
           </div>
         </Link>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 [&_select]:h-8 [&_select]:text-xs">
           <ThemeCycleButton />
           <LanguageSelect />
         </div>

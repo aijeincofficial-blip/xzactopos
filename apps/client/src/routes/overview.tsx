@@ -72,9 +72,10 @@ function WarehouseFilter({
 }) {
   const { t } = useTranslation("admin");
   return (
-    <Card className="flex flex-wrap items-end gap-3">
-      <Field label={t("overview.filter.warehouse")}>
-        <Select value={value} onChange={(e) => onChange(e.target.value)} data-testid="ov-warehouse">
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex items-center gap-2.5">
+        <span className="text-xs font-semibold text-slate-500">{t("overview.filter.warehouse")}</span>
+        <Select value={value} onChange={(e) => onChange(e.target.value)} data-testid="ov-warehouse" className="w-56">
           <option value="">{t("overview.filter.all")}</option>
           {warehouses.map((w) => (
             <option key={w.id} value={w.id}>
@@ -82,9 +83,9 @@ function WarehouseFilter({
             </option>
           ))}
         </Select>
-      </Field>
-      {children ? <div className="ml-auto flex items-center gap-2">{children}</div> : null}
-    </Card>
+      </div>
+      {children ? <div className="flex flex-wrap items-center gap-2">{children}</div> : null}
+    </div>
   );
 }
 

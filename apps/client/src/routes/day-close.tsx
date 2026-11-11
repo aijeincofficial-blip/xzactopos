@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatMoney, money } from "@pos/core";
+import { Calculator } from "lucide-react";
 import {
   Alert,
   Badge,
@@ -14,6 +15,7 @@ import {
   Input,
   PageHeader,
   Select,
+  TableSkeleton,
   TabPanel,
   Tabs,
   useToast,
@@ -277,7 +279,7 @@ export function DayClosePage() {
 
                 <div className="grid gap-1.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold">{t("dayClose.countedCash")}</span>
+                    <span className="text-xs font-semibold text-slate-700">{t("dayClose.countedCash")}</span>
                     <Button
                       type="button"
                       variant="outline"
@@ -285,7 +287,8 @@ export function DayClosePage() {
                       data-testid="open-denomination-counter"
                       onClick={() => setShowDenomDialog(true)}
                     >
-                      🧮 {t("dayClose.denominationCalculator")}
+                      <Calculator size={14} className="text-brand-600" aria-hidden />
+                      <span>{t("dayClose.denominationCalculator")}</span>
                     </Button>
                   </div>
                   <Input
@@ -381,7 +384,7 @@ export function DayClosePage() {
                 </div>
               </div>
 
-              {dayClosesQuery.isPending ? <p className="text-sm text-slate-500">{t("today.loading")}</p> : null}
+              {dayClosesQuery.isPending ? <TableSkeleton rows={3} cols={3} /> : null}
               {dayClosesQuery.isError ? (
                 <ErrorState message={t("dayClose.historyTitle")} onRetry={() => void dayClosesQuery.refetch()} retryLabel={t("common:actions.retry")} />
               ) : null}
