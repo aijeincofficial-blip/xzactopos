@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Alert, Badge, Button, Card, Dialog, ErrorState, Field, Input, PageHeader, Select, Table, useToast } from "../components/ui.tsx";
 import { useSession } from "../lib/session.tsx";
+import { useActiveLocation } from "../lib/location-context.tsx";
 import { useErrorMessage } from "../lib/i18n-helpers.ts";
 import { pullCatalog } from "../lib/sell-api.ts";
 import { listLocations } from "../lib/api.ts";
@@ -25,6 +26,7 @@ export function TransfersPage() {
   const msg = useErrorMessage();
   const toast = useToast();
   const { access, can } = useSession();
+  const { activeWarehouseId } = useActiveLocation();
   const qc = useQueryClient();
 
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -194,13 +196,20 @@ export function TransfersPage() {
   });
 
   function resetCreateForm() {
-    setFromLocId("");
-    setToLocId("");
+    const defaultWh = activeWarehouseId ?? activeLocations.find((l) => l.type === "warehouse")?.id ?? "";
+    const defaultStore = activeLocations.find((l) => l.type === "store")?.id ?? "";
+    setFromLocId(defaultWh);
+    setToLocId(defaultStore);
     setNotes("");
     setShipNow(false);
     setFormItems([{ variantId: "", qty: 1 }]);
     setCreateFormErrors({});
     setCreateError(null);
+  }
+
+  function openCreateTransferModal() {
+    resetCreateForm();
+    setShowCreateModal(true);
   }
 
   function handleAddItem() {
@@ -313,7 +322,7 @@ export function TransfersPage() {
         subtitle={t("admin:transfers.subtitle")}
         actions={
           canCreate ? (
-            <Button onClick={() => setShowCreateModal(true)}>
+            <Button onClick={openCreateTransferModal}>
               {t("admin:transfers.newTransfer")}
             </Button>
           ) : undefined
@@ -400,7 +409,10 @@ export function TransfersPage() {
                 );
                 const itemCount = trf.transfer_items?.length ?? 0;
                 const canShip = trf.status === "draft" && (access.role === "superadmin" || access.locations.some((l) => l.id === trf.from_location_id));
-                const canReceive = trf.status === "shipped" && (access.role === "superadmin" || access.locations.some((l) => l.id === trf.to_location_id));
+                const canReceive =
+                  trf.status === "shipped" &&
+                  trf.to_location?.type === "warehouse" &&
+                  (access.role === "superadmin" || access.locations.some((l) => l.id === trf.to_location_id));
                 const canCancel = trf.status === "draft" && (access.role === "superadmin" || access.locations.some((l) => l.id === trf.from_location_id));
 
                 return (

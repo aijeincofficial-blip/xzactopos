@@ -180,3 +180,52 @@ export async function confirmPickItem(args: {
     p_short_reason: args.shortReason || null,
   });
 }
+
+export interface PosIncomingTransferItem {
+  id: string;
+  transfer_id: string;
+  variant_id: string;
+  qty_shipped: number;
+  qty_received: number | null;
+  sku: string;
+  barcode: string | null;
+  product_name: string;
+  unit: string;
+}
+
+export interface PosIncomingTransferRow {
+  id: string;
+  transfer_no: string;
+  from_location_id: string;
+  to_location_id: string;
+  status: "shipped" | "received";
+  notes: string | null;
+  shipped_at: string | null;
+  received_at: string | null;
+  has_discrepancy: boolean;
+  created_at: string;
+  from_location: {
+    id: string;
+    code: string;
+    name: string;
+    type: "store" | "warehouse";
+  };
+  to_location: {
+    id: string;
+    code: string;
+    name: string;
+    type: "store" | "warehouse";
+  };
+  transfer_items: PosIncomingTransferItem[];
+}
+
+export async function listStoreIncomingTransfers(
+  storeId: string,
+  includeReceived = true,
+): Promise<PosIncomingTransferRow[]> {
+  const rows = await rpc<PosIncomingTransferRow[]>("list_store_incoming_transfers", {
+    p_store_id: storeId,
+    p_include_received: includeReceived,
+  });
+  return rows ?? [];
+}

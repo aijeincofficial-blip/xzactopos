@@ -2,7 +2,7 @@ import { useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { KeyRound, Moon, Monitor, Store, Sun } from "lucide-react";
+import { KeyRound, Moon, Monitor, Store, Sun, Warehouse } from "lucide-react";
 import {
   ApiError,
   provisionSoloStore,
@@ -24,6 +24,7 @@ import {
   storeNameOnlySchema,
 } from "../lib/schemas.ts";
 import { accessQuery, hasSession, lastSlug, rememberSlug } from "../lib/session.tsx";
+import { saveStoredPortal } from "../lib/portal.ts";
 import { useErrorMessage, useValidationMessage } from "../lib/i18n-helpers.ts";
 import { applyTheme, nextTheme, readTheme, type ThemeChoice } from "../lib/theme.ts";
 import { Alert, Badge, Button, Card, Dialog, Field, Input, TabPanel, Tabs, useToast } from "../components/ui.tsx";
@@ -51,12 +52,19 @@ function ThemeCycleButton() {
   );
 }
 
-function Shell({ children }: { children: React.ReactNode }) {
+function Shell({
+  children,
+  portal = "pos",
+}: {
+  children: React.ReactNode;
+  portal?: "pos" | "warehouse";
+}) {
   const { t } = useTranslation("auth");
+  const isWh = portal === "warehouse";
   return (
     <main className="mx-auto grid min-h-screen w-full max-w-md content-center gap-6 px-4 py-8">
       <header className="flex items-center justify-between gap-3">
-        <Link to="/" className="flex items-center gap-3 text-slate-900">
+        <Link to={isWh ? "/warehouse" : "/"} className="flex items-center gap-3 text-slate-900">
           <img
             src="/logo_squircle.png"
             alt="XZACTO POS"
@@ -67,9 +75,13 @@ function Shell({ children }: { children: React.ReactNode }) {
           <div>
             <div className="flex items-center gap-2">
               <span className="text-lg font-semibold tracking-tight text-slate-900">XZACTO</span>
-              <Badge tone="neutral">POS</Badge>
+              <Badge tone={isWh ? "warn" : "neutral"}>
+                {isWh ? t("warehouse.badge") : "POS"}
+              </Badge>
             </div>
-            <p className="text-xs text-slate-600">{t("brand.tagline")}</p>
+            <p className="text-xs text-slate-600">
+              {isWh ? t("warehouse.tagline") : t("brand.tagline")}
+            </p>
           </div>
         </Link>
         <div className="flex items-center gap-2">
@@ -359,20 +371,149 @@ export function HomePage() {
           </TabPanel>
         </Tabs>
 
-        <div className="flex items-center justify-between gap-3 border-t border-slate-200 pt-4">
-          <div className="flex items-center gap-2 text-sm text-slate-700">
-            <Store size={16} className="text-slate-500 shrink-0" aria-hidden />
-            <span>{t("home.soloPrompt")}</span>
+        <div className="grid gap-3 border-t border-slate-200 pt-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-sm text-slate-700">
+              <Warehouse size={16} className="text-slate-500 shrink-0" aria-hidden />
+              <span>{t("home.warehousePrompt")}</span>
+            </div>
+            <Link to="/warehouse">
+              <Button variant="outline" size="sm" data-testid="go-warehouse-portal">
+                {t("home.warehouseCta")}
+              </Button>
+            </Link>
           </div>
-          <Link to="/signup">
-            <Button variant="outline" size="sm" data-testid="go-solo-signup">
-              {t("home.soloCta")}
-            </Button>
-          </Link>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-sm text-slate-700">
+              <Store size={16} className="text-slate-500 shrink-0" aria-hidden />
+              <span>{t("home.soloPrompt")}</span>
+            </div>
+            <Link to="/signup">
+              <Button variant="outline" size="sm" data-testid="go-solo-signup">
+                {t("home.soloCta")}
+              </Button>
+            </Link>
+          </div>
         </div>
       </Card>
 
       <ForgotPasswordDialog open={forgotOpen} onOpenChange={setForgotOpen} initialEmail={email} />
+    </Shell>
+  );
+}
+
+/** "/warehouse" : dedicated Warehouse Staff Portal sign-in. */
+export function WarehousePortalLoginPage() {
+  const { t } = useTranslation("auth");
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  const errMsg = useErrorMessage();
+  const vm = useValidationMessage();
+
+  const [slug, setSlug] = useState(lastSlug() ?? "");
+  const [identifier, setIdentifier] = useState("");
+  const [password, setPassword] = useState("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [formError, setFormError] = useState<string>();
+  const [busy, setBusy] = useState(false);
+
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    setFormError(undefined);
+    const nextErrors: Record<string, string> = {};
+    const slugParsed = slugSchema.safeParse({ slug });
+    if (!slugParsed.success) {
+      Object.assign(nextErrors, fieldErrors(slugParsed.error));
+    }
+    const loginParsed = loginSchema.safeParse({ identifier, password });
+    if (!loginParsed.success) {
+      Object.assign(nextErrors, fieldErrors(loginParsed.error));
+    }
+    if (Object.keys(nextErrors).length > 0) {
+      setErrors(nextErrors);
+      return;
+    }
+    setErrors({});
+    setBusy(true);
+    try {
+      const cleanSlug = slugParsed.data!.slug;
+      await signIn(cleanSlug, loginParsed.data!.identifier, loginParsed.data!.password);
+      const access = await qc.fetchQuery({ ...accessQuery, staleTime: 0 });
+      if (access.tenant.slug !== cleanSlug) {
+        await signOut();
+        qc.clear();
+        throw new ApiError("wrong_tenant", "tenant mismatch");
+      }
+      rememberSlug(cleanSlug);
+      saveStoredPortal("warehouse");
+      await navigate({ to: "/app/warehouses" });
+    } catch (err) {
+      setFormError(
+        errMsg(err instanceof ApiError && err.key === "forbidden" ? new ApiError("no_account", "") : err),
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Shell portal="warehouse">
+      <Card>
+        <form onSubmit={(e) => void submit(e)} className="grid gap-4" noValidate>
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-amber-50 text-amber-800">
+              <Warehouse size={20} aria-hidden />
+            </div>
+            <div>
+              <h1 className="text-lg font-semibold text-slate-900">{t("warehouse.title")}</h1>
+              <p className="text-sm text-slate-600">{t("warehouse.subtitle")}</p>
+            </div>
+          </div>
+
+          {formError ? <Alert>{formError}</Alert> : null}
+
+          <Field label={t("warehouse.slug")} hint={t("warehouse.slugHint")} error={vm(errors["slug"])}>
+            <Input
+              value={slug}
+              onChange={(e) => setSlug(e.target.value)}
+              autoCapitalize="none"
+              autoFocus={!slug}
+              data-testid="wh-login-slug"
+            />
+          </Field>
+
+          <Field label={t("warehouse.identifier")} error={vm(errors["identifier"])}>
+            <Input
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
+              autoComplete="username"
+              autoCapitalize="none"
+              autoFocus={Boolean(slug)}
+              data-testid="wh-login-identifier"
+            />
+          </Field>
+
+          <Field label={t("warehouse.password")} error={vm(errors["password"])}>
+            <Input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+              data-testid="wh-login-password"
+            />
+          </Field>
+
+          <Button type="submit" disabled={busy} data-testid="wh-login-submit">
+            {busy ? t("login.signingIn") : t("warehouse.submit")}
+          </Button>
+
+          <div className="pt-1 text-center">
+            <Link to="/" className="text-sm text-slate-600 hover:text-slate-900">
+              {t("warehouse.posLink")}
+            </Link>
+          </div>
+        </form>
+      </Card>
     </Shell>
   );
 }

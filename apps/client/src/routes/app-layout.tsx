@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  ArrowDownToLine,
   ArrowLeftRight,
   Banknote,
   BarChart3,
@@ -41,38 +42,55 @@ import { tenantMode } from "../lib/mode.ts";
 import { pickLocale, storeLocale } from "../i18n/index.ts";
 import { useSession } from "../lib/session.tsx";
 import { useActiveLocation } from "../lib/location-context.tsx";
+import {
+  portalForPath,
+  readStoredPortal,
+  resolveAllowedPortals,
+  resolveEffectivePortal,
+  saveStoredPortal,
+  type PortalKind,
+} from "../lib/portal.ts";
+import { listStoreIncomingTransfers } from "../lib/transfers-api.ts";
 import { applyTheme, nextTheme, readTheme, type ThemeChoice } from "../lib/theme.ts";
 import { Badge, Button, Card } from "../components/ui.tsx";
 import { LanguageSelect } from "../components/LanguageSelect.tsx";
 import { useOnlineStatus } from "../lib/network.ts";
 
-type NavGroup = "daily" | "stock" | "business";
+type NavGroup = "daily" | "warehouseOps" | "stock" | "business";
+type NavPortalScope = "pos" | "warehouse" | "both";
 
 const NAV = [
-  { to: "/app", key: "dashboard", icon: Home, group: "daily", perm: null, fullOnly: false },
-  { to: "/app/sell", key: "sell", icon: ShoppingCart, group: "daily", perm: "sale.create", fullOnly: false },
-  { to: "/app/sales", key: "sales", icon: Receipt, group: "daily", perm: "sale.create", fullOnly: false },
-  { to: "/app/utang", key: "utang", icon: HandCoins, group: "daily", perm: "sale.create", fullOnly: false },
-  { to: "/app/expenses", key: "expenses", icon: Banknote, group: "daily", perm: "shift.manage", fullOnly: false },
-  { to: "/app/day-close", key: "dayClose", icon: PowerOff, group: "daily", perm: "shift.manage", fullOnly: false },
-  { to: "/app/products", key: "products", icon: Package, group: "stock", perm: "catalog.manage", fullOnly: false },
-  { to: "/app/transfers", key: "transfers", icon: ArrowLeftRight, group: "stock", perm: null, perms: ["transfer.manage", "stock.adjust_store"] as const, fullOnly: true },
-  { to: "/app/bins", key: "bins", icon: Boxes, group: "stock", perm: null, perms: ["transfer.manage", "stock.adjust_store", "locations.manage"] as const, fullOnly: true },
-  { to: "/app/purchasing", key: "purchasing", icon: Truck, group: "stock", perm: "purchasing.manage", fullOnly: true },
-  { to: "/app/counts", key: "counts", icon: ClipboardCheck, group: "stock", perm: "stock.adjust_warehouse", fullOnly: true },
-  { to: "/app/warehouses", key: "overview", icon: Warehouse, group: "stock", perm: "reports.warehouse", fullOnly: true },
-  { to: "/app/reports", key: "reports", icon: BarChart3, group: "business", perm: null, perms: ["reports.store", "reports.warehouse"] as const, fullOnly: true },
-  { to: "/app/upgrade", key: "upgrade", icon: Rocket, group: "business", perm: "tenant.modules", fullOnly: false, soloOnly: true },
-  { to: "/app/locations", key: "locations", icon: MapPin, group: "business", perm: "locations.manage", fullOnly: true },
-  { to: "/app/users", key: "users", icon: Users, group: "business", perm: "users.manage", fullOnly: true },
-  { to: "/app/modules", key: "modules", icon: Blocks, group: "business", perm: "tenant.modules", fullOnly: true },
-  { to: "/app/settings", key: "settings", icon: Settings, group: "business", perm: "tenant.settings", fullOnly: false },
-  { to: "/app/platform", key: "platform", icon: ShieldCheck, group: "business", perm: null, fullOnly: false, platformAdminOnly: true },
+  // POS Portal routes
+  { to: "/app", key: "dashboard", icon: Home, group: "daily", portal: "pos", perm: null, fullOnly: false },
+  { to: "/app/sell", key: "sell", icon: ShoppingCart, group: "daily", portal: "pos", perm: "sale.create", fullOnly: false },
+  { to: "/app/receive-stock", key: "receiveStock", icon: ArrowDownToLine, group: "daily", portal: "pos", perm: "sale.create", fullOnly: true },
+  { to: "/app/sales", key: "sales", icon: Receipt, group: "daily", portal: "pos", perm: "sale.create", fullOnly: false },
+  { to: "/app/utang", key: "utang", icon: HandCoins, group: "daily", portal: "pos", perm: "sale.create", fullOnly: false },
+  { to: "/app/expenses", key: "expenses", icon: Banknote, group: "daily", portal: "pos", perm: "shift.manage", fullOnly: false },
+  { to: "/app/day-close", key: "dayClose", icon: PowerOff, group: "daily", portal: "pos", perm: "shift.manage", fullOnly: false },
+
+  // Warehouse Portal routes
+  { to: "/app/warehouses", key: "overview", icon: Warehouse, group: "warehouseOps", portal: "warehouse", perm: "reports.warehouse", fullOnly: true },
+  { to: "/app/transfers", key: "dispatchToPos", icon: ArrowLeftRight, group: "warehouseOps", portal: "warehouse", perm: null, perms: ["transfer.manage", "stock.adjust_store"] as const, fullOnly: true },
+  { to: "/app/purchasing", key: "purchasing", icon: Truck, group: "warehouseOps", portal: "warehouse", perm: "purchasing.manage", fullOnly: true },
+  { to: "/app/bins", key: "bins", icon: Boxes, group: "warehouseOps", portal: "warehouse", perm: null, perms: ["transfer.manage", "stock.adjust_store", "locations.manage"] as const, fullOnly: true },
+  { to: "/app/counts", key: "counts", icon: ClipboardCheck, group: "warehouseOps", portal: "warehouse", perm: "stock.adjust_warehouse", fullOnly: true },
+
+  // Catalog & Business routes
+  { to: "/app/products", key: "products", icon: Package, group: "stock", portal: "both", perm: "catalog.manage", fullOnly: false },
+  { to: "/app/reports", key: "reports", icon: BarChart3, group: "business", portal: "both", perm: null, perms: ["reports.store", "reports.warehouse"] as const, fullOnly: true },
+  { to: "/app/upgrade", key: "upgrade", icon: Rocket, group: "business", portal: "pos", perm: "tenant.modules", fullOnly: false, soloOnly: true },
+  { to: "/app/locations", key: "locations", icon: MapPin, group: "business", portal: "both", perm: "locations.manage", fullOnly: true },
+  { to: "/app/users", key: "users", icon: Users, group: "business", portal: "both", perm: "users.manage", fullOnly: true },
+  { to: "/app/modules", key: "modules", icon: Blocks, group: "business", portal: "both", perm: "tenant.modules", fullOnly: true },
+  { to: "/app/settings", key: "settings", icon: Settings, group: "business", portal: "both", perm: "tenant.settings", fullOnly: false },
+  { to: "/app/platform", key: "platform", icon: ShieldCheck, group: "business", portal: "both", perm: null, fullOnly: false, platformAdminOnly: true },
 ] as const satisfies ReadonlyArray<{
   to: string;
   key: string;
   icon: LucideIcon;
   group: NavGroup;
+  portal: NavPortalScope;
   perm: PermissionKey | null;
   perms?: readonly PermissionKey[];
   fullOnly: boolean;
@@ -80,18 +98,26 @@ const NAV = [
   platformAdminOnly?: boolean;
 }>;
 
-const GROUPS: readonly NavGroup[] = ["daily", "stock", "business"];
+const GROUPS: readonly NavGroup[] = ["daily", "warehouseOps", "stock", "business"];
 const THEME_ICON: Record<ThemeChoice, LucideIcon> = { system: Monitor, light: Sun, dark: Moon };
 
 export function AppLayout() {
   const { t, i18n } = useTranslation(["common", "admin"]);
   const { access, can } = useSession();
-  const { activeStoreId, stores, setActiveStoreId } = useActiveLocation();
+  const {
+    activeStoreId,
+    stores,
+    setActiveStoreId,
+    activeWarehouseId,
+    warehouses,
+    setActiveWarehouseId,
+  } = useActiveLocation();
   const isOnline = useOnlineStatus();
   const mode = tenantMode(access);
   const qc = useQueryClient();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [savedPortal, setSavedPortal] = useState<PortalKind | null>(() => readStoredPortal());
   const [kioskMode, setKioskMode] = useState<boolean>(() => {
     try {
       const saved = localStorage.getItem("pos.kioskMode");
@@ -106,8 +132,36 @@ export function AppLayout() {
   );
   const path = useRouterState({ select: (s) => s.location.pathname });
   const isSellRoute = path === "/app/sell" || path.startsWith("/app/sell/");
-  const hideDockedSidebar = isSellRoute && kioskMode;
+  const allowedPortals = resolveAllowedPortals(access, mode);
+  const activePortal = resolveEffectivePortal(access, mode, path, savedPortal);
+  const isWarehousePortal = activePortal === "warehouse";
+  const canSwitchPortal = allowedPortals.length > 1;
+  const hideDockedSidebar = isSellRoute && kioskMode && !isWarehousePortal;
   const ThemeIcon = THEME_ICON[theme];
+
+  // Sync stored portal when navigating to a portal-specific route
+  useEffect(() => {
+    const routePortal = portalForPath(path);
+    if (routePortal && allowedPortals.includes(routePortal) && routePortal !== savedPortal) {
+      setSavedPortal(routePortal);
+      saveStoredPortal(routePortal);
+    }
+  }, [path, allowedPortals, savedPortal]);
+
+  // Poll incoming warehouse shipments for the active POS store so POS staff see a live badge
+  const incomingPosQuery = useQuery({
+    queryKey: ["pos-incoming-transfers", activeStoreId, "shipped-count"],
+    queryFn: () => listStoreIncomingTransfers(activeStoreId!, false),
+    enabled:
+      !isWarehousePortal &&
+      mode === "full" &&
+      access.modules.warehouse &&
+      Boolean(activeStoreId) &&
+      can("sale.create"),
+    refetchInterval: 30_000,
+    staleTime: 15_000,
+  });
+  const incomingCount = incomingPosQuery.data?.length ?? 0;
 
   useEffect(() => {
     const onFsChange = () => setIsFullscreen(Boolean(document.fullscreenElement));
@@ -145,12 +199,19 @@ export function AppLayout() {
     });
   }
 
+  function switchPortal(target: PortalKind) {
+    setSavedPortal(target);
+    saveStoredPortal(target);
+    if (target === "warehouse") {
+      void navigate({ to: "/app/warehouses" });
+    } else {
+      void navigate({ to: "/app/sell" });
+    }
+  }
+
   useEffect(() => applyTheme(theme), [theme]);
-  // a phone user picks a screen and the drawer gets out of the way
   useEffect(() => setMenuOpen(false), [path]);
 
-  // Apply the user's saved language once per sign-in (profile locale, else tenant default).
-  // Later manual changes are not overridden because this only re-runs for a different user.
   useEffect(() => {
     const l = pickLocale(access.locale, null);
     void i18n.changeLanguage(l);
@@ -167,14 +228,25 @@ export function AppLayout() {
   }
 
   async function leave() {
+    const wasWarehouseStaff = access.role === "warehouse";
     await signOut();
     qc.clear();
-    await navigate({ to: "/t/$slug", params: { slug: access.tenant.slug } });
+    if (wasWarehouseStaff) {
+      await navigate({ to: "/warehouse" });
+    } else {
+      await navigate({ to: "/t/$slug", params: { slug: access.tenant.slug } });
+    }
   }
 
   const visible = NAV.filter((n) => {
     if ("platformAdminOnly" in n && n.platformAdminOnly && !access.is_platform_admin) return false;
-    const permOk = "perms" in n && n.perms ? (n.perms as readonly PermissionKey[]).some((p) => can(p)) : n.perm === null || can(n.perm);
+    if (n.to === "/app" && (access.role === "cashier" || access.role === "warehouse")) return false;
+    if (n.to === "/app/receive-stock" && !access.modules.warehouse) return false;
+    if (n.portal !== "both" && n.portal !== activePortal) return false;
+    const permOk =
+      "perms" in n && n.perms
+        ? (n.perms as readonly PermissionKey[]).some((p) => can(p))
+        : n.perm === null || can(n.perm);
     return permOk && (!n.fullOnly || mode === "full") && (!("soloOnly" in n && n.soloOnly) || mode === "solo");
   });
   const showNav = access.tenant.setup_completed;
@@ -186,19 +258,28 @@ export function AppLayout() {
         if (items.length === 0) return null;
         return (
           <div key={g} className="grid gap-0.5">
-            <div className="px-2 pb-1 text-xs font-semibold tracking-wider text-slate-400 uppercase">{t(`admin:nav.group.${g}`)}</div>
+            <div className="px-2 pb-1 text-xs font-semibold tracking-wider text-slate-400 uppercase">
+              {t(`admin:nav.group.${g}`)}
+            </div>
             {items.map((n) => {
               const Icon = n.icon;
+              const showReceiveBadge = n.to === "/app/receive-stock" && incomingCount > 0;
               return (
                 <Link
                   key={n.to}
                   to={n.to}
                   activeOptions={{ exact: n.to === "/app" }}
-                  className="flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                  activeProps={{ className: "bg-brand-50 font-semibold text-brand-text hover:bg-brand-50 hover:text-brand-text", "aria-current": "page" }}
+                  className="flex items-center justify-between gap-2 rounded-md px-2.5 py-1.5 text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                  activeProps={{
+                    className: "bg-brand-50 font-semibold text-brand-text hover:bg-brand-50 hover:text-brand-text",
+                    "aria-current": "page",
+                  }}
                 >
-                  <Icon size={17} aria-hidden />
-                  {t(`admin:nav.${n.key}`)}
+                  <span className="flex items-center gap-2.5 truncate">
+                    <Icon size={17} aria-hidden />
+                    <span className="truncate">{t(`admin:nav.${n.key}`)}</span>
+                  </span>
+                  {showReceiveBadge ? <Badge tone="warn">{incomingCount}</Badge> : null}
                 </Link>
               );
             })}
@@ -209,8 +290,23 @@ export function AppLayout() {
   );
 
   const identity = (
-    <div className="border-b border-slate-200 px-4 py-3">
-      <div className="truncate font-semibold">{access.tenant.name}</div>
+    <div className="grid gap-1.5 border-b border-slate-200 px-4 py-3">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 truncate">
+          <img
+            src="/logo_squircle.png"
+            alt="XZACTO"
+            width={24}
+            height={24}
+            className="h-6 w-6 shrink-0 rounded-md border border-slate-200 object-cover"
+          />
+          <span className="text-sm font-semibold tracking-tight text-slate-900">XZACTO</span>
+        </div>
+        <Badge tone={isWarehousePortal ? "warn" : "neutral"}>
+          {isWarehousePortal ? t("admin:portal.warehouseBadge") : t("admin:portal.posBadge")}
+        </Badge>
+      </div>
+      <div className="truncate text-sm font-semibold text-slate-800">{access.tenant.name}</div>
       <div className="truncate text-xs text-slate-500">
         {access.full_name || access.username} · {t(`admin:roles.${access.role}`)}
       </div>
@@ -229,11 +325,19 @@ export function AppLayout() {
           ) : null}
           {menuOpen ? (
             <div className={hideDockedSidebar ? "fixed inset-0 z-50" : "fixed inset-0 z-50 md:hidden"}>
-              <button aria-label={t("common:actions.close")} className="absolute inset-0 bg-black/50" onClick={() => setMenuOpen(false)} />
+              <button
+                aria-label={t("common:actions.close")}
+                className="absolute inset-0 bg-black/50"
+                onClick={() => setMenuOpen(false)}
+              />
               <aside className="absolute inset-y-0 left-0 grid w-64 grid-rows-[auto_1fr] bg-white shadow-xl">
                 <div className="flex items-center justify-between">
                   {identity}
-                  <button aria-label={t("common:actions.close")} className="mr-2 rounded-md p-1 text-slate-600 hover:bg-slate-100 hover:text-slate-900" onClick={() => setMenuOpen(false)}>
+                  <button
+                    aria-label={t("common:actions.close")}
+                    className="mr-2 rounded-md p-1 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                    onClick={() => setMenuOpen(false)}
+                  >
                     <X size={18} />
                   </button>
                 </div>
@@ -268,7 +372,7 @@ export function AppLayout() {
               />
               <div className="flex items-center gap-2 truncate">
                 <span className="text-sm font-semibold tracking-tight text-slate-900">XZACTO</span>
-                <Badge tone="neutral">POS</Badge>
+                <Badge tone="neutral">{t("admin:portal.posBadge")}</Badge>
                 <span className="hidden text-xs text-slate-400 sm:inline">·</span>
                 <span className="hidden truncate text-sm font-semibold text-slate-700 sm:inline">
                   {access.tenant.name}
@@ -283,6 +387,17 @@ export function AppLayout() {
                   >
                     {t("admin:nav.sell")}
                   </Link>
+                  {mode === "full" && access.modules.warehouse ? (
+                    <Link
+                      to="/app/receive-stock"
+                      data-testid="kiosk-receive-stock-link"
+                      className="inline-flex items-center gap-1.5 rounded-md px-3 py-1 text-xs text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                      activeProps={{ className: "bg-brand-50 font-semibold text-brand-text" }}
+                    >
+                      <span>{t("admin:nav.receiveStock")}</span>
+                      {incomingCount > 0 ? <Badge tone="warn">{incomingCount}</Badge> : null}
+                    </Link>
+                  ) : null}
                   <Link
                     to="/app/sales"
                     className="rounded-md px-3 py-1 text-xs text-slate-600 hover:bg-slate-100 hover:text-slate-900"
@@ -311,10 +426,41 @@ export function AppLayout() {
             </div>
           ) : (
             <>
-              <div className="mr-auto font-semibold md:hidden">{access.tenant.name}</div>
+              <div className="mr-auto flex items-center gap-2 font-semibold md:hidden">
+                <span>{access.tenant.name}</span>
+                <Badge tone={isWarehousePortal ? "warn" : "neutral"}>
+                  {isWarehousePortal ? t("admin:portal.warehouseBadge") : t("admin:portal.posBadge")}
+                </Badge>
+              </div>
               <div className="mr-auto hidden md:block" />
             </>
           )}
+
+          {/* Portal Switcher for Owners / Multi-Portal Roles */}
+          {showNav && canSwitchPortal ? (
+            isWarehousePortal ? (
+              <Button
+                variant="outline"
+                size="sm"
+                data-testid="switch-pos-portal"
+                onClick={() => switchPortal("pos")}
+              >
+                <ShoppingCart size={15} className="text-slate-500" aria-hidden />
+                <span>{t("admin:portal.switchToPos")}</span>
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                data-testid="switch-warehouse-portal"
+                onClick={() => switchPortal("warehouse")}
+              >
+                <Warehouse size={15} className="text-slate-500" aria-hidden />
+                <span>{t("admin:portal.switchToWarehouse")}</span>
+              </Button>
+            )
+          ) : null}
+
           {isSellRoute && showNav ? (
             <>
               <Button
@@ -358,7 +504,33 @@ export function AppLayout() {
               </Button>
             </>
           ) : null}
-          {stores.length > 1 ? (
+
+          {/* Location Selector scoped to Active Portal */}
+          {isWarehousePortal && warehouses.length >= 1 ? (
+            <div className="flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-1 text-xs">
+              <Warehouse size={14} className="text-slate-500" aria-hidden />
+              <span className="font-semibold text-slate-500">{t("admin:portal.activeWarehouse")}:</span>
+              {warehouses.length > 1 ? (
+                <select
+                  value={activeWarehouseId ?? ""}
+                  onChange={(e) => setActiveWarehouseId(e.target.value)}
+                  className="cursor-pointer bg-transparent font-semibold text-slate-800 focus:outline-none"
+                  aria-label="Active warehouse"
+                  data-testid="active-warehouse-select"
+                >
+                  {warehouses.map((w) => (
+                    <option key={w.id} value={w.id}>
+                      {w.code} · {w.name}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <span className="font-semibold text-slate-800">
+                  {warehouses[0]!.code} · {warehouses[0]!.name}
+                </span>
+              )}
+            </div>
+          ) : !isWarehousePortal && stores.length > 1 ? (
             <div className="flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-1 text-xs">
               <span className="font-semibold text-slate-500">{t("admin:users.store")}:</span>
               <select
@@ -375,6 +547,7 @@ export function AppLayout() {
               </select>
             </div>
           ) : null}
+
           {!isOnline ? (
             <div data-testid="offline-badge">
               <Badge tone="warn">
@@ -417,7 +590,9 @@ export function AppLayout() {
               <WifiOff className="mt-0.5 size-5 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden />
               <div>
                 <p className="font-semibold">{t("common:offline.bannerTitle")}</p>
-                <p className="mt-1 text-xs text-amber-800 dark:text-amber-300/90">{t("common:offline.bannerDescription")}</p>
+                <p className="mt-1 text-xs text-amber-800 dark:text-amber-300/90">
+                  {t("common:offline.bannerDescription")}
+                </p>
               </div>
             </div>
           ) : null}
@@ -433,10 +608,13 @@ export function AppLayout() {
   );
 }
 
-/** Home: what this user can do, store by store (an admin with two stores sees different actions per store). */
+/** Home: Portal launcher + what this user can do, store/warehouse by location. */
 export function DashboardPage() {
   const { t } = useTranslation("admin");
-  const { access, check } = useSession();
+  const navigate = useNavigate();
+  const { access, can, check } = useSession();
+  const mode = tenantMode(access);
+  const allowedPortals = resolveAllowedPortals(access, mode);
   const modules = (["inventory", "pos", "warehouse"] as const).filter((m) => access.modules[m]);
 
   if (!access.tenant.setup_completed) {
@@ -450,7 +628,7 @@ export function DashboardPage() {
   return (
     <>
       <Card className="flex flex-wrap items-center gap-2">
-        <span className="text-sm font-medium">{t("dashboard.modules")}</span>
+        <span className="text-sm font-semibold">{t("dashboard.modules")}</span>
         {modules.map((m) => (
           <Badge key={m} tone="good">
             {t(`modules.${m}`)}
@@ -461,6 +639,76 @@ export function DashboardPage() {
         </span>
       </Card>
 
+      {mode === "full" && allowedPortals.length > 0 ? (
+        <div className="grid gap-4 sm:grid-cols-2">
+          {allowedPortals.includes("pos") && can("sale.create") ? (
+            <Card className="grid content-between gap-4" data-testid="portal-card-pos">
+              <div className="grid gap-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <ShoppingCart size={18} className="text-brand-600" aria-hidden />
+                    <h2 className="text-base font-semibold text-slate-900">
+                      {t("portal.posPortalTitle")}
+                    </h2>
+                  </div>
+                  <Badge tone="neutral">{t("portal.posBadge")}</Badge>
+                </div>
+                <p className="text-sm text-slate-600">{t("portal.posPortalDesc")}</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  onClick={() => {
+                    saveStoredPortal("pos");
+                    void navigate({ to: "/app/sell" });
+                  }}
+                >
+                  {t("portal.openPosBtn")}
+                </Button>
+                {access.modules.warehouse ? (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      saveStoredPortal("pos");
+                      void navigate({ to: "/app/receive-stock" });
+                    }}
+                  >
+                    {t("portal.receiveStockBtn")}
+                  </Button>
+                ) : null}
+              </div>
+            </Card>
+          ) : null}
+
+          {allowedPortals.includes("warehouse") ? (
+            <Card className="grid content-between gap-4" data-testid="portal-card-warehouse">
+              <div className="grid gap-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Warehouse size={18} className="text-amber-700" aria-hidden />
+                    <h2 className="text-base font-semibold text-slate-900">
+                      {t("portal.warehousePortalTitle")}
+                    </h2>
+                  </div>
+                  <Badge tone="warn">{t("portal.warehouseBadge")}</Badge>
+                </div>
+                <p className="text-sm text-slate-600">{t("portal.warehousePortalDesc")}</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    saveStoredPortal("warehouse");
+                    void navigate({ to: "/app/warehouses" });
+                  }}
+                >
+                  {t("portal.openWarehouseBtn")}
+                </Button>
+              </div>
+            </Card>
+          ) : null}
+        </div>
+      ) : null}
+
       <h2 className="text-lg font-semibold">{t("dashboard.yourLocations")}</h2>
       {access.locations.length === 0 ? (
         <Card>
@@ -469,11 +717,13 @@ export function DashboardPage() {
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
           {access.locations.map((loc) => {
-            const allowed = PERMISSION_KEYS.map((key) => ({ key, d: check(key, loc.id) })).filter((x) => x.d.allowed);
+            const allowed = PERMISSION_KEYS.map((key) => ({ key, d: check(key, loc.id) })).filter(
+              (x) => x.d.allowed,
+            );
             return (
               <Card key={loc.id} data-testid={`loc-${loc.code}`}>
                 <div className="mb-2 flex flex-wrap items-center gap-2">
-                  <h3 className="font-medium">
+                  <h3 className="font-semibold">
                     {loc.code} · {loc.name}
                   </h3>
                   <Badge>{t(`locations.type.${loc.type}`)}</Badge>
