@@ -282,6 +282,59 @@ export interface SaleRow {
   sold_at: string;
   customer_id: string | null;
   location_id: string;
+  customer_name?: string | null;
+  payment_methods?: string[];
+  refunded_total?: number;
+}
+
+export interface SalesListFilter {
+  from?: string;
+  to?: string;
+  status?: "all" | "completed" | "voided";
+  limit?: number;
+}
+
+export interface ClientSalesFilter {
+  search?: string;
+  from?: string;
+  to?: string;
+  status?: "all" | "completed" | "voided";
+  method?: "all" | "cash" | "ewallet" | "card" | "utang";
+  timezone?: string;
+}
+
+/** Pure client-side receipt filter across receipt no., provisional local no., customer, tender method, status, and business-timezone date. */
+export function filterSaleRows(rows: readonly SaleRow[], filter: ClientSalesFilter): SaleRow[] {
+  const q = (filter.search ?? "").trim().toLowerCase();
+  const status = filter.status ?? "all";
+  const method = filter.method ?? "all";
+  const from = filter.from ?? "";
+  const to = filter.to ?? "";
+  const dayFmt =
+    from || to
+      ? new Intl.DateTimeFormat("en-CA", { timeZone: filter.timezone || "UTC" })
+      : null;
+
+  return rows.filter((s) => {
+    if (status !== "all" && s.status !== status) return false;
+    if (dayFmt) {
+      const localDay = dayFmt.format(new Date(s.sold_at));
+      if (from && localDay < from) return false;
+      if (to && localDay > to) return false;
+    }
+    if (method !== "all" && !(s.payment_methods ?? []).includes(method)) {
+      return false;
+    }
+    if (q) {
+      const receipt = (s.sale_no ?? s.local_no).toLowerCase();
+      const localNo = s.local_no.toLowerCase();
+      const cust = (s.customer_name ?? "").toLowerCase();
+      if (!receipt.includes(q) && !localNo.includes(q) && !cust.includes(q)) {
+        return false;
+      }
+    }
+    return true;
+  });
 }
 
 export interface SaleReturnRecord {
@@ -310,10 +363,97 @@ export interface SaleDetail {
 
 const SALE_COLS = "id, sale_no, local_no, status, subtotal, discount, total, sold_at, customer_id, location_id";
 
-export async function fetchRecentSales(locationId: string, limit = 50): Promise<SaleRow[]> {
-  const { data, error } = await supabase.from("sales").select(SALE_COLS).eq("location_id", locationId).order("sold_at", { ascending: false }).limit(limit);
-  if (error) throw fromRaw(error);
-  return data as SaleRow[];
+export async function fetchRecentSales(
+  locationId: string,
+  limitOrFilter: number | SalesListFilter = 200,
+): Promise<SaleRow[]> {
+  const opts: SalesListFilter =
+    typeof limitOrFilter === "number" ? { limit: limitOrFilter } : limitOrFilter;
+  const limit = opts.limit ?? 200;
+  const isDefaultQuery = !opts.from && !opts.to && (!opts.status || opts.status === "all");
+  const cacheKey = `sales:${locationId}`;
+
+  try {
+    let query = supabase
+      .from("sales")
+      .select(SALE_COLS)
+      .eq("location_id", locationId)
+      .order("sold_at", { ascending: false })
+      .limit(limit);
+
+    if (opts.status && opts.status !== "all") {
+      query = query.eq("status", opts.status);
+    }
+    if (opts.from) {
+      const fromBuffer = new Date(Date.parse(`${opts.from}T00:00:00Z`) - 86_400_000).toISOString();
+      query = query.gte("sold_at", fromBuffer);
+    }
+    if (opts.to) {
+      const toBuffer = new Date(Date.parse(`${opts.to}T23:59:59Z`) + 86_400_000).toISOString();
+      query = query.lte("sold_at", toBuffer);
+    }
+
+    const { data, error } = await query;
+    if (error) throw fromRaw(error);
+    const sales = (data ?? []) as SaleRow[];
+    if (sales.length === 0) {
+      if (isDefaultQuery) savePosCache(cacheKey, []);
+      return [];
+    }
+
+    const saleIds = sales.map((s) => s.id);
+    const customerIds = Array.from(
+      new Set(sales.map((s) => s.customer_id).filter((id): id is string => Boolean(id))),
+    );
+
+    const [customersRes, paymentsRes, returnsRes] = await Promise.all([
+      customerIds.length > 0
+        ? supabase.from("customers").select("id, name").in("id", customerIds)
+        : Promise.resolve({ data: [] as Array<{ id: string; name: string }>, error: null }),
+      supabase.from("payments").select("sale_id, method").in("sale_id", saleIds),
+      supabase.from("sale_returns").select("sale_id, refund_total").in("sale_id", saleIds),
+    ]);
+
+    const customerMap = new Map<string, string>();
+    for (const c of (customersRes.data ?? []) as Array<{ id: string; name: string }>) {
+      customerMap.set(c.id, c.name);
+    }
+
+    const methodsBySale = new Map<string, Set<string>>();
+    for (const p of (paymentsRes.data ?? []) as Array<{ sale_id: string; method: string }>) {
+      let set = methodsBySale.get(p.sale_id);
+      if (!set) {
+        set = new Set<string>();
+        methodsBySale.set(p.sale_id, set);
+      }
+      set.add(p.method);
+    }
+
+    const refundBySale = new Map<string, number>();
+    for (const r of (returnsRes.data ?? []) as Array<{ sale_id: string; refund_total: number }>) {
+      refundBySale.set(r.sale_id, (refundBySale.get(r.sale_id) ?? 0) + Number(r.refund_total));
+    }
+
+    const enriched: SaleRow[] = sales.map((s) => ({
+      ...s,
+      customer_name: s.customer_id ? (customerMap.get(s.customer_id) ?? null) : null,
+      payment_methods: Array.from(methodsBySale.get(s.id) ?? []),
+      refunded_total: refundBySale.get(s.id) ?? 0,
+    }));
+
+    if (isDefaultQuery) savePosCache(cacheKey, enriched);
+    return enriched;
+  } catch (err) {
+    if (isNetworkFailure(err)) {
+      const cached = loadPosCache<SaleRow[]>(cacheKey);
+      if (cached) {
+        return opts.status && opts.status !== "all"
+          ? cached.filter((s) => s.status === opts.status)
+          : cached;
+      }
+    }
+    throw err;
+  }
 }
 
 export async function fetchSaleDetail(saleId: string): Promise<SaleDetail> {

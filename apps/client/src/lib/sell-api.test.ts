@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { toSellables } from "./sell-api.ts";
+import { filterSaleRows, toSellables, type SaleRow } from "./sell-api.ts";
 
 const product = (id: string, over: Record<string, unknown> = {}) => ({
   id,
@@ -58,5 +58,59 @@ describe("toSellables", () => {
       "PHP",
     );
     expect(out.map((s) => s.variantId)).toEqual(["va"]);
+  });
+});
+
+describe("filterSaleRows", () => {
+  const sampleSales: SaleRow[] = [
+    {
+      id: "s1",
+      sale_no: "S01-261112-0001",
+      local_no: "WAB-261112-0001",
+      status: "completed",
+      subtotal: 5000,
+      discount: 0,
+      total: 5000,
+      sold_at: "2026-11-11T17:30:00Z", // 2026-11-12 01:30 in Asia/Manila
+      customer_id: "c1",
+      location_id: "loc1",
+      customer_name: "Aling Rosa",
+      payment_methods: ["cash", "utang"],
+      refunded_total: 0,
+    },
+    {
+      id: "s2",
+      sale_no: "S01-261111-0099",
+      local_no: "WAB-261111-0099",
+      status: "voided",
+      subtotal: 2500,
+      discount: 0,
+      total: 2500,
+      sold_at: "2026-11-11T05:00:00Z", // 2026-11-11 13:00 in Asia/Manila
+      customer_id: null,
+      location_id: "loc1",
+      customer_name: null,
+      payment_methods: ["ewallet"],
+      refunded_total: 0,
+    },
+  ];
+
+  it("filters by receipt number, provisional local number, or customer name", () => {
+    expect(filterSaleRows(sampleSales, { search: "0001" }).map((s) => s.id)).toEqual(["s1"]);
+    expect(filterSaleRows(sampleSales, { search: "wab-261111" }).map((s) => s.id)).toEqual(["s2"]);
+    expect(filterSaleRows(sampleSales, { search: "rosa" }).map((s) => s.id)).toEqual(["s1"]);
+  });
+
+  it("filters by status, payment method (including split tenders), and business-timezone date", () => {
+    expect(filterSaleRows(sampleSales, { status: "voided" }).map((s) => s.id)).toEqual(["s2"]);
+    expect(filterSaleRows(sampleSales, { method: "utang" }).map((s) => s.id)).toEqual(["s1"]);
+    expect(filterSaleRows(sampleSales, { method: "card" })).toEqual([]);
+    expect(
+      filterSaleRows(sampleSales, {
+        from: "2026-11-12",
+        to: "2026-11-12",
+        timezone: "Asia/Manila",
+      }).map((s) => s.id),
+    ).toEqual(["s1"]);
   });
 });

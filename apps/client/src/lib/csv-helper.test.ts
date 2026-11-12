@@ -3,6 +3,7 @@ import {
   exportCustomerLedgerCsv,
   exportDayClosesCsv,
   exportProductsCsv,
+  exportSalesCsv,
   exportShiftsCsv,
   matchExistingProduct,
   parseAndValidateImport,
@@ -207,5 +208,42 @@ describe("csv-helper", () => {
     expect(matchExistingProduct({ sku: "rice-25kg", barcode: "" }, [existing])?.variantId).toBe("v1");
     expect(matchExistingProduct({ sku: "", barcode: "480001" }, [existing])?.variantId).toBe("v1");
     expect(matchExistingProduct({ sku: "NEW-SKU", barcode: "999999" }, [existing])).toBeNull();
+  });
+
+  it("exports sales receipts to CSV with net totals and formula-injection guards", () => {
+    const csv = exportSalesCsv(
+      [
+        {
+          receiptNo: "S01-261112-0001",
+          soldAt: "2026-11-12T06:30:00Z",
+          status: "completed",
+          customer: "Aling Rosa",
+          paymentMethods: "cash + utang",
+          subtotal: 12000,
+          discount: 1000,
+          total: 11000,
+          refunded: 2500,
+          netTotal: 8500,
+        },
+        {
+          receiptNo: "S01-261112-0002",
+          soldAt: "2026-11-12T07:00:00Z",
+          status: "voided",
+          customer: "=HACK()",
+          paymentMethods: "ewallet",
+          subtotal: 5000,
+          discount: 0,
+          total: 5000,
+          refunded: 0,
+          netTotal: 0,
+        },
+      ],
+      "PHP",
+    );
+
+    expect(csv).toContain("Receipt No,Sold At,Status,Customer,Payment Methods,Subtotal (PHP),Discount (PHP),Total (PHP),Refunded (PHP),Net Total (PHP)");
+    expect(csv).toContain("S01-261112-0001,2026-11-12T06:30:00Z,completed,Aling Rosa,cash + utang,120.00,10.00,110.00,25.00,85.00");
+    expect(csv).toContain("'=HACK()");
+    expect(csv).toContain("50.00,0.00,50.00,0.00,0.00");
   });
 });

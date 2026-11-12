@@ -34,8 +34,30 @@ class TodayScreen extends StatefulWidget {
 }
 
 class _TodayScreenState extends State<TodayScreen> {
+  final _searchCtrl = TextEditingController();
   SalesPeriodFilter _filter = SalesPeriodFilter.today;
+  String _statusFilter = 'all'; // all | completed | voided
+  String _query = '';
   DateTime? _customDate;
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  bool _matchesSale(SaleSummary s) {
+    if (!_matchesFilter(s.soldAt)) return false;
+    if (_statusFilter == 'completed' && s.voided) return false;
+    if (_statusFilter == 'voided' && !s.voided) return false;
+    final q = _query.trim().toLowerCase();
+    if (q.isNotEmpty) {
+      final hitNo = s.displayNo.toLowerCase().contains(q) || s.localNo.toLowerCase().contains(q);
+      final hitCust = s.customerName?.toLowerCase().contains(q) ?? false;
+      if (!hitNo && !hitCust) return false;
+    }
+    return true;
+  }
 
   bool _matchesFilter(DateTime soldAt) {
     final now = DateTime.now();
@@ -104,8 +126,9 @@ class _TodayScreenState extends State<TodayScreen> {
         stream: scope.store.watchSales(limit: 500),
         builder: (context, snapSales) {
           final allSales = snapSales.data ?? const <SaleSummary>[];
-          final filtered = allSales.where((s) => _matchesFilter(s.soldAt)).toList();
+          final filtered = allSales.where(_matchesSale).toList();
           final periodTotal = filtered.where((s) => !s.voided).fold<int>(0, (sum, s) => sum + s.total);
+          final hasSearchOrStatus = _query.trim().isNotEmpty || _statusFilter != 'all';
 
           return CustomScrollView(
             slivers: [
@@ -387,61 +410,129 @@ class _TodayScreenState extends State<TodayScreen> {
                       ),
                     ),
 
+                    // Receipt & Customer Search
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: Gap.l, vertical: Gap.xs),
+                      child: TextField(
+                        key: const Key('today-search'),
+                        controller: _searchCtrl,
+                        onChanged: (v) => setState(() => _query = v),
+                        decoration: InputDecoration(
+                          hintText: t.todaySearchHint,
+                          prefixIcon: const Icon(Icons.search_rounded, size: 19),
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          suffixIcon: _query.isNotEmpty
+                              ? IconButton(
+                                  key: const Key('today-search-clear'),
+                                  icon: const Icon(Icons.close_rounded, size: 18),
+                                  onPressed: () {
+                                    _searchCtrl.clear();
+                                    setState(() => _query = '');
+                                  },
+                                )
+                              : null,
+                        ),
+                      ),
+                    ),
+
                     // Period Selection Chips (Past Days Navigation)
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       padding: const EdgeInsets.symmetric(horizontal: Gap.l, vertical: Gap.xs),
                       child: Row(
                         children: [
-                          ChoiceChip(
-                            label: Text(locale == 'fil' ? 'Ngayon' : 'Today'),
+                          AppPillChip(
+                            key: const Key('today-period-today'),
+                            height: 34,
+                            label: locale == 'fil' ? 'Ngayon' : 'Today',
                             selected: _filter == SalesPeriodFilter.today,
-                            onSelected: (_) => setState(() {
+                            onTap: () => setState(() {
                               _filter = SalesPeriodFilter.today;
                               _customDate = null;
                             }),
                           ),
                           const SizedBox(width: 8),
-                          ChoiceChip(
-                            label: Text(locale == 'fil' ? 'Kahapon' : 'Yesterday'),
+                          AppPillChip(
+                            key: const Key('today-period-yesterday'),
+                            height: 34,
+                            label: locale == 'fil' ? 'Kahapon' : 'Yesterday',
                             selected: _filter == SalesPeriodFilter.yesterday,
-                            onSelected: (_) => setState(() {
+                            onTap: () => setState(() {
                               _filter = SalesPeriodFilter.yesterday;
                               _customDate = null;
                             }),
                           ),
                           const SizedBox(width: 8),
-                          ChoiceChip(
-                            label: Text(locale == 'fil' ? 'Huling 7 Araw' : 'Past 7 Days'),
+                          AppPillChip(
+                            key: const Key('today-period-7d'),
+                            height: 34,
+                            label: locale == 'fil' ? 'Huling 7 Araw' : 'Past 7 Days',
                             selected: _filter == SalesPeriodFilter.past7Days,
-                            onSelected: (_) => setState(() {
+                            onTap: () => setState(() {
                               _filter = SalesPeriodFilter.past7Days;
                               _customDate = null;
                             }),
                           ),
                           const SizedBox(width: 8),
-                          ChoiceChip(
-                            label: Text(locale == 'fil' ? 'Lahat ng Resibo' : 'All Receipts'),
+                          AppPillChip(
+                            key: const Key('today-period-all'),
+                            height: 34,
+                            label: locale == 'fil' ? 'Lahat ng Resibo' : 'All Receipts',
                             selected: _filter == SalesPeriodFilter.all,
-                            onSelected: (_) => setState(() {
+                            onTap: () => setState(() {
                               _filter = SalesPeriodFilter.all;
                               _customDate = null;
                             }),
                           ),
                           if (_customDate != null) ...[
                             const SizedBox(width: 8),
-                            InputChip(
-                              label: Text(DateFormat.MMMd(locale).format(_customDate!)),
+                            AppPillChip(
+                              key: const Key('today-period-custom'),
+                              height: 34,
+                              icon: Icons.close_rounded,
+                              label: DateFormat.MMMd(locale).format(_customDate!),
                               selected: _filter == SalesPeriodFilter.custom,
-                              onDeleted: () => setState(() {
+                              onTap: () => setState(() {
                                 _customDate = null;
                                 _filter = SalesPeriodFilter.today;
                               }),
-                              onPressed: () => setState(() {
-                                _filter = SalesPeriodFilter.custom;
-                              }),
                             ),
                           ],
+                        ],
+                      ),
+                    ),
+
+                    // Status Filter Chips
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: Gap.l, vertical: 2),
+                      child: Row(
+                        children: [
+                          AppPillChip(
+                            key: const Key('today-status-all'),
+                            height: 32,
+                            label: t.todayFilterAll,
+                            selected: _statusFilter == 'all',
+                            onTap: () => setState(() => _statusFilter = 'all'),
+                          ),
+                          const SizedBox(width: 8),
+                          AppPillChip(
+                            key: const Key('today-status-completed'),
+                            height: 32,
+                            label: t.todayFilterCompleted,
+                            selected: _statusFilter == 'completed',
+                            onTap: () => setState(() => _statusFilter = 'completed'),
+                          ),
+                          const SizedBox(width: 8),
+                          AppPillChip(
+                            key: const Key('today-status-cancelled'),
+                            height: 32,
+                            label: t.todayFilterCancelled,
+                            accentColor: scheme.error,
+                            selected: _statusFilter == 'voided',
+                            onTap: () => setState(() => _statusFilter = 'voided'),
+                          ),
                         ],
                       ),
                     ),
@@ -457,9 +548,11 @@ class _TodayScreenState extends State<TodayScreen> {
                     padding: const EdgeInsets.only(top: Gap.l),
                     child: EmptyState(
                       icon: Icons.receipt_long_rounded,
-                      text: _filter == SalesPeriodFilter.today
-                          ? t.todayNone
-                          : (locale == 'fil' ? 'Walang nahanap na resibo' : 'No receipts found for this period'),
+                      text: hasSearchOrStatus
+                          ? t.todayNoMatches
+                          : _filter == SalesPeriodFilter.today
+                              ? t.todayNone
+                              : (locale == 'fil' ? 'Walang nahanap na resibo' : 'No receipts found for this period'),
                     ),
                   ),
                 )

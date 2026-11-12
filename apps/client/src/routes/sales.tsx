@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Download, Search, X } from "lucide-react";
 import { formatMoney, money } from "@pos/core";
 import { Alert, Badge, Button, Card, Dialog, EmptyState, ErrorState, Field, Input, PageHeader, Select, useToast } from "../components/ui.tsx";
 import { useSession } from "../lib/session.tsx";
@@ -8,13 +9,16 @@ import { useActiveLocation } from "../lib/location-context.tsx";
 import { useErrorMessage } from "../lib/i18n-helpers.ts";
 import { ApiError } from "../lib/api.ts";
 import { supabase } from "../lib/supabase.ts";
+import { downloadCsv, exportSalesCsv } from "../lib/csv-helper.ts";
 import { computePartialReturnRefund } from "../lib/sale-math.ts";
-import { fetchRecentSales, fetchSaleDetail, returnSaleItems, voidSale } from "../lib/sell-api.ts";
+import { fetchRecentSales, fetchSaleDetail, filterSaleRows, returnSaleItems, voidSale } from "../lib/sell-api.ts";
 import { SupervisorPinDialog } from "../components/supervisor-pin-dialog.tsx";
 import { ReceiptModal } from "../components/receipt-slip.tsx";
 import type { OfflineApprovalPayload } from "../lib/offline-pin-api.ts";
 
 type RefundMethod = "cash" | "utang" | "ewallet" | "card";
+type StatusFilter = "all" | "completed" | "voided";
+type MethodFilter = "all" | "cash" | "ewallet" | "card" | "utang";
 
 /** Sales (Solo web): the store's latest sales, each as a receipt, with partial item returns and cancel (void). */
 export function SalesPage() {
@@ -42,6 +46,13 @@ export function SalesPage() {
   const [returnReason, setReturnReason] = useState("");
   const [returnError, setReturnError] = useState<string | null>(null);
 
+  // Receipt lookup & filter state
+  const [search, setSearch] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [methodFilter, setMethodFilter] = useState<MethodFilter>("all");
+
   // Supervisor approval escalation (shared across void & partial return)
   const [pendingAction, setPendingAction] = useState<"void" | "return">("void");
   const [showApprovalDialog, setShowApprovalDialog] = useState(false);
@@ -50,11 +61,75 @@ export function SalesPage() {
   const [offlineApproval, setOfflineApproval] = useState<OfflineApprovalPayload | null>(null);
 
   const list = useQuery({
-    queryKey: ["sales", store?.id],
-    queryFn: () => fetchRecentSales(store?.id ?? ""),
+    queryKey: ["sales", store?.id, dateFrom, dateTo, statusFilter],
+    queryFn: () =>
+      fetchRecentSales(store?.id ?? "", {
+        ...(dateFrom ? { from: dateFrom } : {}),
+        ...(dateTo ? { to: dateTo } : {}),
+        status: statusFilter,
+        limit: 300,
+      }),
     enabled: Boolean(store),
     refetchInterval: 120_000,
   });
+
+  const dayFormatter = useMemo(
+    () => new Intl.DateTimeFormat("en-CA", { timeZone: access.tenant.timezone }),
+    [access.tenant.timezone],
+  );
+
+  const hasActiveFilters = Boolean(
+    search.trim() || dateFrom || dateTo || statusFilter !== "all" || methodFilter !== "all",
+  );
+
+  const filteredSales = useMemo(
+    () =>
+      filterSaleRows(list.data ?? [], {
+        search,
+        from: dateFrom,
+        to: dateTo,
+        status: statusFilter,
+        method: methodFilter,
+        timezone: access.tenant.timezone,
+      }),
+    [list.data, search, dateFrom, dateTo, statusFilter, methodFilter, access.tenant.timezone],
+  );
+
+  const netCompletedTotal = useMemo(() => {
+    let sum = 0;
+    for (const s of filteredSales) {
+      if (s.status === "completed") {
+        sum += Math.max(0, s.total - (s.refunded_total ?? 0));
+      }
+    }
+    return sum;
+  }, [filteredSales]);
+
+  function handleExportCsv() {
+    if (filteredSales.length === 0) return;
+    const csv = exportSalesCsv(
+      filteredSales.map((s) => {
+        const refunded = s.refunded_total ?? 0;
+        const netTotal = s.status === "completed" ? Math.max(0, s.total - refunded) : 0;
+        const methods = (s.payment_methods ?? []).join(" + ");
+        return {
+          receiptNo: s.sale_no ?? s.local_no,
+          soldAt: s.sold_at,
+          status: s.status,
+          customer: s.customer_name ?? null,
+          paymentMethods: methods,
+          subtotal: s.subtotal,
+          discount: s.discount,
+          total: s.total,
+          refunded,
+          netTotal,
+        };
+      }),
+      currency,
+    );
+    const today = dayFormatter.format(new Date());
+    downloadCsv(csv, `sales-${store?.code ?? "store"}-${today}.csv`);
+  }
   const detail = useQuery({ queryKey: ["sale", openId], queryFn: () => fetchSaleDetail(openId ?? ""), enabled: openId !== null });
 
   const settingsQuery = useQuery({
@@ -604,8 +679,120 @@ export function SalesPage() {
   }
 
   return (
-    <div className="grid max-w-2xl gap-4">
-      <PageHeader title={t("sales.title")} />
+    <div className="grid max-w-3xl gap-4">
+      <PageHeader
+        title={t("sales.title")}
+        actions={
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            data-testid="export-sales-csv"
+            disabled={filteredSales.length === 0}
+            onClick={handleExportCsv}
+          >
+            <Download size={15} />
+            {t("sales.exportCsv")}
+          </Button>
+        }
+      />
+
+      <Card className="grid gap-3 p-3.5 sm:p-4">
+        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-12">
+          <div className="relative sm:col-span-5">
+            <Search size={15} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-slate-400" />
+            <Input
+              data-testid="sales-search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={t("sales.searchPlaceholder")}
+              className="pl-9"
+            />
+          </div>
+          <div className="sm:col-span-3">
+            <Select
+              aria-label={t("sales.filterStatusAll")}
+              data-testid="sales-status-filter"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+            >
+              <option value="all">{t("sales.filterStatusAll")}</option>
+              <option value="completed">{t("sales.status.completed")}</option>
+              <option value="voided">{t("sales.status.voided")}</option>
+            </Select>
+          </div>
+          <div className="sm:col-span-4">
+            <Select
+              aria-label={t("sales.filterMethodAll")}
+              data-testid="sales-method-filter"
+              value={methodFilter}
+              onChange={(e) => setMethodFilter(e.target.value as MethodFilter)}
+            >
+              <option value="all">{t("sales.filterMethodAll")}</option>
+              <option value="cash">{t("sell.cash")}</option>
+              <option value="ewallet">{t("sell.ewallet")}</option>
+              <option value="card">{t("sell.card")}</option>
+              <option value="utang">{t("sell.utang")}</option>
+            </Select>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2.5 text-xs">
+          <label className="flex items-center gap-1.5 text-slate-600">
+            <span className="font-medium">{t("sales.dateFrom")}</span>
+            <Input
+              type="date"
+              data-testid="sales-date-from"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="h-8 w-auto px-2.5 py-1 text-xs"
+            />
+          </label>
+          <label className="flex items-center gap-1.5 text-slate-600">
+            <span className="font-medium">{t("sales.dateTo")}</span>
+            <Input
+              type="date"
+              data-testid="sales-date-to"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="h-8 w-auto px-2.5 py-1 text-xs"
+            />
+          </label>
+          {hasActiveFilters ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              data-testid="sales-clear-filters"
+              onClick={() => {
+                setSearch("");
+                setDateFrom("");
+                setDateTo("");
+                setStatusFilter("all");
+                setMethodFilter("all");
+              }}
+            >
+              <X size={14} />
+              {t("sales.clearFilters")}
+            </Button>
+          ) : null}
+          {list.data ? (
+            <div
+              className="ml-auto flex flex-wrap items-center gap-2 text-xs text-slate-600 tabular-nums"
+              data-testid="sales-summary-strip"
+            >
+              <span className="font-medium text-slate-700">
+                {t("sales.summaryCount", { count: filteredSales.length })}
+              </span>
+              <span className="text-slate-300">·</span>
+              <span className="font-semibold text-slate-900">
+                {t("sales.summaryNetTotal", { amount: fmt(netCompletedTotal) })}
+              </span>
+            </div>
+          ) : null}
+        </div>
+      </Card>
+
       {list.isPending ? (
         <ul className="grid gap-2">
           {Array.from({ length: 5 }).map((_, i) => (
@@ -616,27 +803,57 @@ export function SalesPage() {
       {list.isError ? (
         <ErrorState message={t("sales.error")} onRetry={() => void list.refetch()} retryLabel={t("common:actions.retry")} />
       ) : null}
-      {list.data && list.data.length === 0 ? <EmptyState title={t("sales.empty")} /> : null}
+      {list.data && list.data.length === 0 && !hasActiveFilters ? (
+        <EmptyState title={t("sales.empty")} />
+      ) : null}
+      {list.data && filteredSales.length === 0 && (list.data.length > 0 || hasActiveFilters) ? (
+        <EmptyState title={t("sales.noMatches")} />
+      ) : null}
       <ul className="grid gap-2">
-        {(list.data ?? []).map((s) => (
-          <li key={s.id}>
-            <button
-              type="button"
-              data-testid={`sale-${s.sale_no ?? s.local_no}`}
-              onClick={() => setOpenId(s.id)}
-              className="flex w-full items-center justify-between gap-2 rounded-[6px] border border-slate-200 bg-white px-4 py-3 text-left text-sm hover:bg-slate-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
-            >
-              <span>
-                <span className="block font-mono font-semibold text-slate-900">{s.sale_no ?? s.local_no}</span>
-                <span className="text-xs text-slate-500">{when(s.sold_at)}</span>
-              </span>
-              <span className="flex items-center gap-2">
-                {s.status === "voided" ? <Badge tone="warn">{t("sales.status.voided")}</Badge> : null}
-                <span className="font-semibold tabular-nums text-slate-900">{fmt(s.total)}</span>
-              </span>
-            </button>
-          </li>
-        ))}
+        {filteredSales.map((s) => {
+          const methods = s.payment_methods ?? [];
+          const hasRefund = (s.refunded_total ?? 0) > 0;
+          return (
+            <li key={s.id}>
+              <button
+                type="button"
+                data-testid={`sale-${s.sale_no ?? s.local_no}`}
+                onClick={() => setOpenId(s.id)}
+                className="flex w-full items-center justify-between gap-3 rounded-[8px] border border-slate-200 bg-white px-4 py-3 text-left text-sm hover:bg-slate-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+              >
+                <span className="min-w-0">
+                  <span className="flex flex-wrap items-center gap-2">
+                    <span className="font-mono font-semibold text-slate-900">{s.sale_no ?? s.local_no}</span>
+                    {s.customer_name ? (
+                      <span className="truncate text-xs font-medium text-slate-700">· {s.customer_name}</span>
+                    ) : null}
+                  </span>
+                  <span className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
+                    <span>{when(s.sold_at)}</span>
+                    {methods.length > 0 ? (
+                      <>
+                        <span>·</span>
+                        <span>
+                          {methods
+                            .map((m) => t(`sell.${m as "cash" | "ewallet" | "card" | "utang"}`))
+                            .join(" + ")}
+                        </span>
+                      </>
+                    ) : null}
+                  </span>
+                </span>
+                <span className="flex shrink-0 items-center gap-2">
+                  {methods.length > 1 ? <Badge tone="neutral">{t("sales.splitBadge")}</Badge> : null}
+                  {hasRefund && s.status === "completed" ? (
+                    <Badge tone="neutral">{t("sales.returnedBadge")}</Badge>
+                  ) : null}
+                  {s.status === "voided" ? <Badge tone="warn">{t("sales.status.voided")}</Badge> : null}
+                  <span className="font-semibold tabular-nums text-slate-900">{fmt(s.total)}</span>
+                </span>
+              </button>
+            </li>
+          );
+        })}
       </ul>
     </div>
   );

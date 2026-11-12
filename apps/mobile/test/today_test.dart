@@ -106,4 +106,36 @@ void main() {
     expect(text(tester, 'today-count'), 'No sales');
     await leave(tester);
   });
+
+  testWidgets('filters receipts by search text and completed or cancelled status pills', (tester) async {
+    final store = await openToday(tester);
+    await store.voidSale('s2', opId: 'op-void-s2', reason: 'wrong item');
+    await tester.pumpAndSettle();
+
+    // Search by customer name
+    await tester.enterText(find.byKey(const Key('today-search')), 'Rosa');
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('sale-s3')), findsOneWidget);
+    expect(find.byKey(const Key('sale-s1')), findsNothing);
+
+    // Clear search
+    await tester.tap(find.byKey(const Key('today-search-clear')));
+    await tester.pumpAndSettle();
+
+    // Filter to Cancelled only
+    await tester.ensureVisible(find.byKey(const Key('today-status-cancelled')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('today-status-cancelled')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('sale-s2')), findsOneWidget);
+    expect(find.byKey(const Key('sale-s3')), findsNothing);
+
+    // Filter to Completed only
+    await tester.tap(find.byKey(const Key('today-status-completed')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('sale-s3')), findsOneWidget);
+    expect(find.byKey(const Key('sale-s2')), findsNothing);
+
+    await leave(tester);
+  });
 }

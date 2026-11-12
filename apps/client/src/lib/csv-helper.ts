@@ -182,6 +182,50 @@ export interface CustomerLedgerExportItem {
   amount: number;
 }
 
+export interface SaleExportItem {
+  receiptNo: string;
+  soldAt: string;
+  status: "completed" | "voided";
+  customer: string | null;
+  paymentMethods: string;
+  subtotal: number;
+  discount: number;
+  total: number;
+  refunded: number;
+  netTotal: number;
+}
+
+export function exportSalesCsv(items: SaleExportItem[], currency = "PHP"): string {
+  const headers = [
+    "Receipt No",
+    "Sold At",
+    "Status",
+    "Customer",
+    "Payment Methods",
+    `Subtotal (${currency})`,
+    `Discount (${currency})`,
+    `Total (${currency})`,
+    `Refunded (${currency})`,
+    `Net Total (${currency})`,
+  ];
+  const lines = [headers.join(",")];
+  for (const item of items) {
+    lines.push([
+      escapeCsvField(item.receiptNo),
+      escapeCsvField(item.soldAt),
+      escapeCsvField(item.status),
+      escapeCsvField(item.customer ?? ""),
+      escapeCsvField(item.paymentMethods),
+      escapeCsvField((item.subtotal / 100).toFixed(2)),
+      escapeCsvField((item.discount / 100).toFixed(2)),
+      escapeCsvField((item.total / 100).toFixed(2)),
+      escapeCsvField((item.refunded / 100).toFixed(2)),
+      escapeCsvField((item.netTotal / 100).toFixed(2)),
+    ].join(","));
+  }
+  return lines.join("\r\n");
+}
+
 export function exportCustomerLedgerCsv(
   customerName: string,
   items: CustomerLedgerExportItem[],
