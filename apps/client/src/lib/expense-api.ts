@@ -39,6 +39,108 @@ export interface ExpenseRow {
   pending?: boolean;
 }
 
+export type ExpenseStatusFilter = "all" | "active" | "voided";
+export type ExpensePaidFromFilter = "all" | "cash" | "ewallet";
+
+export interface ClientExpenseFilter {
+  search?: string;
+  category?: ExpenseCategory | "all";
+  paidFrom?: ExpensePaidFromFilter;
+  status?: ExpenseStatusFilter;
+  fromDate?: string;
+  toDate?: string;
+}
+
+export interface ExpenseSummary {
+  activeCount: number;
+  voidedCount: number;
+  totalActive: number;
+  cashOutflow: number;
+  ewalletOutflow: number;
+  operatingSpend: number;
+  stockPurchases: number;
+}
+
+export function filterExpenseRows(
+  rows: readonly ExpenseRow[],
+  filter: ClientExpenseFilter,
+): ExpenseRow[] {
+  const q = (filter.search ?? "").trim().toLowerCase();
+  const cat = filter.category && filter.category !== "all" ? filter.category : null;
+  const paidFrom = filter.paidFrom && filter.paidFrom !== "all" ? filter.paidFrom : null;
+  const status = filter.status ?? "all";
+  const fromDate = filter.fromDate?.trim() || null;
+  const toDate = filter.toDate?.trim() || null;
+
+  return rows.filter((r) => {
+    const isVoided = Boolean(r.voided_at);
+    if (status === "active" && isVoided) return false;
+    if (status === "voided" && !isVoided) return false;
+    if (cat && r.category !== cat) return false;
+    if (paidFrom && r.paid_from !== paidFrom) return false;
+
+    const day = r.spent_at.slice(0, 10);
+    if (fromDate && day < fromDate) return false;
+    if (toDate && day > toDate) return false;
+
+    if (q) {
+      const major = (r.amount / 100).toFixed(2);
+      const haystack = [
+        r.note ?? "",
+        r.category.replace(/_/g, " "),
+        r.paid_from,
+        r.wallet ?? "",
+        r.void_reason ?? "",
+        major,
+      ]
+        .join(" ")
+        .toLowerCase();
+      if (!haystack.includes(q)) return false;
+    }
+
+    return true;
+  });
+}
+
+export function summarizeExpenseRows(rows: readonly ExpenseRow[]): ExpenseSummary {
+  let activeCount = 0;
+  let voidedCount = 0;
+  let totalActive = 0;
+  let cashOutflow = 0;
+  let ewalletOutflow = 0;
+  let operatingSpend = 0;
+  let stockPurchases = 0;
+
+  for (const r of rows) {
+    if (r.voided_at) {
+      voidedCount += 1;
+      continue;
+    }
+    activeCount += 1;
+    totalActive += r.amount;
+    if (r.paid_from === "cash") {
+      cashOutflow += r.amount;
+    } else {
+      ewalletOutflow += r.amount;
+    }
+    if (r.category === "stock_purchase") {
+      stockPurchases += r.amount;
+    } else {
+      operatingSpend += r.amount;
+    }
+  }
+
+  return {
+    activeCount,
+    voidedCount,
+    totalActive,
+    cashOutflow,
+    ewalletOutflow,
+    operatingSpend,
+    stockPurchases,
+  };
+}
+
 function mergeExpenses(base: ExpenseRow[], locationId: string, currency = "PHP"): ExpenseRow[] {
   const byId = new Map(base.map((e) => [e.id, e]));
   for (const opt of pendingOptimisticExpenses(locationId, currency)) {
@@ -61,7 +163,7 @@ export async function fetchRecentExpenses(locationId: string, currency = "PHP"):
       .select("id, location_id, amount, currency, category, note, paid_from, wallet, spent_at, voided_at, void_reason, created_by")
       .eq("location_id", locationId)
       .order("spent_at", { ascending: false })
-      .limit(50);
+      .limit(200);
 
     if (error) throw fromRaw(error);
     const rows = data as ExpenseRow[];

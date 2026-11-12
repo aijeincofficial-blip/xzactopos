@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatMoney, money } from "@pos/core";
-import { Plus, X } from "lucide-react";
+import { Download, Plus, X } from "lucide-react";
 import {
   Alert,
   Badge,
@@ -14,21 +14,27 @@ import {
   Input,
   PageHeader,
   Select,
+  StatCard,
   TableSkeleton,
   useToast,
 } from "../components/ui.tsx";
 import { useSession } from "../lib/session.tsx";
 import { useActiveLocation } from "../lib/location-context.tsx";
 import { useErrorMessage } from "../lib/i18n-helpers.ts";
+import { downloadCsv, exportExpensesCsv } from "../lib/csv-helper.ts";
 import { parseAmount } from "../lib/sale-math.ts";
 import type { Wallet } from "../lib/sale-math.ts";
 import {
   EXPENSE_CATEGORIES,
   fetchRecentExpenses,
+  filterExpenseRows,
   recordExpense,
+  summarizeExpenseRows,
   voidExpense,
   type ExpenseCategory,
+  type ExpensePaidFromFilter,
   type ExpenseRow,
+  type ExpenseStatusFilter,
 } from "../lib/expense-api.ts";
 
 const WALLETS: Wallet[] = ["gcash", "maya", "other"];
@@ -54,6 +60,14 @@ export function ExpensesPage() {
   const [wallet, setWallet] = useState<Wallet>("gcash");
   const [note, setNote] = useState("");
   const [addError, setAddError] = useState<string | null>(null);
+
+  // Filter state
+  const [searchText, setSearchText] = useState("");
+  const [filterCategory, setFilterCategory] = useState<ExpenseCategory | "all">("all");
+  const [filterPaidFrom, setFilterPaidFrom] = useState<ExpensePaidFromFilter>("all");
+  const [filterStatus, setFilterStatus] = useState<ExpenseStatusFilter>("all");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
 
   // Void state
   const [voidingId, setVoidingId] = useState<string | null>(null);
@@ -122,29 +136,114 @@ export function ExpensesPage() {
     },
   });
 
+  const items = useMemo(() => expensesQuery.data ?? [], [expensesQuery.data]);
+  const hasActiveFilters =
+    searchText.trim().length > 0 ||
+    filterCategory !== "all" ||
+    filterPaidFrom !== "all" ||
+    filterStatus !== "all" ||
+    fromDate !== "" ||
+    toDate !== "";
+
+  const filteredItems = useMemo(
+    () =>
+      filterExpenseRows(items, {
+        search: searchText,
+        category: filterCategory,
+        paidFrom: filterPaidFrom,
+        status: filterStatus,
+        fromDate,
+        toDate,
+      }),
+    [items, searchText, filterCategory, filterPaidFrom, filterStatus, fromDate, toDate],
+  );
+
+  const summary = useMemo(() => summarizeExpenseRows(filteredItems), [filteredItems]);
+
   if (!store) {
     return <EmptyState title={t("sell.noStore")} />;
   }
 
-  const items = expensesQuery.data ?? [];
+  function clearFilters() {
+    setSearchText("");
+    setFilterCategory("all");
+    setFilterPaidFrom("all");
+    setFilterStatus("all");
+    setFromDate("");
+    setToDate("");
+  }
+
+  function handleExportCsv() {
+    if (!store || filteredItems.length === 0) return;
+    const csv = exportExpensesCsv(
+      filteredItems.map((exp) => ({
+        spentAt: exp.spent_at,
+        status: exp.voided_at ? "voided" : "active",
+        category: t(`expenses.categories.${exp.category}`),
+        paidFrom: exp.paid_from === "ewallet" ? t("sell.ewallet") : t("sell.cash"),
+        wallet: exp.wallet ? t(`sell.wallets.${exp.wallet}`) : null,
+        amount: exp.amount,
+        note: exp.note,
+        voidReason: exp.void_reason,
+      })),
+      currency,
+    );
+    const stamp = new Date().toISOString().slice(0, 10);
+    downloadCsv(csv, `expenses-${store.code.toLowerCase()}-${stamp}.csv`);
+    toast.good(t("expenses.exportedToast", { count: filteredItems.length }));
+  }
 
   return (
-    <div className="grid max-w-3xl gap-5">
+    <div className="grid max-w-4xl gap-5">
       <PageHeader
         title={t("expenses.title")}
         subtitle={`${store.code} · ${store.name}`}
         actions={
-          <Button
-            variant={showAdd ? "outline" : "primary"}
-            size="sm"
-            data-testid="add-expense-btn"
-            onClick={() => setShowAdd(!showAdd)}
-          >
-            {showAdd ? <X size={15} aria-hidden /> : <Plus size={15} aria-hidden />}
-            <span>{showAdd ? t("sell.cancel") : t("expenses.add")}</span>
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              data-testid="export-expenses-csv"
+              disabled={filteredItems.length === 0}
+              onClick={handleExportCsv}
+            >
+              <Download size={15} aria-hidden />
+              <span>{t("expenses.exportCsv")}</span>
+            </Button>
+            <Button
+              variant={showAdd ? "outline" : "primary"}
+              size="sm"
+              data-testid="add-expense-btn"
+              onClick={() => setShowAdd(!showAdd)}
+            >
+              {showAdd ? <X size={15} aria-hidden /> : <Plus size={15} aria-hidden />}
+              <span>{showAdd ? t("sell.cancel") : t("expenses.add")}</span>
+            </Button>
+          </div>
         }
       />
+
+      {/* KPI Summary Strip */}
+      <div className="grid gap-4 sm:grid-cols-3">
+        <StatCard
+          label={t("expenses.kpiTotalSpend")}
+          value={<span className="tabular-nums text-slate-900">{fmt(summary.totalActive)}</span>}
+          subtext={t("expenses.kpiTotalSubtext", {
+            count: summary.activeCount,
+            operating: fmt(summary.operatingSpend),
+          })}
+        />
+        <StatCard
+          label={t("expenses.kpiCashOutflow")}
+          value={<span className="tabular-nums text-amber-800">{fmt(summary.cashOutflow)}</span>}
+          subtext={t("expenses.kpiCashSubtext")}
+        />
+        <StatCard
+          label={t("expenses.kpiEwalletOutflow")}
+          value={<span className="tabular-nums text-slate-900">{fmt(summary.ewalletOutflow)}</span>}
+          subtext={t("expenses.kpiEwalletSubtext", { voided: summary.voidedCount })}
+        />
+      </div>
 
       {showAdd ? (
         <Card className="grid gap-4 border-brand-200/80" data-testid="add-expense-card">
@@ -223,6 +322,97 @@ export function ExpensesPage() {
         </Card>
       ) : null}
 
+      {/* Filter Bar */}
+      {items.length > 0 || hasActiveFilters ? (
+        <Card className="grid gap-3">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <Field label={t("expenses.searchLabel")}>
+              <Input
+                data-testid="expenses-search"
+                placeholder={t("expenses.searchPlaceholder")}
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+              />
+            </Field>
+            <Field label={t("expenses.category")}>
+              <Select
+                data-testid="expenses-filter-category"
+                value={filterCategory}
+                onChange={(e) => setFilterCategory(e.target.value as ExpenseCategory | "all")}
+              >
+                <option value="all">{t("expenses.allCategories")}</option>
+                {EXPENSE_CATEGORIES.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {t(`expenses.categories.${cat}`)}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field label={t("expenses.paidFrom")}>
+              <Select
+                data-testid="expenses-filter-paid-from"
+                value={filterPaidFrom}
+                onChange={(e) => setFilterPaidFrom(e.target.value as ExpensePaidFromFilter)}
+              >
+                <option value="all">{t("expenses.allPaidFrom")}</option>
+                <option value="cash">{t("sell.cash")}</option>
+                <option value="ewallet">{t("sell.ewallet")}</option>
+              </Select>
+            </Field>
+            <Field label={t("expenses.statusLabel")}>
+              <Select
+                data-testid="expenses-filter-status"
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value as ExpenseStatusFilter)}
+              >
+                <option value="all">{t("expenses.statusAll")}</option>
+                <option value="active">{t("expenses.statusActive")}</option>
+                <option value="voided">{t("expenses.statusVoided")}</option>
+              </Select>
+            </Field>
+          </div>
+
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label={t("expenses.dateFrom")}>
+                <Input
+                  type="date"
+                  data-testid="expenses-filter-from"
+                  value={fromDate}
+                  onChange={(e) => setFromDate(e.target.value)}
+                />
+              </Field>
+              <Field label={t("expenses.dateTo")}>
+                <Input
+                  type="date"
+                  data-testid="expenses-filter-to"
+                  value={toDate}
+                  onChange={(e) => setToDate(e.target.value)}
+                />
+              </Field>
+            </div>
+            {hasActiveFilters ? (
+              <div className="flex items-center gap-3 text-xs text-slate-500">
+                <span>
+                  {t("expenses.showingFiltered", {
+                    shown: filteredItems.length,
+                    total: items.length,
+                  })}
+                </span>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  data-testid="expenses-clear-filters"
+                  onClick={clearFilters}
+                >
+                  {t("expenses.clearFilters")}
+                </Button>
+              </div>
+            ) : null}
+          </div>
+        </Card>
+      ) : null}
+
       {expensesQuery.isError ? (
         <ErrorState
           message={t("expenses.error")}
@@ -237,10 +427,12 @@ export function ExpensesPage() {
         </Card>
       ) : items.length === 0 ? (
         <EmptyState title={t("expenses.empty")} />
+      ) : filteredItems.length === 0 ? (
+        <EmptyState title={t("expenses.emptyFiltered")} />
       ) : (
         <Card className="overflow-hidden p-0 sm:p-0">
           <ul className="divide-y divide-slate-100">
-            {items.map((exp: ExpenseRow) => {
+            {filteredItems.map((exp: ExpenseRow) => {
               const isVoided = Boolean(exp.voided_at);
               return (
                 <li

@@ -3,6 +3,7 @@ import {
   exportAuditLogsCsv,
   exportCustomerLedgerCsv,
   exportDayClosesCsv,
+  exportExpensesCsv,
   exportProductsCsv,
   exportSalesCsv,
   exportShiftsCsv,
@@ -265,5 +266,38 @@ describe("csv-helper", () => {
     expect(csv).toContain("Timestamp,Action,Category,Actor,Location,Entity,Entity ID,Details");
     expect(csv).toContain("sale.void,Sales & Approvals,Aling Nena (@owner),Poblacion Main (S01),sale");
     expect(csv).toContain("'=CMD() reason: Duplicate");
+  });
+
+  it("exports store expenses to CSV with formula-injection protection", () => {
+    const csv = exportExpensesCsv(
+      [
+        {
+          spentAt: "2026-11-12T09:00:00Z",
+          status: "active",
+          category: "Utilities",
+          paidFrom: "E-Wallet",
+          wallet: "GCash",
+          amount: 145050,
+          note: "Meralco bill, Nov",
+          voidReason: null,
+        },
+        {
+          spentAt: "2026-11-12T10:00:00Z",
+          status: "voided",
+          category: "Transport",
+          paidFrom: "Cash",
+          wallet: null,
+          amount: 12000,
+          note: "+badFormula",
+          voidReason: "Duplicate entry",
+        },
+      ],
+      "PHP",
+    );
+
+    expect(csv).toContain("Spent At,Status,Category,Paid From,Wallet,Amount (PHP),Note,Void Reason");
+    expect(csv).toContain('2026-11-12T09:00:00Z,active,Utilities,E-Wallet,GCash,1450.50,"Meralco bill, Nov",');
+    expect(csv).toContain("'+badFormula");
+    expect(csv).toContain("Duplicate entry");
   });
 });

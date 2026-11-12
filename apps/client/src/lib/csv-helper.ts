@@ -206,6 +206,46 @@ export interface AuditLogExportItem {
   details: string;
 }
 
+export interface ExpenseExportItem {
+  spentAt: string;
+  status: "active" | "voided";
+  category: string;
+  paidFrom: string;
+  wallet: string | null;
+  amount: number;
+  note: string | null;
+  voidReason: string | null;
+}
+
+export function exportExpensesCsv(items: ExpenseExportItem[], currency = "PHP"): string {
+  const headers = [
+    "Spent At",
+    "Status",
+    "Category",
+    "Paid From",
+    "Wallet",
+    `Amount (${currency})`,
+    "Note",
+    "Void Reason",
+  ];
+  const lines = [headers.join(",")];
+  for (const item of items) {
+    lines.push(
+      [
+        escapeCsvField(item.spentAt),
+        escapeCsvField(item.status),
+        escapeCsvField(item.category),
+        escapeCsvField(item.paidFrom),
+        escapeCsvField(item.wallet ?? ""),
+        escapeCsvField((item.amount / 100).toFixed(2)),
+        escapeCsvField(item.note ?? ""),
+        escapeCsvField(item.voidReason ?? ""),
+      ].join(","),
+    );
+  }
+  return lines.join("\r\n");
+}
+
 export function exportAuditLogsCsv(items: AuditLogExportItem[]): string {
   const headers = [
     "Timestamp",
