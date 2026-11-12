@@ -3,6 +3,8 @@ import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../data/local_store.dart';
+
 /// Pure Dart PBKDF2-HMAC-SHA256 implementation matching PostgreSQL/Supabase profile PIN hashes:
 /// `pbkdf2_sha256$<iterations>$<salt_b64>$<hash_b64>`
 class PinCrypto {
@@ -99,18 +101,44 @@ class SupervisorPin {
     required this.displayName,
     required this.role,
     required this.pinHash,
+    this.position,
   });
 
   final String userId;
   final String displayName;
   final String role;
   final String pinHash;
+  final String? position;
+
+  /// True only for roles/positions authorized to approve store supervisor actions
+  /// (`superadmin`, or `admin` with store `manager`/`supervisor` position; never `cashier` or `warehouse`).
+  bool get isStoreApprover {
+    if (role == 'cashier' || role == 'warehouse') return false;
+    if (role == 'superadmin' || role == 'manager' || role == 'supervisor') return true;
+    if (role == 'admin') {
+      return position == null || position == 'manager' || position == 'supervisor';
+    }
+    return false;
+  }
 
   factory SupervisorPin.fromJson(Map<String, dynamic> json) {
+    final fullName = (json['full_name'] as String?)?.trim();
+    final display = (json['display_name'] as String?)?.trim();
+    final username = (json['username'] as String?)?.trim();
+    final name = (json['name'] as String?)?.trim();
     return SupervisorPin(
       userId: json['user_id'] as String? ?? json['id'] as String? ?? '',
-      displayName: json['display_name'] as String? ?? json['name'] as String? ?? 'Supervisor',
+      displayName: (fullName != null && fullName.isNotEmpty)
+          ? fullName
+          : (display != null && display.isNotEmpty)
+              ? display
+              : (username != null && username.isNotEmpty)
+                  ? username
+                  : (name != null && name.isNotEmpty)
+                      ? name
+                      : 'Supervisor',
       role: json['role'] as String? ?? 'supervisor',
+      position: json['position'] as String?,
       pinHash: json['pin_hash'] as String? ?? '',
     );
   }
@@ -119,13 +147,41 @@ class SupervisorPin {
         'user_id': userId,
         'display_name': displayName,
         'role': role,
+        if (position != null) 'position': position,
         'pin_hash': pinHash,
       };
 }
 
-/// Stores and retrieves supervisor PIN hashes for offline branch authentication.
+enum OfflinePinVerifyStatus { matched, wrongPin, locked, noPins }
+
+class OfflinePinVerifyOutcome {
+  const OfflinePinVerifyOutcome._(this.status, [this.approver]);
+
+  const OfflinePinVerifyOutcome.matched(SupervisorPin approver)
+      : this._(OfflinePinVerifyStatus.matched, approver);
+  const OfflinePinVerifyOutcome.wrongPin()
+      : this._(OfflinePinVerifyStatus.wrongPin);
+  const OfflinePinVerifyOutcome.locked()
+      : this._(OfflinePinVerifyStatus.locked);
+  const OfflinePinVerifyOutcome.noPins()
+      : this._(OfflinePinVerifyStatus.noPins);
+
+  final OfflinePinVerifyStatus status;
+  final SupervisorPin? approver;
+}
+
+/// Stores and retrieves supervisor PIN hashes for offline branch authentication,
+/// enforcing a local 5-strike / 15-minute lockout matching server `approve_supervisor_action`.
 class SupervisorPinStorage {
   static const _prefix = 'pos.offline_pins.';
+  static const _failurePrefix = 'pos.offline_pin_failures.';
+  static const int maxFailedAttempts = 5;
+  static const Duration lockoutWindow = Duration(minutes: 15);
+
+  // Fallback for pure-Dart unit tests where SharedPreferences platform channel is unavailable.
+  static final Map<String, List<int>> _memoryFailures = {};
+
+  static void resetInMemoryFailures() => _memoryFailures.clear();
 
   static Future<void> savePins(String locationId, List<SupervisorPin> pins) async {
     final prefs = await SharedPreferences.getInstance();
@@ -134,27 +190,188 @@ class SupervisorPinStorage {
   }
 
   static Future<List<SupervisorPin>> loadPins(String locationId) async {
-    final prefs = await SharedPreferences.getInstance();
-    final list = prefs.getStringList('$_prefix$locationId') ?? [];
-    return list.map((raw) {
-      try {
-        return SupervisorPin.fromJson(jsonDecode(raw) as Map<String, dynamic>);
-      } catch (_) {
-        return null;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final list = prefs.getStringList('$_prefix$locationId') ?? [];
+      return list.map((raw) {
+        try {
+          return SupervisorPin.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+        } catch (_) {
+          return null;
+        }
+      }).whereType<SupervisorPin>().toList();
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  static Future<List<int>> _loadRecentFailures(
+    String locationId,
+    DateTime now, {
+    LocalStore? store,
+  }) async {
+    final cutoff = now.toUtc().subtract(lockoutWindow).millisecondsSinceEpoch;
+    if (store != null) {
+      final raw = await store.meta('$_failurePrefix$locationId');
+      final decoded = raw == null || raw.isEmpty
+          ? const <int>[]
+          : (jsonDecode(raw) as List).whereType<int>().toList();
+      final recent = decoded.where((ms) => ms > cutoff).toList();
+      if (recent.length != decoded.length) {
+        await store.setMeta('$_failurePrefix$locationId', jsonEncode(recent));
       }
-    }).whereType<SupervisorPin>().toList();
+      return recent;
+    }
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getStringList('$_failurePrefix$locationId') ?? const [];
+      final recent = raw
+          .map(int.tryParse)
+          .whereType<int>()
+          .where((ms) => ms > cutoff)
+          .toList();
+      if (recent.length != raw.length) {
+        await prefs.setStringList(
+          '$_failurePrefix$locationId',
+          recent.map((ms) => ms.toString()).toList(),
+        );
+      }
+      return recent;
+    } catch (_) {
+      final list = (_memoryFailures[locationId] ?? const [])
+          .where((ms) => ms > cutoff)
+          .toList();
+      _memoryFailures[locationId] = list;
+      return list;
+    }
+  }
+
+  static Future<bool> isLockedOut(
+    String locationId, {
+    DateTime? now,
+    LocalStore? store,
+  }) async {
+    final recent = await _loadRecentFailures(locationId, now ?? DateTime.now(), store: store);
+    return recent.length >= maxFailedAttempts;
+  }
+
+  static Future<int> recordFailure(
+    String locationId, {
+    DateTime? now,
+    LocalStore? store,
+  }) async {
+    final ts = (now ?? DateTime.now()).toUtc();
+    final recent = await _loadRecentFailures(locationId, ts, store: store);
+    recent.add(ts.millisecondsSinceEpoch);
+    if (store != null) {
+      await store.setMeta('$_failurePrefix$locationId', jsonEncode(recent));
+      return recent.length;
+    }
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList(
+        '$_failurePrefix$locationId',
+        recent.map((ms) => ms.toString()).toList(),
+      );
+    } catch (_) {
+      _memoryFailures[locationId] = recent;
+    }
+    return recent.length;
+  }
+
+  static Future<void> clearFailures(String locationId, {LocalStore? store}) async {
+    _memoryFailures.remove(locationId);
+    if (store != null) {
+      await store.setMeta('$_failurePrefix$locationId', null);
+      return;
+    }
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('$_failurePrefix$locationId');
+    } catch (_) {}
+  }
+
+  /// Verifies [pin] against cached store approvers from Drift ([store] / [extraRawPins]) or [SharedPreferences]
+  /// (when [store] is null), rejecting non-approver staff (`cashier`/`warehouse`) and enforcing 5-strike lockout.
+  static Future<OfflinePinVerifyOutcome> verifyOfflinePinDetailed({
+    required String locationId,
+    required String pin,
+    LocalStore? store,
+    List<Map<String, dynamic>> extraRawPins = const [],
+    String? approverId,
+    DateTime? now,
+  }) async {
+    final ts = now ?? DateTime.now();
+    if (await isLockedOut(locationId, now: ts, store: store)) {
+      return const OfflinePinVerifyOutcome.locked();
+    }
+
+    final mergedById = <String, SupervisorPin>{};
+    if (store != null) {
+      for (final raw in await store.getOfflinePins(locationId: locationId)) {
+        final parsed = SupervisorPin.fromJson(raw);
+        if (parsed.userId.isNotEmpty && parsed.pinHash.isNotEmpty) {
+          mergedById[parsed.userId] = parsed;
+        }
+      }
+    }
+    for (final raw in extraRawPins) {
+      final parsed = SupervisorPin.fromJson(raw);
+      if (parsed.userId.isNotEmpty && parsed.pinHash.isNotEmpty) {
+        mergedById[parsed.userId] = parsed;
+      }
+    }
+    if (store == null) {
+      for (final p in await loadPins(locationId)) {
+        if (p.userId.isNotEmpty && p.pinHash.isNotEmpty) {
+          mergedById.putIfAbsent(p.userId, () => p);
+        }
+      }
+    }
+
+    final approvers = mergedById.values.where((c) {
+      if (!c.isStoreApprover) return false;
+      if (approverId != null && c.userId != approverId) return false;
+      return true;
+    }).toList();
+
+    if (mergedById.isEmpty || approvers.isEmpty) {
+      if (mergedById.isEmpty) {
+        return const OfflinePinVerifyOutcome.noPins();
+      }
+      final count = await recordFailure(locationId, now: ts, store: store);
+      return count >= maxFailedAttempts
+          ? const OfflinePinVerifyOutcome.locked()
+          : const OfflinePinVerifyOutcome.wrongPin();
+    }
+
+    for (final candidate in approvers) {
+      if (PinCrypto.verifyPin(pin, candidate.pinHash)) {
+        await clearFailures(locationId, store: store);
+        return OfflinePinVerifyOutcome.matched(candidate);
+      }
+    }
+
+    final count = await recordFailure(locationId, now: ts, store: store);
+    return count >= maxFailedAttempts
+        ? const OfflinePinVerifyOutcome.locked()
+        : const OfflinePinVerifyOutcome.wrongPin();
   }
 
   static Future<SupervisorPin?> verifyOfflinePin({
     required String locationId,
     required String pin,
+    List<Map<String, dynamic>> extraRawPins = const [],
+    String? approverId,
+    DateTime? now,
   }) async {
-    final pins = await loadPins(locationId);
-    for (final candidate in pins) {
-      if (PinCrypto.verifyPin(pin, candidate.pinHash)) {
-        return candidate;
-      }
-    }
-    return null;
+    final outcome = await verifyOfflinePinDetailed(
+      locationId: locationId,
+      pin: pin,
+      extraRawPins: extraRawPins,
+      approverId: approverId,
+      now: now,
+    );
+    return outcome.approver;
   }
 }

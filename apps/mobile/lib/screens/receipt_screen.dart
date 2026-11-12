@@ -84,10 +84,11 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
     if (yes != true) return;
     if (!mounted) return;
 
+    SupervisorApprovalResult? approval;
     if (scope.isCashier) {
       final backend = (scope.engine.api is Backend) ? scope.engine.api as Backend : null;
       if (backend != null) {
-        final approval = await showSupervisorPinDialog(
+        approval = await showSupervisorPinDialog(
           context,
           backend: backend,
           action: 'void_sale',
@@ -98,7 +99,12 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
       }
     }
 
-    await scope.store.voidSale(widget.saleId, opId: const Uuid().v7());
+    await scope.store.voidSale(
+      widget.saleId,
+      opId: const Uuid().v7(),
+      approvalId: approval?.approvalId,
+      offlineApproval: approval?.offlineApproval,
+    );
     scope.engine.poke();
   }
 

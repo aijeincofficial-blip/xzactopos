@@ -752,7 +752,13 @@ abstract class SalesStore {
 
   /// Cancels a completed sale: stock goes back, an utang charge is reversed, the e-wallet payments that named a wallet
   /// leave its float. Queued as one op.
-  Future<void> voidSale(String saleId, {required String opId, String? reason});
+  Future<void> voidSale(
+    String saleId, {
+    required String opId,
+    String? reason,
+    String? approvalId,
+    Map<String, dynamic>? offlineApproval,
+  });
 
   /// Returns specific items from a completed sale back into stock with pro-rata refund (cash, ewallet, card, or utang).
   Future<int> returnSaleItems(

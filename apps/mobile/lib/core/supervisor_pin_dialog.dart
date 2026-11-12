@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../backend.dart';
 import '../core/theme.dart';
 import '../core/ui.dart';
+import '../data/local_store.dart';
 import '../l10n/app_localizations.dart';
 import '../sync/store_session.dart';
 import 'pin_auth.dart';
@@ -23,10 +24,14 @@ Future<SupervisorApprovalResult?> showSupervisorPinDialog(
 
   // Background refresh of offline PINs if online
   if (loc != null) {
-    backend.pullOfflinePins(locationId: loc).then((pins) {
+    backend.pullOfflinePins(locationId: loc).then((pins) async {
       if (pins.isNotEmpty) {
-        final models = pins.map((p) => SupervisorPin.fromJson(p)).toList();
-        SupervisorPinStorage.savePins(loc, models);
+        if (scope != null) {
+          await scope.store.saveOfflinePins(loc, pins);
+        } else {
+          final models = pins.map((p) => SupervisorPin.fromJson(p)).toList();
+          await SupervisorPinStorage.savePins(loc, models);
+        }
       }
     }).catchError((_) {});
   }
@@ -41,6 +46,7 @@ Future<SupervisorApprovalResult?> showSupervisorPinDialog(
     ),
     builder: (ctx) => _SupervisorPinSheet(
       backend: backend,
+      store: scope?.store,
       action: action,
       refId: refId,
       locationId: loc,
@@ -67,6 +73,7 @@ class SupervisorApprovalResult {
 class _SupervisorPinSheet extends StatefulWidget {
   const _SupervisorPinSheet({
     required this.backend,
+    this.store,
     required this.action,
     required this.refId,
     this.locationId,
@@ -75,6 +82,7 @@ class _SupervisorPinSheet extends StatefulWidget {
   });
 
   final Backend backend;
+  final LocalStore? store;
   final String action;
   final String refId;
   final String? locationId;
@@ -119,6 +127,7 @@ class _SupervisorPinSheetState extends State<_SupervisorPinSheet> {
     setState(() => _verifying = true);
 
     // 1. Try online approval first if connected
+    final store = widget.store ?? CatalogScope.maybeOf(context)?.store;
     try {
       final r = await widget.backend.approveSupervisorAction(
         action: widget.action,
@@ -128,6 +137,9 @@ class _SupervisorPinSheetState extends State<_SupervisorPinSheet> {
       );
 
       if (r.ok && r.approvalId != null) {
+        if (widget.locationId != null) {
+          await SupervisorPinStorage.clearFailures(widget.locationId!, store: store);
+        }
         HapticFeedback.mediumImpact();
         if (mounted) {
           Navigator.pop(
@@ -155,15 +167,30 @@ class _SupervisorPinSheetState extends State<_SupervisorPinSheet> {
         });
       }
       return;
-    } catch (_) {
+    } catch (e) {
+      if (serverAnswered(e)) {
+        HapticFeedback.heavyImpact();
+        if (mounted) {
+          setState(() {
+            _verifying = false;
+            _pin = '';
+            _errorMessage = t.approvalRefused;
+          });
+        }
+        return;
+      }
+
       // 2. Offline fallback: verify against cached store approver PIN hashes
-      if (widget.locationId != null) {
-        final match = await SupervisorPinStorage.verifyOfflinePin(
-          locationId: widget.locationId!,
+      final loc = widget.locationId ?? (store != null ? await store.activeStoreNow() : null);
+      if (loc != null) {
+        final outcome = await SupervisorPinStorage.verifyOfflinePinDetailed(
+          locationId: loc,
           pin: enteredPin,
+          store: store,
         );
 
-        if (match != null) {
+        if (outcome.status == OfflinePinVerifyStatus.matched && outcome.approver != null) {
+          final match = outcome.approver!;
           HapticFeedback.mediumImpact();
           final offlineApproval = {
             'approver_id': match.userId,
@@ -183,6 +210,20 @@ class _SupervisorPinSheetState extends State<_SupervisorPinSheet> {
           }
           return;
         }
+
+        HapticFeedback.heavyImpact();
+        if (mounted) {
+          setState(() {
+            _verifying = false;
+            _pin = '';
+            _errorMessage = switch (outcome.status) {
+              OfflinePinVerifyStatus.locked => t.approvalLocked,
+              OfflinePinVerifyStatus.noPins => t.approvalNeedsSignal,
+              _ => t.approvalWrongPin,
+            };
+          });
+        }
+        return;
       }
 
       HapticFeedback.heavyImpact();
@@ -190,7 +231,7 @@ class _SupervisorPinSheetState extends State<_SupervisorPinSheet> {
         setState(() {
           _verifying = false;
           _pin = '';
-          _errorMessage = t.approvalWrongPin;
+          _errorMessage = t.approvalNeedsSignal;
         });
       }
     }
@@ -201,7 +242,7 @@ class _SupervisorPinSheetState extends State<_SupervisorPinSheet> {
     final t = AppLocalizations.of(context);
     final scheme = Theme.of(context).colorScheme;
 
-    return Padding(
+    return SingleChildScrollView(
       padding: EdgeInsets.only(
         left: Gap.l,
         right: Gap.l,

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../backend.dart';
-import '../core/pin.dart';
+import '../core/pin_auth.dart';
 import '../data/sales_models.dart';
 import '../l10n/app_localizations.dart';
 import '../sync/store_session.dart';
@@ -46,9 +46,9 @@ Future<SupervisorApprovalResult?> askSupervisorApproval(
   final loc = locationId ?? await scope.store.activeStoreNow();
 
   // Background refresh of offline PINs if online
-  backend.pullOfflinePins(locationId: loc).then((pins) {
+  backend.pullOfflinePins(locationId: loc).then((pins) async {
     if (pins.isNotEmpty && loc != null) {
-      scope.store.saveOfflinePins(loc, pins);
+      await scope.store.saveOfflinePins(loc, pins);
     }
   }).catchError((_) {});
 
@@ -95,6 +95,9 @@ Future<SupervisorApprovalResult?> askSupervisorApproval(
                         approverId: approverId,
                       );
                       if (r.ok && r.approvalId != null) {
+                        if (loc != null) {
+                          await SupervisorPinStorage.clearFailures(loc, store: scope.store);
+                        }
                         if (ctx.mounted) {
                           Navigator.pop(
                             ctx,
@@ -115,22 +118,27 @@ Future<SupervisorApprovalResult?> askSupervisorApproval(
                           _ => t.approvalRefused,
                         };
                       });
-                    } catch (_) {
-                      // Offline fallback: verify against cached store approver PIN hashes
-                      final cachedPins = await scope.store.getOfflinePins(locationId: loc);
-                      Map<String, dynamic>? matched;
-                      for (final u in cachedPins) {
-                        if (approverId != null && u['user_id'] != approverId) continue;
-                        final hash = (u['pin_hash'] as String?) ?? '';
-                        if (verifyPinPbkdf2(enteredPin, hash)) {
-                          matched = u;
-                          break;
-                        }
+                    } catch (e) {
+                      if (serverAnswered(e)) {
+                        setState(() {
+                          busy = false;
+                          error = t.approvalRefused;
+                        });
+                        return;
                       }
+                      // Offline fallback: verify against cached store approver PIN hashes
+                      final effectiveLoc = loc ?? 'global';
+                      final outcome = await SupervisorPinStorage.verifyOfflinePinDetailed(
+                        locationId: effectiveLoc,
+                        pin: enteredPin,
+                        store: scope.store,
+                        approverId: approverId,
+                      );
 
-                      if (matched != null) {
+                      if (outcome.status == OfflinePinVerifyStatus.matched && outcome.approver != null) {
+                        final matched = outcome.approver!;
                         final offlineApproval = {
-                          'approver_id': matched['user_id'],
+                          'approver_id': matched.userId,
                           'approved_at': DateTime.now().toUtc().toIso8601String(),
                           'action': action,
                           'ref_id': refId,
@@ -140,7 +148,7 @@ Future<SupervisorApprovalResult?> askSupervisorApproval(
                             ctx,
                             SupervisorApprovalResult(
                               offlineApproval: offlineApproval,
-                              approvedBy: (matched['user_id'] as String?) ?? '',
+                              approvedBy: matched.userId,
                             ),
                           );
                         }
@@ -149,7 +157,11 @@ Future<SupervisorApprovalResult?> askSupervisorApproval(
 
                       setState(() {
                         busy = false;
-                        error = cachedPins.isEmpty ? t.approvalNeedsSignal : t.approvalWrongPin;
+                        error = switch (outcome.status) {
+                          OfflinePinVerifyStatus.locked => t.approvalLocked,
+                          OfflinePinVerifyStatus.noPins => t.approvalNeedsSignal,
+                          _ => t.approvalWrongPin,
+                        };
                       });
                     }
                   },
@@ -168,9 +180,14 @@ Future<void> retryWithApproval(BuildContext context, Backend backend, String ent
   final failed = (await scope.store.failedOps()).where((o) => o.entityId == entityId && needsApproval(o.lastError));
   if (failed.isEmpty || !context.mounted) return;
   final op = failed.first;
+  final approvalAction = switch (op.kind) {
+    'record_sale' => 'sale_discount',
+    'return_sale_items' => 'void_sale',
+    _ => op.kind,
+  };
   // the refused op knows its store; a supervisor with several stores needs it named
   final approval = await askSupervisorApproval(context, backend,
-      action: op.kind, refId: entityId, locationId: op.payload['location_id'] as String?);
+      action: approvalAction, refId: entityId, locationId: op.payload['location_id'] as String?);
   if (approval == null) return;
   await scope.store.requeueWithApproval(
     opId: op.opId,

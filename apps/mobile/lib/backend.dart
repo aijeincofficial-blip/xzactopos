@@ -15,7 +15,7 @@ import 'sync/sync_engine.dart';
 bool serverAnswered(Object e) => e is PostgrestException || e is AuthException;
 
 /// What the app needs from the server. Screens depend on this, so tests can fake it.
-abstract class Backend implements SyncApi, BinApi, TransferApi {
+abstract class Backend implements SyncApi, BinApi, TransferApi, OfflinePinApi {
   bool get signedIn;
 
   /// The signed-in user's id, or null when signed out.
@@ -75,6 +75,7 @@ abstract class Backend implements SyncApi, BinApi, TransferApi {
   });
 
   /// Pulls store approver PIN hashes for offline verification (F-06).
+  @override
   Future<List<Map<String, dynamic>>> pullOfflinePins({String? locationId});
 }
 

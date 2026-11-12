@@ -316,7 +316,13 @@ mixin DriftSales implements SalesStore {
   }
 
   @override
-  Future<void> voidSale(String saleId, {required String opId, String? reason}) {
+  Future<void> voidSale(
+    String saleId, {
+    required String opId,
+    String? reason,
+    String? approvalId,
+    Map<String, dynamic>? offlineApproval,
+  }) {
     return db.transaction(() async {
       final sale = await (db.select(db.sales)..where((s) => s.id.equals(saleId))).getSingleOrNull();
       if (sale == null) throw StateError('Unknown sale');
@@ -360,7 +366,13 @@ mixin DriftSales implements SalesStore {
         await db.into(db.localFloatEffects).insert(LocalFloatEffectsCompanion.insert(
             opId: opId, txnId: saleId, wallet: p.wallet!, amount: -p.amount, locationId: Value(loc)));
       }
-      await enqueue(opId, 'void_sale', saleId, {'sale_id': saleId, 'reason': ?reason, 'location_id': ?loc});
+      await enqueue(opId, 'void_sale', saleId, {
+        'sale_id': saleId,
+        'reason': ?reason,
+        'location_id': ?loc,
+        'approval_id': ?approvalId,
+        'offline_approval': ?offlineApproval,
+      });
     });
   }
 
@@ -1154,7 +1166,16 @@ mixin DriftSales implements SalesStore {
   // Supervisors: the approval id comes from Backend.approveSupervisorAction (needs signal); the PIN never comes here.
   // ---------------------------------------------------------------------------
 
-  static const approvalKinds = {'record_expense', 'void_expense', 'close_day', 'record_service_txn', 'void_service_txn'};
+  static const approvalKinds = {
+    'record_sale',
+    'void_sale',
+    'return_sale_items',
+    'record_expense',
+    'void_expense',
+    'close_day',
+    'record_service_txn',
+    'void_service_txn',
+  };
 
   /// [from, to) of the local calendar day of [day], as normalised UTC ISO strings.
   static (String, String) _dayBounds(DateTime day) =>
@@ -2002,8 +2023,14 @@ mixin DriftSales implements SalesStore {
       if (!approvalKinds.contains(op.kind)) throw ArgumentError('${op.kind} does not take an approval');
       if (op.status != 'failed') throw StateError('Only a refused op can be sent again');
       final payload = (jsonDecode(op.payload) as Map).cast<String, dynamic>();
-      if (approvalId != null) payload['approval_id'] = approvalId;
-      if (offlineApproval != null) payload['offline_approval'] = offlineApproval;
+      if (approvalId != null) {
+        payload['approval_id'] = approvalId;
+        payload.remove('offline_approval');
+      }
+      if (offlineApproval != null) {
+        payload['offline_approval'] = offlineApproval;
+        payload.remove('approval_id');
+      }
       await (db.update(db.outbox)..where((o) => o.opId.equals(opId))).write(OutboxCompanion(
             payload: Value(jsonEncode(payload)),
             status: const Value('pending'),

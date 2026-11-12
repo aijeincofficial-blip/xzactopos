@@ -63,6 +63,12 @@ abstract class WarehouseApi {
   Future<Map<String, dynamic>> pullWarehouse(Map<String, dynamic> cursors, {int limit = 500});
 }
 
+/// Offline supervisor PIN material delivery (F-06). Kept apart from [SyncApi] like [DeviceApi] so minimal sync fakes
+/// do not need to implement it, while `Backend` implements it automatically.
+abstract class OfflinePinApi {
+  Future<List<Map<String, dynamic>>> pullOfflinePins({String? locationId});
+}
+
 /// The server refused an op permanently (bad data, duplicate barcode, no permission). Retrying will not help.
 class OpRejected implements Exception {
   const OpRejected(this.hint);
@@ -226,9 +232,10 @@ class SyncEngine {
   /// user, never retried on its own), including the supervisor approval hints (`approval_required`,
   /// `approval_invalid`, `approval_expired`, `approval_used`); network trouble and transient server errors retry later.
   static const posKinds = {
-    'record_sale', 'void_sale', 'upsert_customer', 'record_utang_payment', 'post_opening_stock', 'receive_stock',
-    'adjust_stock', 'adjust_utang', 'record_expense', 'void_expense', 'close_day', 'record_service_txn',
-    'void_service_txn', 'set_tingi_link', 'open_pack', 'void_open_pack', 'set_utang_due', 'set_expiry',
+    'record_sale', 'void_sale', 'return_sale_items', 'upsert_customer', 'record_utang_payment',
+    'post_opening_stock', 'receive_stock', 'adjust_stock', 'adjust_utang', 'record_expense',
+    'void_expense', 'close_day', 'record_service_txn', 'void_service_txn', 'set_tingi_link',
+    'open_pack', 'void_open_pack', 'set_utang_due', 'set_expiry',
   };
 
   /// Warehouse receipts and counts (F-13h H7) ride the same batches.
@@ -414,6 +421,32 @@ class SyncEngine {
       final res = await api.pullConversions(cursor is Map ? cursor.cast<String, dynamic>() : null, limit: 100);
       await store.applyPullConversions(res);
       if (res['has_more'] != true) break;
+    }
+    // offline supervisor PIN hashes (F-06): refresh for every accessible store so overrides work before first online dialog
+    final pinApi = api;
+    if (pinApi is OfflinePinApi) {
+      await _pullOfflinePins(pinApi as OfflinePinApi);
+    }
+  }
+
+  Future<void> _pullOfflinePins(OfflinePinApi pinApi) async {
+    final locIds = <String>{};
+    final active = await store.activeStoreNow();
+    if (active != null && active.isNotEmpty) locIds.add(active);
+    try {
+      for (final s in await store.myStores()) {
+        if (s.id.isNotEmpty) locIds.add(s.id);
+      }
+    } catch (_) {}
+    for (final locId in locIds) {
+      try {
+        final pins = await pinApi.pullOfflinePins(locationId: locId);
+        if (pins.isNotEmpty) {
+          await store.saveOfflinePins(locId, pins);
+        }
+      } catch (_) {
+        // Best-effort per branch; never fail POS sync if offline PIN pull fails.
+      }
     }
   }
 

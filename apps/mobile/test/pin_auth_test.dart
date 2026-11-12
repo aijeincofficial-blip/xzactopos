@@ -77,5 +77,94 @@ void main() {
       final badMatch = await SupervisorPinStorage.verifyOfflinePin(locationId: locId, pin: '0000');
       expect(badMatch, isNull);
     });
+
+    test('rejects cashier and warehouse staff PINs as offline store approvers', () async {
+      SharedPreferences.setMockInitialValues({});
+      SupervisorPinStorage.resetInMemoryFailures();
+      const locId = 'loc-cashier-check';
+      const saltB64 = 'c2FsdHNhbHRzYWx0MTIz';
+
+      await SupervisorPinStorage.savePins(locId, [
+        SupervisorPin.fromJson({
+          'user_id': 'usr-cashier',
+          'full_name': 'Juan Cashier',
+          'role': 'cashier',
+          'position': null,
+          'pin_hash': PinCrypto.hashPin('4444', saltB64, iterations: 1000),
+        }),
+        SupervisorPin.fromJson({
+          'user_id': 'usr-wh',
+          'full_name': 'Carlo Warehouse',
+          'role': 'warehouse',
+          'position': null,
+          'pin_hash': PinCrypto.hashPin('5555', saltB64, iterations: 1000),
+        }),
+        SupervisorPin.fromJson({
+          'user_id': 'usr-super',
+          'full_name': 'Sara Supervisor',
+          'role': 'admin',
+          'position': 'supervisor',
+          'pin_hash': PinCrypto.hashPin('3333', saltB64, iterations: 1000),
+        }),
+      ]);
+
+      expect(await SupervisorPinStorage.verifyOfflinePin(locationId: locId, pin: '4444'), isNull);
+      expect(await SupervisorPinStorage.verifyOfflinePin(locationId: locId, pin: '5555'), isNull);
+      final ok = await SupervisorPinStorage.verifyOfflinePin(locationId: locId, pin: '3333');
+      expect(ok, isNotNull);
+      expect(ok!.userId, 'usr-super');
+      expect(ok.displayName, 'Sara Supervisor');
+    });
+
+    test('enforces 5-strike 15-minute local offline PIN lockout', () async {
+      SharedPreferences.setMockInitialValues({});
+      SupervisorPinStorage.resetInMemoryFailures();
+      const locId = 'loc-lockout';
+      const saltB64 = 'c2FsdHNhbHRzYWx0MTIz';
+      final baseNow = DateTime.utc(2026, 11, 12, 8, 0, 0);
+
+      await SupervisorPinStorage.savePins(locId, [
+        SupervisorPin(
+          userId: 'usr-owner',
+          displayName: 'Owner Boss',
+          role: 'superadmin',
+          pinHash: PinCrypto.hashPin('1111', saltB64, iterations: 1000),
+        ),
+      ]);
+
+      for (var i = 1; i <= 4; i++) {
+        final r = await SupervisorPinStorage.verifyOfflinePinDetailed(
+          locationId: locId,
+          pin: '0000',
+          now: baseNow.add(Duration(seconds: i * 10)),
+        );
+        expect(r.status, OfflinePinVerifyStatus.wrongPin);
+      }
+
+      // 5th wrong attempt triggers lockout
+      final fifth = await SupervisorPinStorage.verifyOfflinePinDetailed(
+        locationId: locId,
+        pin: '0000',
+        now: baseNow.add(const Duration(seconds: 50)),
+      );
+      expect(fifth.status, OfflinePinVerifyStatus.locked);
+
+      // Even the right PIN is refused while locked within 15 minutes
+      final blocked = await SupervisorPinStorage.verifyOfflinePinDetailed(
+        locationId: locId,
+        pin: '1111',
+        now: baseNow.add(const Duration(minutes: 5)),
+      );
+      expect(blocked.status, OfflinePinVerifyStatus.locked);
+
+      // After 16 minutes the window expires and the right PIN succeeds
+      final recovered = await SupervisorPinStorage.verifyOfflinePinDetailed(
+        locationId: locId,
+        pin: '1111',
+        now: baseNow.add(const Duration(minutes: 16)),
+      );
+      expect(recovered.status, OfflinePinVerifyStatus.matched);
+      expect(recovered.approver!.userId, 'usr-owner');
+    });
   });
 }
