@@ -1461,5 +1461,35 @@
   "heldSaleDiscard": "Discard",
   "heldSaleResumed": "Held sale resumed",
   "heldSaleSwapped": "Resumed sale and parked previous cart",
-  "heldSaleSwapBanner": "Your active cart will be parked automatically when you resume one below."
+  "heldSaleSwapBanner": "Your active cart will be parked automatically when you resume one below.",
+  "paySplitAdd": "+ Add {method} ({amount}) · Split remaining",
+  "@paySplitAdd": {
+    "placeholders": {
+      "method": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "paySplitTitle": "Split payments",
+  "paySplitRemaining": "Remaining due",
+  "paySplitClear": "Clear",
+  "paySplitExceeded": "Split payments exceed the total. Remove a tender first.",
+  "todaySearchHint": "Search receipt no. or customer",
+  "todayFilterAll": "All",
+  "todayFilterCompleted": "Completed",
+  "todayFilterCancelled": "Cancelled",
+  "todayNoMatches": "No sales match your search.",
+  "sellExpiredBadge": "Expired",
+  "sellExpiringSoonBadge": "Exp soon",
+  "sellCartExpiredWarning": "{count, plural, =1{1 item in cart is expired — check package before selling} other{{count} items in cart are expired — check packages}}",
+  "@sellCartExpiredWarning": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

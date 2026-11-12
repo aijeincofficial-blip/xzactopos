@@ -2608,4 +2608,53 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String get heldSaleSwapBanner =>
       'Kusang itatabi ang kasalukuyang cart kapag nagbalik ka ng benta sa ibaba.';
+
+  @override
+  String paySplitAdd(String method, String amount) {
+    return '+ Idagdag ang $method ($amount) · Hatiin ang kulang';
+  }
+
+  @override
+  String get paySplitTitle => 'Hating bayad';
+
+  @override
+  String get paySplitRemaining => 'Natitirang babayaran';
+
+  @override
+  String get paySplitClear => 'Alisin';
+
+  @override
+  String get paySplitExceeded =>
+      'Lampas sa kabuuan ang hating bayad. Alisin muna ang isang bayad.';
+
+  @override
+  String get todaySearchHint => 'Hanapin ang resibo o mamimili';
+
+  @override
+  String get todayFilterAll => 'Lahat';
+
+  @override
+  String get todayFilterCompleted => 'Tapos na';
+
+  @override
+  String get todayFilterCancelled => 'Kinansela';
+
+  @override
+  String get todayNoMatches => 'Walang benta na tugma sa hinahanap.';
+
+  @override
+  String get sellExpiredBadge => 'Paso na';
+
+  @override
+  String get sellExpiringSoonBadge => 'Malapit mapaso';
+
+  @override
+  String sellCartExpiredWarning(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count item sa cart ay paso na — suriin muna',
+    );
+    return '$_temp0';
+  }
 }

@@ -32,7 +32,7 @@ import { useErrorMessage } from "../lib/i18n-helpers.ts";
 import { ApiError } from "../lib/api.ts";
 import { dayInTimezone } from "../lib/today.ts";
 import {
-  buildPayments,
+  buildSplitPayments,
   cartLineDiscounts,
   cartNeedsDiscountApproval,
   cartSubtotal,
@@ -43,6 +43,7 @@ import {
   lineTotal,
   parseAmount,
   type CartLine,
+  type PaymentDraft,
   type PayMethod,
   type SaleDraft,
   type Wallet,
@@ -154,6 +155,7 @@ export function SellPage() {
   const [wallet, setWallet] = useState<Wallet>("gcash");
   const [reference, setReference] = useState("");
   const [tenderedText, setTenderedText] = useState("");
+  const [splitTenders, setSplitTenders] = useState<PaymentDraft[]>([]);
   const [problem, setProblem] = useState<string | null>(null);
   const [done, setDone] = useState<Done | null>(null);
   const [approvalId, setApprovalId] = useState<string | null>(null);
@@ -248,13 +250,22 @@ export function SellPage() {
 
   const paidNow = paidText.trim() === "" ? null : parseAmount(paidText, currency);
   const paidInvalid = paidText.trim() !== "" && paidNow === null;
-  const payments =
-    paidInvalid || discount === null
-      ? null
-      : buildPayments(total, { method, paidNow, tendered, wallet, reference: reference.trim() });
-  const onUtang = payments?.find((p) => p.method === "utang")?.amount ?? 0;
-  const cashPay = payments?.find((p) => p.method === "cash");
-  const change = cashPay && tendered !== null && tendered > 0 ? changeDue(tendered, cashPay.amount) : 0;
+  const splitResult = useMemo(
+    () =>
+      buildSplitPayments(total, splitTenders, {
+        method,
+        paidNow,
+        tendered,
+        wallet,
+        reference: reference.trim(),
+      }),
+    [total, splitTenders, method, paidNow, tendered, wallet, reference],
+  );
+  const payments = paidInvalid || discount === null ? null : splitResult.payments;
+  const remainingDue = splitResult.remainingDue;
+  const splitExceeded = splitTenders.length > 0 && splitResult.lockedTotal > total;
+  const onUtang = splitResult.onUtang;
+  const change = splitResult.change;
   const customers = useQuery({ queryKey: ["customers"], queryFn: fetchCustomers, staleTime: 30_000 });
 
   const [customPinned, setCustomPinned] = useState<string[] | null>(() => getStoredPinned());
@@ -425,6 +436,7 @@ export function SellPage() {
     setTenderedText("");
     setReference("");
     setPaidText("");
+    setSplitTenders([]);
     setCustomerId("");
     setProblem(null);
     setApprovalId(null);
@@ -432,6 +444,32 @@ export function SellPage() {
     setShowApprovalDialog(false);
     setEditingVariantId(null);
     attempt.current = null;
+  }
+
+  function addSplitTender() {
+    if (method === "utang" || paidNow === null || paidNow <= 0 || paidNow >= remainingDue) return;
+    if (method === "cash" && tendered !== null && tendered > 0 && tendered < paidNow) {
+      setProblem(t("sell.problem.tendered_too_low"));
+      return;
+    }
+    const ref = reference.trim();
+    const draft: PaymentDraft =
+      method === "cash"
+        ? { method: "cash", amount: paidNow, tendered: tendered && tendered > 0 ? tendered : paidNow }
+        : method === "ewallet"
+          ? { method: "ewallet", amount: paidNow, wallet, ...(ref ? { reference: ref } : {}) }
+          : { method: "card", amount: paidNow, ...(ref ? { reference: ref } : {}) };
+    setSplitTenders((prev) => [...prev, draft]);
+    setPaidText("");
+    setTenderedText("");
+    setReference("");
+    setProblem(null);
+    setMethod(method === "cash" ? "ewallet" : "cash");
+  }
+
+  function removeSplitTender(idx: number) {
+    setSplitTenders((prev) => prev.filter((_, i) => i !== idx));
+    setProblem(null);
   }
 
   const addCustomer = useMutation({
@@ -475,9 +513,11 @@ export function SellPage() {
         const draft: SaleDraft = { ...base, localNo: nextLocalNo(day) };
         try {
           const r = await submitSale(draft, attempt.current.opId);
-          const cash = payments.find((p) => p.method === "cash");
-          const changeAmt = cash ? changeDue(cash.tendered ?? cash.amount, cash.amount) : 0;
-          const utangAmt = payments.find((p) => p.method === "utang")?.amount ?? 0;
+          const changeAmt = payments.reduce(
+            (sum, p) => sum + (p.method === "cash" ? changeDue(p.tendered ?? p.amount, p.amount) : 0),
+            0,
+          );
+          const utangAmt = payments.filter((p) => p.method === "utang").reduce((sum, p) => sum + p.amount, 0);
           const receiptData: ReceiptData = {
             tenantName: access.tenant.name,
             storeName: store.name,
@@ -749,7 +789,7 @@ export function SellPage() {
     if (!stockQuery.data || !store) return undefined;
     return applyOptimisticStockDeltas(stockQuery.data, store.id, outboxOps);
   }, [stockQuery.data, store, outboxOps]);
-  const cashTarget = paidNow !== null ? paidNow : total;
+  const cashTarget = paidNow !== null ? paidNow : remainingDue;
 
   return (
     <div className="grid h-full min-h-0 lg:grid-cols-[1fr_400px]">
@@ -1323,6 +1363,62 @@ export function SellPage() {
           </div>
 
           <div className="grid gap-2">
+            {splitTenders.length > 0 ? (
+              <div
+                data-testid="split-tenders-list"
+                className="grid gap-1.5 rounded-lg border border-brand-200 bg-white px-3 py-2 text-xs shadow-2xs"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold tracking-wider text-slate-500 uppercase">
+                    {t("sell.splitTendersLabel")}
+                  </span>
+                  <button
+                    type="button"
+                    data-testid="clear-split-tenders"
+                    onClick={() => setSplitTenders([])}
+                    className="cursor-pointer text-xs font-medium text-slate-500 hover:text-slate-800"
+                  >
+                    {t("sell.splitClearAll")}
+                  </button>
+                </div>
+                {splitTenders.map((sp, idx) => (
+                  <div
+                    key={`${sp.method}-${idx}`}
+                    data-testid={`split-line-${idx}`}
+                    className="flex items-center justify-between gap-2 border-t border-slate-100 pt-1.5"
+                  >
+                    <span className="truncate font-medium text-slate-700">
+                      {sp.method === "ewallet" && sp.wallet
+                        ? `${t("sell.ewallet")} (${t(`sell.wallets.${sp.wallet}`)})`
+                        : sp.method === "card"
+                          ? `${t("sell.card")}${sp.reference ? ` · ${sp.reference}` : ""}`
+                          : t(`sell.${sp.method}`)}
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-semibold text-slate-900 tabular-nums">{fmt(sp.amount)}</span>
+                      <button
+                        type="button"
+                        aria-label={t("sell.splitRemove")}
+                        data-testid={`remove-split-${idx}`}
+                        onClick={() => removeSplitTender(idx)}
+                        className="cursor-pointer rounded p-0.5 text-slate-400 hover:bg-slate-100 hover:text-red-600"
+                      >
+                        <X size={13} aria-hidden />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                <div className="flex items-baseline justify-between border-t border-brand-100 pt-1.5 text-brand-700">
+                  <span className="font-semibold">{t("sell.splitRemaining")}</span>
+                  <span className="text-sm font-semibold tabular-nums" data-testid="split-remaining">
+                    {fmt(remainingDue)}
+                  </span>
+                </div>
+              </div>
+            ) : null}
+
+            {splitExceeded ? <Alert>{t("sell.splitExceeded")}</Alert> : null}
+
             <select
               ref={payMethodSelectRef}
               aria-label={t("sell.payment")}
@@ -1337,69 +1433,92 @@ export function SellPage() {
               <option value="utang">{t("sell.utang")}</option>
             </select>
 
-            <div className="grid grid-cols-4 gap-1.5" role="group" aria-label={t("sell.payment")}>
-              {(
-                [
-                  ["cash", t("sell.cash"), Banknote],
-                  ["ewallet", t("sell.ewallet"), Smartphone],
-                  ["card", t("sell.card"), CreditCard],
-                  ["utang", t("sell.utang"), HandCoins],
-                ] as const
-              ).map(([val, label, Icon]) => {
-                const active = method === val;
-                return (
-                  <button
-                    key={val}
+            {remainingDue > 0 || splitTenders.length === 0 ? (
+              <>
+                <div className="grid grid-cols-4 gap-1.5" role="group" aria-label={t("sell.payment")}>
+                  {(
+                    [
+                      ["cash", t("sell.cash"), Banknote],
+                      ["ewallet", t("sell.ewallet"), Smartphone],
+                      ["card", t("sell.card"), CreditCard],
+                      ["utang", t("sell.utang"), HandCoins],
+                    ] as const
+                  ).map(([val, label, Icon]) => {
+                    const active = method === val;
+                    return (
+                      <button
+                        key={val}
+                        type="button"
+                        data-testid={`tender-btn-${val}`}
+                        onClick={() => setMethod(val)}
+                        className={`flex cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border px-2 py-2 text-xs transition-all ${
+                          active
+                            ? "border-brand-500 bg-brand-50 font-semibold text-brand-text shadow-2xs"
+                            : "border-slate-200/90 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                        }`}
+                      >
+                        <Icon size={15} className={active ? "text-brand-600" : "text-slate-400"} aria-hidden />
+                        <span className="truncate">{label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {method !== "utang" ? (
+                  <div className="grid grid-cols-2 gap-2">
+                    <label className="grid gap-1 text-xs text-slate-500">
+                      <span>{t("sell.paidNow")}</span>
+                      <Input
+                        className="h-8 bg-white text-right text-xs tabular-nums"
+                        data-testid="paid-now"
+                        inputMode="decimal"
+                        placeholder={fmt(remainingDue)}
+                        value={paidText}
+                        onChange={(e) => setPaidText(e.target.value)}
+                      />
+                    </label>
+
+                    {method === "cash" ? (
+                      <label className="grid gap-1 text-xs text-slate-500">
+                        <span className="flex items-center justify-between">
+                          <span>{t("sell.tendered")}</span>
+                          <kbd className="rounded bg-slate-200/60 px-1 font-mono text-xs text-slate-500">F8</kbd>
+                        </span>
+                        <Input
+                          ref={tenderedInputRef}
+                          className="h-8 bg-white text-right text-xs tabular-nums"
+                          data-testid="tendered"
+                          inputMode="decimal"
+                          placeholder={fmt(cashTarget)}
+                          value={tenderedText}
+                          onChange={(e) => setTenderedText(e.target.value)}
+                        />
+                      </label>
+                    ) : (
+                      <div />
+                    )}
+                  </div>
+                ) : null}
+
+                {method !== "utang" && paidNow !== null && paidNow > 0 && paidNow < remainingDue ? (
+                  <Button
                     type="button"
-                    data-testid={`tender-btn-${val}`}
-                    onClick={() => setMethod(val)}
-                    className={`flex cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border px-2 py-2 text-xs transition-all ${
-                      active
-                        ? "border-brand-500 bg-brand-50 font-semibold text-brand-text shadow-2xs"
-                        : "border-slate-200/90 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                    }`}
+                    size="sm"
+                    variant="outline"
+                    data-testid="add-split-tender"
+                    onClick={addSplitTender}
+                    className="h-8 w-full justify-center border-brand-200 bg-brand-50/70 text-xs font-semibold text-brand-700 hover:bg-brand-100/70"
                   >
-                    <Icon size={15} className={active ? "text-brand-600" : "text-slate-400"} aria-hidden />
-                    <span className="truncate">{label}</span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {method !== "utang" ? (
-              <div className="grid grid-cols-2 gap-2">
-                <label className="grid gap-1 text-xs text-slate-500">
-                  <span>{t("sell.paidNow")}</span>
-                  <Input
-                    className="h-8 bg-white text-right text-xs tabular-nums"
-                    data-testid="paid-now"
-                    inputMode="decimal"
-                    placeholder={fmt(total)}
-                    value={paidText}
-                    onChange={(e) => setPaidText(e.target.value)}
-                  />
-                </label>
-
-                {method === "cash" ? (
-                  <label className="grid gap-1 text-xs text-slate-500">
-                    <span className="flex items-center justify-between">
-                      <span>{t("sell.tendered")}</span>
-                      <kbd className="rounded bg-slate-200/60 px-1 font-mono text-xs text-slate-500">F8</kbd>
-                    </span>
-                    <Input
-                      ref={tenderedInputRef}
-                      className="h-8 bg-white text-right text-xs tabular-nums"
-                      data-testid="tendered"
-                      inputMode="decimal"
-                      placeholder={fmt(cashTarget)}
-                      value={tenderedText}
-                      onChange={(e) => setTenderedText(e.target.value)}
-                    />
-                  </label>
-                ) : (
-                  <div />
-                )}
-              </div>
+                    {t("sell.splitAddTender", {
+                      method:
+                        method === "ewallet"
+                          ? t(`sell.wallets.${wallet}`)
+                          : t(`sell.${method}`),
+                      amount: fmt(paidNow),
+                    })}
+                  </Button>
+                ) : null}
+              </>
             ) : null}
 
             {method === "cash" && cashTarget > 0 ? (
@@ -1426,7 +1545,7 @@ export function SellPage() {
               </div>
             ) : null}
 
-            {method === "cash" && change > 0 ? (
+            {change > 0 ? (
               <div className="flex items-baseline justify-between rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-900">
                 <span className="text-xs font-semibold tracking-wider uppercase">{t("sell.change")}</span>
                 <span className="text-base font-semibold tabular-nums" data-testid="change">

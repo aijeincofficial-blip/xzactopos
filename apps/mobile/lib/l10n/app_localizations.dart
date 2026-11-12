@@ -4465,6 +4465,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your active cart will be parked automatically when you resume one below.'**
   String get heldSaleSwapBanner;
+
+  /// No description provided for @paySplitAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'+ Add {method} ({amount}) · Split remaining'**
+  String paySplitAdd(String method, String amount);
+
+  /// No description provided for @paySplitTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Split payments'**
+  String get paySplitTitle;
+
+  /// No description provided for @paySplitRemaining.
+  ///
+  /// In en, this message translates to:
+  /// **'Remaining due'**
+  String get paySplitRemaining;
+
+  /// No description provided for @paySplitClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get paySplitClear;
+
+  /// No description provided for @paySplitExceeded.
+  ///
+  /// In en, this message translates to:
+  /// **'Split payments exceed the total. Remove a tender first.'**
+  String get paySplitExceeded;
+
+  /// No description provided for @todaySearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search receipt no. or customer'**
+  String get todaySearchHint;
+
+  /// No description provided for @todayFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get todayFilterAll;
+
+  /// No description provided for @todayFilterCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get todayFilterCompleted;
+
+  /// No description provided for @todayFilterCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get todayFilterCancelled;
+
+  /// No description provided for @todayNoMatches.
+  ///
+  /// In en, this message translates to:
+  /// **'No sales match your search.'**
+  String get todayNoMatches;
+
+  /// No description provided for @sellExpiredBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Expired'**
+  String get sellExpiredBadge;
+
+  /// No description provided for @sellExpiringSoonBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Exp soon'**
+  String get sellExpiringSoonBadge;
+
+  /// No description provided for @sellCartExpiredWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 item in cart is expired — check package before selling} other{{count} items in cart are expired — check packages}}'**
+  String sellCartExpiredWarning(int count);
 }
 
 class _AppLocalizationsDelegate

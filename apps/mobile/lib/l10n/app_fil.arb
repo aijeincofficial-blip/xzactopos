@@ -1461,5 +1461,35 @@
   "heldSaleDiscard": "Alisin",
   "heldSaleResumed": "Ibinalik ang naka-hold na benta",
   "heldSaleSwapped": "Ibinalik ang benta at itinabi ang naunang cart",
-  "heldSaleSwapBanner": "Kusang itatabi ang kasalukuyang cart kapag nagbalik ka ng benta sa ibaba."
+  "heldSaleSwapBanner": "Kusang itatabi ang kasalukuyang cart kapag nagbalik ka ng benta sa ibaba.",
+  "paySplitAdd": "+ Idagdag ang {method} ({amount}) · Hatiin ang kulang",
+  "@paySplitAdd": {
+    "placeholders": {
+      "method": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "paySplitTitle": "Hating bayad",
+  "paySplitRemaining": "Natitirang babayaran",
+  "paySplitClear": "Alisin",
+  "paySplitExceeded": "Lampas sa kabuuan ang hating bayad. Alisin muna ang isang bayad.",
+  "todaySearchHint": "Hanapin ang resibo o mamimili",
+  "todayFilterAll": "Lahat",
+  "todayFilterCompleted": "Tapos na",
+  "todayFilterCancelled": "Kinansela",
+  "todayNoMatches": "Walang benta na tugma sa hinahanap.",
+  "sellExpiredBadge": "Paso na",
+  "sellExpiringSoonBadge": "Malapit mapaso",
+  "sellCartExpiredWarning": "{count, plural, other{{count} item sa cart ay paso na — suriin muna}}",
+  "@sellCartExpiredWarning": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

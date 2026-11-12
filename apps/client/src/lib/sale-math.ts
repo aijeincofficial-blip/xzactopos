@@ -217,6 +217,76 @@ export function buildPayments(total: number, c: PaymentChoice): PaymentDraft[] |
   return out;
 }
 
+export interface SplitPaymentsResult {
+  payments: PaymentDraft[] | null;
+  lockedTotal: number;
+  remainingDue: number;
+  change: number;
+  onUtang: number;
+}
+
+/**
+ * Combines previously locked split tenders (e.g. ₱200 Cash) with the active tender choice covering
+ * the remaining balance (e.g. ₱350 GCash, or ₱250 Card + ₱100 Utang).
+ */
+export function buildSplitPayments(
+  total: number,
+  lockedTenders: readonly PaymentDraft[],
+  activeChoice: PaymentChoice,
+): SplitPaymentsResult {
+  const lockedTotal = lockedTenders.reduce((sum, p) => sum + p.amount, 0);
+  const lockedChange = lockedTenders.reduce(
+    (sum, p) => sum + (p.method === "cash" ? changeDue(p.tendered ?? p.amount, p.amount) : 0),
+    0,
+  );
+  if (total < 0 || lockedTotal > total || lockedTenders.some((p) => p.amount <= 0)) {
+    return {
+      payments: null,
+      lockedTotal,
+      remainingDue: Math.max(0, total - lockedTotal),
+      change: lockedChange,
+      onUtang: 0,
+    };
+  }
+  const remainingDue = total - lockedTotal;
+  if (remainingDue === 0) {
+    const onUtang = lockedTenders.filter((p) => p.method === "utang").reduce((s, p) => s + p.amount, 0);
+    return {
+      payments: [...lockedTenders],
+      lockedTotal,
+      remainingDue: 0,
+      change: lockedChange,
+      onUtang,
+    };
+  }
+  const tail = buildPayments(remainingDue, activeChoice);
+  if (!tail) {
+    return {
+      payments: null,
+      lockedTotal,
+      remainingDue,
+      change: lockedChange,
+      onUtang: 0,
+    };
+  }
+  const payments = [...lockedTenders, ...tail];
+  const tailCash = tail.find((p) => p.method === "cash");
+  const tailChange = tailCash
+    ? changeDue(
+        activeChoice.tendered && activeChoice.tendered > 0 ? activeChoice.tendered : tailCash.amount,
+        tailCash.amount,
+      )
+    : 0;
+  const onUtang = payments.filter((p) => p.method === "utang").reduce((s, p) => s + p.amount, 0);
+  return {
+    payments,
+    lockedTotal,
+    remainingDue,
+    change: lockedChange + tailChange,
+    onUtang,
+  };
+}
+
 /** Cash typed by the user ("125.50") to minor units; empty = 0; null when it is not a valid amount for the currency. */
 export function parseAmount(value: string, currency: string): number | null {
   const v = value.trim();

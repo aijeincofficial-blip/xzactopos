@@ -2593,4 +2593,54 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get heldSaleSwapBanner =>
       'Your active cart will be parked automatically when you resume one below.';
+
+  @override
+  String paySplitAdd(String method, String amount) {
+    return '+ Add $method ($amount) · Split remaining';
+  }
+
+  @override
+  String get paySplitTitle => 'Split payments';
+
+  @override
+  String get paySplitRemaining => 'Remaining due';
+
+  @override
+  String get paySplitClear => 'Clear';
+
+  @override
+  String get paySplitExceeded =>
+      'Split payments exceed the total. Remove a tender first.';
+
+  @override
+  String get todaySearchHint => 'Search receipt no. or customer';
+
+  @override
+  String get todayFilterAll => 'All';
+
+  @override
+  String get todayFilterCompleted => 'Completed';
+
+  @override
+  String get todayFilterCancelled => 'Cancelled';
+
+  @override
+  String get todayNoMatches => 'No sales match your search.';
+
+  @override
+  String get sellExpiredBadge => 'Expired';
+
+  @override
+  String get sellExpiringSoonBadge => 'Exp soon';
+
+  @override
+  String sellCartExpiredWarning(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items in cart are expired — check packages',
+      one: '1 item in cart is expired — check package before selling',
+    );
+    return '$_temp0';
+  }
 }

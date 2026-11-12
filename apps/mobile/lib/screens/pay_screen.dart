@@ -37,6 +37,7 @@ class _PayScreenState extends State<PayScreen> {
   final _utangKey = GlobalKey();
   bool _utangShown = false;
   String _wallet = 'gcash'; // which wallet an e-wallet payment went to
+  final List<PaymentDraft> _splitTenders = [];
   PickedCustomer? _customer;
   bool _saving = false;
   SupervisorApprovalResult? _approvalResult;
@@ -72,13 +73,58 @@ class _PayScreenState extends State<PayScreen> {
   }
 
   int get _total => _subtotal - _discountAmt;
+  int get _lockedTotal => _splitTenders.fold<int>(0, (a, p) => a + p.amount);
+  int get _lockedChange => _splitTenders.fold<int>(
+        0,
+        (a, p) => a + (p.method == 'cash' && p.tendered != null && p.tendered! > p.amount ? p.tendered! - p.amount : 0),
+      );
+  bool get _splitExceeded => _splitTenders.isNotEmpty && _lockedTotal > _total;
+  int get _remainingDue => (_total - _lockedTotal).clamp(0, _total);
   int? get _receivedRaw => _parse(_received.text);
-  int get _receivedAmt => (_receivedRaw == null || _receivedRaw! < 0) ? _total : _receivedRaw!;
-  int get _applied => _receivedAmt < _total ? _receivedAmt : _total;
-  int get _utang => _total - _applied;
-  int get _change => _method == 'cash' && _receivedAmt > _total ? _receivedAmt - _total : 0;
+  int get _receivedAmt => (_receivedRaw == null || _receivedRaw! < 0) ? _remainingDue : _receivedRaw!;
+  int get _applied => _receivedAmt < _remainingDue ? _receivedAmt : _remainingDue;
+  int get _utang => _remainingDue - _applied;
+  int get _change => _lockedChange + (_method == 'cash' && _receivedAmt > _remainingDue ? _receivedAmt - _remainingDue : 0);
   bool get _valid =>
-      _total > 0 && _receivedRaw != -1 && _parse(_discount.text) != -1 && (_utang == 0 || _customer != null);
+      _total > 0 &&
+      !_splitExceeded &&
+      _receivedRaw != -1 &&
+      _parse(_discount.text) != -1 &&
+      (_utang == 0 || _customer != null);
+
+  void _addSplitTender() {
+    if (_applied <= 0 || _applied >= _remainingDue) return;
+    setState(() {
+      _splitTenders.add(
+        PaymentDraft(
+          _method,
+          _applied,
+          tendered: _method == 'cash' ? _receivedAmt : null,
+          wallet: _method == 'ewallet' ? _wallet : null,
+          reference: _method == 'card' && _cardRef.text.trim().isNotEmpty ? _cardRef.text.trim() : null,
+        ),
+      );
+      _received.clear();
+      _cardRef.clear();
+      _method = _method == 'cash' ? 'ewallet' : 'cash';
+    });
+  }
+
+  void _removeSplitTender(int index) {
+    setState(() {
+      _splitTenders.removeAt(index);
+    });
+  }
+
+  String _tenderLabel(AppLocalizations t, PaymentDraft p) {
+    if (p.method == 'ewallet') {
+      return p.wallet != null ? '${t.payEwallet} (${walletLabel(t, p.wallet!)})' : t.payEwallet;
+    }
+    if (p.method == 'card') {
+      return p.reference != null && p.reference!.isNotEmpty ? '${t.payCard} · ${p.reference}' : t.payCard;
+    }
+    return t.payCash;
+  }
 
   Future<void> _chooseCustomer() async {
     final store = CatalogScope.of(context).store;
@@ -129,6 +175,7 @@ class _PayScreenState extends State<PayScreen> {
         approvalId: _approvalResult?.approvalId,
         offlineApproval: _approvalResult?.offlineApproval,
         payments: [
+          ..._splitTenders,
           if (_applied > 0)
             PaymentDraft(
               _method,
@@ -156,12 +203,12 @@ class _PayScreenState extends State<PayScreen> {
     }
   }
 
-  /// A few useful cash amounts: the smallest bills that cover the total.
+  /// A few useful cash amounts: the smallest bills that cover the remaining due.
   List<int> get _quick {
     const bills = [2000, 5000, 10000, 20000, 50000, 100000];
     final out = [
       for (final b in bills)
-        if (b >= _total && b != _total) b,
+        if (b >= _remainingDue && b != _remainingDue) b,
     ];
     return out.take(3).toList();
   }
@@ -268,6 +315,93 @@ class _PayScreenState extends State<PayScreen> {
               ],
             ),
           ),
+          if (_splitTenders.isNotEmpty) ...[
+            const SizedBox(height: Gap.s),
+            AppCard(
+              key: const Key('pay-split-list'),
+              padding: const EdgeInsets.symmetric(horizontal: Gap.m, vertical: Gap.s),
+              radius: Gap.radiusM,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        t.paySplitTitle.toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: scheme.outline,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      TextButton(
+                        key: const Key('pay-clear-splits'),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: Gap.xs),
+                          minimumSize: const Size(0, 28),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        onPressed: () => setState(_splitTenders.clear),
+                        child: Text(t.paySplitClear, style: const TextStyle(fontSize: 12)),
+                      ),
+                    ],
+                  ),
+                  for (var i = 0; i < _splitTenders.length; i++)
+                    Padding(
+                      key: Key('pay-split-line-$i'),
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              _tenderLabel(t, _splitTenders[i]),
+                              style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                          Text(
+                            _money(_splitTenders[i].amount),
+                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                          ),
+                          const SizedBox(width: 4),
+                          IconButton(
+                            key: Key('pay-remove-split-$i'),
+                            icon: Icon(Icons.close_rounded, size: 17, color: scheme.error),
+                            visualDensity: VisualDensity.compact,
+                            constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                            padding: EdgeInsets.zero,
+                            onPressed: () => _removeSplitTender(i),
+                          ),
+                        ],
+                      ),
+                    ),
+                  const Divider(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        t.paySplitRemaining,
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: scheme.primary),
+                      ),
+                      Text(
+                        _money(_remainingDue),
+                        key: const Key('pay-remaining'),
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: scheme.primary),
+                      ),
+                    ],
+                  ),
+                  if (_splitExceeded) ...[
+                    const SizedBox(height: Gap.xs),
+                    Text(
+                      t.paySplitExceeded,
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: scheme.error),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: Gap.s),
 
           // Payment Method Recessed Pill Selector (single-line, Cobalt active card, zero text clipping)
@@ -359,7 +493,7 @@ class _PayScreenState extends State<PayScreen> {
               labelText: _method == 'cash'
                   ? t.payReceivedCash
                   : (_method == 'card' ? t.payCardReceived : t.payReceivedEwallet),
-              hintText: Money(_total, _ccy).toDecimalString(),
+              hintText: Money(_remainingDue, _ccy).toDecimalString(),
               prefixText:
                   '${NumberFormat.simpleCurrency(locale: Localizations.localeOf(context).languageCode, name: _ccy).currencySymbol} ',
               prefixStyle: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: scheme.onSurface),
@@ -399,6 +533,30 @@ class _PayScreenState extends State<PayScreen> {
               ),
             ],
           ),
+          if (_applied > 0 && _applied < _remainingDue) ...[
+            const SizedBox(height: Gap.s),
+            OutlinedButton.icon(
+              key: const Key('pay-add-split'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: scheme.primary,
+                side: BorderSide(color: scheme.primary.withValues(alpha: 0.45)),
+                backgroundColor: scheme.primaryContainer.withValues(alpha: 0.35),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Gap.radiusM)),
+                padding: const EdgeInsets.symmetric(horizontal: Gap.m, vertical: 10),
+              ),
+              onPressed: _addSplitTender,
+              icon: const Icon(Icons.call_split_rounded, size: 18),
+              label: Text(
+                t.paySplitAdd(
+                  _method == 'ewallet'
+                      ? walletLabel(t, _wallet)
+                      : (_method == 'card' ? t.payCard : t.payCash),
+                  _money(_applied),
+                ),
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+              ),
+            ),
+          ],
           const SizedBox(height: Gap.m),
 
           // Sukli / Change Card

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildPayments,
+  buildSplitPayments,
   cartGrossSubtotal,
   cartLineDiscounts,
   cartNeedsDiscountApproval,
@@ -342,5 +343,44 @@ describe("per-line discounts and price overrides", () => {
         maxDiscountPercent: 10,
       }),
     ).toBe(false);
+  });
+
+  it("builds multi-tender split payments across cash, e-wallet, card, and utang", () => {
+    // ₱550.00 total: ₱200.00 Cash locked + ₱350.00 GCash active
+    const split1 = buildSplitPayments(
+      55000,
+      [{ method: "cash", amount: 20000, tendered: 20000 }],
+      { method: "ewallet", paidNow: null, tendered: null, wallet: "gcash", reference: "GC-101" },
+    );
+    expect(split1.remainingDue).toBe(35000);
+    expect(split1.change).toBe(0);
+    expect(split1.onUtang).toBe(0);
+    expect(split1.payments).toEqual([
+      { method: "cash", amount: 20000, tendered: 20000 },
+      { method: "ewallet", amount: 35000, wallet: "gcash", reference: "GC-101" },
+    ]);
+
+    // ₱600.00 total: ₱300.00 Card locked + ₱200.00 Cash (₱500 bill -> ₱300 change? No, ₱200 cash paidNow with ₱500 bill -> ₱300 change) + ₱100.00 Utang
+    const split2 = buildSplitPayments(
+      60000,
+      [{ method: "card", amount: 30000, reference: "TR-88" }],
+      { method: "cash", paidNow: 20000, tendered: 50000 },
+    );
+    expect(split2.remainingDue).toBe(30000);
+    expect(split2.change).toBe(30000);
+    expect(split2.onUtang).toBe(10000);
+    expect(split2.payments).toEqual([
+      { method: "card", amount: 30000, reference: "TR-88" },
+      { method: "cash", amount: 20000, tendered: 50000 },
+      { method: "utang", amount: 10000 },
+    ]);
+
+    // Rejects when locked tenders exceed sale total (e.g. after cart discount)
+    const invalid = buildSplitPayments(
+      15000,
+      [{ method: "cash", amount: 20000, tendered: 20000 }],
+      { method: "cash", paidNow: null, tendered: null },
+    );
+    expect(invalid.payments).toBeNull();
   });
 });
