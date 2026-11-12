@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 import '../backend.dart';
 import '../core/camera_scanner.dart';
 import '../core/theme.dart';
+import '../core/ui.dart';
 import '../data/count_models.dart';
 import '../data/local_store.dart';
 import '../data/warehouse_models.dart';
@@ -42,8 +43,21 @@ class CountTab extends StatelessWidget {
       stream: store.watchActiveWarehouse(),
       builder: (context, snap) {
         final wh = snap.data;
-        if (wh == null) return Center(child: Padding(padding: const EdgeInsets.all(Gap.xl), child: Text(t.whNoWarehouse, textAlign: TextAlign.center)));
-        if (api == null) return Center(child: Text(t.whCountSoon, key: const Key('count-soon'), textAlign: TextAlign.center));
+        if (wh == null) return EmptyState(icon: Icons.warehouse_rounded, text: t.whNoWarehouse);
+        if (api == null) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(Gap.xl),
+              child: AppCard(
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  CoinBadge(icon: Icons.fact_check_rounded, color: Theme.of(context).colorScheme.primary, size: 52),
+                  const SizedBox(height: Gap.m),
+                  Text(t.whCountSoon, key: const Key('count-soon'), textAlign: TextAlign.center),
+                ]),
+              ),
+            ),
+          );
+        }
         return _CountBody(key: ValueKey(wh.id), warehouse: wh, api: api);
       },
     );
@@ -355,6 +369,7 @@ class _CountBodyState extends State<_CountBody> {
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
     switch (_load) {
       case _Load.loading:
         return const Center(child: CircularProgressIndicator());
@@ -362,112 +377,212 @@ class _CountBodyState extends State<_CountBody> {
         return Center(
           child: Padding(
             padding: const EdgeInsets.all(Gap.xl),
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              Text(t.whCountOffline, key: const Key('count-offline'), textAlign: TextAlign.center),
-              const SizedBox(height: Gap.m),
-              FilledButton(key: const Key('count-retry'), onPressed: _refresh, child: Text(t.whCountRetry)),
-              const SizedBox(height: Gap.m),
-              OutlinedButton(
-                key: const Key('count-start-offline'),
-                onPressed: _busy ? null : _startOffline,
-                child: Text(t.whCountStartOffline),
-              ),
-            ]),
+            child: AppCard(
+              padding: const EdgeInsets.all(Gap.l + 4),
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                CoinBadge(icon: Icons.cloud_off_rounded, color: scheme.tertiary, size: 52),
+                const SizedBox(height: Gap.m),
+                Text(t.whCountOffline, key: const Key('count-offline'), textAlign: TextAlign.center),
+                const SizedBox(height: Gap.l),
+                SizedBox(
+                  width: double.infinity,
+                  height: 46,
+                  child: FilledButton(key: const Key('count-retry'), onPressed: _refresh, child: Text(t.whCountRetry)),
+                ),
+                const SizedBox(height: Gap.s),
+                SizedBox(
+                  width: double.infinity,
+                  height: 46,
+                  child: OutlinedButton(
+                    key: const Key('count-start-offline'),
+                    onPressed: _busy ? null : _startOffline,
+                    child: Text(t.whCountStartOffline),
+                  ),
+                ),
+              ]),
+            ),
           ),
         );
       case _Load.ready:
-        return ListView(padding: const EdgeInsets.all(Gap.l), children: [
+        return ListView(padding: const EdgeInsets.fromLTRB(Gap.l, Gap.l, Gap.l, Gap.xxl + 40), children: [
           if (_session == null) ..._startCard(context, t) else ..._countCard(context, t, _session!),
           if (_error != null)
             Padding(
               padding: const EdgeInsets.only(top: Gap.m),
-              child: Text(_error!, key: const Key('count-error'), style: TextStyle(color: Theme.of(context).colorScheme.error)),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: Gap.m, vertical: Gap.s),
+                decoration: BoxDecoration(
+                  color: scheme.errorContainer,
+                  borderRadius: BorderRadius.circular(Gap.radiusM),
+                ),
+                child: Row(children: [
+                  Icon(Icons.error_outline_rounded, size: 18, color: scheme.error),
+                  const SizedBox(width: Gap.s),
+                  Expanded(
+                    child: Text(
+                      _error!,
+                      key: const Key('count-error'),
+                      style: TextStyle(color: scheme.onErrorContainer, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ]),
+              ),
             ),
         ]);
     }
   }
 
-  List<Widget> _startCard(BuildContext context, AppLocalizations t) => [
-        Text(t.whCountNone, key: const Key('count-none'), style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(height: Gap.m),
-        if (widget.warehouse.binsEnabled)
-          DropdownButtonFormField<String?>(
-            key: const Key('count-scope'),
-            initialValue: _scopeBin,
-            decoration: InputDecoration(labelText: t.whCountScope),
-            items: [
-              DropdownMenuItem<String?>(value: null, child: Text(t.whCountWhole)),
-              for (final b in _bins) DropdownMenuItem<String?>(value: b.id, child: Text(b.code)),
-            ],
-            onChanged: (v) => setState(() => _scopeBin = v),
+  List<Widget> _startCard(BuildContext context, AppLocalizations t) {
+    final scheme = Theme.of(context).colorScheme;
+    return [
+      AppCard(
+        padding: const EdgeInsets.all(Gap.l),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Row(children: [
+            CoinBadge(icon: Icons.fact_check_rounded, color: scheme.primary, size: 42),
+            const SizedBox(width: Gap.m),
+            Expanded(
+              child: Text(
+                t.whCountNone,
+                key: const Key('count-none'),
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+              ),
+            ),
+          ]),
+          const SizedBox(height: Gap.m),
+          if (widget.warehouse.binsEnabled) ...[
+            DropdownButtonFormField<String?>(
+              key: const Key('count-scope'),
+              initialValue: _scopeBin,
+              decoration: InputDecoration(labelText: t.whCountScope),
+              items: [
+                DropdownMenuItem<String?>(value: null, child: Text(t.whCountWhole)),
+                for (final b in _bins) DropdownMenuItem<String?>(value: b.id, child: Text(b.code)),
+              ],
+              onChanged: (v) => setState(() => _scopeBin = v),
+            ),
+            const SizedBox(height: Gap.m),
+          ],
+          TextField(
+            key: const Key('count-notes'),
+            controller: _notes,
+            decoration: InputDecoration(
+              labelText: t.whNotes,
+              prefixIcon: const Icon(Icons.notes_rounded),
+            ),
           ),
-        const SizedBox(height: Gap.m),
-        TextField(key: const Key('count-notes'), controller: _notes, decoration: InputDecoration(labelText: t.whNotes)),
-        const SizedBox(height: Gap.l),
-        FilledButton(key: const Key('count-start'), onPressed: _busy ? null : _start, child: Text(t.whCountStart)),
-      ];
+          const SizedBox(height: Gap.l),
+          SizedBox(
+            height: 48,
+            child: FilledButton(
+              key: const Key('count-start'),
+              onPressed: _busy ? null : _start,
+              child: Text(t.whCountStart),
+            ),
+          ),
+        ]),
+      ),
+    ];
+  }
 
   List<Widget> _countCard(BuildContext context, AppLocalizations t, CountSession s) {
+    final scheme = Theme.of(context).colorScheme;
     final store = CatalogScope.of(context).store;
     final needsBin = widget.warehouse.binsEnabled && s.binId == null;
     return [
-      Text('${s.countNo} · ${s.wholeWarehouse ? t.whCountWhole : (s.binCode ?? '')}', key: const Key('count-header'), style: Theme.of(context).textTheme.titleMedium),
-      if (s.isLocal) ...[
-        const SizedBox(height: Gap.xs),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: Gap.s + 2, vertical: Gap.xs),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(Gap.radiusS),
+      AppCard(
+        padding: const EdgeInsets.all(Gap.m),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Row(children: [
+            CoinBadge(icon: Icons.inventory_rounded, color: scheme.primary, size: 38),
+            const SizedBox(width: Gap.m),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(
+                  '${s.countNo} · ${s.wholeWarehouse ? t.whCountWhole : (s.binCode ?? '')}',
+                  key: const Key('count-header'),
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+                ),
+                if (s.isLocal) ...[
+                  const SizedBox(height: Gap.xs),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: Gap.s + 2, vertical: Gap.xs),
+                    decoration: BoxDecoration(
+                      color: scheme.primaryContainer.withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(Gap.radiusS),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.cloud_off_rounded, size: 14, color: scheme.primary),
+                        const SizedBox(width: Gap.xs),
+                        Flexible(
+                          child: Text(
+                            t.whCountOfflineBanner,
+                            key: const Key('count-offline-banner'),
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: scheme.onPrimaryContainer,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ]),
+            ),
+          ]),
+          const SizedBox(height: Gap.m),
+          TextField(
+            key: const Key('count-search'),
+            controller: _search,
+            decoration: InputDecoration(
+              prefixIcon: const Icon(Icons.search_rounded),
+              hintText: t.searchProducts,
+              suffixIcon: cameraScanner.available
+                  ? IconButton(key: const Key('count-scan'), tooltip: t.scanWithCamera, icon: const Icon(Icons.qr_code_scanner_rounded), onPressed: _scan)
+                  : null,
+            ),
+            onChanged: (v) => setState(() => _query = v),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.cloud_off_rounded, size: 14, color: Theme.of(context).colorScheme.primary),
-              const SizedBox(width: Gap.xs),
-              Flexible(
-                child: Text(
-                  t.whCountOfflineBanner,
-                  key: const Key('count-offline-banner'),
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+          if (_query.trim().isNotEmpty)
+            StreamBuilder<List<ProductView>>(
+              stream: store.watchProducts(query: _query.trim()),
+              builder: (context, snap) => Column(children: [
+                for (final p in (snap.data ?? const <ProductView>[]).take(6))
+                  ListTile(
+                    key: Key('count-pick-${p.variantId}'),
+                    dense: true,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: Gap.xs),
+                    title: Text(p.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                    trailing: Icon(Icons.add_circle_outline_rounded, size: 18, color: scheme.primary),
+                    onTap: () => _pick(p),
+                  ),
+              ]),
+            ),
+        ]),
+      ),
+      if (_picked != null)
+        Padding(
+          padding: const EdgeInsets.only(top: Gap.s),
+          child: AppCard(
+            padding: const EdgeInsets.all(Gap.m),
+            borderColor: scheme.primary.withValues(alpha: 0.45),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              Row(children: [
+                CoinBadge(icon: Icons.edit_note_rounded, color: scheme.secondary, size: 34),
+                const SizedBox(width: Gap.s + 2),
+                Expanded(
+                  child: Text(
+                    _picked!.name,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
                   ),
                 ),
-              ),
-            ],
-          ),
-        ),
-      ],
-      const SizedBox(height: Gap.m),
-      TextField(
-        key: const Key('count-search'),
-        controller: _search,
-        decoration: InputDecoration(
-          prefixIcon: const Icon(Icons.search_rounded),
-          hintText: t.searchProducts,
-          suffixIcon: cameraScanner.available
-              ? IconButton(key: const Key('count-scan'), tooltip: t.scanWithCamera, icon: const Icon(Icons.qr_code_scanner_rounded), onPressed: _scan)
-              : null,
-        ),
-        onChanged: (v) => setState(() => _query = v),
-      ),
-      if (_query.trim().isNotEmpty)
-        StreamBuilder<List<ProductView>>(
-          stream: store.watchProducts(query: _query.trim()),
-          builder: (context, snap) => Column(children: [
-            for (final p in (snap.data ?? const <ProductView>[]).take(6))
-              ListTile(key: Key('count-pick-${p.variantId}'), dense: true, title: Text(p.name), onTap: () => _pick(p)),
-          ]),
-        ),
-      if (_picked != null)
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(Gap.m),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(_picked!.name, style: Theme.of(context).textTheme.titleSmall),
-              if (needsBin)
+              ]),
+              const SizedBox(height: Gap.s),
+              if (needsBin) ...[
                 DropdownButtonFormField<String?>(
                   key: const Key('count-bin'),
                   initialValue: _lineBin,
@@ -475,6 +590,8 @@ class _CountBodyState extends State<_CountBody> {
                   items: [for (final b in _bins) DropdownMenuItem<String?>(value: b.id, child: Text(b.code))],
                   onChanged: (v) => setState(() => _lineBin = v),
                 ),
+                const SizedBox(height: Gap.s),
+              ],
               TextField(
                 key: const Key('count-qty'),
                 controller: _qty,
@@ -483,29 +600,86 @@ class _CountBodyState extends State<_CountBody> {
                 decoration: InputDecoration(labelText: t.whCountQty),
               ),
               const SizedBox(height: Gap.m),
-              FilledButton(key: const Key('count-save'), onPressed: _busy ? null : _saveLine, child: Text(t.whCountSaveLine)),
+              SizedBox(
+                height: 44,
+                child: FilledButton(key: const Key('count-save'), onPressed: _busy ? null : _saveLine, child: Text(t.whCountSaveLine)),
+              ),
             ]),
           ),
         ),
       const SizedBox(height: Gap.m),
-      if (s.lines.isEmpty) Text(t.whCountNoLines, key: const Key('count-no-lines')),
+      if (s.lines.isEmpty)
+        AppCard(
+          padding: const EdgeInsets.all(Gap.l),
+          child: Center(
+            child: Text(
+              t.whCountNoLines,
+              key: const Key('count-no-lines'),
+              style: TextStyle(color: scheme.outline),
+            ),
+          ),
+        ),
       for (final l in s.lines)
-        ListTile(
-          key: Key('count-line-${l.variantId}${l.binId == null ? '' : '-${l.binId}'}'),
-          contentPadding: EdgeInsets.zero,
-          title: Text(_names[l.variantId] ?? t.whUnknownProduct),
-          subtitle: Text([if (l.binCode != null) l.binCode!, t.whCountSystemWas(_n(l.qtySystem))].join(' · ')),
-          trailing: Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.end, children: [
-            Text(_n(l.qtyCounted), style: Theme.of(context).textTheme.titleMedium),
-            if (l.variance != 0) Text(l.variance > 0 ? '+${_n(l.variance)}' : _n(l.variance), style: TextStyle(color: Theme.of(context).colorScheme.tertiary)),
-          ]),
-          onTap: () {
-            final p = _productOf(l.variantId);
-            if (p != null) _pick(p, bin: l.binId);
-          },
+        Padding(
+          padding: const EdgeInsets.only(bottom: Gap.s),
+          child: AppCard(
+            key: Key('count-line-${l.variantId}${l.binId == null ? '' : '-${l.binId}'}'),
+            padding: const EdgeInsets.symmetric(horizontal: Gap.m, vertical: Gap.s + 2),
+            onTap: () {
+              final p = _productOf(l.variantId);
+              if (p != null) _pick(p, bin: l.binId);
+            },
+            child: Row(
+              children: [
+                CoinBadge(
+                  icon: Icons.inventory_2_rounded,
+                  color: l.variance == 0 ? scheme.secondary : scheme.tertiary,
+                  size: 36,
+                ),
+                const SizedBox(width: Gap.m),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _names[l.variantId] ?? t.whUnknownProduct,
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        [if (l.binCode != null) l.binCode!, t.whCountSystemWas(_n(l.qtySystem))].join(' · '),
+                        style: TextStyle(fontSize: 12.5, color: scheme.outline),
+                      ),
+                    ],
+                  ),
+                ),
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      _n(l.qtyCounted),
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+                    ),
+                    if (l.variance != 0) ...[
+                      const SizedBox(height: 2),
+                      StatusPill(
+                        label: l.variance > 0 ? '+${_n(l.variance)}' : _n(l.variance),
+                        color: scheme.tertiaryContainer,
+                        textColor: scheme.tertiary,
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+            ),
+          ),
         ),
       const SizedBox(height: Gap.l),
-      FilledButton(key: const Key('count-finish'), onPressed: _busy ? null : _finish, child: Text(t.whCountFinish)),
+      SizedBox(
+        height: 48,
+        child: FilledButton(key: const Key('count-finish'), onPressed: _busy ? null : _finish, child: Text(t.whCountFinish)),
+      ),
       const SizedBox(height: Gap.s),
       TextButton(key: const Key('count-cancel'), onPressed: _busy ? null : _cancel, child: Text(t.whCountCancel)),
     ];

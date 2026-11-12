@@ -92,7 +92,7 @@ class _PutawayScreenState extends State<PutawayScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(AppLocalizations.of(context).putawaySuccess),
-            backgroundColor: const Color(0xFF16A34A),
+            backgroundColor: Theme.of(context).colorScheme.secondary,
           ),
         );
       }
@@ -369,7 +369,7 @@ class _PutawayItemSheetState extends State<_PutawayItemSheet> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Bin "$code" not found in warehouse'),
-          backgroundColor: Colors.red,
+          backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
     }
@@ -428,6 +428,17 @@ class _PutawayItemSheetState extends State<_PutawayItemSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          Center(
+            child: Container(
+              width: 36,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: Gap.m),
+              decoration: BoxDecoration(
+                color: scheme.outlineVariant,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
           Row(
             children: [
               CoinBadge(

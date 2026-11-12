@@ -189,24 +189,30 @@ class _TransferReceiveScreenState extends State<TransferReceiveScreen> {
 
             // Discrepancy warning banner if counts differ
             if (_hasDiscrepancy)
-              Container(
-                color: scheme.errorContainer,
-                padding: const EdgeInsets.symmetric(horizontal: Gap.l, vertical: Gap.s),
-                child: Row(
-                  children: [
-                    Icon(Icons.warning_amber_rounded, size: 20, color: scheme.onErrorContainer),
-                    const SizedBox(width: Gap.s),
-                    Expanded(
-                      child: Text(
-                        t.transferDiscrepancyWarning,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: scheme.onErrorContainer,
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: Gap.l),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: scheme.errorContainer,
+                    borderRadius: BorderRadius.circular(Gap.radiusM),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: Gap.m, vertical: Gap.s),
+                  child: Row(
+                    children: [
+                      Icon(Icons.warning_amber_rounded, size: 20, color: scheme.onErrorContainer),
+                      const SizedBox(width: Gap.s),
+                      Expanded(
+                        child: Text(
+                          t.transferDiscrepancyWarning,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: scheme.onErrorContainer,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
 

@@ -3,6 +3,7 @@ import 'package:uuid/uuid.dart';
 
 import '../core/camera_scanner.dart';
 import '../core/theme.dart';
+import '../core/ui.dart';
 import '../data/local_store.dart';
 import '../data/warehouse_models.dart';
 import '../l10n/app_localizations.dart';
@@ -153,66 +154,155 @@ class _ReceiveOrderScreenState extends State<ReceiveOrderScreen> {
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
     final order = _order;
     return Scaffold(
-      appBar: AppBar(title: Text(order == null ? t.whReceiveTitle : '${t.whReceiveTitle} · ${order.poNo}')),
+      appBar: AppBar(
+        title: Text(
+          order == null ? t.whReceiveTitle : '${t.whReceiveTitle} · ${order.poNo}',
+          style: const TextStyle(fontWeight: FontWeight.w800),
+        ),
+      ),
       body: order == null
           ? const SizedBox.shrink()
           : ListView(padding: const EdgeInsets.all(Gap.l), children: [
-              for (final l in order.items) _lineCard(context, t, l),
-              const SizedBox(height: Gap.m),
-              TextField(key: const Key('field-ref'), controller: _ref, decoration: InputDecoration(labelText: t.whDeliveryRef)),
-              const SizedBox(height: Gap.m),
-              TextField(key: const Key('field-notes'), controller: _notes, decoration: InputDecoration(labelText: t.whNotes)),
+              for (final l in order.items)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: Gap.s),
+                  child: _lineCard(context, t, l),
+                ),
+              const SizedBox(height: Gap.xs),
+              AppCard(
+                padding: const EdgeInsets.all(Gap.m),
+                child: Column(children: [
+                  TextField(
+                    key: const Key('field-ref'),
+                    controller: _ref,
+                    decoration: InputDecoration(
+                      labelText: t.whDeliveryRef,
+                      prefixIcon: const Icon(Icons.receipt_long_rounded),
+                    ),
+                  ),
+                  const SizedBox(height: Gap.m),
+                  TextField(
+                    key: const Key('field-notes'),
+                    controller: _notes,
+                    decoration: InputDecoration(
+                      labelText: t.whNotes,
+                      prefixIcon: const Icon(Icons.notes_rounded),
+                    ),
+                  ),
+                ]),
+              ),
               if (_error != null)
                 Padding(
                   padding: const EdgeInsets.only(top: Gap.m),
-                  child: Text(_error!, key: const Key('receive-error'), style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: Gap.m, vertical: Gap.s),
+                    decoration: BoxDecoration(
+                      color: scheme.errorContainer,
+                      borderRadius: BorderRadius.circular(Gap.radiusM),
+                    ),
+                    child: Row(children: [
+                      Icon(Icons.error_outline_rounded, size: 18, color: scheme.error),
+                      const SizedBox(width: Gap.s),
+                      Expanded(
+                        child: Text(
+                          _error!,
+                          key: const Key('receive-error'),
+                          style: TextStyle(color: scheme.onErrorContainer, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ]),
+                  ),
                 ),
               const SizedBox(height: Gap.l),
-              FilledButton(key: const Key('receive-save'), onPressed: _saving ? null : _save, child: Text(t.whReceiveSave)),
+              SizedBox(
+                height: 48,
+                child: FilledButton(
+                  key: const Key('receive-save'),
+                  onPressed: _saving ? null : _save,
+                  child: Text(t.whReceiveSave),
+                ),
+              ),
             ]),
     );
   }
 
   Widget _lineCard(BuildContext context, AppLocalizations t, PoLineView l) {
+    final scheme = Theme.of(context).colorScheme;
     final input = _inputs[l.id]!;
     final typed = parseQty(input.qty.text) ?? 0;
     final over = typed > l.remaining;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(Gap.m),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(_names[l.variantId] ?? t.whUnknownProduct, style: Theme.of(context).textTheme.titleSmall),
-          Text(t.whLineProgress(_qty(l.received), _qty(l.ordered))),
-          const SizedBox(height: Gap.s),
-          Row(children: [
-            Expanded(
-              child: TextField(
-                key: Key('qty-${l.id}'),
-                controller: input.qty,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: t.whQtyReceived),
-                onChanged: (_) => setState(() {}),
+    return AppCard(
+      padding: const EdgeInsets.all(Gap.m),
+      borderColor: over ? scheme.tertiary.withValues(alpha: 0.45) : null,
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          CoinBadge(
+            icon: Icons.inventory_2_rounded,
+            color: over ? scheme.tertiary : scheme.primary,
+            size: 38,
+          ),
+          const SizedBox(width: Gap.m),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(
+                _names[l.variantId] ?? t.whUnknownProduct,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
               ),
-            ),
-            const SizedBox(width: Gap.m),
-            Expanded(
-              child: TextField(
-                key: Key('cost-${l.id}'),
-                controller: input.cost,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: t.whInvoiceCost),
+              const SizedBox(height: 2),
+              Text(
+                t.whLineProgress(_qty(l.received), _qty(l.ordered)),
+                style: TextStyle(fontSize: 12.5, color: scheme.outline),
               ),
-            ),
-          ]),
-          if (over)
-            Padding(
-              padding: const EdgeInsets.only(top: Gap.s),
-              child: Text(t.whOverDelivery, key: Key('over-${l.id}'), style: TextStyle(color: Theme.of(context).colorScheme.tertiary)),
-            ),
+            ]),
+          ),
         ]),
-      ),
+        const SizedBox(height: Gap.m),
+        Row(children: [
+          Expanded(
+            child: TextField(
+              key: Key('qty-${l.id}'),
+              controller: input.qty,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: InputDecoration(labelText: t.whQtyReceived),
+              onChanged: (_) => setState(() {}),
+            ),
+          ),
+          const SizedBox(width: Gap.m),
+          Expanded(
+            child: TextField(
+              key: Key('cost-${l.id}'),
+              controller: input.cost,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: InputDecoration(labelText: t.whInvoiceCost),
+            ),
+          ),
+        ]),
+        if (over)
+          Padding(
+            padding: const EdgeInsets.only(top: Gap.s),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: Gap.s + 2, vertical: Gap.xs),
+              decoration: BoxDecoration(
+                color: scheme.tertiaryContainer.withValues(alpha: 0.65),
+                borderRadius: BorderRadius.circular(Gap.radiusS),
+              ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(Icons.warning_amber_rounded, size: 15, color: scheme.tertiary),
+                const SizedBox(width: Gap.xs),
+                Flexible(
+                  child: Text(
+                    t.whOverDelivery,
+                    key: Key('over-${l.id}'),
+                    style: TextStyle(color: scheme.tertiary, fontSize: 12, fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ]),
+            ),
+          ),
+      ]),
     );
   }
 }
@@ -337,52 +427,82 @@ class _WalkInScreenState extends State<WalkInScreen> {
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
     final store = CatalogScope.of(context).store;
     return Scaffold(
-      appBar: AppBar(title: Text(t.whWalkInTitle)),
+      appBar: AppBar(title: Text(t.whWalkInTitle, style: const TextStyle(fontWeight: FontWeight.w800))),
       body: ListView(padding: const EdgeInsets.all(Gap.l), children: [
-        Text(t.whWalkInHint),
-        const SizedBox(height: Gap.m),
-        DropdownButtonFormField<String?>(
-          key: const Key('field-supplier'),
-          initialValue: _supplierId,
-          decoration: InputDecoration(labelText: t.whSupplier),
-          items: [
-            DropdownMenuItem<String?>(value: null, child: Text(t.whNoSupplier)),
-            for (final s in _suppliers) DropdownMenuItem<String?>(value: s.id, child: Text(s.name)),
-          ],
-          onChanged: (v) => setState(() => _supplierId = v),
-        ),
-        const SizedBox(height: Gap.m),
-        TextField(
-          key: const Key('walkin-search'),
-          controller: _search,
-          decoration: InputDecoration(
-            prefixIcon: const Icon(Icons.search_rounded),
-            hintText: t.searchProducts,
-            suffixIcon: cameraScanner.available
-                ? IconButton(key: const Key('walkin-scan'), tooltip: t.scanWithCamera, icon: const Icon(Icons.qr_code_scanner_rounded), onPressed: _scan)
-                : null,
-          ),
-          onChanged: (v) => setState(() => _query = v),
-        ),
-        if (_query.trim().isNotEmpty)
-          StreamBuilder<List<ProductView>>(
-            stream: store.watchProducts(query: _query.trim()),
-            builder: (context, snap) => Column(children: [
-              for (final p in (snap.data ?? const <ProductView>[]).take(6))
-                ListTile(key: Key('pick-${p.variantId}'), dense: true, title: Text(p.name), onTap: () => _add(p)),
+        AppCard(
+          padding: const EdgeInsets.all(Gap.m),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            Row(children: [
+              CoinBadge(icon: Icons.local_shipping_rounded, color: scheme.primary, size: 36),
+              const SizedBox(width: Gap.m),
+              Expanded(
+                child: Text(
+                  t.whWalkInHint,
+                  style: TextStyle(fontSize: 13, color: scheme.onSurface, height: 1.35),
+                ),
+              ),
             ]),
-          ),
+            const SizedBox(height: Gap.m),
+            DropdownButtonFormField<String?>(
+              key: const Key('field-supplier'),
+              initialValue: _supplierId,
+              decoration: InputDecoration(labelText: t.whSupplier),
+              items: [
+                DropdownMenuItem<String?>(value: null, child: Text(t.whNoSupplier)),
+                for (final s in _suppliers) DropdownMenuItem<String?>(value: s.id, child: Text(s.name)),
+              ],
+              onChanged: (v) => setState(() => _supplierId = v),
+            ),
+            const SizedBox(height: Gap.m),
+            TextField(
+              key: const Key('walkin-search'),
+              controller: _search,
+              decoration: InputDecoration(
+                prefixIcon: const Icon(Icons.search_rounded),
+                hintText: t.searchProducts,
+                suffixIcon: cameraScanner.available
+                    ? IconButton(key: const Key('walkin-scan'), tooltip: t.scanWithCamera, icon: const Icon(Icons.qr_code_scanner_rounded), onPressed: _scan)
+                    : null,
+              ),
+              onChanged: (v) => setState(() => _query = v),
+            ),
+            if (_query.trim().isNotEmpty)
+              StreamBuilder<List<ProductView>>(
+                stream: store.watchProducts(query: _query.trim()),
+                builder: (context, snap) => Column(children: [
+                  for (final p in (snap.data ?? const <ProductView>[]).take(6))
+                    ListTile(
+                      key: Key('pick-${p.variantId}'),
+                      dense: true,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: Gap.xs),
+                      title: Text(p.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                      trailing: Icon(Icons.add_circle_outline_rounded, size: 18, color: scheme.primary),
+                      onTap: () => _add(p),
+                    ),
+                ]),
+              ),
+          ]),
+        ),
         const SizedBox(height: Gap.m),
         for (final (p, input) in _lines)
-          Card(
-            key: Key('walkin-line-${p.variantId}'),
-            child: Padding(
+          Padding(
+            padding: const EdgeInsets.only(bottom: Gap.s),
+            child: AppCard(
+              key: Key('walkin-line-${p.variantId}'),
               padding: const EdgeInsets.all(Gap.m),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Row(children: [
-                  Expanded(child: Text(p.name, style: Theme.of(context).textTheme.titleSmall)),
+                  CoinBadge(icon: Icons.inventory_2_rounded, color: scheme.secondary, size: 34),
+                  const SizedBox(width: Gap.s + 2),
+                  Expanded(
+                    child: Text(
+                      p.name,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                    ),
+                  ),
                   IconButton(
                     key: Key('remove-${p.variantId}'),
                     icon: const Icon(Icons.close_rounded),
@@ -392,6 +512,7 @@ class _WalkInScreenState extends State<WalkInScreen> {
                     }),
                   ),
                 ]),
+                const SizedBox(height: Gap.s),
                 Row(children: [
                   Expanded(
                     child: TextField(
@@ -414,16 +535,59 @@ class _WalkInScreenState extends State<WalkInScreen> {
               ]),
             ),
           ),
-        TextField(key: const Key('field-ref'), controller: _ref, decoration: InputDecoration(labelText: t.whDeliveryRef)),
-        const SizedBox(height: Gap.m),
-        TextField(key: const Key('field-notes'), controller: _notes, decoration: InputDecoration(labelText: t.whNotes)),
+        AppCard(
+          padding: const EdgeInsets.all(Gap.m),
+          child: Column(children: [
+            TextField(
+              key: const Key('field-ref'),
+              controller: _ref,
+              decoration: InputDecoration(
+                labelText: t.whDeliveryRef,
+                prefixIcon: const Icon(Icons.receipt_long_rounded),
+              ),
+            ),
+            const SizedBox(height: Gap.m),
+            TextField(
+              key: const Key('field-notes'),
+              controller: _notes,
+              decoration: InputDecoration(
+                labelText: t.whNotes,
+                prefixIcon: const Icon(Icons.notes_rounded),
+              ),
+            ),
+          ]),
+        ),
         if (_error != null)
           Padding(
             padding: const EdgeInsets.only(top: Gap.m),
-            child: Text(_error!, key: const Key('receive-error'), style: TextStyle(color: Theme.of(context).colorScheme.error)),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: Gap.m, vertical: Gap.s),
+              decoration: BoxDecoration(
+                color: scheme.errorContainer,
+                borderRadius: BorderRadius.circular(Gap.radiusM),
+              ),
+              child: Row(children: [
+                Icon(Icons.error_outline_rounded, size: 18, color: scheme.error),
+                const SizedBox(width: Gap.s),
+                Expanded(
+                  child: Text(
+                    _error!,
+                    key: const Key('receive-error'),
+                    style: TextStyle(color: scheme.onErrorContainer, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ]),
+            ),
           ),
         const SizedBox(height: Gap.l),
-        FilledButton(key: const Key('receive-save'), onPressed: _saving ? null : _save, child: Text(t.whReceiveSave)),
+        SizedBox(
+          height: 48,
+          child: FilledButton(
+            key: const Key('receive-save'),
+            onPressed: _saving ? null : _save,
+            child: Text(t.whReceiveSave),
+          ),
+        ),
       ]),
     );
   }
