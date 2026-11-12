@@ -33,5 +33,19 @@ export default defineConfig({
     }),
   ],
   server: { port: 5173 },
+  build: {
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [
+            { name: "vendor-supabase", test: /node_modules[\\/]@supabase[\\/]/ },
+            { name: "vendor-ui", test: /node_modules[\\/](radix-ui|@radix-ui|lucide-react|class-variance-authority|clsx|tailwind-merge)[\\/]/ },
+            { name: "vendor-react", test: /node_modules[\\/](react|react-dom|scheduler|@tanstack)[\\/]/ },
+            { name: "locales", test: /src[\\/]locales[\\/]/ },
+          ],
+        },
+      },
+    },
+  },
   test: { environment: "node" },
 });

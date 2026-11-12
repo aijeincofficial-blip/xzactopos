@@ -2,43 +2,50 @@ import {
   createRootRouteWithContext,
   createRoute,
   createRouter,
+  lazyRouteComponent,
   Outlet,
   redirect,
 } from "@tanstack/react-router";
 import type { QueryClient } from "@tanstack/react-query";
 import type { PermissionKey } from "@pos/core";
 import { can, contextFromAccess } from "@pos/core";
-import { hasSession, loadAccess, SessionProvider } from "./lib/session.tsx";
+import { hasSession, loadAccess, SessionProvider, useSession } from "./lib/session.tsx";
 import { LocationProvider } from "./lib/location-context.tsx";
 import { signOut } from "./lib/api.ts";
-import { HomePage, LoginPage, ResetPasswordPage, SoloSignUpPage, WarehousePortalLoginPage } from "./routes/public.tsx";
-import { AppLayout, DashboardPage, ForbiddenPage } from "./routes/app-layout.tsx";
-import { TodayPage } from "./routes/today.tsx";
-import { SellPage } from "./routes/sell.tsx";
-import { ReceiveStockPage } from "./routes/receive-stock.tsx";
-import { SalesPage } from "./routes/sales.tsx";
-import { InventoryPage } from "./routes/inventory.tsx";
-import { ProductsPage } from "./routes/products.tsx";
-import { UtangPage } from "./routes/utang.tsx";
-import { ServicesPage } from "./routes/services.tsx";
-import { ExpensesPage } from "./routes/expenses.tsx";
-import { DayClosePage } from "./routes/day-close.tsx";
-import { UpgradePage } from "./routes/upgrade.tsx";
-import { SettingsPage } from "./routes/settings.tsx";
-import { TransfersPage } from "./routes/transfers.tsx";
-import { BinsPage } from "./routes/bins.tsx";
-import { PurchasingPage } from "./routes/purchasing.tsx";
-import { CountsPage } from "./routes/counts.tsx";
-import { OverviewPage } from "./routes/overview.tsx";
-import { ReportsPage } from "./routes/reports.tsx";
 import { tenantMode } from "./lib/mode.ts";
 import { readStoredPortal, resolveRoleLandingPath } from "./lib/portal.ts";
-import { useSession } from "./lib/session.tsx";
-import { SetupPage } from "./routes/setup.tsx";
-import { LocationsPage } from "./routes/locations.tsx";
-import { UsersPage } from "./routes/users.tsx";
-import { ModulesPage } from "./routes/modules.tsx";
-import { PlatformPage } from "./routes/platform.tsx";
+
+const HomePage = lazyRouteComponent(() => import("./routes/public.tsx"), "HomePage");
+const LoginPage = lazyRouteComponent(() => import("./routes/public.tsx"), "LoginPage");
+const ResetPasswordPage = lazyRouteComponent(() => import("./routes/public.tsx"), "ResetPasswordPage");
+const SoloSignUpPage = lazyRouteComponent(() => import("./routes/public.tsx"), "SoloSignUpPage");
+const WarehousePortalLoginPage = lazyRouteComponent(() => import("./routes/public.tsx"), "WarehousePortalLoginPage");
+const AppLayout = lazyRouteComponent(() => import("./routes/app-layout.tsx"), "AppLayout");
+const DashboardPage = lazyRouteComponent(() => import("./routes/app-layout.tsx"), "DashboardPage");
+const ForbiddenPage = lazyRouteComponent(() => import("./routes/app-layout.tsx"), "ForbiddenPage");
+const TodayPage = lazyRouteComponent(() => import("./routes/today.tsx"), "TodayPage");
+const SellPage = lazyRouteComponent(() => import("./routes/sell.tsx"), "SellPage");
+const ReceiveStockPage = lazyRouteComponent(() => import("./routes/receive-stock.tsx"), "ReceiveStockPage");
+const SalesPage = lazyRouteComponent(() => import("./routes/sales.tsx"), "SalesPage");
+const InventoryPage = lazyRouteComponent(() => import("./routes/inventory.tsx"), "InventoryPage");
+const ProductsPage = lazyRouteComponent(() => import("./routes/products.tsx"), "ProductsPage");
+const UtangPage = lazyRouteComponent(() => import("./routes/utang.tsx"), "UtangPage");
+const ServicesPage = lazyRouteComponent(() => import("./routes/services.tsx"), "ServicesPage");
+const ExpensesPage = lazyRouteComponent(() => import("./routes/expenses.tsx"), "ExpensesPage");
+const DayClosePage = lazyRouteComponent(() => import("./routes/day-close.tsx"), "DayClosePage");
+const UpgradePage = lazyRouteComponent(() => import("./routes/upgrade.tsx"), "UpgradePage");
+const SettingsPage = lazyRouteComponent(() => import("./routes/settings.tsx"), "SettingsPage");
+const TransfersPage = lazyRouteComponent(() => import("./routes/transfers.tsx"), "TransfersPage");
+const BinsPage = lazyRouteComponent(() => import("./routes/bins.tsx"), "BinsPage");
+const PurchasingPage = lazyRouteComponent(() => import("./routes/purchasing.tsx"), "PurchasingPage");
+const CountsPage = lazyRouteComponent(() => import("./routes/counts.tsx"), "CountsPage");
+const OverviewPage = lazyRouteComponent(() => import("./routes/overview.tsx"), "OverviewPage");
+const ReportsPage = lazyRouteComponent(() => import("./routes/reports.tsx"), "ReportsPage");
+const SetupPage = lazyRouteComponent(() => import("./routes/setup.tsx"), "SetupPage");
+const LocationsPage = lazyRouteComponent(() => import("./routes/locations.tsx"), "LocationsPage");
+const UsersPage = lazyRouteComponent(() => import("./routes/users.tsx"), "UsersPage");
+const ModulesPage = lazyRouteComponent(() => import("./routes/modules.tsx"), "ModulesPage");
+const PlatformPage = lazyRouteComponent(() => import("./routes/platform.tsx"), "PlatformPage");
 
 export interface RouterContext {
   queryClient: QueryClient;
