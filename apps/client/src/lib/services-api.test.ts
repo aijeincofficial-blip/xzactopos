@@ -16,10 +16,13 @@ vi.mock("./supabase.ts", () => ({
 
 import {
   computeOperatingExpenseBreakdown,
+  filterServiceTxns,
   recordServiceTxn,
   serviceCashEffect,
   serviceFloatEffect,
+  summarizeServiceTxns,
   voidServiceTxn,
+  type ServiceTxnRow,
 } from "./services-api.ts";
 
 describe("services-api money invariants and payloads", () => {
@@ -104,5 +107,97 @@ describe("services-api money invariants and payloads", () => {
       reason: "Wrong number",
       approval_id: "appr-99",
     });
+  });
+
+  it("filters and summarizes service entries in centavos while excluding voided entries", () => {
+    const sample: ServiceTxnRow[] = [
+      {
+        id: "st-1",
+        location_id: "loc-1",
+        kind: "cash_in",
+        wallet: "gcash",
+        amount: 100000, // ₱1,000
+        fee: 2000, // ₱20
+        price: null,
+        currency: "PHP",
+        ref: "09171112222",
+        note: "Regular suki",
+        txn_at: "2026-11-10T09:00:00Z",
+        voided_at: null,
+        void_reason: null,
+        created_by: "u1",
+      },
+      {
+        id: "st-2",
+        location_id: "loc-1",
+        kind: "cash_out",
+        wallet: "maya",
+        amount: 50000, // ₱500 -> drawer -48500, float +50000
+        fee: 1500, // ₱15
+        price: null,
+        currency: "PHP",
+        ref: "MYA-8899",
+        note: null,
+        txn_at: "2026-11-11T10:30:00Z",
+        voided_at: null,
+        void_reason: null,
+        created_by: "u1",
+      },
+      {
+        id: "st-3",
+        location_id: "loc-1",
+        kind: "float_topup",
+        wallet: "gcash",
+        amount: 30000, // ₱300 -> drawer -30000, float +30000
+        fee: 0,
+        price: null,
+        currency: "PHP",
+        ref: null,
+        note: "Bank replenish",
+        txn_at: "2026-11-11T12:00:00Z",
+        voided_at: null,
+        void_reason: null,
+        created_by: "u1",
+      },
+      {
+        id: "st-4",
+        location_id: "loc-1",
+        kind: "load",
+        wallet: "load",
+        amount: 5000,
+        fee: 300,
+        price: 5300,
+        currency: "PHP",
+        ref: "09189990000",
+        note: "Wrong number",
+        txn_at: "2026-11-12T08:00:00Z",
+        voided_at: "2026-11-12T08:05:00Z",
+        void_reason: "Typo on number",
+        created_by: "u1",
+      },
+    ];
+
+    const summary = summarizeServiceTxns(sample);
+    // Cash effects: +102000 - 48500 - 30000 = +23500; Float effects: -100000 + 50000 + 30000 = -20000; Net = +3500 (= feeIncome!)
+    expect(summary).toEqual({
+      activeCount: 3,
+      voidedCount: 1,
+      customerTxnCount: 2,
+      feeIncome: 3500,
+      netCashEffect: 23500,
+      netFloatEffect: -20000,
+    });
+    expect(summary.netCashEffect + summary.netFloatEffect).toBe(summary.feeIncome);
+
+    expect(filterServiceTxns(sample, { wallet: "gcash", status: "active" }).map((r) => r.id)).toEqual([
+      "st-1",
+      "st-3",
+    ]);
+    expect(filterServiceTxns(sample, { kind: "cash_out" }).map((r) => r.id)).toEqual(["st-2"]);
+    expect(filterServiceTxns(sample, { status: "voided" }).map((r) => r.id)).toEqual(["st-4"]);
+    expect(
+      filterServiceTxns(sample, { fromDate: "2026-11-11", toDate: "2026-11-11" }).map((r) => r.id),
+    ).toEqual(["st-2", "st-3"]);
+    expect(filterServiceTxns(sample, { search: "MYA-8899" }).map((r) => r.id)).toEqual(["st-2"]);
   });
 });

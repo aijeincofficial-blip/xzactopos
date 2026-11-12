@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatMoney, money, uuidv7 } from "@pos/core";
-import { ArrowDownLeft, ArrowLeftRight, ArrowUpRight, Smartphone, X } from "lucide-react";
+import { ArrowDownLeft, ArrowLeftRight, ArrowUpRight, Download, Smartphone, X } from "lucide-react";
 import {
   Alert,
   Badge,
@@ -19,6 +19,7 @@ import {
   useToast,
 } from "../components/ui.tsx";
 import { SupervisorPinDialog } from "../components/supervisor-pin-dialog.tsx";
+import { downloadCsv, exportServiceTxnsCsv } from "../lib/csv-helper.ts";
 import { useErrorMessage } from "../lib/i18n-helpers.ts";
 import { useActiveLocation } from "../lib/location-context.tsx";
 import type { OfflineApprovalPayload } from "../lib/offline-pin-api.ts";
@@ -28,16 +29,28 @@ import {
   EWALLET_OPTIONS,
   fetchRecentServiceTxns,
   fetchStoreWalletFloats,
+  filterServiceTxns,
   serviceCashEffect,
   serviceFloatEffect,
   submitServiceTxn,
+  summarizeServiceTxns,
   voidServiceTxn,
   type RecordServiceTxnInput,
   type ServiceKind,
+  type ServiceStatusFilter,
   type ServiceTxnRow,
   type ServiceWallet,
 } from "../lib/services-api.ts";
 import { useSession } from "../lib/session.tsx";
+
+const ALL_KINDS: ServiceKind[] = [
+  "cash_in",
+  "cash_out",
+  "load",
+  "float_topup",
+  "float_withdraw",
+  "float_adjust",
+];
 
 function parseSignedAmount(text: string, currency: string): number | null {
   const trimmed = text.trim();
@@ -82,6 +95,14 @@ export function ServicesPage() {
   const [refText, setRefText] = useState("");
   const [noteText, setNoteText] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
+
+  // Filter state
+  const [searchText, setSearchText] = useState("");
+  const [filterWallet, setFilterWallet] = useState<ServiceWallet | "all">("all");
+  const [filterKind, setFilterKind] = useState<ServiceKind | "all">("all");
+  const [filterStatus, setFilterStatus] = useState<ServiceStatusFilter>("all");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
 
   // Supervisor PIN modal state for float movements or voids
   const [pendingRecord, setPendingRecord] = useState<RecordServiceTxnInput | null>(null);
@@ -278,15 +299,71 @@ export function ServicesPage() {
     voidMut.mutate({ txnId: txn.id, reason: voidReason });
   }
 
+  const txns = useMemo(() => txnsQuery.data ?? [], [txnsQuery.data]);
+  const floats = floatsQuery.data ?? [];
+
+  const hasActiveFilters =
+    searchText.trim().length > 0 ||
+    filterWallet !== "all" ||
+    filterKind !== "all" ||
+    filterStatus !== "all" ||
+    fromDate !== "" ||
+    toDate !== "";
+
+  const filteredTxns = useMemo(
+    () =>
+      filterServiceTxns(txns, {
+        search: searchText,
+        wallet: filterWallet,
+        kind: filterKind,
+        status: filterStatus,
+        fromDate,
+        toDate,
+      }),
+    [txns, searchText, filterWallet, filterKind, filterStatus, fromDate, toDate],
+  );
+
+  const filteredSummary = useMemo(() => summarizeServiceTxns(filteredTxns), [filteredTxns]);
+
   if (!store) {
     return <EmptyState title={t("sell.noStore")} />;
   }
 
-  const txns = txnsQuery.data ?? [];
-  const floats = floatsQuery.data ?? [];
   const todayPrefix = new Date().toISOString().slice(0, 10);
   const todayActive = txns.filter((row) => !row.voided_at && row.txn_at.slice(0, 10) === todayPrefix);
   const feesToday = todayActive.reduce((sum, row) => sum + row.fee, 0);
+
+  function clearFilters() {
+    setSearchText("");
+    setFilterWallet("all");
+    setFilterKind("all");
+    setFilterStatus("all");
+    setFromDate("");
+    setToDate("");
+  }
+
+  function handleExportCsv() {
+    if (!store || filteredTxns.length === 0) return;
+    const csv = exportServiceTxnsCsv(
+      filteredTxns.map((txn) => ({
+        txnAt: txn.txn_at,
+        status: txn.voided_at ? "voided" : "active",
+        kind: t(`services.kinds.${txn.kind}`),
+        wallet: t(`services.wallets.${txn.wallet}`),
+        amount: txn.amount,
+        fee: txn.fee,
+        cashEffect: serviceCashEffect(txn.kind, txn.amount, txn.fee, txn.price),
+        floatEffect: serviceFloatEffect(txn.kind, txn.amount),
+        ref: txn.ref,
+        note: txn.note,
+        voidReason: txn.void_reason,
+      })),
+      currency,
+    );
+    const stamp = new Date().toISOString().slice(0, 10);
+    downloadCsv(csv, `services-${store.code.toLowerCase()}-${stamp}.csv`);
+    toast.good(t("services.exportedToast", { count: filteredTxns.length }));
+  }
 
   const walletChoices =
     kind === "cash_in" || kind === "cash_out" ? EWALLET_OPTIONS : ALL_SERVICE_WALLETS;
@@ -305,6 +382,16 @@ export function ServicesPage() {
         subtitle={`${store.code} · ${store.name} — ${t("services.subtitle")}`}
         actions={
           <div className="flex flex-wrap items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              data-testid="export-services-csv"
+              disabled={filteredTxns.length === 0}
+              onClick={handleExportCsv}
+            >
+              <Download size={15} aria-hidden />
+              <span>{t("services.exportCsv")}</span>
+            </Button>
             <Button
               size="sm"
               variant={formOpen && kind === "cash_in" ? "primary" : "outline"}
@@ -354,12 +441,39 @@ export function ServicesPage() {
       {/* KPI & Wallet Float Strip */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          label={t("services.feesToday")}
-          value={<span className="text-emerald-700 tabular-nums">{fmt(feesToday)}</span>}
-          subtext={t("services.txnsToday", { count: todayActive.length })}
+          label={hasActiveFilters ? t("services.feesFiltered") : t("services.feesToday")}
+          value={
+            <span className="text-emerald-700 tabular-nums">
+              {fmt(hasActiveFilters ? filteredSummary.feeIncome : feesToday)}
+            </span>
+          }
+          subtext={
+            hasActiveFilters
+              ? t("services.txnsFiltered", {
+                  count: filteredSummary.activeCount,
+                  customer: filteredSummary.customerTxnCount,
+                })
+              : t("services.txnsToday", { count: todayActive.length })
+          }
+        />
+        <StatCard
+          label={t("services.kpiNetCash")}
+          value={
+            <span
+              className={`tabular-nums ${
+                filteredSummary.netCashEffect < 0 ? "text-amber-800" : "text-slate-900"
+              }`}
+            >
+              {fmtSigned(filteredSummary.netCashEffect)}
+            </span>
+          }
+          subtext={t("services.kpiNetCashSubtext", {
+            float: fmtSigned(filteredSummary.netFloatEffect),
+            voided: filteredSummary.voidedCount,
+          })}
         />
         {floats.length === 0 ? (
-          <Card className="flex items-center text-xs text-slate-500 sm:col-span-1 lg:col-span-3">
+          <Card className="flex items-center text-xs text-slate-500 sm:col-span-2">
             {t("services.noFloats")}
           </Card>
         ) : (
@@ -511,6 +625,100 @@ export function ServicesPage() {
         </Card>
       ) : null}
 
+      {/* Filter Bar */}
+      {txns.length > 0 || hasActiveFilters ? (
+        <Card className="grid gap-3">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <Field label={t("services.searchLabel")}>
+              <Input
+                data-testid="services-search"
+                placeholder={t("services.searchPlaceholder")}
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+              />
+            </Field>
+            <Field label={t("services.walletLabel")}>
+              <Select
+                data-testid="services-filter-wallet"
+                value={filterWallet}
+                onChange={(e) => setFilterWallet(e.target.value as ServiceWallet | "all")}
+              >
+                <option value="all">{t("services.allWallets")}</option>
+                {ALL_SERVICE_WALLETS.map((w) => (
+                  <option key={w} value={w}>
+                    {t(`services.wallets.${w}`)}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field label={t("services.kindLabel")}>
+              <Select
+                data-testid="services-filter-kind"
+                value={filterKind}
+                onChange={(e) => setFilterKind(e.target.value as ServiceKind | "all")}
+              >
+                <option value="all">{t("services.allKinds")}</option>
+                {ALL_KINDS.map((k) => (
+                  <option key={k} value={k}>
+                    {t(`services.kinds.${k}`)}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field label={t("services.statusLabel")}>
+              <Select
+                data-testid="services-filter-status"
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value as ServiceStatusFilter)}
+              >
+                <option value="all">{t("services.statusAll")}</option>
+                <option value="active">{t("services.statusActive")}</option>
+                <option value="voided">{t("services.statusVoided")}</option>
+              </Select>
+            </Field>
+          </div>
+
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label={t("services.dateFrom")}>
+                <Input
+                  type="date"
+                  data-testid="services-filter-from"
+                  value={fromDate}
+                  onChange={(e) => setFromDate(e.target.value)}
+                />
+              </Field>
+              <Field label={t("services.dateTo")}>
+                <Input
+                  type="date"
+                  data-testid="services-filter-to"
+                  value={toDate}
+                  onChange={(e) => setToDate(e.target.value)}
+                />
+              </Field>
+            </div>
+            {hasActiveFilters ? (
+              <div className="flex items-center gap-3 text-xs text-slate-500">
+                <span>
+                  {t("services.showingFiltered", {
+                    shown: filteredTxns.length,
+                    total: txns.length,
+                  })}
+                </span>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  data-testid="services-clear-filters"
+                  onClick={clearFilters}
+                >
+                  {t("services.clearFilters")}
+                </Button>
+              </div>
+            ) : null}
+          </div>
+        </Card>
+      ) : null}
+
       {txnsQuery.isError ? (
         <ErrorState
           message={t("services.error")}
@@ -523,13 +731,15 @@ export function ServicesPage() {
         </Card>
       ) : txns.length === 0 ? (
         <EmptyState title={t("services.empty")} />
+      ) : filteredTxns.length === 0 ? (
+        <EmptyState title={t("services.emptyFiltered")} />
       ) : (
         <Card className="overflow-hidden p-0 sm:p-0">
           <div className="border-b border-slate-100 px-5 py-3 text-sm font-semibold text-slate-900">
             {t("services.recentEntries")}
           </div>
           <ul className="divide-y divide-slate-100">
-            {txns.map((txn) => {
+            {filteredTxns.map((txn) => {
               const isVoided = Boolean(txn.voided_at);
               const cashEff = serviceCashEffect(txn.kind, txn.amount, txn.fee, txn.price);
               const floatEff = serviceFloatEffect(txn.kind, txn.amount);

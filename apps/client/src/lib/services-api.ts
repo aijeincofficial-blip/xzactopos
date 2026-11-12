@@ -53,6 +53,99 @@ export interface WalletFloatRow {
   negative: boolean;
 }
 
+export type ServiceStatusFilter = "all" | "active" | "voided";
+
+export interface ClientServiceFilter {
+  search?: string;
+  wallet?: ServiceWallet | "all";
+  kind?: ServiceKind | "all";
+  status?: ServiceStatusFilter;
+  fromDate?: string;
+  toDate?: string;
+}
+
+export interface ServiceTxnsSummary {
+  activeCount: number;
+  voidedCount: number;
+  customerTxnCount: number;
+  feeIncome: number;
+  netCashEffect: number;
+  netFloatEffect: number;
+}
+
+export function filterServiceTxns(
+  rows: readonly ServiceTxnRow[],
+  filter: ClientServiceFilter,
+): ServiceTxnRow[] {
+  const q = (filter.search ?? "").trim().toLowerCase();
+  const wallet = filter.wallet && filter.wallet !== "all" ? filter.wallet : null;
+  const kind = filter.kind && filter.kind !== "all" ? filter.kind : null;
+  const status = filter.status ?? "all";
+  const fromDate = filter.fromDate?.trim() || null;
+  const toDate = filter.toDate?.trim() || null;
+
+  return rows.filter((r) => {
+    const isVoided = Boolean(r.voided_at);
+    if (status === "active" && isVoided) return false;
+    if (status === "voided" && !isVoided) return false;
+    if (wallet && r.wallet !== wallet) return false;
+    if (kind && r.kind !== kind) return false;
+
+    const day = r.txn_at.slice(0, 10);
+    if (fromDate && day < fromDate) return false;
+    if (toDate && day > toDate) return false;
+
+    if (q) {
+      const major = (Math.abs(r.amount) / 100).toFixed(2);
+      const haystack = [
+        r.ref ?? "",
+        r.note ?? "",
+        r.kind.replace(/_/g, " "),
+        r.wallet,
+        r.void_reason ?? "",
+        major,
+      ]
+        .join(" ")
+        .toLowerCase();
+      if (!haystack.includes(q)) return false;
+    }
+
+    return true;
+  });
+}
+
+export function summarizeServiceTxns(rows: readonly ServiceTxnRow[]): ServiceTxnsSummary {
+  let activeCount = 0;
+  let voidedCount = 0;
+  let customerTxnCount = 0;
+  let feeIncome = 0;
+  let netCashEffect = 0;
+  let netFloatEffect = 0;
+
+  for (const r of rows) {
+    if (r.voided_at) {
+      voidedCount += 1;
+      continue;
+    }
+    activeCount += 1;
+    if (r.kind === "cash_in" || r.kind === "cash_out" || r.kind === "load") {
+      customerTxnCount += 1;
+    }
+    feeIncome += r.fee;
+    netCashEffect += serviceCashEffect(r.kind, r.amount, r.fee, r.price);
+    netFloatEffect += serviceFloatEffect(r.kind, r.amount);
+  }
+
+  return {
+    activeCount,
+    voidedCount,
+    customerTxnCount,
+    feeIncome,
+    netCashEffect,
+    netFloatEffect,
+  };
+}
+
 /**
  * Pure drawer cash effect in centavos, matching `public.service_cash_effect` in Postgres.
  */
@@ -198,7 +291,7 @@ export async function fetchRecentServiceTxns(
       .select("id, location_id, kind, wallet, amount, fee, price, currency, ref, note, txn_at, voided_at, void_reason, created_by")
       .eq("location_id", locationId)
       .order("txn_at", { ascending: false })
-      .limit(50);
+      .limit(200);
 
     if (error) throw fromRaw(error);
     const rows = (data ?? []) as ServiceTxnRow[];

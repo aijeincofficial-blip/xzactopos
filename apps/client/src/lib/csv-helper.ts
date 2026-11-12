@@ -217,6 +217,55 @@ export interface ExpenseExportItem {
   voidReason: string | null;
 }
 
+export interface ServiceTxnExportItem {
+  txnAt: string;
+  status: "active" | "voided";
+  kind: string;
+  wallet: string;
+  amount: number;
+  fee: number;
+  cashEffect: number;
+  floatEffect: number;
+  ref: string | null;
+  note: string | null;
+  voidReason: string | null;
+}
+
+export function exportServiceTxnsCsv(items: ServiceTxnExportItem[], currency = "PHP"): string {
+  const headers = [
+    "Timestamp",
+    "Status",
+    "Entry Type",
+    "Wallet",
+    `Principal (${currency})`,
+    `Fee (${currency})`,
+    `Drawer Cash Effect (${currency})`,
+    `Wallet Float Effect (${currency})`,
+    "Reference",
+    "Note",
+    "Void Reason",
+  ];
+  const lines = [headers.join(",")];
+  for (const item of items) {
+    lines.push(
+      [
+        escapeCsvField(item.txnAt),
+        escapeCsvField(item.status),
+        escapeCsvField(item.kind),
+        escapeCsvField(item.wallet),
+        escapeCsvField((item.amount / 100).toFixed(2)),
+        escapeCsvField((item.fee / 100).toFixed(2)),
+        escapeCsvField((item.cashEffect / 100).toFixed(2)),
+        escapeCsvField((item.floatEffect / 100).toFixed(2)),
+        escapeCsvField(item.ref ?? ""),
+        escapeCsvField(item.note ?? ""),
+        escapeCsvField(item.voidReason ?? ""),
+      ].join(","),
+    );
+  }
+  return lines.join("\r\n");
+}
+
 export function exportExpensesCsv(items: ExpenseExportItem[], currency = "PHP"): string {
   const headers = [
     "Spent At",

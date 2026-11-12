@@ -6,6 +6,7 @@ import {
   exportExpensesCsv,
   exportProductsCsv,
   exportSalesCsv,
+  exportServiceTxnsCsv,
   exportShiftsCsv,
   matchExistingProduct,
   parseAndValidateImport,
@@ -299,5 +300,33 @@ describe("csv-helper", () => {
     expect(csv).toContain('2026-11-12T09:00:00Z,active,Utilities,E-Wallet,GCash,1450.50,"Meralco bill, Nov",');
     expect(csv).toContain("'+badFormula");
     expect(csv).toContain("Duplicate entry");
+  });
+
+  it("exports load and e-wallet service transactions to CSV with drawer and float effects", () => {
+    const csv = exportServiceTxnsCsv(
+      [
+        {
+          txnAt: "2026-11-12T11:15:00Z",
+          status: "active",
+          kind: "Cash Out",
+          wallet: "GCash",
+          amount: 50000,
+          fee: 1500,
+          cashEffect: -48500,
+          floatEffect: 50000,
+          ref: "09171234567",
+          note: "@suki",
+          voidReason: null,
+        },
+      ],
+      "PHP",
+    );
+
+    expect(csv).toContain(
+      "Timestamp,Status,Entry Type,Wallet,Principal (PHP),Fee (PHP),Drawer Cash Effect (PHP),Wallet Float Effect (PHP),Reference,Note,Void Reason",
+    );
+    expect(csv).toContain(
+      "2026-11-12T11:15:00Z,active,Cash Out,GCash,500.00,15.00,-485.00,500.00,09171234567,'@suki,",
+    );
   });
 });
