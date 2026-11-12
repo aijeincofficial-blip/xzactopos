@@ -1583,5 +1583,36 @@
       "load": "Load Wallet",
       "other": "Other Wallet"
     }
+  },
+  "posShift": {
+    "noShiftChip": "No Shift · Start",
+    "openChip": "Shift Open",
+    "otherStoreChip": "Shift Open (Other Branch)",
+    "dialogOpenTitle": "Start Cashier Shift",
+    "dialogActiveTitle": "Active Cashier Shift",
+    "openDesc": "Count the starting coins and bills in the drawer (sukli) so your expected cash at shift close is accurate.",
+    "openingFloat": "Opening Drawer Cash (Float)",
+    "countBillsBtn": "Count bills & coins",
+    "startShiftBtn": "Start Shift",
+    "shiftStarted": "Cashier shift started.",
+    "openedSince": "Opened {{time}}",
+    "otherStoreWarning": "Your open shift was started at {{store}}. Close it below before starting a new shift here.",
+    "expectedCashNow": "Expected Drawer Cash Now",
+    "tabClose": "End Shift",
+    "tabCashDrop": "Cash Drop / Payout",
+    "countedCash": "Counted Drawer Cash",
+    "differencePreview": "Difference: {{diff}}",
+    "noteOptional": "Shift note (optional)",
+    "closeShiftBtn": "Close Shift",
+    "shiftClosed": "Shift closed ({{diff}}).",
+    "cashDropDesc": "Record a cash drop to the safe or petty cash payout from the drawer.",
+    "cashDropAmount": "Cash Amount",
+    "cashDropCategory": "Category",
+    "cashDropNote": "Reason / Safe Drop Note",
+    "cashDropNotePlaceholder": "e.g. Safe cash drop #1, ice delivery",
+    "cashDropBtn": "Record Cash Payout",
+    "cashDropSaved": "Cash payout recorded.",
+    "goDayClose": "Open Day Close & Z-Reading",
+    "invalidAmount": "Enter a valid non-negative cash amount."
   }
 }

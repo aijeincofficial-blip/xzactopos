@@ -62,6 +62,7 @@ import {
 import { fetchCategories, fetchStockLevels } from "../lib/stock-api.ts";
 import { supabase } from "../lib/supabase.ts";
 import { SupervisorPinDialog } from "../components/supervisor-pin-dialog.tsx";
+import { PosShiftControl } from "../components/pos-shift-dialog.tsx";
 import { ProductThumb } from "../components/product-thumb.tsx";
 import { ReceiptSlipView, type ReceiptData } from "../components/receipt-slip.tsx";
 import type { OfflineApprovalPayload } from "../lib/offline-pin-api.ts";
@@ -555,6 +556,7 @@ export function SellPage() {
     },
     onSuccess: (r) => {
       void qc.invalidateQueries({ queryKey: ["pos-stock-levels", store?.id] });
+      void qc.invalidateQueries({ queryKey: ["shift-expected-now"] });
       setDone(r);
       reset();
     },
@@ -834,6 +836,14 @@ export function SellPage() {
                 </span>
               </div>
             </div>
+
+            {store ? (
+              <PosShiftControl
+                storeId={store.id}
+                currency={currency}
+                timezone={access.tenant.timezone}
+              />
+            ) : null}
 
             {!online || outboxOps.length > 0 ? (
               <button

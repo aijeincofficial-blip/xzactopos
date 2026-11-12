@@ -1583,5 +1583,36 @@
       "load": "Load Wallet",
       "other": "Ibang Wallet"
     }
+  },
+  "posShift": {
+    "noShiftChip": "Walang Shift · Simulan",
+    "openChip": "Bukas ang Shift",
+    "otherStoreChip": "May Shift sa Ibang Sangay",
+    "dialogOpenTitle": "Simulan ang Cashier Shift",
+    "dialogActiveTitle": "Kasalukuyang Cashier Shift",
+    "openDesc": "Bilangin ang panimulang barya at perang panukli sa kaha para eksakto ang inaasahang pera pagtapos ng shift.",
+    "openingFloat": "Panimulang Pera sa Kaha (Panukli)",
+    "countBillsBtn": "Bilangin ang barya at papel",
+    "startShiftBtn": "Simulan ang Shift",
+    "shiftStarted": "Nagsimula na ang cashier shift.",
+    "openedSince": "Binuksan {{time}}",
+    "otherStoreWarning": "Ang bukas mong shift ay sinimulan sa {{store}}. Isara muna ito bago magbukas ng panibagong shift dito.",
+    "expectedCashNow": "Inaasahang Pera sa Kaha Ngayon",
+    "tabClose": "Tapusin ang Shift",
+    "tabCashDrop": "Cash Drop / Labas-Pera",
+    "countedCash": "Nabilang na Pera sa Kaha",
+    "differencePreview": "Deperensya: {{diff}}",
+    "noteOptional": "Tala sa shift (opsyonal)",
+    "closeShiftBtn": "Isara ang Shift",
+    "shiftClosed": "Naisara ang shift ({{diff}}).",
+    "cashDropDesc": "Magtala ng cash drop sa kaha o pambayad ng gastos mula sa drawer.",
+    "cashDropAmount": "Halaga ng Cash",
+    "cashDropCategory": "Kategorya",
+    "cashDropNote": "Dahilan / Tala sa Cash Drop",
+    "cashDropNotePlaceholder": "hal. Safe cash drop #1, bayad sa yelo",
+    "cashDropBtn": "Itala ang Labas-Pera",
+    "cashDropSaved": "Naitala ang labas-pera.",
+    "goDayClose": "Buksan ang Pagsasara ng Araw (Z-Reading)",
+    "invalidAmount": "Maglagay ng wastong halaga ng cash."
   }
 }
