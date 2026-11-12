@@ -59,6 +59,7 @@ import {
 import { fetchCategories, fetchStockLevels } from "../lib/stock-api.ts";
 import { supabase } from "../lib/supabase.ts";
 import { SupervisorPinDialog } from "../components/supervisor-pin-dialog.tsx";
+import { ProductThumb } from "../components/product-thumb.tsx";
 import { ReceiptSlipView, type ReceiptData } from "../components/receipt-slip.tsx";
 import type { OfflineApprovalPayload } from "../lib/offline-pin-api.ts";
 import {
@@ -85,13 +86,6 @@ interface Done extends SoldReceipt {
   change: number;
   onUtang: number;
   receiptData?: ReceiptData;
-}
-
-function productInitials(name: string): string {
-  const words = name.trim().split(/\s+/).filter(Boolean);
-  if (words.length === 0) return "PR";
-  if (words.length === 1) return words[0]!.slice(0, 2).toUpperCase();
-  return `${words[0]![0] ?? ""}${words[1]![0] ?? ""}`.toUpperCase();
 }
 
 function formatMajorInput(minorAmount: number): string {
@@ -864,13 +858,12 @@ export function SellPage() {
                       className="flex flex-1 cursor-pointer flex-col justify-between gap-3 p-3.5 text-left focus:outline-none"
                     >
                       <div className="flex w-full items-start justify-between gap-2 pr-6">
-                        <div
-                          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-semibold ${
-                            inCartQty > 0 ? "bg-brand-50 text-brand-text" : "bg-slate-100 text-slate-600"
-                          }`}
-                        >
-                          {productInitials(s.name)}
-                        </div>
+                        <ProductThumb
+                          photoPath={s.photoPath}
+                          name={s.name}
+                          size="md"
+                          active={inCartQty > 0}
+                        />
                         {inCartQty > 0 ? <Badge tone="good">×{inCartQty}</Badge> : null}
                       </div>
 

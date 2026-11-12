@@ -1,11 +1,13 @@
-import { useState, type ChangeEvent } from "react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { formatMoney, money, toMajorNumber } from "@pos/core";
-import { AlertCircle, Clock, Download, FolderTree, PackageOpen, Plus, Tag, Upload, X } from "lucide-react";
+import { formatMoney, money, toMajorNumber, uuidv7 } from "@pos/core";
+import { AlertCircle, Camera, Clock, Download, FolderTree, PackageOpen, Plus, Tag, Trash2, Upload, X } from "lucide-react";
 import { Alert, Badge, Button, Card, Dialog, EmptyState, ErrorState, Field, Input, PageHeader, Select, TableSkeleton, useToast } from "../components/ui.tsx";
 import { BarcodeLabelsDialog } from "../components/barcode-labels-dialog.tsx";
+import { ProductThumb } from "../components/product-thumb.tsx";
+import { compressImageToJpeg, uploadProductPhoto } from "../lib/product-photos.ts";
 import { useSession } from "../lib/session.tsx";
 import { useActiveLocation } from "../lib/location-context.tsx";
 import { tenantMode } from "../lib/mode.ts";
@@ -50,6 +52,7 @@ function majorText(minor: number, currency: string): string {
 
 interface FormProps {
   row: ProductRow | null;
+  tenantId: string;
   currency: string;
   onSaved: () => void;
   onCancel: () => void;
@@ -59,11 +62,12 @@ interface FormProps {
 }
 
 /** Create (row = null) or edit one product and its default variant. */
-function ProductForm({ row, currency, onSaved, onCancel, locationId, categories, availablePieces }: FormProps) {
+function ProductForm({ row, tenantId, currency, onSaved, onCancel, locationId, categories, availablePieces }: FormProps) {
   const { t } = useTranslation("admin");
   const msg = useErrorMessage();
   const qc = useQueryClient();
   const toast = useToast();
+  const photoInputRef = useRef<HTMLInputElement | null>(null);
   const [name, setName] = useState(row?.name ?? "");
   const [price, setPrice] = useState(row?.price != null ? majorText(row.price, currency) : "");
   const [cost, setCost] = useState(row ? majorText(row.cost, currency) : "");
@@ -76,6 +80,48 @@ function ProductForm({ row, currency, onSaved, onCancel, locationId, categories,
   const [active, setActive] = useState(row?.active ?? true);
   const [opening, setOpening] = useState("");
   const [categoryId, setCategoryId] = useState<string>(row?.categoryId ?? "");
+  const [pendingJpeg, setPendingJpeg] = useState<Blob | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [photoRemoved, setPhotoRemoved] = useState(false);
+  const [compressingPhoto, setCompressingPhoto] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
+
+  async function handlePhotoPick(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setCompressingPhoto(true);
+    setError(null);
+    try {
+      const jpeg = await compressImageToJpeg(file);
+      setPendingJpeg(jpeg);
+      setPhotoRemoved(false);
+      setPreviewUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return URL.createObjectURL(jpeg);
+      });
+    } catch (err) {
+      const m = msg(err);
+      setError(m);
+      toast.error(m);
+    } finally {
+      setCompressingPhoto(false);
+    }
+  }
+
+  function handlePhotoRemove() {
+    setPendingJpeg(null);
+    setPhotoRemoved(true);
+    setPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+  }
 
   // Tingi repack config
   const [isPack, setIsPack] = useState(Boolean(row?.breaksIntoVariantId));
@@ -107,6 +153,18 @@ function ProductForm({ row, currency, onSaved, onCancel, locationId, categories,
       }
       setProblem(null);
 
+      const targetProductId = row?.productId ?? uuidv7();
+      let photoPathUpdate: string | null | undefined = undefined;
+      if (pendingJpeg) {
+        photoPathUpdate = await uploadProductPhoto({
+          tenantId,
+          productId: targetProductId,
+          jpeg: pendingJpeg,
+        });
+      } else if (photoRemoved && row?.photoPath) {
+        photoPathUpdate = null;
+      }
+
       const ratioNum = parseInt(piecesPerPack, 10);
       const input: ProductInput = {
         name,
@@ -122,10 +180,12 @@ function ProductForm({ row, currency, onSaved, onCancel, locationId, categories,
         categoryId: categoryId.trim() ? categoryId : null,
         breaksIntoVariantId: isPack && pieceVariantId.trim() ? pieceVariantId : null,
         breaksIntoQty: isPack && !isNaN(ratioNum) && ratioNum > 0 ? ratioNum : null,
+        ...(photoPathUpdate !== undefined ? { photoPath: photoPathUpdate } : {}),
       };
 
       if (row) await updateProduct(row, input);
-      else await createProduct(input, openingQty as number, locationId);
+      else await createProduct(input, openingQty as number, locationId, targetProductId);
+      setPendingJpeg(null);
       return true;
     },
     onSuccess: async (saved) => {
@@ -144,9 +204,59 @@ function ProductForm({ row, currency, onSaved, onCancel, locationId, categories,
     },
   });
 
+  const hasPhoto = Boolean(previewUrl || (!photoRemoved && row?.photoPath));
+
   return (
     <Card className="grid gap-3" data-testid="product-form">
       <h3 className="font-medium">{row ? t("products.edit") : t("products.add")}</h3>
+
+      <div className="flex items-center gap-3.5 rounded-xl border border-slate-200/90 bg-slate-50/70 p-3">
+        <ProductThumb
+          photoPath={photoRemoved ? null : row?.photoPath}
+          previewUrl={previewUrl}
+          name={name || row?.name || "?"}
+          size="lg"
+        />
+        <div className="grid min-w-0 flex-1 gap-1.5">
+          <div className="text-xs font-semibold text-slate-700">{t("products.photo")}</div>
+          <p className="text-xs text-slate-500">
+            {compressingPhoto ? t("products.photoCompressing") : t("products.photoHint")}
+          </p>
+          <div className="flex flex-wrap items-center gap-2 pt-0.5">
+            <input
+              ref={photoInputRef}
+              type="file"
+              accept="image/*"
+              data-testid="pf-photo-input"
+              onChange={(e) => void handlePhotoPick(e)}
+              className="hidden"
+            />
+            <Button
+              size="sm"
+              variant="outline"
+              data-testid="pf-photo-upload"
+              disabled={compressingPhoto || save.isPending}
+              onClick={() => photoInputRef.current?.click()}
+            >
+              <Camera size={14} className="text-slate-500" aria-hidden />
+              <span>{hasPhoto ? t("products.photoChange") : t("products.photoUpload")}</span>
+            </Button>
+            {hasPhoto ? (
+              <Button
+                size="sm"
+                variant="ghost"
+                data-testid="pf-photo-remove"
+                disabled={compressingPhoto || save.isPending}
+                onClick={handlePhotoRemove}
+              >
+                <Trash2 size={14} className="text-slate-400 hover:text-red-600" aria-hidden />
+                <span>{t("products.photoRemove")}</span>
+              </Button>
+            ) : null}
+          </div>
+        </div>
+      </div>
+
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label={t("products.name")}>
           <Input data-testid="pf-name" value={name} maxLength={120} onChange={(e) => setName(e.target.value)} />
@@ -1244,8 +1354,10 @@ export function ProductsPage() {
                         onClick={() => { setOpenId(r.variantId); setAdding(false); setArchiveError(null); }}
                         className="flex flex-1 cursor-pointer items-center justify-between gap-3 text-left"
                       >
-                        <span className="min-w-0">
-                          <span className="block truncate font-semibold text-slate-900">{r.name}</span>
+                        <span className="flex min-w-0 items-center gap-3">
+                          <ProductThumb photoPath={r.photoPath} name={r.name} size="md" active={isSelected} />
+                          <span className="min-w-0">
+                            <span className="block truncate font-semibold text-slate-900">{r.name}</span>
                           <span className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-slate-500">
                             <span className="font-mono text-slate-400">{r.sku}</span>
                             {r.categoryName ? (
@@ -1259,7 +1371,8 @@ export function ProductsPage() {
                                 <span>1→{r.breaksIntoQty}</span>
                               </span>
                             ) : null}
-                            {r.active ? "" : <span className="text-slate-400">· {t("admin:products.inactive")}</span>}
+                              {r.active ? "" : <span className="text-slate-400">· {t("admin:products.inactive")}</span>}
+                            </span>
                           </span>
                         </span>
                         <span className="flex shrink-0 items-center gap-2.5">
@@ -1303,6 +1416,7 @@ export function ProductsPage() {
           {adding ? (
             <ProductForm
               row={null}
+              tenantId={access.tenant.id}
               currency={currency}
               locationId={store.id}
               categories={categories}
@@ -1338,6 +1452,7 @@ export function ProductsPage() {
               <ProductForm
                 key={open.variantId}
                 row={open}
+                tenantId={access.tenant.id}
                 currency={currency}
                 locationId={store.id}
                 categories={categories}

@@ -30,6 +30,7 @@ export interface ProductRow {
   breaksIntoVariantId: string | null;
   breaksIntoQty: number | null;
   expiresOn: string | null;
+  photoPath?: string | null;
 }
 
 /** Joins products, default variant, price, store's stock level, categories, and expiry. Archived products are left out; inactive ones stay. */
@@ -66,6 +67,7 @@ export function toProductRows(
       breaksIntoVariantId: v.breaks_into_variant_id ?? null,
       breaksIntoQty: v.breaks_into_qty ? Number(v.breaks_into_qty) : null,
       expiresOn: expiries?.get(v.id) ?? null,
+      ...(p.photo_path ? { photoPath: p.photo_path } : {}),
     });
   }
   return out.sort((a, b) => a.name.localeCompare(b.name));
@@ -233,6 +235,7 @@ export interface ProductInput {
   categoryId?: string | null;
   breaksIntoVariantId?: string | null;
   breaksIntoQty?: number | null;
+  photoPath?: string | null;
 }
 
 function productBody(i: ProductInput, ids: { productId: string; variantId: string }): Record<string, unknown> {
@@ -245,6 +248,7 @@ function productBody(i: ProductInput, ids: { productId: string; variantId: strin
     active: i.active,
     price: i.price,
     ...(i.categoryId !== undefined ? { category_id: i.categoryId } : {}),
+    ...(i.photoPath !== undefined ? { photo_path: i.photoPath } : {}),
     variant: {
       id: ids.variantId,
       ...(i.sku.trim() ? { sku: i.sku.trim() } : {}),
@@ -257,8 +261,13 @@ function productBody(i: ProductInput, ids: { productId: string; variantId: strin
 }
 
 /** Creates a product with its one default variant; `openingQty` (when above zero) is posted as opening stock. */
-export async function createProduct(i: ProductInput, openingQty: number, locationId: string): Promise<{ variantId: string }> {
-  const ids = { productId: uuidv7(), variantId: uuidv7() };
+export async function createProduct(
+  i: ProductInput,
+  openingQty: number,
+  locationId: string,
+  explicitProductId?: string,
+): Promise<{ productId: string; variantId: string }> {
+  const ids = { productId: explicitProductId ?? uuidv7(), variantId: uuidv7() };
   await rpc("upsert_product", { p_op_id: uuidv7(), p_product: productBody(i, ids) });
   if (openingQty > 0 && i.tracked) {
     await pushOp("post_opening_stock", { variant_id: ids.variantId, qty: openingQty, location_id: locationId });
@@ -266,7 +275,7 @@ export async function createProduct(i: ProductInput, openingQty: number, locatio
   if (i.breaksIntoVariantId && i.breaksIntoQty && i.breaksIntoQty > 0) {
     await setTingiLink(ids.variantId, i.breaksIntoVariantId, i.breaksIntoQty);
   }
-  return { variantId: ids.variantId };
+  return { productId: ids.productId, variantId: ids.variantId };
 }
 
 export async function updateProduct(row: Pick<ProductRow, "productId" | "variantId">, i: ProductInput): Promise<void> {

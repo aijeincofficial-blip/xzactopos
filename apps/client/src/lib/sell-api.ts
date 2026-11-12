@@ -15,7 +15,17 @@ interface Page<T> {
 
 export interface CatalogPull {
   categories?: Page<{ id: string; parent_id: string | null; name: string; deleted_at: string | null }>;
-  products: Page<{ id: string; category_id?: string | null; name: string; unit: string; tax_rate: number; track_stock: boolean; active: boolean; deleted_at: string | null }>;
+  products: Page<{
+    id: string;
+    category_id?: string | null;
+    name: string;
+    unit: string;
+    tax_rate: number;
+    track_stock: boolean;
+    active: boolean;
+    photo_path?: string | null;
+    deleted_at: string | null;
+  }>;
   product_variants: Page<{ id: string; product_id: string; sku: string; barcode: string | null; is_default: boolean; cost: number; reorder_point: number; active: boolean; breaks_into_variant_id?: string | null; breaks_into_qty?: number | null; deleted_at: string | null }>;
   variant_prices: Page<{ variant_id: string; currency: string; price: number; deleted_at: string | null }>;
 }
@@ -32,6 +42,7 @@ export interface Sellable {
   tracked: boolean;
   categoryId?: string | null;
   reorderPoint?: number;
+  photoPath?: string | null;
 }
 
 /** Joins products, their default variant and the price in `currency`; hides inactive, deleted and unpriced items. */
@@ -56,6 +67,7 @@ export function toSellables(pull: CatalogPull, currency: string): Sellable[] {
       tracked: p.track_stock,
       ...(p.category_id !== undefined ? { categoryId: p.category_id } : {}),
       ...(v.reorder_point !== undefined ? { reorderPoint: Number(v.reorder_point) } : {}),
+      ...(p.photo_path ? { photoPath: p.photo_path } : {}),
     });
   }
   return out.sort((a, b) => a.name.localeCompare(b.name));
