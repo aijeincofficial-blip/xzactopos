@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
 import 'theme.dart';
+import 'ui.dart';
 
 /// Opens the modal bottom sheet for choosing theme colors and mode.
 void showThemeSheet(BuildContext context) {
@@ -74,13 +75,12 @@ class _ThemeSheetState extends State<_ThemeSheet> {
           const SizedBox(height: Gap.m),
           Text(t.themeMode, style: Theme.of(context).textTheme.labelLarge),
           const SizedBox(height: Gap.s),
-          SegmentedButton<ThemeMode>(
+          SegmentedPillBar<ThemeMode>(
             key: const Key('theme-mode'),
-            showSelectedIcon: false,
-            segments: [for (final e in modes.entries) ButtonSegment(value: e.key, label: Text(e.value))],
-            selected: {scope.mode},
-            onSelectionChanged: (s) {
-              scope.setMode(s.first);
+            items: [for (final e in modes.entries) SegmentedPillItem(value: e.key, label: e.value)],
+            selected: scope.mode,
+            onChanged: (m) {
+              scope.setMode(m);
               setState(() {});
             },
           ),

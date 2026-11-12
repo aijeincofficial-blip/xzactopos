@@ -289,42 +289,38 @@ Future<void> showAddExpenseDialog(
               const SizedBox(height: 12),
               Wrap(
                 spacing: 8,
-                runSpacing: 4,
+                runSpacing: 6,
                 children: [
                   for (final c in expenseCategories)
-                    ChoiceChip(
+                    AppPillChip(
                       key: Key('expense-cat-$c'),
-                      label: Text(expenseCategoryLabel(t, c)),
+                      label: expenseCategoryLabel(t, c),
                       selected: category == c,
-                      onSelected: (_) => setState(() => category = c),
+                      onTap: () => setState(() => category = c),
                     ),
                 ],
               ),
               const SizedBox(height: 12),
               Text(t.expensePaidFrom, style: const TextStyle(fontSize: 12)),
               const SizedBox(height: 4),
-              SegmentedButton<String>(
+              SegmentedPillBar<String>(
                 key: const Key('expense-paid-from'),
-                showSelectedIcon: false,
-                segments: [
-                  ButtonSegment(value: 'cash', label: Text(t.expensePaidCash)),
-                  ButtonSegment(
-                    value: 'ewallet',
-                    label: Text(t.expensePaidEwallet),
-                  ),
+                items: [
+                  SegmentedPillItem(value: 'cash', label: t.expensePaidCash, icon: Icons.payments_outlined),
+                  SegmentedPillItem(value: 'ewallet', label: t.expensePaidEwallet, icon: Icons.account_balance_wallet_outlined),
                 ],
-                selected: {paidFrom},
-                onSelectionChanged: (s) => setState(() => paidFrom = s.first),
+                selected: paidFrom,
+                onChanged: (val) => setState(() => paidFrom = val),
               ),
               if (paidFrom == 'ewallet') ...[
                 const SizedBox(height: 8),
-                Wrap(spacing: 8, children: [
+                Wrap(spacing: 8, runSpacing: 6, children: [
                 for (final w in paymentWallets)
-                  ChoiceChip(
+                  AppPillChip(
                     key: Key('expense-wallet-$w'),
-                    label: Text(walletLabel(t, w)),
+                    label: walletLabel(t, w),
                     selected: wallet == w,
-                    onSelected: (_) => setState(() => wallet = w),
+                    onTap: () => setState(() => wallet = w),
                   ),
               ]),
               ],

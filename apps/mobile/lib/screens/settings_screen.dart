@@ -173,16 +173,18 @@ class SettingsScreen extends StatelessWidget {
                             style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
                           ),
                         ),
-                        SegmentedButton<ThemeMode>(
-                          key: const Key('settings-theme-mode'),
-                          showSelectedIcon: false,
-                          style: SegmentedButton.styleFrom(visualDensity: VisualDensity.compact),
-                          segments: [
-                            ButtonSegment(value: ThemeMode.light, label: Text(t.themeLight, style: const TextStyle(fontSize: 12))),
-                            ButtonSegment(value: ThemeMode.dark, label: Text(t.themeDark, style: const TextStyle(fontSize: 12))),
-                          ],
-                          selected: {themeScope.mode == ThemeMode.dark ? ThemeMode.dark : ThemeMode.light},
-                          onSelectionChanged: (s) => themeScope.setMode(s.first),
+                        SizedBox(
+                          width: 150,
+                          child: SegmentedPillBar<ThemeMode>(
+                            key: const Key('settings-theme-mode'),
+                            height: 36,
+                            items: [
+                              SegmentedPillItem(value: ThemeMode.light, label: t.themeLight),
+                              SegmentedPillItem(value: ThemeMode.dark, label: t.themeDark),
+                            ],
+                            selected: themeScope.mode == ThemeMode.dark ? ThemeMode.dark : ThemeMode.light,
+                            onChanged: themeScope.setMode,
+                          ),
                         ),
                       ],
                     ),
@@ -657,37 +659,22 @@ class _PrinterSettingsSheetContentState extends State<_PrinterSettingsSheetConte
         const SizedBox(height: Gap.m),
 
         // Engine Selector
-        SizedBox(
-          width: double.infinity,
-          child: SegmentedButton<PrinterEngineType>(
-            key: const Key('printer-engine-selector'),
-            segments: [
-              ButtonSegment(
-                value: PrinterEngineType.systemPdf,
-                label: Text(t.printerEnginePdf, style: const TextStyle(fontSize: 12)),
-              ),
-              ButtonSegment(
-                value: PrinterEngineType.networkEscPos,
-                label: Text(t.printerEngineEscPos, style: const TextStyle(fontSize: 12)),
-              ),
-              ButtonSegment(
-                value: PrinterEngineType.bluetoothEscPos,
-                label: Text(t.printerEngineBluetooth, style: const TextStyle(fontSize: 12)),
-              ),
-            ],
-            selected: {_config.engine},
-            onSelectionChanged: (s) {
-              if (s.isNotEmpty) {
-                final nextEngine = s.first;
-                _update(_config.copyWith(engine: nextEngine));
-                if (nextEngine == PrinterEngineType.bluetoothEscPos &&
-                    _bondedDevices.isEmpty &&
-                    !_scanningBt) {
-                  _scanPairedBluetooth();
-                }
-              }
-            },
-          ),
+        SegmentedPillBar<PrinterEngineType>(
+          key: const Key('printer-engine-selector'),
+          items: [
+            SegmentedPillItem(value: PrinterEngineType.systemPdf, label: t.printerEnginePdf),
+            SegmentedPillItem(value: PrinterEngineType.networkEscPos, label: t.printerEngineEscPos),
+            SegmentedPillItem(value: PrinterEngineType.bluetoothEscPos, label: t.printerEngineBluetooth),
+          ],
+          selected: _config.engine,
+          onChanged: (nextEngine) {
+            _update(_config.copyWith(engine: nextEngine));
+            if (nextEngine == PrinterEngineType.bluetoothEscPos &&
+                _bondedDevices.isEmpty &&
+                !_scanningBt) {
+              _scanPairedBluetooth();
+            }
+          },
         ),
 
         if (isNetEscPos) ...[
@@ -823,18 +810,14 @@ class _PrinterSettingsSheetContentState extends State<_PrinterSettingsSheetConte
           // Roll width selector
           Text(t.printerWidth, style: TextStyle(fontSize: 12, color: scheme.outline, fontWeight: FontWeight.w600)),
           const SizedBox(height: 4),
-          SegmentedButton<PaperWidth>(
+          SegmentedPillBar<PaperWidth>(
             key: const Key('printer-width-picker'),
-            segments: const [
-              ButtonSegment(value: PaperWidth.mm58, label: Text('58 mm (32 col)')),
-              ButtonSegment(value: PaperWidth.mm80, label: Text('80 mm (48 col)')),
+            items: const [
+              SegmentedPillItem(value: PaperWidth.mm58, label: '58 mm (32 col)'),
+              SegmentedPillItem(value: PaperWidth.mm80, label: '80 mm (48 col)'),
             ],
-            selected: {_config.paperWidth},
-            onSelectionChanged: (s) {
-              if (s.isNotEmpty) {
-                _update(_config.copyWith(paperWidth: s.first));
-              }
-            },
+            selected: _config.paperWidth,
+            onChanged: (w) => _update(_config.copyWith(paperWidth: w)),
           ),
           const SizedBox(height: Gap.s),
 

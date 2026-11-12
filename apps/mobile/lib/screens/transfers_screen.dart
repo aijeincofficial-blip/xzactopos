@@ -82,19 +82,10 @@ class _TransfersScreenState extends State<TransfersScreen> with SingleTickerProv
                   return ListView(
                     children: [
                       Padding(
-                        padding: const EdgeInsets.only(top: 80, left: Gap.xl, right: Gap.xl),
-                        child: Center(
-                          child: Column(
-                            children: [
-                              Icon(Icons.inventory_2_outlined, size: 48, color: scheme.outline),
-                              const SizedBox(height: Gap.m),
-                              Text(
-                                t.transfersEmptyIncoming,
-                                textAlign: TextAlign.center,
-                                style: TextStyle(color: scheme.outline, fontSize: 14),
-                              ),
-                            ],
-                          ),
+                        padding: const EdgeInsets.only(top: 56),
+                        child: EmptyState(
+                          icon: Icons.inventory_2_outlined,
+                          text: t.transfersEmptyIncoming,
                         ),
                       ),
                     ],
@@ -142,19 +133,10 @@ class _TransfersScreenState extends State<TransfersScreen> with SingleTickerProv
                   return ListView(
                     children: [
                       Padding(
-                        padding: const EdgeInsets.only(top: 80, left: Gap.xl, right: Gap.xl),
-                        child: Center(
-                          child: Column(
-                            children: [
-                              Icon(Icons.history_rounded, size: 48, color: scheme.outline),
-                              const SizedBox(height: Gap.m),
-                              Text(
-                                t.transfersEmptyHistory,
-                                textAlign: TextAlign.center,
-                                style: TextStyle(color: scheme.outline, fontSize: 14),
-                              ),
-                            ],
-                          ),
+                        padding: const EdgeInsets.only(top: 56),
+                        child: EmptyState(
+                          icon: Icons.history_rounded,
+                          text: t.transfersEmptyHistory,
                         ),
                       ),
                     ],
@@ -207,7 +189,7 @@ class _TransfersScreenState extends State<TransfersScreen> with SingleTickerProv
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(t.transferCreatedSuccess),
-                  backgroundColor: const Color(0xFF16A34A),
+                  backgroundColor: scheme.success,
                 ),
               );
             }
@@ -306,32 +288,32 @@ class _StatusBadge extends StatelessWidget {
 
     switch (status) {
       case 'shipped':
-        bg = scheme.primaryContainer;
-        fg = scheme.onPrimaryContainer;
+        bg = scheme.primary.withValues(alpha: 0.12);
+        fg = scheme.primary;
         label = 'In Transit';
       case 'received':
         if (hasDiscrepancy) {
-          bg = scheme.errorContainer;
-          fg = scheme.onErrorContainer;
+          bg = scheme.error.withValues(alpha: 0.14);
+          fg = scheme.error;
           label = 'Discrepancy';
         } else {
-          bg = scheme.secondaryContainer;
-          fg = scheme.onSecondaryContainer;
+          bg = scheme.success.withValues(alpha: 0.14);
+          fg = scheme.success;
           label = 'Received';
         }
       case 'cancelled':
-        bg = scheme.surfaceContainerHighest;
+        bg = scheme.chipFill;
         fg = scheme.outline;
         label = 'Cancelled';
       default:
-        bg = scheme.surfaceContainerHighest;
+        bg = scheme.chipFill;
         fg = scheme.onSurface;
         label = status.toUpperCase();
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(8)),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(12)),
       child: Text(
         label,
         style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: fg),

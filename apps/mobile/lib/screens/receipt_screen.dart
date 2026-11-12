@@ -9,6 +9,8 @@ import '../core/money.dart';
 import '../core/printer_config.dart';
 import '../core/receipt_printer.dart';
 import '../core/supervisor_pin_dialog.dart';
+import '../core/theme.dart';
+import '../core/ui.dart';
 import '../data/sales_models.dart';
 import '../l10n/app_localizations.dart';
 import '../sync/store_session.dart';
@@ -60,7 +62,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
     final yes = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Gap.radiusXL)),
         title: Text(t.saleCancelTitle),
         content: Text(t.saleCancelBody),
         actions: [
@@ -109,7 +111,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(Gap.radiusXL)),
       ),
       builder: (_) => _ReturnItemsSheet(detail: d),
     );
@@ -175,7 +177,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
     String money(int a) => Money(a, scope.store.baseCurrency).format(locale);
 
     return Scaffold(
-      backgroundColor: dark ? const Color(0xFF0B132B) : const Color(0xFFF1F5F9),
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -191,10 +193,9 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
         title: Text(
           'RECEIPT',
           style: TextStyle(
-            fontFamily: 'serif',
-            fontSize: 22,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 2.0,
+            fontSize: 19,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.8,
             color: dark ? Colors.white : const Color(0xFF0F172A),
           ),
         ),
@@ -235,7 +236,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                   };
 
                   return ListView(
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+                    padding: const EdgeInsets.fromLTRB(Gap.l, 8, Gap.l, 32),
                     children: [
                       // Authentic Thermal Paper Slip
                       CustomPaint(
@@ -492,9 +493,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                                 child: FilledButton(
                                   key: const Key('receipt-print'),
                                   style: FilledButton.styleFrom(
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
+                                    shape: const StadiumBorder(),
                                   ),
                                   onPressed: () => _output(d, share: false),
                                   child: Text(
@@ -521,9 +520,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                                   ),
                                   style: OutlinedButton.styleFrom(
                                     backgroundColor: dark ? theme.colorScheme.surface : Colors.white,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
+                                    shape: const StadiumBorder(),
                                   ),
                                   onPressed: () {
                                     if (widget.justSold) {
@@ -552,14 +549,12 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                         Padding(
                           padding: const EdgeInsets.only(top: 12),
                           child: SizedBox(
-                            height: 44,
+                            height: 46,
                             child: OutlinedButton.icon(
                               key: const Key('return-items-btn'),
                               style: OutlinedButton.styleFrom(
                                 backgroundColor: dark ? theme.colorScheme.surface : Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
+                                shape: const StadiumBorder(),
                               ),
                               onPressed: () => _openReturnSheet(d),
                               icon: const Icon(Icons.assignment_return_outlined, size: 18),
@@ -1160,21 +1155,21 @@ class _ReturnItemsSheetState extends State<_ReturnItemsSheet> {
     final hasSelection =
         _returnQtyByVariant.values.any((qty) => qty > 0) && !_submitting;
 
-    final methods = <ButtonSegment<String>>[
-      ButtonSegment(value: 'cash', label: Text(t.payCash)),
-      ButtonSegment(value: 'ewallet', label: Text(t.payEwallet)),
-      ButtonSegment(value: 'card', label: Text(t.payCard)),
+    final methods = <SegmentedPillItem<String>>[
+      SegmentedPillItem(value: 'cash', label: t.payCash, icon: Icons.payments_outlined),
+      SegmentedPillItem(value: 'ewallet', label: t.payEwallet, icon: Icons.account_balance_wallet_outlined),
+      SegmentedPillItem(value: 'card', label: t.payCard, icon: Icons.credit_card_rounded),
       if (d.customerId != null)
-        ButtonSegment(value: 'utang', label: Text(t.receiptOnUtang)),
+        SegmentedPillItem(value: 'utang', label: t.receiptOnUtang, icon: Icons.menu_book_rounded),
     ];
 
     return SafeArea(
       child: Padding(
         padding: EdgeInsets.only(
-          left: 24,
-          right: 24,
-          top: 24,
-          bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+          left: Gap.l,
+          right: Gap.l,
+          top: Gap.xl,
+          bottom: MediaQuery.of(context).viewInsets.bottom + Gap.xl,
         ),
         child: SingleChildScrollView(
           child: Column(
@@ -1184,7 +1179,7 @@ class _ReturnItemsSheetState extends State<_ReturnItemsSheet> {
               Text(
                 t.saleReturnTitle,
                 style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
               const SizedBox(height: 4),
@@ -1201,8 +1196,9 @@ class _ReturnItemsSheetState extends State<_ReturnItemsSheet> {
                   padding: const EdgeInsets.all(12),
                   margin: const EdgeInsets.only(bottom: 8),
                   decoration: BoxDecoration(
-                    color: cs.surfaceContainerHighest.withAlpha(90),
-                    borderRadius: BorderRadius.circular(10),
+                    color: cs.chipFill,
+                    borderRadius: BorderRadius.circular(Gap.radiusM),
+                    border: Border.all(color: cs.outlineVariant),
                   ),
                   child: Row(
                     children: [
@@ -1278,12 +1274,10 @@ class _ReturnItemsSheetState extends State<_ReturnItemsSheet> {
                 ),
               ),
               const SizedBox(height: 8),
-              SegmentedButton<String>(
-                segments: methods,
-                selected: {_refundMethod},
-                onSelectionChanged: (sel) {
-                  setState(() => _refundMethod = sel.first);
-                },
+              SegmentedPillBar<String>(
+                items: methods,
+                selected: _refundMethod,
+                onChanged: (val) => setState(() => _refundMethod = val),
               ),
 
               const SizedBox(height: 16),
@@ -1300,8 +1294,9 @@ class _ReturnItemsSheetState extends State<_ReturnItemsSheet> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: cs.surfaceContainerHighest.withAlpha(90),
-                  borderRadius: BorderRadius.circular(10),
+                  color: cs.chipFill,
+                  borderRadius: BorderRadius.circular(Gap.radiusM),
+                  border: Border.all(color: cs.outlineVariant),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1309,14 +1304,14 @@ class _ReturnItemsSheetState extends State<_ReturnItemsSheet> {
                     Text(
                       t.saleReturnTotal,
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                     Text(
                       money(refundPreview),
                       key: const Key('return-refund-preview'),
                       style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w800,
                         color: cs.primary,
                       ),
                     ),

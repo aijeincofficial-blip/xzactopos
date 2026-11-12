@@ -269,8 +269,8 @@ class _PickListScreenState extends State<PickListScreen> {
                         : pl.status == 'in_progress'
                             ? t.pickListInProgress
                             : t.pickListPending,
-                    color: pl.status == 'completed' ? Colors.green.shade100 : scheme.primaryContainer,
-                    textColor: pl.status == 'completed' ? Colors.green.shade900 : scheme.onPrimaryContainer,
+                    color: pl.status == 'completed' ? scheme.success.withValues(alpha: 0.14) : scheme.primaryContainer,
+                    textColor: pl.status == 'completed' ? scheme.success : scheme.onPrimaryContainer,
                   ),
                 ],
               ),
@@ -285,8 +285,8 @@ class _PickListScreenState extends State<PickListScreen> {
                 child: LinearProgressIndicator(
                   value: progress,
                   minHeight: 8,
-                  backgroundColor: scheme.surfaceContainerHighest,
-                  color: pl.isAllPicked ? Colors.green : scheme.primary,
+                  backgroundColor: scheme.chipFill,
+                  color: pl.isAllPicked ? scheme.success : scheme.primary,
                 ),
               ),
               const SizedBox(height: Gap.s),
@@ -332,7 +332,7 @@ class _PickListScreenState extends State<PickListScreen> {
                   icon: item.isCompleted
                       ? Icons.check_circle_rounded
                       : Icons.inventory_2_outlined,
-                  color: item.isCompleted ? Colors.green : scheme.primary,
+                  color: item.isCompleted ? scheme.success : scheme.primary,
                   size: 36,
                 ),
                 const SizedBox(width: Gap.m),
@@ -352,7 +352,7 @@ class _PickListScreenState extends State<PickListScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: scheme.surfaceContainerHighest,
+                          color: scheme.chipFill,
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
@@ -371,7 +371,7 @@ class _PickListScreenState extends State<PickListScreen> {
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
-                          color: item.isCompleted ? Colors.green.shade700 : scheme.onSurface,
+                          color: item.isCompleted ? scheme.success : scheme.onSurface,
                         ),
                       ),
                       if (item.shortReason != null && item.shortReason!.isNotEmpty)

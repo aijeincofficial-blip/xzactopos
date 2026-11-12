@@ -129,6 +129,9 @@ class _ShiftScreenState extends State<ShiftScreen> {
     final id = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(Gap.radiusXL)),
+      ),
       builder: (ctx) => Padding(
         padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
         child: _CloseSheet(scope: scope, backend: widget.backend, shift: shift, phoneExpected: x.expected),
@@ -176,13 +179,26 @@ class _ShiftScreenState extends State<ShiftScreen> {
           return ListView(padding: const EdgeInsets.only(bottom: Gap.xxl), children: [
             if (shift == null)
               Padding(
-                padding: const EdgeInsets.fromLTRB(Gap.xl, Gap.s, Gap.xl, Gap.s),
+                padding: const EdgeInsets.fromLTRB(Gap.l, Gap.s, Gap.l, Gap.s),
                 child: AppCard(
                   key: const Key('shift-none'),
                   child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                    Text(t.shiftNoneOpen, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
-                    const SizedBox(height: Gap.xs),
-                    Text(t.shiftNoneHelp, style: TextStyle(color: scheme.outline, fontSize: 13)),
+                    Row(
+                      children: [
+                        CoinBadge(icon: Icons.point_of_sale_rounded, color: scheme.primary, size: 38),
+                        const SizedBox(width: Gap.m),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(t.shiftNoneOpen, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+                              const SizedBox(height: 2),
+                              Text(t.shiftNoneHelp, style: TextStyle(color: scheme.outline, fontSize: 13)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: Gap.l),
                     TextField(
                       key: const Key('shift-opening'),
@@ -203,31 +219,37 @@ class _ShiftScreenState extends State<ShiftScreen> {
                   final x = xs.data;
                   if (x == null) return const SizedBox.shrink();
                   Widget line(String label, int amount, {Key? key}) => Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 3),
+                        padding: const EdgeInsets.symmetric(vertical: 4),
                         child: Row(children: [
-                          Expanded(child: Text(label)),
+                          Expanded(child: Text(label, style: TextStyle(color: scheme.onSurfaceVariant))),
                           Text(money(amount), key: key, style: const TextStyle(fontWeight: FontWeight.w700)),
                         ]),
                       );
                   return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                     SummaryCard(
+                      accent: true,
                       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text(t.shiftOpenSince(DateFormat.jm(locale).format(shift.openedAt)).toUpperCase(),
-                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: scheme.outline, letterSpacing: 0.8)),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                t.shiftOpenSince(DateFormat.jm(locale).format(shift.openedAt)).toUpperCase(),
+                                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: scheme.outline, letterSpacing: 0.8),
+                              ),
+                            ),
+                            if (shift.pending)
+                              Icon(Icons.cloud_upload_outlined, size: 18, color: scheme.primary, semanticLabel: t.notSentYet),
+                          ],
+                        ),
                         const SizedBox(height: Gap.s),
                         Text(t.dayCloseExpected, style: TextStyle(color: scheme.outline, fontSize: 13)),
                         Text(money(x.expected),
                             key: const Key('shift-expected'),
                             style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w900, letterSpacing: -1.2)),
-                        if (shift.pending)
-                          Padding(
-                            padding: const EdgeInsets.only(top: Gap.xs),
-                            child: Icon(Icons.cloud_upload_outlined, size: 18, color: scheme.primary, semanticLabel: t.notSentYet),
-                          ),
                       ]),
                     ),
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: Gap.xl, vertical: Gap.s),
+                      padding: const EdgeInsets.symmetric(horizontal: Gap.l, vertical: Gap.s),
                       child: AppCard(
                         child: Column(children: [
                           line(t.shiftOpeningLabel, x.openingCash, key: const Key('x-opening')),
@@ -235,7 +257,7 @@ class _ShiftScreenState extends State<ShiftScreen> {
                           line(t.shiftUtangTaken, x.utangCash, key: const Key('x-utang')),
                           line(t.shiftPaidOut, x.expensesCash, key: const Key('x-paid-out')),
                           line(t.shiftLoadCash, x.serviceCash, key: const Key('x-service')),
-                          const Divider(),
+                          const Divider(height: Gap.xl),
                           Align(
                             alignment: Alignment.centerLeft,
                             child: Text(t.shiftSalesLine(x.salesCount, money(x.grossSales)),
@@ -255,7 +277,7 @@ class _ShiftScreenState extends State<ShiftScreen> {
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: Gap.xl),
+                      padding: const EdgeInsets.symmetric(horizontal: Gap.l),
                       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                         OutlinedButton.icon(
                           key: const Key('shift-cash-drop-btn'),
@@ -322,12 +344,12 @@ class _ShiftScreenState extends State<ShiftScreen> {
                 return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                   if (otherOpen.isNotEmpty) ...[
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(Gap.xl, Gap.l, Gap.xl, Gap.s),
+                      padding: const EdgeInsets.fromLTRB(Gap.l, Gap.l, Gap.l, Gap.s),
                       child: Text(t.shiftOtherOpen, key: const Key('shift-other-open-header'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
                     ),
                     for (final s in otherOpen)
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: Gap.xl, vertical: Gap.xs),
+                        padding: const EdgeInsets.symmetric(horizontal: Gap.l, vertical: Gap.xs),
                         child: AppCard(
                           key: Key('shift-open-card-${s.id}'),
                           child: Row(children: [
@@ -356,33 +378,53 @@ class _ShiftScreenState extends State<ShiftScreen> {
                       ),
                   ],
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(Gap.xl, Gap.xl, Gap.xl, Gap.s),
+                    padding: const EdgeInsets.fromLTRB(Gap.l, Gap.xl, Gap.l, Gap.s),
                     child: Text(t.shiftHistory, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
                   ),
                   if (list.isEmpty)
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: Gap.xl),
+                      padding: const EdgeInsets.symmetric(horizontal: Gap.l),
                       child: Text(t.shiftNoHistory, key: const Key('shift-no-history'), style: TextStyle(color: scheme.outline)),
                     )
                   else
                     Column(children: [
                       for (final s in list)
-                        ListTile(
-                          key: Key('shift-row-${s.id}'),
-                          title: Text(DateFormat.yMMMd(locale).add_jm().format(s.openedAt)),
-                          subtitle: Text('${t.dayCloseCounted}: ${money(s.countedCash ?? 0)}'),
-                          trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-                            if (s.pending) Icon(Icons.cloud_upload_outlined, size: 18, color: scheme.primary, semanticLabel: t.notSentYet),
-                            const SizedBox(width: Gap.s),
-                            Text(
-                              (s.difference ?? 0) == 0 ? '0' : ((s.difference ?? 0) > 0 ? '+' : '') + money(s.difference ?? 0),
-                              style: TextStyle(
-                                fontWeight: FontWeight.w800,
-                                color: (s.difference ?? 0) == 0 ? scheme.success : ((s.difference ?? 0) < 0 ? scheme.error : scheme.payUtang),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: Gap.l, vertical: Gap.xs),
+                          child: AppCard(
+                            key: Key('shift-row-${s.id}'),
+                            padding: const EdgeInsets.symmetric(horizontal: Gap.l, vertical: Gap.m),
+                            onTap: () => _openSlip(s.id),
+                            child: Row(children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      DateFormat.yMMMd(locale).add_jm().format(s.openedAt),
+                                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '${t.dayCloseCounted}: ${money(s.countedCash ?? 0)}',
+                                      style: TextStyle(color: scheme.outline, fontSize: 13),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                          ]),
-                          onTap: () => _openSlip(s.id),
+                              if (s.pending) ...[
+                                Icon(Icons.cloud_upload_outlined, size: 18, color: scheme.primary, semanticLabel: t.notSentYet),
+                                const SizedBox(width: Gap.s),
+                              ],
+                              Text(
+                                (s.difference ?? 0) == 0 ? '0' : ((s.difference ?? 0) > 0 ? '+' : '') + money(s.difference ?? 0),
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  color: (s.difference ?? 0) == 0 ? scheme.success : ((s.difference ?? 0) < 0 ? scheme.error : scheme.payUtang),
+                                ),
+                              ),
+                            ]),
+                          ),
                         ),
                     ]),
                 ]);
@@ -566,7 +608,7 @@ class ShiftSlipScreen extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 3),
                 child: Row(children: [Expanded(child: Text(label)), Text(value, key: key, style: const TextStyle(fontWeight: FontWeight.w700))]),
               );
-          return ListView(padding: const EdgeInsets.all(Gap.xl), children: [
+          return ListView(padding: const EdgeInsets.all(Gap.l), children: [
             AppCard(
               key: const Key('z-slip'),
               child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -779,7 +821,7 @@ ${t.shiftCashDropSlipWitness}: _________________
             children: [
               CoinBadge(
                 icon: Icons.arrow_downward_rounded,
-                color: Colors.amber.shade700,
+                color: scheme.payUtang,
                 size: 36,
               ),
               const SizedBox(width: Gap.m),
@@ -808,10 +850,11 @@ ${t.shiftCashDropSlipWitness}: _________________
 
           // Drawer Expected info
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: Gap.m, vertical: Gap.s),
+            padding: const EdgeInsets.symmetric(horizontal: Gap.m, vertical: Gap.s + 2),
             decoration: BoxDecoration(
-              color: scheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(10),
+              color: scheme.chipFill,
+              borderRadius: BorderRadius.circular(Gap.radiusM),
+              border: Border.all(color: scheme.outlineVariant),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -842,7 +885,6 @@ ${t.shiftCashDropSlipWitness}: _________________
               labelText: t.shiftCashDropAmount,
               hintText: t.shiftCashDropAmountHint,
               isDense: true,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             ),
             onChanged: (_) => setState(() => _error = null),
           ),
@@ -851,21 +893,25 @@ ${t.shiftCashDropSlipWitness}: _________________
           // Preset Chips
           Wrap(
             spacing: Gap.s,
+            runSpacing: Gap.s,
             children: [
-              ActionChip(
+              AppPillChip(
                 key: const Key('cash-drop-chip-safe'),
-                label: Text(t.shiftCashDropChipSafe),
-                onPressed: () => _setPresetReason(t.shiftCashDropChipSafe),
+                label: t.shiftCashDropChipSafe,
+                selected: _reason.text == t.shiftCashDropChipSafe,
+                onTap: () => _setPresetReason(t.shiftCashDropChipSafe),
               ),
-              ActionChip(
+              AppPillChip(
                 key: const Key('cash-drop-chip-bank'),
-                label: Text(t.shiftCashDropChipBank),
-                onPressed: () => _setPresetReason(t.shiftCashDropChipBank),
+                label: t.shiftCashDropChipBank,
+                selected: _reason.text == t.shiftCashDropChipBank,
+                onTap: () => _setPresetReason(t.shiftCashDropChipBank),
               ),
-              ActionChip(
+              AppPillChip(
                 key: const Key('cash-drop-chip-skim'),
-                label: Text(t.shiftCashDropChipSkim),
-                onPressed: () => _setPresetReason(t.shiftCashDropChipSkim),
+                label: t.shiftCashDropChipSkim,
+                selected: _reason.text == t.shiftCashDropChipSkim,
+                onTap: () => _setPresetReason(t.shiftCashDropChipSkim),
               ),
             ],
           ),
@@ -875,11 +921,11 @@ ${t.shiftCashDropSlipWitness}: _________________
           TextField(
             key: const Key('cash-drop-note'),
             controller: _reason,
+            onChanged: (_) => setState(() {}),
             decoration: InputDecoration(
               labelText: t.shiftCashDropReason,
               hintText: t.shiftCashDropReasonHint,
               isDense: true,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             ),
           ),
 

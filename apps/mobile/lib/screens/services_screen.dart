@@ -46,12 +46,24 @@ class ServicesScreen extends StatelessWidget {
     Widget action(String key, String kind, IconData icon) => Expanded(
           child: OutlinedButton(
             key: Key(key),
-            style: OutlinedButton.styleFrom(minimumSize: const Size(0, 76), padding: const EdgeInsets.symmetric(horizontal: 4)),
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size(0, 78),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+              backgroundColor: scheme.surface,
+              side: BorderSide(color: scheme.outlineVariant),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Gap.radiusM)),
+            ),
             onPressed: () => showServiceDialog(context, scope, kind),
             child: Column(mainAxisSize: MainAxisSize.min, children: [
-              Icon(icon, size: 22),
-              const SizedBox(height: 2),
-              Text(serviceKindLabel(t, kind), maxLines: 2, textAlign: TextAlign.center, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12, height: 1.1)),
+              Icon(icon, size: 22, color: scheme.primary),
+              const SizedBox(height: 5),
+              Text(
+                serviceKindLabel(t, kind),
+                maxLines: 2,
+                textAlign: TextAlign.center,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, height: 1.15, color: scheme.onSurface),
+              ),
             ]),
           ),
         );
@@ -78,7 +90,7 @@ class ServicesScreen extends StatelessWidget {
             },
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: Gap.xl, vertical: Gap.xs),
+            padding: const EdgeInsets.symmetric(horizontal: Gap.l, vertical: Gap.xs),
             child: Row(children: [
               action('service-cash-in', 'cash_in', Icons.south_west_rounded),
               const SizedBox(width: Gap.s),
@@ -90,12 +102,24 @@ class ServicesScreen extends StatelessWidget {
                 Expanded(
                   child: OutlinedButton(
                     key: const Key('service-float'),
-                    style: OutlinedButton.styleFrom(minimumSize: const Size(0, 76), padding: const EdgeInsets.symmetric(horizontal: 4)),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(0, 78),
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+                      backgroundColor: scheme.surface,
+                      side: BorderSide(color: scheme.outlineVariant),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Gap.radiusM)),
+                    ),
                     onPressed: () => _pickFloatMove(context, scope),
                     child: Column(mainAxisSize: MainAxisSize.min, children: [
-                      const Icon(Icons.account_balance_wallet_outlined, size: 22),
-                      const SizedBox(height: 2),
-                      Text(t.serviceMoveFloat, maxLines: 2, textAlign: TextAlign.center, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12, height: 1.1)),
+                      Icon(Icons.account_balance_wallet_outlined, size: 22, color: scheme.primary),
+                      const SizedBox(height: 5),
+                      Text(
+                        t.serviceMoveFloat,
+                        maxLines: 2,
+                        textAlign: TextAlign.center,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, height: 1.15, color: scheme.onSurface),
+                      ),
                     ]),
                   ),
                 ),
@@ -108,7 +132,7 @@ class ServicesScreen extends StatelessWidget {
               final floats = snap.data ?? const <WalletFloatView>[];
               if (floats.isEmpty) return const SizedBox.shrink();
               return Padding(
-                padding: const EdgeInsets.fromLTRB(Gap.xl, Gap.m, Gap.xl, Gap.xs),
+                padding: const EdgeInsets.fromLTRB(Gap.l, Gap.m, Gap.l, Gap.xs),
                 child: AppCard(
                   padding: const EdgeInsets.all(Gap.l),
                   radius: Gap.radiusL,
@@ -143,7 +167,7 @@ class ServicesScreen extends StatelessWidget {
               return Column(children: [
                 for (final e in list)
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: Gap.xl, vertical: Gap.xs),
+                    padding: const EdgeInsets.symmetric(horizontal: Gap.l, vertical: Gap.xs),
                     child: AppCard(
                       key: Key('service-${e.id}'),
                       padding: const EdgeInsets.symmetric(horizontal: Gap.l, vertical: Gap.m),
@@ -280,13 +304,13 @@ Future<void> showServiceDialog(BuildContext context, CatalogScope scope, String 
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Text(kind == 'cash_in' ? t.serviceCashInHint : t.serviceCashOutHint, style: const TextStyle(fontSize: 12)),
               ),
-            Wrap(spacing: 8, runSpacing: 4, children: [
+            Wrap(spacing: 8, runSpacing: 6, children: [
               for (final w in wallets)
-                ChoiceChip(
+                AppPillChip(
                   key: Key('wallet-$w'),
-                  label: Text(walletLabel(t, w)),
+                  label: walletLabel(t, w),
                   selected: wallet == w,
-                  onSelected: (_) => setState(() => wallet = w),
+                  onTap: () => setState(() => wallet = w),
                 ),
             ]),
             const SizedBox(height: 12),

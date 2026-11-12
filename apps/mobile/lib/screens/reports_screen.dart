@@ -98,14 +98,14 @@ class _ReportsScreenState extends State<ReportsScreen> {
             padding: EdgeInsets.only(bottom: Gap.xxl + MediaQuery.paddingOf(context).bottom), // clear of the tab bar
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(Gap.xl, Gap.m, Gap.xl, Gap.s),
-                child: SegmentedButton<int>(
-                  segments: [
-                    ButtonSegment(value: 7, label: Text(t.reportsDays(7))),
-                    ButtonSegment(value: 30, label: Text(t.reportsDays(30))),
+                padding: const EdgeInsets.fromLTRB(Gap.l, Gap.m, Gap.l, Gap.s),
+                child: SegmentedPillBar<int>(
+                  items: [
+                    SegmentedPillItem(value: 7, label: t.reportsDays(7), icon: Icons.date_range_rounded),
+                    SegmentedPillItem(value: 30, label: t.reportsDays(30), icon: Icons.calendar_month_rounded),
                   ],
-                  selected: {_days},
-                  onSelectionChanged: (s) => _reload(days: s.first),
+                  selected: _days,
+                  onChanged: (d) => _reload(days: d),
                 ),
               ),
               StreamBuilder<OutboxCounts>(
@@ -115,7 +115,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   return n == 0
                       ? const SizedBox.shrink()
                       : Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: Gap.xl, vertical: Gap.xs),
+                          padding: const EdgeInsets.symmetric(horizontal: Gap.l, vertical: Gap.xs),
                           child: Text(t.reportsNotSent(n), key: const Key('report-not-sent')),
                         );
                 },
@@ -187,7 +187,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     return [
       if (l.offline)
         Padding(
-          padding: const EdgeInsets.fromLTRB(Gap.xl, Gap.s, Gap.xl, Gap.s),
+          padding: const EdgeInsets.fromLTRB(Gap.l, Gap.s, Gap.l, Gap.s),
           child: Container(
             key: const Key('report-offline'),
             padding: const EdgeInsets.all(Gap.m),
@@ -212,15 +212,15 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
       // Hero Ceramic Card: Sales & Financial Overview
       Padding(
-        padding: const EdgeInsets.fromLTRB(Gap.xl, Gap.m, Gap.xl, Gap.m),
+        padding: const EdgeInsets.fromLTRB(Gap.l, Gap.s, Gap.l, Gap.m),
         child: AppCard(
-          padding: const EdgeInsets.all(Gap.xl),
+          padding: const EdgeInsets.all(Gap.l + 4),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  CoinBadge(icon: Icons.trending_up_rounded, color: scheme.secondary, size: 42),
+                  CoinBadge(icon: Icons.trending_up_rounded, color: scheme.primary, size: 42),
                   const SizedBox(width: Gap.m),
                   Expanded(
                     child: Column(
@@ -377,7 +377,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
       // Store Performance KPI Badges
       Padding(
-        padding: const EdgeInsets.symmetric(horizontal: Gap.xl),
+        padding: const EdgeInsets.symmetric(horizontal: Gap.l),
         child: Row(
           children: [
             Expanded(
@@ -426,7 +426,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
       // Daily Breakdown
       _Heading(t.reportsPerDay),
       Padding(
-        padding: const EdgeInsets.symmetric(horizontal: Gap.xl),
+        padding: const EdgeInsets.symmetric(horizontal: Gap.l),
         child: AppCard(
           padding: const EdgeInsets.symmetric(horizontal: Gap.l, vertical: Gap.m),
           child: Column(
@@ -457,7 +457,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                               width: ((byDay[key(d)] ?? 0) / maxNet * c.maxWidth).clamp(0, c.maxWidth).toDouble(),
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
-                                  colors: [scheme.primary, scheme.secondary],
+                                  colors: [scheme.primary, scheme.primary.withValues(alpha: 0.70)],
                                 ),
                                 borderRadius: BorderRadius.circular(6),
                               ),
@@ -485,7 +485,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
       // Top Items / Best Sellers
       _Heading(t.reportsTopItems),
       Padding(
-        padding: const EdgeInsets.symmetric(horizontal: Gap.xl),
+        padding: const EdgeInsets.symmetric(horizontal: Gap.l),
         child: AppCard(
           padding: top.isEmpty ? const EdgeInsets.all(Gap.l) : const EdgeInsets.symmetric(vertical: Gap.s),
           child: top.isEmpty
@@ -499,8 +499,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         leading: CircleAvatar(
                           radius: 14,
                           backgroundColor: i == 0
-                              ? scheme.payUtang
-                              : (scheme.outlineVariant),
+                              ? scheme.primary
+                              : scheme.chipFill,
                           foregroundColor: i == 0 ? Colors.white : scheme.onSurface,
                           child: Text('${i + 1}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
                         ),
@@ -525,7 +525,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
       // Utang & Receivables
       _Heading(t.utangTitle),
       Padding(
-        padding: const EdgeInsets.symmetric(horizontal: Gap.xl),
+        padding: const EdgeInsets.symmetric(horizontal: Gap.l),
         child: AppCard(
           padding: const EdgeInsets.all(Gap.l),
           child: Column(
@@ -559,7 +559,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
       // Stock Health & Low Inventory Alerts
       Padding(
-        padding: const EdgeInsets.fromLTRB(Gap.xl, Gap.xl, Gap.xl, Gap.s),
+        padding: const EdgeInsets.fromLTRB(Gap.l, Gap.xl, Gap.l, Gap.s),
         child: StreamBuilder<List<StockRow>>(
           stream: scope.store.watchStockList(),
           builder: (context, snap) {
@@ -609,7 +609,7 @@ class _Heading extends StatelessWidget {
   final String text;
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.fromLTRB(Gap.xl, Gap.xl, Gap.xl, Gap.s),
+        padding: const EdgeInsets.fromLTRB(Gap.l, Gap.xl, Gap.l, Gap.s),
         child: Text(
           text,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(

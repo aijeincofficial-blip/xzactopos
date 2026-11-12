@@ -502,22 +502,22 @@ class _PayScreenState extends State<PayScreen> {
                         if (_approvalResult == null)
                           Container(
                             key: const Key('discount-supervisor-required'),
-                            padding: const EdgeInsets.symmetric(horizontal: Gap.s, vertical: Gap.xs),
+                            padding: const EdgeInsets.symmetric(horizontal: Gap.s + 2, vertical: Gap.xs),
                             decoration: BoxDecoration(
-                              color: Colors.amber.shade50,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.amber.shade300),
+                              color: scheme.payUtang.withValues(alpha: scheme.isDark ? 0.18 : 0.10),
+                              borderRadius: BorderRadius.circular(Gap.radiusS),
+                              border: Border.all(color: scheme.payUtang.withValues(alpha: 0.45)),
                             ),
                             child: Row(
                               children: [
-                                Icon(Icons.shield_outlined, size: 16, color: Colors.amber.shade800),
+                                Icon(Icons.shield_outlined, size: 16, color: scheme.payUtang),
                                 const SizedBox(width: Gap.xs),
                                 Expanded(
                                   child: Text(
                                     t.supervisorPinRequiredDiscount,
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: Colors.amber.shade900,
+                                      color: scheme.isDark ? Colors.white : scheme.onSurface,
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
@@ -537,22 +537,22 @@ class _PayScreenState extends State<PayScreen> {
                         else
                           Container(
                             key: const Key('discount-approved-badge'),
-                            padding: const EdgeInsets.symmetric(horizontal: Gap.s, vertical: Gap.xs),
+                            padding: const EdgeInsets.symmetric(horizontal: Gap.s + 2, vertical: Gap.xs + 2),
                             decoration: BoxDecoration(
-                              color: Colors.green.shade50,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.green.shade300),
+                              color: scheme.success.withValues(alpha: scheme.isDark ? 0.18 : 0.10),
+                              borderRadius: BorderRadius.circular(Gap.radiusS),
+                              border: Border.all(color: scheme.success.withValues(alpha: 0.45)),
                             ),
                             child: Row(
                               children: [
-                                Icon(Icons.check_circle_outline_rounded, size: 16, color: Colors.green.shade700),
+                                Icon(Icons.check_circle_outline_rounded, size: 16, color: scheme.success),
                                 const SizedBox(width: Gap.xs),
                                 Expanded(
                                   child: Text(
                                     t.supervisorPinApprovedBy(_approvalResult!.approvedBy),
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: Colors.green.shade900,
+                                      color: scheme.isDark ? Colors.white : scheme.onSurface,
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),

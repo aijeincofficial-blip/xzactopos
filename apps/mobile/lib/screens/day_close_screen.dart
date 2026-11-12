@@ -149,58 +149,60 @@ class _DayCloseScreenState extends State<DayCloseScreen> {
                 ),
                 if (showForm)
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: Gap.xl, vertical: Gap.s),
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                      TextField(
-                        key: const Key('close-opening'),
-                        controller: _opening,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        onChanged: (_) => setState(() {}),
-                        decoration: InputDecoration(labelText: t.dayCloseOpening),
-                      ),
-                      const SizedBox(height: Gap.m),
-                      TextField(
-                        key: const Key('close-counted'),
-                        controller: _counted,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        onChanged: (_) => setState(() => _error = null),
-                        style: const TextStyle(fontSize: 24),
-                        decoration: InputDecoration(
-                          labelText: t.dayCloseCounted,
-                          errorText: _error,
-                          suffixIcon: IconButton(
-                            key: const Key('day-close-denomination-btn'),
-                            tooltip: t.denominationCalculator,
-                            icon: const Icon(Icons.calculate_outlined),
-                            onPressed: () => showDenominationSheet(
-                              context,
-                              currency: ccy,
-                              onApply: (total) {
-                                setState(() {
-                                  _counted.text = total.toStringAsFixed(2);
-                                  _error = null;
-                                });
-                              },
+                    padding: const EdgeInsets.symmetric(horizontal: Gap.l, vertical: Gap.s),
+                    child: AppCard(
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                        TextField(
+                          key: const Key('close-opening'),
+                          controller: _opening,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          onChanged: (_) => setState(() {}),
+                          decoration: InputDecoration(labelText: t.dayCloseOpening),
+                        ),
+                        const SizedBox(height: Gap.m),
+                        TextField(
+                          key: const Key('close-counted'),
+                          controller: _counted,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          onChanged: (_) => setState(() => _error = null),
+                          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
+                          decoration: InputDecoration(
+                            labelText: t.dayCloseCounted,
+                            errorText: _error,
+                            suffixIcon: IconButton(
+                              key: const Key('day-close-denomination-btn'),
+                              tooltip: t.denominationCalculator,
+                              icon: const Icon(Icons.calculate_outlined),
+                              onPressed: () => showDenominationSheet(
+                                context,
+                                currency: ccy,
+                                onApply: (total) {
+                                  setState(() {
+                                    _counted.text = total.toStringAsFixed(2);
+                                    _error = null;
+                                  });
+                                },
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      if (diff != null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: Gap.m),
-                          child: Text(diffText(diff),
-                              key: const Key('close-diff'),
-                              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: diffColor(diff))),
-                        ),
-                      const SizedBox(height: Gap.m),
-                      TextField(key: const Key('close-note'), controller: _note, decoration: InputDecoration(labelText: t.dayCloseNote)),
-                      const SizedBox(height: Gap.l),
-                      FilledButton(key: const Key('close-save'), onPressed: () => _save(scope, day), child: Text(t.dayCloseSave)),
-                    ]),
+                        if (diff != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: Gap.m),
+                            child: Text(diffText(diff),
+                                key: const Key('close-diff'),
+                                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: diffColor(diff))),
+                          ),
+                        const SizedBox(height: Gap.m),
+                        TextField(key: const Key('close-note'), controller: _note, decoration: InputDecoration(labelText: t.dayCloseNote)),
+                        const SizedBox(height: Gap.l),
+                        FilledButton(key: const Key('close-save'), onPressed: () => _save(scope, day), child: Text(t.dayCloseSave)),
+                      ]),
+                    ),
                   )
                 else
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: Gap.xl, vertical: Gap.s),
+                    padding: const EdgeInsets.symmetric(horizontal: Gap.l, vertical: Gap.s),
                     child: AppCard(
                       key: const Key('close-saved'),
                       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

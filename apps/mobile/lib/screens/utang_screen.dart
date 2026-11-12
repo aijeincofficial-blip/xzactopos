@@ -234,15 +234,14 @@ class CustomerScreen extends StatelessWidget {
         builder: (ctx, setState) => AlertDialog(
           title: Text(t.utangPayTitle(c.name)),
           content: Column(mainAxisSize: MainAxisSize.min, children: [
-            SegmentedButton<String>(
+            SegmentedPillBar<String>(
               key: const Key('utang-method'),
-              showSelectedIcon: false,
-              segments: [
-                ButtonSegment(value: 'cash', label: Text(t.payCash)),
-                ButtonSegment(value: 'ewallet', label: Text(t.payEwallet)),
+              items: [
+                SegmentedPillItem(value: 'cash', label: t.payCash, icon: Icons.payments_outlined),
+                SegmentedPillItem(value: 'ewallet', label: t.payEwallet, icon: Icons.account_balance_wallet_outlined),
               ],
-              selected: {method},
-              onSelectionChanged: (s) => setState(() => method = s.first),
+              selected: method,
+              onChanged: (val) => setState(() => method = val),
             ),
             const SizedBox(height: 8),
             TextField(
@@ -308,18 +307,18 @@ class CustomerScreen extends StatelessWidget {
         builder: (ctx, setState) => AlertDialog(
           title: Text(t.utangAdjustTitle(c.name)),
           content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Wrap(spacing: 8, children: [
-              ChoiceChip(
+            Wrap(spacing: 8, runSpacing: 6, children: [
+              AppPillChip(
                 key: const Key('adjust-less'),
-                label: Text(t.utangWriteOff),
+                label: t.utangWriteOff,
                 selected: less,
-                onSelected: (_) => setState(() => less = true),
+                onTap: () => setState(() => less = true),
               ),
-              ChoiceChip(
+              AppPillChip(
                 key: const Key('adjust-more'),
-                label: Text(t.utangAddMore),
+                label: t.utangAddMore,
                 selected: !less,
-                onSelected: (_) => setState(() => less = false),
+                onTap: () => setState(() => less = false),
               ),
             ]),
             TextField(
@@ -492,7 +491,7 @@ class CustomerScreen extends StatelessWidget {
                                   ),
                                 Text(
                                   e.amount > 0 ? '+${money(e.amount)}' : '−${money(-e.amount)}',
-                                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: e.amount > 0 ? Theme.of(context).colorScheme.error : Colors.green.shade700),
+                                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: e.amount > 0 ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.success),
                                 ),
                               ]),
                             );
