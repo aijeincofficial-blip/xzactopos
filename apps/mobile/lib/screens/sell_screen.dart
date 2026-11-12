@@ -13,6 +13,7 @@ import '../sync/store_session.dart';
 import '../sync/sync_badge.dart';
 import '../core/camera_scanner.dart';
 import 'cart.dart';
+import 'held_carts.dart';
 import 'store_picker.dart';
 import '../data/sales_models.dart';
 import 'pay_screen.dart';
@@ -40,6 +41,7 @@ class _SellScreenState extends State<SellScreen> {
   final _search = TextEditingController();
   final _searchFocus = FocusNode();
   Cart? _cart;
+  HeldCarts? _held;
   Future<List<ProductView>>? _quick;
   Set<String> _pinned = const {};
   String _query = '';
@@ -54,6 +56,7 @@ class _SellScreenState extends State<SellScreen> {
     _searchFocus.dispose();
     if (identical(Cart.current, _cart)) Cart.current = null;
     _cart?.dispose();
+    _held?.dispose();
     super.dispose();
   }
 
@@ -63,18 +66,20 @@ class _SellScreenState extends State<SellScreen> {
     if (_cart == null) {
       final store = CatalogScope.of(context).store;
       _cart = Cart(store)..restore();
+      _held = HeldCarts(store)..restore();
       Cart.current = _cart;
       _quick = store.quickItems();
       store.pinnedVariants().then((p) {
         if (mounted) setState(() => _pinned = p);
       });
-      // top sellers are per store: read them again when the store is switched
+      // top sellers and held carts are per store: read them again when the store is switched
       var firstStore = true;
-      _storeSub = store.watchActiveStore().listen((_) {
+      _storeSub = store.watchActiveStore().listen((storeId) {
         if (firstStore) {
           firstStore = false;
           return;
         }
+        _held?.restore(storeId: storeId);
         if (mounted) {
           final next = store.quickItems();
           setState(() {
@@ -327,6 +332,29 @@ class _SellScreenState extends State<SellScreen> {
     if (yes == true) _cart!.clear();
   }
 
+  Future<void> _holdCart() async {
+    if (_cart!.isEmpty) return;
+    final t = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final note = await showHoldCartDialog(context);
+    if (note == null || !mounted || _cart!.isEmpty) return;
+    final parked = await _held!.parkCurrent(_cart!, label: note);
+    if (parked != null && mounted) {
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(t.holdSaleSaved)));
+    }
+  }
+
+  Future<void> _openHeldCarts() async {
+    await showHeldCartsSheet(
+      context,
+      held: _held!,
+      cart: _cart!,
+      money: _money,
+    );
+  }
+
   static String _fmtQty(double q) => q == q.roundToDouble() ? q.toInt().toString() : q.toString();
 
   @override
@@ -334,16 +362,36 @@ class _SellScreenState extends State<SellScreen> {
     final t = AppLocalizations.of(context);
     final scope = CatalogScope.of(context);
     final cart = _cart!;
+    final held = _held!;
     return Scaffold(
       appBar: AppBar(
         title: Text(t.sell),
         actions: [
+          ListenableBuilder(
+            listenable: held,
+            builder: (_, _) => held.isEmpty
+                ? const SizedBox.shrink()
+                : IconButton(
+                    key: const Key('held-carts-btn'),
+                    visualDensity: VisualDensity.compact,
+                    tooltip: t.heldSalesTitle,
+                    onPressed: _openHeldCarts,
+                    icon: Badge.count(
+                      key: const Key('held-carts-count'),
+                      count: held.count,
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      textColor: Theme.of(context).colorScheme.onPrimary,
+                      child: const Icon(Icons.pause_circle_outline_rounded),
+                    ),
+                  ),
+          ),
           ListenableBuilder(
             listenable: cart,
             builder: (_, _) => cart.isEmpty
                 ? const SizedBox.shrink()
                 : IconButton(
                     key: const Key('clear-cart'),
+                    visualDensity: VisualDensity.compact,
                     tooltip: t.clear,
                     icon: const Icon(Icons.delete_sweep_outlined),
                     onPressed: _confirmClear,
@@ -401,6 +449,7 @@ class _SellScreenState extends State<SellScreen> {
                 money: _money,
                 onEditQty: _editQty,
                 onEditLine: _editLine,
+                onHold: cart.isEmpty ? null : _holdCart,
                 onPay: cart.isEmpty ? null : () => _pay(cart),
               ),
             ),
@@ -740,11 +789,13 @@ class _CartPanel extends StatelessWidget {
     required this.onEditQty,
     required this.onEditLine,
     required this.onPay,
+    this.onHold,
   });
   final Cart cart;
   final String Function(int) money;
   final void Function(int) onEditQty;
   final void Function(int) onEditLine;
+  final VoidCallback? onHold;
   final VoidCallback? onPay;
 
   @override
@@ -882,14 +933,20 @@ class _CartPanel extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.baseline,
                           textBaseline: TextBaseline.alphabetic,
                           children: [
-                            Text(
-                              money(cart.subtotal),
-                              key: const Key('cart-total'),
-                              style: TextStyle(
-                                fontSize: cart.isEmpty ? 20 : 24,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: -0.6,
-                                color: scheme.onSurface,
+                            Flexible(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  money(cart.subtotal),
+                                  key: const Key('cart-total'),
+                                  style: TextStyle(
+                                    fontSize: cart.isEmpty ? 20 : 24,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: -0.6,
+                                    color: scheme.onSurface,
+                                  ),
+                                ),
                               ),
                             ),
                             if (cart.isEmpty) ...[
@@ -908,6 +965,20 @@ class _CartPanel extends StatelessWidget {
                       ],
                     ),
                   ),
+                  if (onHold != null) ...[
+                    IconButton.filledTonal(
+                      key: const Key('hold-cart-btn'),
+                      tooltip: t.holdSaleAction,
+                      style: IconButton.styleFrom(
+                        minimumSize: const Size(44, 48),
+                        backgroundColor: scheme.primaryContainer.withValues(alpha: scheme.isDark ? 0.55 : 0.85),
+                        foregroundColor: scheme.primary,
+                      ),
+                      onPressed: onHold,
+                      icon: const Icon(Icons.pause_rounded, size: 21),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
                   DecoratedBox(
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(28),

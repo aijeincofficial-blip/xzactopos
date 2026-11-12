@@ -2544,4 +2544,53 @@ class AppLocalizationsEn extends AppLocalizations {
   String saleReturnRemaining(String qty) {
     return '$qty returnable';
   }
+
+  @override
+  String get holdSaleAction => 'Hold';
+
+  @override
+  String get holdSaleTitle => 'Hold this sale';
+
+  @override
+  String get holdSaleHint =>
+      'Park this cart to serve the next customer. Stock is not deducted until paid.';
+
+  @override
+  String get holdSaleNoteLabel => 'Label or customer note (optional)';
+
+  @override
+  String get holdSaleNoteHint => 'e.g. Blue shirt, Ate Maria';
+
+  @override
+  String get holdSaleConfirm => 'Hold sale';
+
+  @override
+  String get holdSaleSaved => 'Sale parked on hold';
+
+  @override
+  String get heldSalesTitle => 'Held sales';
+
+  @override
+  String get heldSalesEmpty => 'No held sales right now.';
+
+  @override
+  String heldSaleUntitled(String time) {
+    return 'Held sale ($time)';
+  }
+
+  @override
+  String get heldSaleResume => 'Resume';
+
+  @override
+  String get heldSaleDiscard => 'Discard';
+
+  @override
+  String get heldSaleResumed => 'Held sale resumed';
+
+  @override
+  String get heldSaleSwapped => 'Resumed sale and parked previous cart';
+
+  @override
+  String get heldSaleSwapBanner =>
+      'Your active cart will be parked automatically when you resume one below.';
 }

@@ -1439,5 +1439,27 @@
         "type": "String"
       }
     }
-  }
+  },
+  "holdSaleAction": "Hold",
+  "holdSaleTitle": "Hold this sale",
+  "holdSaleHint": "Park this cart to serve the next customer. Stock is not deducted until paid.",
+  "holdSaleNoteLabel": "Label or customer note (optional)",
+  "holdSaleNoteHint": "e.g. Blue shirt, Ate Maria",
+  "holdSaleConfirm": "Hold sale",
+  "holdSaleSaved": "Sale parked on hold",
+  "heldSalesTitle": "Held sales",
+  "heldSalesEmpty": "No held sales right now.",
+  "heldSaleUntitled": "Held sale ({time})",
+  "@heldSaleUntitled": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "heldSaleResume": "Resume",
+  "heldSaleDiscard": "Discard",
+  "heldSaleResumed": "Held sale resumed",
+  "heldSaleSwapped": "Resumed sale and parked previous cart",
+  "heldSaleSwapBanner": "Your active cart will be parked automatically when you resume one below."
 }

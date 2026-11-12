@@ -2558,4 +2558,54 @@ class AppLocalizationsFil extends AppLocalizations {
   String saleReturnRemaining(String qty) {
     return '$qty maaaring ibalik';
   }
+
+  @override
+  String get holdSaleAction => 'I-hold';
+
+  @override
+  String get holdSaleTitle => 'I-hold ang bentang ito';
+
+  @override
+  String get holdSaleHint =>
+      'Itabi muna ang cart na ito para sa susunod na mamimili. Hindi pa mababawasan ang stock hangga\'t hindi pa bayad.';
+
+  @override
+  String get holdSaleNoteLabel => 'Pangalan o tala (opsyonal)';
+
+  @override
+  String get holdSaleNoteHint => 'hal. Asul na damit, Ate Maria';
+
+  @override
+  String get holdSaleConfirm => 'I-hold ang benta';
+
+  @override
+  String get holdSaleSaved => 'Naitabi ang benta';
+
+  @override
+  String get heldSalesTitle => 'Mga naka-hold na benta';
+
+  @override
+  String get heldSalesEmpty => 'Walang naka-hold na benta ngayon.';
+
+  @override
+  String heldSaleUntitled(String time) {
+    return 'Naka-hold ($time)';
+  }
+
+  @override
+  String get heldSaleResume => 'Ituloy';
+
+  @override
+  String get heldSaleDiscard => 'Alisin';
+
+  @override
+  String get heldSaleResumed => 'Ibinalik ang naka-hold na benta';
+
+  @override
+  String get heldSaleSwapped =>
+      'Ibinalik ang benta at itinabi ang naunang cart';
+
+  @override
+  String get heldSaleSwapBanner =>
+      'Kusang itatabi ang kasalukuyang cart kapag nagbalik ka ng benta sa ibaba.';
 }

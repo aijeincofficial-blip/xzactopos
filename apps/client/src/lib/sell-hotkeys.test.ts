@@ -22,8 +22,10 @@ describe("resolvePosHotkey", () => {
     expect(resolvePosHotkey({ ...base, key: "7", altKey: true })).toBeNull();
   });
 
-  it("maps F4 to discount, F8 to payment, and F9 to charge only when canCharge", () => {
+  it("maps F4 to discount, F6 to hold_order, F8 to payment, and F9 to charge only when canCharge", () => {
     expect(resolvePosHotkey({ ...base, key: "F4", inField: true })).toEqual({ type: "focus_discount" });
+    expect(resolvePosHotkey({ ...base, key: "F6", canCharge: true })).toEqual({ type: "hold_order" });
+    expect(resolvePosHotkey({ ...base, key: "F6", canCharge: false })).toBeNull();
     expect(resolvePosHotkey({ ...base, key: "F8" })).toEqual({ type: "focus_payment" });
     expect(resolvePosHotkey({ ...base, key: "F9", canCharge: true })).toEqual({ type: "charge" });
     expect(resolvePosHotkey({ ...base, key: "F9", canCharge: false })).toBeNull();

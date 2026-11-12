@@ -4375,6 +4375,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{qty} returnable'**
   String saleReturnRemaining(String qty);
+
+  /// No description provided for @holdSaleAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Hold'**
+  String get holdSaleAction;
+
+  /// No description provided for @holdSaleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Hold this sale'**
+  String get holdSaleTitle;
+
+  /// No description provided for @holdSaleHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Park this cart to serve the next customer. Stock is not deducted until paid.'**
+  String get holdSaleHint;
+
+  /// No description provided for @holdSaleNoteLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Label or customer note (optional)'**
+  String get holdSaleNoteLabel;
+
+  /// No description provided for @holdSaleNoteHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Blue shirt, Ate Maria'**
+  String get holdSaleNoteHint;
+
+  /// No description provided for @holdSaleConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Hold sale'**
+  String get holdSaleConfirm;
+
+  /// No description provided for @holdSaleSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Sale parked on hold'**
+  String get holdSaleSaved;
+
+  /// No description provided for @heldSalesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Held sales'**
+  String get heldSalesTitle;
+
+  /// No description provided for @heldSalesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No held sales right now.'**
+  String get heldSalesEmpty;
+
+  /// No description provided for @heldSaleUntitled.
+  ///
+  /// In en, this message translates to:
+  /// **'Held sale ({time})'**
+  String heldSaleUntitled(String time);
+
+  /// No description provided for @heldSaleResume.
+  ///
+  /// In en, this message translates to:
+  /// **'Resume'**
+  String get heldSaleResume;
+
+  /// No description provided for @heldSaleDiscard.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard'**
+  String get heldSaleDiscard;
+
+  /// No description provided for @heldSaleResumed.
+  ///
+  /// In en, this message translates to:
+  /// **'Held sale resumed'**
+  String get heldSaleResumed;
+
+  /// No description provided for @heldSaleSwapped.
+  ///
+  /// In en, this message translates to:
+  /// **'Resumed sale and parked previous cart'**
+  String get heldSaleSwapped;
+
+  /// No description provided for @heldSaleSwapBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Your active cart will be parked automatically when you resume one below.'**
+  String get heldSaleSwapBanner;
 }
 
 class _AppLocalizationsDelegate

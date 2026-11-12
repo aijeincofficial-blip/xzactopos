@@ -9,6 +9,8 @@ import {
   HandCoins,
   Keyboard,
   Minus,
+  PauseCircle,
+  Play,
   Plus,
   Printer,
   ScanBarcode,
@@ -21,7 +23,7 @@ import {
   UserPlus,
   X,
 } from "lucide-react";
-import { Alert, Badge, Button, Card, EmptyState, Input, Select } from "../components/ui.tsx";
+import { Alert, Badge, Button, Card, Dialog, EmptyState, Input, Select, useToast } from "../components/ui.tsx";
 import { useSession } from "../lib/session.tsx";
 import { useActiveLocation } from "../lib/location-context.tsx";
 import { useErrorMessage } from "../lib/i18n-helpers.ts";
@@ -67,6 +69,13 @@ import {
   togglePinnedSku,
 } from "../lib/fast-keys.ts";
 import { resolvePosHotkey } from "../lib/sell-hotkeys.ts";
+import {
+  discardHeldOrder,
+  loadHeldOrders,
+  parkOrder,
+  resumeHeldOrder,
+  type HeldOrder,
+} from "../lib/held-orders.ts";
 
 const WALLETS: Wallet[] = ["gcash", "maya", "other"];
 const CASH_BILLS_MAJOR = [50, 100, 200, 500, 1000] as const;
@@ -145,6 +154,11 @@ export function SellPage() {
   const [editingVariantId, setEditingVariantId] = useState<string | null>(null);
   const [linePriceText, setLinePriceText] = useState("");
   const [lineDiscText, setLineDiscText] = useState("");
+  const [heldOrders, setHeldOrders] = useState<HeldOrder[]>(() => (store?.id ? loadHeldOrders(store.id) : []));
+  const [showHoldDialog, setShowHoldDialog] = useState(false);
+  const [holdLabel, setHoldLabel] = useState("");
+  const [showHeldListDialog, setShowHeldListDialog] = useState(false);
+  const toast = useToast();
   const attempt = useRef<{ key: string; id: string; opId: string } | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const discountInputRef = useRef<HTMLInputElement | null>(null);
@@ -154,6 +168,10 @@ export function SellPage() {
   useEffect(() => {
     void registerWebDevice();
   }, []);
+
+  useEffect(() => {
+    setHeldOrders(store?.id ? loadHeldOrders(store.id) : []);
+  }, [store?.id]);
 
   const settingsQuery = useQuery({
     queryKey: ["tenant-settings-controls"],
@@ -467,6 +485,62 @@ export function SellPage() {
     },
   });
 
+  function openHoldDialog() {
+    if (!store || cart.length === 0) return;
+    const selectedCustomer = (customers.data ?? []).find((c) => c.id === customerId);
+    setHoldLabel(selectedCustomer?.name ?? "");
+    setShowHoldDialog(true);
+  }
+
+  function confirmHoldOrder() {
+    if (!store || cart.length === 0) return;
+    const selectedCustomer = (customers.data ?? []).find((c) => c.id === customerId);
+    const { held, orders } = parkOrder(store.id, {
+      label: holdLabel,
+      customerId,
+      customerName: selectedCustomer?.name,
+      discountText,
+      lines: cart,
+    });
+    if (!held) return;
+    setHeldOrders(orders);
+    setShowHoldDialog(false);
+    setHoldLabel("");
+    reset();
+    toast.good(t("sell.holdOrderSaved"));
+  }
+
+  function handleResumeHeld(heldId: string) {
+    if (!store) return;
+    const selectedCustomer = (customers.data ?? []).find((c) => c.id === customerId);
+    const { resumed, swapped, orders } = resumeHeldOrder(
+      store.id,
+      heldId,
+      cart.length > 0
+        ? {
+            label: selectedCustomer?.name ?? "",
+            customerId,
+            customerName: selectedCustomer?.name,
+            discountText,
+            lines: cart,
+          }
+        : undefined,
+    );
+    if (!resumed) return;
+    setHeldOrders(orders);
+    setShowHeldListDialog(false);
+    reset();
+    setCart(resumed.lines);
+    setCustomerId(resumed.customerId);
+    setDiscountText(resumed.discountText);
+    toast.info(swapped ? t("sell.heldOrderSwapped") : t("sell.heldOrderResumed"));
+  }
+
+  function handleDiscardHeld(heldId: string) {
+    if (!store) return;
+    setHeldOrders(discardHeldOrder(store.id, heldId));
+  }
+
   function handleCharge() {
     if (!store) return;
     if (isDiscountOverLimit && !approvalId && !offlineApproval) {
@@ -490,7 +564,7 @@ export function SellPage() {
         metaKey: e.metaKey,
         shiftKey: e.shiftKey,
         inField,
-        modalOpen: showApprovalDialog,
+        modalOpen: showApprovalDialog || showHoldDialog || showHeldListDialog,
         isDoneScreen: done !== null,
         canCharge: cart.length > 0 && !charge.isPending,
       });
@@ -504,6 +578,9 @@ export function SellPage() {
         case "focus_discount":
           discountInputRef.current?.focus();
           discountInputRef.current?.select();
+          break;
+        case "hold_order":
+          openHoldDialog();
           break;
         case "focus_payment":
           if (method === "cash" && tenderedInputRef.current) {
@@ -660,7 +737,7 @@ export function SellPage() {
               title={t("sell.shortcutsHint")}
             >
               <Keyboard size={14} className="text-slate-400" aria-hidden />
-              <span className="font-mono">Alt+1–6 · F4 · F8 · F9</span>
+              <span className="font-mono">Alt+1–6 · F4 · F6 · F8 · F9</span>
             </span>
           </div>
 
@@ -855,12 +932,37 @@ export function SellPage() {
                 <Badge tone="neutral">{t("sell.itemsInOrder", { count: totalOrderUnits })}</Badge>
               ) : null}
             </div>
-            {cart.length > 0 ? (
-              <Button variant="ghost" size="sm" onClick={reset}>
-                <Trash2 size={14} className="text-slate-400" aria-hidden />
-                <span>{t("sell.clear")}</span>
-              </Button>
-            ) : null}
+            <div className="flex items-center gap-1.5">
+              {heldOrders.length > 0 ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  data-testid="held-orders-btn"
+                  onClick={() => setShowHeldListDialog(true)}
+                  className="border-brand-200 bg-brand-50/70 text-brand-700 hover:bg-brand-100/80"
+                >
+                  <PauseCircle size={14} className="text-brand-600" aria-hidden />
+                  <span>{t("sell.heldOrdersBtn", { count: heldOrders.length })}</span>
+                </Button>
+              ) : null}
+              {cart.length > 0 ? (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    data-testid="hold-order-btn"
+                    title="F6"
+                    onClick={openHoldDialog}
+                  >
+                    <PauseCircle size={14} className="text-slate-500" aria-hidden />
+                    <span>{t("sell.holdOrder")}</span>
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={reset} aria-label={t("sell.clear")}>
+                    <Trash2 size={14} className="text-slate-400" aria-hidden />
+                  </Button>
+                </>
+              ) : null}
+            </div>
           </div>
 
           <div className="flex items-center gap-2">
@@ -1311,6 +1413,116 @@ export function SellPage() {
           charge.mutate({ approvalId: apprId || undefined, offlineApproval: offlineAppr || undefined });
         }}
       />
+
+      <Dialog
+        open={showHoldDialog}
+        onOpenChange={setShowHoldDialog}
+        title={t("sell.holdOrderTitle")}
+        closeLabel={t("sell.cancel")}
+      >
+        <form
+          data-testid="hold-order-dialog"
+          className="grid gap-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            confirmHoldOrder();
+          }}
+        >
+          <p className="-mt-2 text-xs text-slate-500">{t("sell.holdOrderDesc")}</p>
+          <label className="grid gap-1.5 text-sm">
+            <span className="font-medium text-slate-700">{t("sell.holdOrderLabel")}</span>
+            <Input
+              autoFocus
+              data-testid="hold-order-label"
+              placeholder={t("sell.holdOrderPlaceholder")}
+              maxLength={60}
+              value={holdLabel}
+              onChange={(e) => setHoldLabel(e.target.value)}
+            />
+          </label>
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="ghost" onClick={() => setShowHoldDialog(false)}>
+              {t("sell.cancel")}
+            </Button>
+            <Button type="submit" data-testid="confirm-hold-order">
+              {t("sell.holdOrderConfirm")}
+            </Button>
+          </div>
+        </form>
+      </Dialog>
+
+      <Dialog
+        open={showHeldListDialog}
+        onOpenChange={setShowHeldListDialog}
+        title={t("sell.heldOrdersTitle")}
+        closeLabel={t("sell.cancel")}
+      >
+        <div data-testid="held-orders-dialog" className="grid gap-3">
+          {cart.length > 0 && heldOrders.length > 0 ? (
+            <div className="rounded-lg border border-brand-200 bg-brand-50/70 px-3 py-2 text-xs text-brand-700">
+              {t("sell.heldOrderSwapHint")}
+            </div>
+          ) : null}
+          {heldOrders.length === 0 ? (
+            <p className="py-6 text-center text-sm text-slate-500">{t("sell.heldOrdersEmpty")}</p>
+          ) : (
+            <ul className="grid max-h-[380px] gap-2.5 overflow-y-auto pr-0.5">
+              {heldOrders.map((h) => {
+                const heldDisc = parseAmount(h.discountText, currency) ?? 0;
+                const heldTotal = cartTotal(h.lines, heldDisc);
+                const heldUnits = h.lines.reduce((s, l) => s + l.qty, 0);
+                const timeStr = new Date(h.createdAt).toLocaleTimeString(i18n.language, {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                });
+                const titleText =
+                  h.label || h.customerName || t("sell.heldOrderUntitled", { time: timeStr });
+                return (
+                  <li
+                    key={h.id}
+                    data-testid={`held-order-${h.id}`}
+                    className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50/60 p-3"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="truncate text-sm font-semibold text-slate-900">{titleText}</span>
+                        <span className="shrink-0 font-mono text-xs text-slate-400">{timeStr}</span>
+                      </div>
+                      <div className="mt-0.5 truncate text-xs text-slate-500">
+                        {h.lines.map((l) => `${l.qty}× ${l.name}`).join(", ")}
+                      </div>
+                      <div className="mt-1 flex items-center gap-2 text-xs">
+                        <span className="font-semibold text-slate-900 tabular-nums">{fmt(heldTotal)}</span>
+                        <span className="text-slate-400">·</span>
+                        <span className="text-slate-500">{t("sell.itemsInOrder", { count: heldUnits })}</span>
+                      </div>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      <Button
+                        size="sm"
+                        data-testid={`resume-held-${h.id}`}
+                        onClick={() => handleResumeHeld(h.id)}
+                      >
+                        <Play size={13} aria-hidden />
+                        <span>{t("sell.heldOrderResume")}</span>
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        aria-label={t("sell.heldOrderDiscard")}
+                        data-testid={`discard-held-${h.id}`}
+                        onClick={() => handleDiscardHeld(h.id)}
+                      >
+                        <Trash2 size={14} className="text-slate-400 hover:text-red-600" aria-hidden />
+                      </Button>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      </Dialog>
     </div>
   );
 }

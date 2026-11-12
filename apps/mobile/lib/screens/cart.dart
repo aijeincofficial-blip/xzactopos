@@ -28,6 +28,44 @@ class CartLine {
         tracked: product.trackStock,
         discount: discount,
       );
+
+  Map<String, dynamic> toJson() => {
+        'id': product.id,
+        'variantId': product.variantId,
+        'name': product.name,
+        'unit': product.unit,
+        'sku': product.sku,
+        'barcode': product.barcode,
+        'price': product.price,
+        'currency': product.currency,
+        'photoPath': product.photoPath,
+        'trackStock': product.trackStock,
+        'taxRate': product.taxRate,
+        'cost': product.cost,
+        'qty': qty,
+        'discount': discount,
+      };
+
+  static CartLine fromJson(Map<String, dynamic> m) => CartLine(
+        ProductView(
+          id: m['id'] as String,
+          variantId: m['variantId'] as String,
+          name: m['name'] as String,
+          unit: m['unit'] as String,
+          sku: m['sku'] as String,
+          barcode: m['barcode'] as String?,
+          price: m['price'] as int?,
+          currency: m['currency'] as String,
+          photoPath: m['photoPath'] as String?,
+          active: true,
+          pending: false,
+          trackStock: m['trackStock'] as bool,
+          taxRate: (m['taxRate'] as num).toDouble(),
+          cost: m['cost'] as int,
+        ),
+        (m['qty'] as num).toDouble(),
+        discount: (m['discount'] as num?)?.toInt() ?? 0,
+      );
 }
 
 /// The sale being rung up. Kept on the device after every change, so a phone call or a restart does not lose it.
@@ -106,9 +144,20 @@ class Cart extends ChangeNotifier {
     _changed();
   }
 
+  List<CartLine> snapshot() => [
+        for (final l in lines) CartLine.fromJson(l.toJson()),
+      ];
+
+  void replaceAll(List<CartLine> next) {
+    lines
+      ..clear()
+      ..addAll([for (final l in next) CartLine.fromJson(l.toJson())]);
+    _changed();
+  }
+
   void _changed() {
     notifyListeners();
-    store.setMeta(_metaKey, lines.isEmpty ? null : jsonEncode([for (final l in lines) _encode(l)]));
+    store.setMeta(_metaKey, lines.isEmpty ? null : jsonEncode([for (final l in lines) l.toJson()]));
   }
 
   Future<void> restore() async {
@@ -117,49 +166,11 @@ class Cart extends ChangeNotifier {
     try {
       lines
         ..clear()
-        ..addAll([for (final m in (jsonDecode(raw) as List).cast<Map<String, dynamic>>()) _decode(m)]);
+        ..addAll([for (final m in (jsonDecode(raw) as List).cast<Map<String, dynamic>>()) CartLine.fromJson(m)]);
       notifyListeners();
     } catch (_) {
       // an unreadable saved cart is not worth an error; start empty
       await store.setMeta(_metaKey, null);
     }
   }
-
-  Map<String, dynamic> _encode(CartLine l) => {
-        'id': l.product.id,
-        'variantId': l.product.variantId,
-        'name': l.product.name,
-        'unit': l.product.unit,
-        'sku': l.product.sku,
-        'barcode': l.product.barcode,
-        'price': l.product.price,
-        'currency': l.product.currency,
-        'photoPath': l.product.photoPath,
-        'trackStock': l.product.trackStock,
-        'taxRate': l.product.taxRate,
-        'cost': l.product.cost,
-        'qty': l.qty,
-        'discount': l.discount,
-      };
-
-  CartLine _decode(Map<String, dynamic> m) => CartLine(
-        ProductView(
-          id: m['id'] as String,
-          variantId: m['variantId'] as String,
-          name: m['name'] as String,
-          unit: m['unit'] as String,
-          sku: m['sku'] as String,
-          barcode: m['barcode'] as String?,
-          price: m['price'] as int?,
-          currency: m['currency'] as String,
-          photoPath: m['photoPath'] as String?,
-          active: true,
-          pending: false,
-          trackStock: m['trackStock'] as bool,
-          taxRate: (m['taxRate'] as num).toDouble(),
-          cost: m['cost'] as int,
-        ),
-        (m['qty'] as num).toDouble(),
-        discount: (m['discount'] as num?)?.toInt() ?? 0,
-      );
 }

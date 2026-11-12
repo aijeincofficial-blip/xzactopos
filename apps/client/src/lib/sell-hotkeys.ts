@@ -7,6 +7,7 @@ export type PosHotkeyAction =
   | { type: "focus_search" }
   | { type: "focus_discount" }
   | { type: "focus_payment" }
+  | { type: "hold_order" }
   | { type: "fast_key"; index: number }
   | { type: "charge" }
   | { type: "new_sale" }
@@ -57,6 +58,9 @@ export function resolvePosHotkey(e: PosHotkeyInput): PosHotkeyAction | null {
   }
   if (e.key === "F4") {
     return { type: "focus_discount" };
+  }
+  if (e.key === "F6" && e.canCharge) {
+    return { type: "hold_order" };
   }
   if (e.key === "F8") {
     return { type: "focus_payment" };

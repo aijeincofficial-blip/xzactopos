@@ -1439,5 +1439,27 @@
         "type": "String"
       }
     }
-  }
+  },
+  "holdSaleAction": "I-hold",
+  "holdSaleTitle": "I-hold ang bentang ito",
+  "holdSaleHint": "Itabi muna ang cart na ito para sa susunod na mamimili. Hindi pa mababawasan ang stock hangga't hindi pa bayad.",
+  "holdSaleNoteLabel": "Pangalan o tala (opsyonal)",
+  "holdSaleNoteHint": "hal. Asul na damit, Ate Maria",
+  "holdSaleConfirm": "I-hold ang benta",
+  "holdSaleSaved": "Naitabi ang benta",
+  "heldSalesTitle": "Mga naka-hold na benta",
+  "heldSalesEmpty": "Walang naka-hold na benta ngayon.",
+  "heldSaleUntitled": "Naka-hold ({time})",
+  "@heldSaleUntitled": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "heldSaleResume": "Ituloy",
+  "heldSaleDiscard": "Alisin",
+  "heldSaleResumed": "Ibinalik ang naka-hold na benta",
+  "heldSaleSwapped": "Ibinalik ang benta at itinabi ang naunang cart",
+  "heldSaleSwapBanner": "Kusang itatabi ang kasalukuyang cart kapag nagbalik ka ng benta sa ibaba."
 }
