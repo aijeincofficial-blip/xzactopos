@@ -1631,6 +1631,7 @@
     "cashDropBtn": "Record Cash Payout",
     "cashDropSaved": "Cash payout recorded.",
     "goDayClose": "Open Day Close & Z-Reading",
+    "printXReading": "Print X-Reading",
     "invalidAmount": "Enter a valid non-negative cash amount."
   },
   "audit": {

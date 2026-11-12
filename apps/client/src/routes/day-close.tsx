@@ -45,6 +45,7 @@ import {
   exportShiftsCsv,
 } from "../lib/csv-helper.ts";
 import { DenominationCounterDialog } from "../components/denomination-counter-dialog.tsx";
+import { DayCloseSlipView, ShiftSlipView } from "../components/shift-slip.tsx";
 
 export function DayClosePage() {
   const { t, i18n } = useTranslation(["admin", "common"]);
@@ -663,7 +664,6 @@ export function DayClosePage() {
 function XReportDialog({
   store,
   today,
-  fmt,
   openingCash,
   cashSales,
   cashUtang,
@@ -672,7 +672,7 @@ function XReportDialog({
   totals,
   onClose,
 }: {
-  store: { code: string; name: string };
+  store: { code: string; name: string; address?: string | null };
   today: string;
   fmt: (n: number) => string;
   openingCash: number;
@@ -688,79 +688,28 @@ function XReportDialog({
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()} title={t("dayClose.xReportTitle")} closeLabel={t("common:actions.close")}>
-      <div className="printable-slip grid gap-4 text-sm">
-        <div className="border-b border-dashed border-slate-300 pb-3 text-center">
-          <h3 className="font-bold text-base text-slate-900">{access.tenant.name}</h3>
-          <p className="text-xs text-slate-600">
-            {store.name} ({store.code})
-          </p>
-          <div className="mt-2 inline-block rounded bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
-            {t("dayClose.interimReading")}
-          </div>
-          <p className="text-xs text-slate-400 mt-1">
-            {today} · {new Date().toLocaleTimeString()}
-          </p>
-          <p className="text-xs text-slate-500">
-            {t("dayClose.closedBy")}: {access.full_name || access.username}
-          </p>
-        </div>
-
-        {/* Drawer cash summary */}
-        <div className="grid gap-1.5 border-b border-dashed border-slate-300 pb-3">
-          <div className="flex justify-between">
-            <span className="text-slate-600">{t("dayClose.openingCash")}:</span>
-            <span className="font-mono">{fmt(openingCash)}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-slate-600">+ {t("dayClose.cashSales")}:</span>
-            <span className="font-mono">{fmt(cashSales)}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-slate-600">+ {t("dayClose.cashUtangCollected")}:</span>
-            <span className="font-mono">{fmt(cashUtang)}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-slate-600">- {t("dayClose.cashExpenses")}:</span>
-            <span className="font-mono">{fmt(cashExpenses)}</span>
-          </div>
-          <div className="flex justify-between font-bold text-slate-900 border-t border-slate-200 pt-1.5 text-base">
-            <span>{t("dayClose.cashInDrawer")}:</span>
-            <span className="font-mono">{fmt(expectedCash)}</span>
-          </div>
-        </div>
-
-        {/* Sales totals & tenders */}
-        {totals ? (
-          <div className="grid gap-1.5 border-b border-dashed border-slate-300 pb-3 text-xs text-slate-600">
-            <div className="flex justify-between">
-              <span>{t("dayClose.txnCount")}:</span>
-              <span className="font-mono font-medium text-slate-900">{totals.txns}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>{t("dayClose.grossSales")}:</span>
-              <span className="font-mono font-medium text-slate-900">{fmt(totals.gross)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>{t("dayClose.ewalletSales")}:</span>
-              <span className="font-mono font-medium text-slate-900">{fmt(totals.ewallet)}</span>
-            </div>
-            {totals.card !== undefined ? (
-              <div className="flex justify-between">
-                <span>{t("dayClose.cardSales")}:</span>
-                <span className="font-mono font-medium text-slate-900">{fmt(totals.card)}</span>
-              </div>
-            ) : null}
-            <div className="flex justify-between">
-              <span>{t("dayClose.utangSales")}:</span>
-              <span className="font-mono font-medium text-slate-900">{fmt(totals.utang)}</span>
-            </div>
-          </div>
-        ) : null}
-
-        <p className="text-center text-xs text-slate-400 italic">
-          {t("dayClose.xReportNotice")}
-        </p>
-
+      <div className="grid gap-4 text-sm">
+        <DayCloseSlipView
+          slip={{
+            kind: "x",
+            tenantName: access.tenant.name,
+            storeName: store.name,
+            storeCode: store.code,
+            storeAddress: store.address ?? null,
+            receiptHeader: access.tenant.receipt_header ?? null,
+            receiptFooter: access.tenant.receipt_footer ?? null,
+            dayLabel: today,
+            timeLabel: new Date().toLocaleTimeString(),
+            closedByName: access.full_name || access.username,
+            openingCash,
+            cashSales,
+            cashUtang,
+            cashExpenses,
+            expectedCash,
+            totals,
+            currency: access.tenant.base_currency,
+          }}
+        />
         <div className="no-print flex justify-end gap-2 pt-2">
           <Button variant="outline" onClick={() => window.print()}>
             {t("dayClose.print")}
@@ -776,11 +725,10 @@ function ZReportDialog({
   report,
   store,
   userMap,
-  fmt,
   onClose,
 }: {
   report: DayCloseRow;
-  store: { code: string; name: string };
+  store: { code: string; name: string; address?: string | null };
   userMap: Map<string, string>;
   fmt: (n: number) => string;
   onClose: () => void;
@@ -790,70 +738,28 @@ function ZReportDialog({
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()} title={t("dayClose.zReportTitle")} closeLabel={t("common:actions.close")}>
-      <div className="printable-slip grid gap-4 text-sm">
-        <div className="border-b border-dashed border-slate-300 pb-3 text-center">
-          <h3 className="font-bold text-base text-slate-900">{access.tenant.name}</h3>
-          <p className="text-xs text-slate-600">
-            {store.name} ({store.code})
-          </p>
-          <div className="mt-2 inline-block rounded bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-800">
-            {t("dayClose.finalClose")}
-          </div>
-          <p className="text-xs text-slate-400 mt-1">
-            {report.day} · {report.closed_at.slice(11, 19)}
-          </p>
-          {report.closed_by ? (
-            <p className="text-xs text-slate-500">
-              {t("dayClose.closedBy")}: {userMap.get(report.closed_by) ?? report.closed_by.slice(0, 8)}
-            </p>
-          ) : null}
-          {report.approved_by ? (
-            <p className="text-xs text-slate-500">
-              {t("dayClose.approvedBy")}: {userMap.get(report.approved_by) ?? report.approved_by.slice(0, 8)}
-            </p>
-          ) : null}
-        </div>
-
-        {/* Reconciliation figures */}
-        <div className="grid gap-2 border-b border-dashed border-slate-300 pb-3">
-          <div className="flex justify-between text-slate-600">
-            <span>{t("dayClose.openingCash")}:</span>
-            <span className="font-mono">{fmt(report.opening_cash)}</span>
-          </div>
-          <div className="flex justify-between text-slate-600">
-            <span>{t("dayClose.expectedInDrawer")}:</span>
-            <span className="font-mono">{fmt(report.expected_cash)}</span>
-          </div>
-          <div className="flex justify-between font-bold text-slate-900 border-t border-slate-200 pt-1 text-base">
-            <span>{t("dayClose.countedCash")}:</span>
-            <span className="font-mono">{fmt(report.counted_cash)}</span>
-          </div>
-          <div
-            className={`flex justify-between items-center rounded p-2 text-sm font-semibold ${
-              report.difference === 0
-                ? "bg-slate-100 text-slate-800"
-                : report.difference > 0
-                ? "bg-emerald-50 text-emerald-800"
-                : "bg-red-50 text-red-800"
-            }`}
-          >
-            <span>{report.difference >= 0 ? t("dayClose.over") : t("dayClose.short")}:</span>
-            <span className="font-mono text-base">
-              {report.difference >= 0 ? `+${fmt(report.difference)}` : fmt(report.difference)}
-            </span>
-          </div>
-        </div>
-
-        {report.note ? (
-          <div className="rounded bg-slate-50 p-2 text-xs text-slate-600 border border-slate-200">
-            <strong>{t("expenses.note")}:</strong> {report.note}
-          </div>
-        ) : null}
-
-        <p className="text-center text-xs text-slate-400 italic">
-          {t("dayClose.zReportNotice")}
-        </p>
-
+      <div className="grid gap-4 text-sm">
+        <DayCloseSlipView
+          slip={{
+            kind: "z",
+            tenantName: access.tenant.name,
+            storeName: store.name,
+            storeCode: store.code,
+            storeAddress: store.address ?? null,
+            receiptHeader: access.tenant.receipt_header ?? null,
+            receiptFooter: access.tenant.receipt_footer ?? null,
+            dayLabel: report.day,
+            timeLabel: report.closed_at.slice(11, 19),
+            closedByName: report.closed_by ? (userMap.get(report.closed_by) ?? report.closed_by.slice(0, 8)) : null,
+            approvedByName: report.approved_by ? (userMap.get(report.approved_by) ?? report.approved_by.slice(0, 8)) : null,
+            openingCash: report.opening_cash,
+            expectedCash: report.expected_cash,
+            countedCash: report.counted_cash,
+            difference: report.difference,
+            note: report.note,
+            currency: access.tenant.base_currency,
+          }}
+        />
         <div className="no-print flex justify-end gap-2 pt-2">
           <Button variant="outline" onClick={() => window.print()}>
             {t("dayClose.print")}
@@ -869,11 +775,10 @@ function ShiftXReadingDialog({
   shift,
   store,
   cashierName,
-  fmt,
   onClose,
 }: {
   shift: ShiftRow;
-  store: { code: string; name: string };
+  store: { code: string; name: string; address?: string | null };
   cashierName: string;
   fmt: (n: number) => string;
   onClose: () => void;
@@ -891,40 +796,25 @@ function ShiftXReadingDialog({
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()} title={t("dayClose.shiftXTitle")} closeLabel={t("common:actions.close")}>
-      <div className="printable-slip grid gap-4 text-sm">
-        <div className="border-b border-dashed border-slate-300 pb-3 text-center">
-          <h3 className="font-bold text-base text-slate-900">{access.tenant.name}</h3>
-          <p className="text-xs text-slate-600">
-            {store.name} ({store.code})
-          </p>
-          <div className="mt-2 inline-block rounded bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
-            {t("dayClose.shiftXTitle")}
-          </div>
-          <p className="text-xs text-slate-700 font-medium mt-1">
-            {t("dayClose.cashier")}: {cashierName}
-          </p>
-          <p className="text-xs text-slate-400">
-            {t("dayClose.openedAt")}: {new Date(shift.opened_at).toLocaleString()}
-          </p>
-        </div>
-
-        <div className="grid gap-2 border-b border-dashed border-slate-300 pb-3">
-          <div className="flex justify-between text-slate-600">
-            <span>{t("dayClose.openingCash")}:</span>
-            <span className="font-mono">{fmt(shift.opening_cash)}</span>
-          </div>
-          <div className="flex justify-between font-bold text-slate-900 border-t border-slate-200 pt-1 text-base">
-            <span>{t("dayClose.cashInDrawer")}:</span>
-            <span className="font-mono">
-              {expectedQuery.isPending ? "..." : fmt(expectedCash)}
-            </span>
-          </div>
-        </div>
-
-        <p className="text-center text-xs text-slate-400 italic">
-          {t("dayClose.xReportNotice")}
-        </p>
-
+      <div className="grid gap-4 text-sm">
+        <ShiftSlipView
+          slip={{
+            kind: "x",
+            tenantName: access.tenant.name,
+            storeName: store.name,
+            storeCode: store.code,
+            storeAddress: store.address ?? null,
+            receiptHeader: access.tenant.receipt_header ?? null,
+            receiptFooter: access.tenant.receipt_footer ?? null,
+            cashierName,
+            openedAt: shift.opened_at,
+            openingCash: shift.opening_cash,
+            expectedCash,
+            expectedPending: expectedQuery.isPending,
+            currency: shift.currency || access.tenant.base_currency,
+            timezone: access.tenant.timezone,
+          }}
+        />
         <div className="no-print flex justify-end gap-2 pt-2">
           <Button variant="outline" onClick={() => window.print()}>
             {t("dayClose.print")}
@@ -941,11 +831,10 @@ function ShiftZReadingDialog({
   store,
   cashierName,
   userMap,
-  fmt,
   onClose,
 }: {
   shift: ShiftRow;
-  store: { code: string; name: string };
+  store: { code: string; name: string; address?: string | null };
   cashierName: string;
   userMap: Map<string, string>;
   fmt: (n: number) => string;
@@ -954,90 +843,32 @@ function ShiftZReadingDialog({
   const { t } = useTranslation(["admin", "common"]);
   const { access } = useSession();
 
-  const isMismatch =
-    shift.server_expected_cash !== null &&
-    shift.expected_cash !== null &&
-    shift.server_expected_cash !== shift.expected_cash;
-
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()} title={t("dayClose.shiftZTitle")} closeLabel={t("common:actions.close")}>
-      <div className="printable-slip grid gap-4 text-sm">
-        <div className="border-b border-dashed border-slate-300 pb-3 text-center">
-          <h3 className="font-bold text-base text-slate-900">{access.tenant.name}</h3>
-          <p className="text-xs text-slate-600">
-            {store.name} ({store.code})
-          </p>
-          <div className="mt-2 inline-block rounded bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-800">
-            {t("dayClose.shiftZTitle")}
-          </div>
-          <p className="text-xs text-slate-700 font-medium mt-1">
-            {t("dayClose.cashier")}: {cashierName}
-          </p>
-          <p className="text-xs text-slate-400">
-            {new Date(shift.opened_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-            {shift.closed_at ? ` → ${new Date(shift.closed_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : ""}
-          </p>
-          {shift.closed_by ? (
-            <p className="text-xs text-slate-500">
-              {t("dayClose.closedBy")}: {userMap.get(shift.closed_by) ?? shift.closed_by.slice(0, 8)}
-            </p>
-          ) : null}
-        </div>
-
-        <div className="grid gap-2 border-b border-dashed border-slate-300 pb-3">
-          <div className="flex justify-between text-slate-600">
-            <span>{t("dayClose.openingCash")}:</span>
-            <span className="font-mono">{fmt(shift.opening_cash)}</span>
-          </div>
-          <div className="flex justify-between text-slate-600">
-            <span>{t("dayClose.expectedInDrawer")}:</span>
-            <span className="font-mono">{shift.expected_cash !== null ? fmt(shift.expected_cash) : "-"}</span>
-          </div>
-          {shift.server_expected_cash !== null ? (
-            <div className="flex justify-between text-slate-500 text-xs">
-              <span>{t("dayClose.serverExpected")}:</span>
-              <span className="font-mono">{fmt(shift.server_expected_cash)}</span>
-            </div>
-          ) : null}
-          <div className="flex justify-between font-bold text-slate-900 border-t border-slate-200 pt-1 text-base">
-            <span>{t("dayClose.countedCash")}:</span>
-            <span className="font-mono">{shift.counted_cash !== null ? fmt(shift.counted_cash) : "-"}</span>
-          </div>
-
-          {shift.difference !== null ? (
-            <div
-              className={`flex justify-between items-center rounded p-2 text-sm font-semibold ${
-                shift.difference === 0
-                  ? "bg-slate-100 text-slate-800"
-                  : shift.difference > 0
-                  ? "bg-emerald-50 text-emerald-800"
-                  : "bg-red-50 text-red-800"
-              }`}
-            >
-              <span>{shift.difference >= 0 ? t("dayClose.over") : t("dayClose.short")}:</span>
-              <span className="font-mono text-base">
-                {shift.difference >= 0 ? `+${fmt(shift.difference)}` : fmt(shift.difference)}
-              </span>
-            </div>
-          ) : null}
-        </div>
-
-        {isMismatch ? (
-          <Alert tone="info">
-            {t("dayClose.serverMismatchWarn")}
-          </Alert>
-        ) : null}
-
-        {shift.note ? (
-          <div className="rounded bg-slate-50 p-2 text-xs text-slate-600 border border-slate-200">
-            <strong>{t("expenses.note")}:</strong> {shift.note}
-          </div>
-        ) : null}
-
-        <p className="text-center text-xs text-slate-400 italic">
-          {t("dayClose.zReportNotice")}
-        </p>
-
+      <div className="grid gap-4 text-sm">
+        <ShiftSlipView
+          slip={{
+            kind: "z",
+            tenantName: access.tenant.name,
+            storeName: store.name,
+            storeCode: store.code,
+            storeAddress: store.address ?? null,
+            receiptHeader: access.tenant.receipt_header ?? null,
+            receiptFooter: access.tenant.receipt_footer ?? null,
+            cashierName,
+            openedAt: shift.opened_at,
+            closedAt: shift.closed_at,
+            closedByName: shift.closed_by ? (userMap.get(shift.closed_by) ?? shift.closed_by.slice(0, 8)) : null,
+            openingCash: shift.opening_cash,
+            expectedCash: shift.expected_cash,
+            serverExpectedCash: shift.server_expected_cash,
+            countedCash: shift.counted_cash,
+            difference: shift.difference,
+            note: shift.note,
+            currency: shift.currency || access.tenant.base_currency,
+            timezone: access.tenant.timezone,
+          }}
+        />
         <div className="no-print flex justify-end gap-2 pt-2">
           <Button variant="outline" onClick={() => window.print()}>
             {t("dayClose.print")}

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Calculator, Clock, ExternalLink } from "lucide-react";
+import { Calculator, Clock, ExternalLink, Printer } from "lucide-react";
 import { formatMoney, money } from "@pos/core";
 import {
   Alert,
@@ -15,6 +15,7 @@ import {
   useToast,
 } from "./ui.tsx";
 import { DenominationCounterDialog } from "./denomination-counter-dialog.tsx";
+import { ShiftSlipModal, type ShiftSlipData } from "./shift-slip.tsx";
 import { useSession } from "../lib/session.tsx";
 import { useErrorMessage } from "../lib/i18n-helpers.ts";
 import { parseAmount } from "../lib/sale-math.ts";
@@ -55,6 +56,7 @@ export function PosShiftControl({
   const [closeNote, setCloseNote] = useState("");
   const [denomTarget, setDenomTarget] = useState<"opening" | "counted" | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const [slipPreview, setSlipPreview] = useState<ShiftSlipData | null>(null);
 
   // Cash drop state
   const [dropAmountText, setDropAmountText] = useState("");
@@ -143,11 +145,39 @@ export function PosShiftControl({
       });
     },
     onSuccess: async (res) => {
+      const shiftSnapshot = openShift;
+      const countedSnapshot = parsedCounted;
+      const expectedSnapshot = expectedCash;
+      const noteSnapshot = closeNote;
+      const loc = access.locations.find((l) => l.id === (shiftSnapshot?.location_id ?? storeId));
       setCountedText("");
       setCloseNote("");
       setFormError(null);
       setOpen(false);
       toast.good(t("posShift.shiftClosed", { diff: fmt(res.difference) }));
+      if (shiftSnapshot && countedSnapshot !== null) {
+        setSlipPreview({
+          kind: "z",
+          tenantName: access.tenant.name,
+          storeName: loc?.name ?? "",
+          storeCode: loc?.code,
+          storeAddress: loc?.address ?? null,
+          receiptHeader: access.tenant.receipt_header ?? null,
+          receiptFooter: access.tenant.receipt_footer ?? null,
+          cashierName: access.full_name || access.username,
+          openedAt: shiftSnapshot.opened_at,
+          closedAt: new Date().toISOString(),
+          closedByName: access.full_name || access.username,
+          openingCash: shiftSnapshot.opening_cash,
+          expectedCash: expectedSnapshot,
+          serverExpectedCash: res.server_expected_cash,
+          countedCash: countedSnapshot,
+          difference: res.difference,
+          note: noteSnapshot.trim() || null,
+          currency,
+          timezone,
+        });
+      }
       await refreshShiftState();
     },
     onError: (e) => {
@@ -288,11 +318,40 @@ export function PosShiftControl({
                     {fmt(expectedCash)}
                   </div>
                 </div>
-                <div className="text-right text-xs text-slate-500">
+                <div className="grid justify-items-end gap-1.5 text-right text-xs text-slate-500">
                   <div>{t("posShift.openedSince", { time: when(openShift.opened_at) })}</div>
-                  <div className="mt-0.5 font-medium text-slate-700 tabular-nums">
+                  <div className="font-medium text-slate-700 tabular-nums">
                     {t("posShift.openingFloat")}: {fmt(openShift.opening_cash)}
                   </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    data-testid="pos-shift-print-x"
+                    onClick={() => {
+                      const loc = access.locations.find((l) => l.id === (openShift.location_id ?? storeId));
+                      setOpen(false);
+                      setSlipPreview({
+                        kind: "x",
+                        tenantName: access.tenant.name,
+                        storeName: loc?.name ?? "",
+                        storeCode: loc?.code,
+                        storeAddress: loc?.address ?? null,
+                        receiptHeader: access.tenant.receipt_header ?? null,
+                        receiptFooter: access.tenant.receipt_footer ?? null,
+                        cashierName: access.full_name || access.username,
+                        openedAt: openShift.opened_at,
+                        openingCash: openShift.opening_cash,
+                        expectedCash,
+                        expectedPending: expectedQuery.isPending,
+                        currency,
+                        timezone,
+                      });
+                    }}
+                  >
+                    <Printer size={14} />
+                    <span>{t("posShift.printXReading")}</span>
+                  </Button>
                 </div>
               </div>
 
@@ -482,6 +541,12 @@ export function PosShiftControl({
             setCountedText(formattedDecimal);
           }
         }}
+      />
+
+      <ShiftSlipModal
+        open={slipPreview !== null}
+        onClose={() => setSlipPreview(null)}
+        slip={slipPreview}
       />
     </>
   );
