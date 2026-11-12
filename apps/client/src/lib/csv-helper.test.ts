@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  exportAuditLogsCsv,
   exportCustomerLedgerCsv,
   exportDayClosesCsv,
   exportProductsCsv,
@@ -245,5 +246,24 @@ describe("csv-helper", () => {
     expect(csv).toContain("S01-261112-0001,2026-11-12T06:30:00Z,completed,Aling Rosa,cash + utang,120.00,10.00,110.00,25.00,85.00");
     expect(csv).toContain("'=HACK()");
     expect(csv).toContain("50.00,0.00,50.00,0.00,0.00");
+  });
+
+  it("exports audit log entries to CSV and escapes formula-like metadata", () => {
+    const csv = exportAuditLogsCsv([
+      {
+        createdAt: "2026-11-12T06:00:00Z",
+        action: "sale.void",
+        category: "Sales & Approvals",
+        actor: "Aling Nena (@owner)",
+        location: "Poblacion Main (S01)",
+        entity: "sale",
+        entityId: "0190a000-0000-7000-8000-000000000001",
+        details: "=CMD() reason: Duplicate",
+      },
+    ]);
+
+    expect(csv).toContain("Timestamp,Action,Category,Actor,Location,Entity,Entity ID,Details");
+    expect(csv).toContain("sale.void,Sales & Approvals,Aling Nena (@owner),Poblacion Main (S01),sale");
+    expect(csv).toContain("'=CMD() reason: Duplicate");
   });
 });

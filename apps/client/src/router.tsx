@@ -41,6 +41,7 @@ const PurchasingPage = lazyRouteComponent(() => import("./routes/purchasing.tsx"
 const CountsPage = lazyRouteComponent(() => import("./routes/counts.tsx"), "CountsPage");
 const OverviewPage = lazyRouteComponent(() => import("./routes/overview.tsx"), "OverviewPage");
 const ReportsPage = lazyRouteComponent(() => import("./routes/reports.tsx"), "ReportsPage");
+const AuditPage = lazyRouteComponent(() => import("./routes/audit.tsx"), "AuditPage");
 const SetupPage = lazyRouteComponent(() => import("./routes/setup.tsx"), "SetupPage");
 const LocationsPage = lazyRouteComponent(() => import("./routes/locations.tsx"), "LocationsPage");
 const UsersPage = lazyRouteComponent(() => import("./routes/users.tsx"), "UsersPage");
@@ -190,6 +191,7 @@ const purchasing = createRoute({ getParentRoute: () => app, path: "/purchasing",
 const counts = createRoute({ getParentRoute: () => app, path: "/counts", beforeLoad: requires("stock.adjust_warehouse"), component: CountsPage });
 const overview = createRoute({ getParentRoute: () => app, path: "/warehouses", beforeLoad: requires("reports.warehouse"), component: OverviewPage });
 const reports = createRoute({ getParentRoute: () => app, path: "/reports", beforeLoad: requiresAny("reports.store", "reports.warehouse"), component: ReportsPage });
+const audit = createRoute({ getParentRoute: () => app, path: "/audit", beforeLoad: requires("audit.read"), component: AuditPage });
 const platform = createRoute({
   getParentRoute: () => app,
   path: "/platform",
@@ -206,7 +208,7 @@ const routeTree = root.addChildren([
   resetPassword,
   warehouseLogin,
   login,
-  app.addChildren([dashboard, setup, sell, receiveStock, sales, inventory, products, utang, services, expenses, dayClose, upgrade, settings, transfers, bins, purchasing, counts, overview, reports, locations, users, modules, platform, forbidden]),
+  app.addChildren([dashboard, setup, sell, receiveStock, sales, inventory, products, utang, services, expenses, dayClose, upgrade, settings, transfers, bins, purchasing, counts, overview, reports, audit, locations, users, modules, platform, forbidden]),
 ]);
 
 export function makeRouter(queryClient: QueryClient) {

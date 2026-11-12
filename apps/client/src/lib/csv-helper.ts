@@ -195,6 +195,46 @@ export interface SaleExportItem {
   netTotal: number;
 }
 
+export interface AuditLogExportItem {
+  createdAt: string;
+  action: string;
+  category: string;
+  actor: string;
+  location: string;
+  entity: string;
+  entityId: string | null;
+  details: string;
+}
+
+export function exportAuditLogsCsv(items: AuditLogExportItem[]): string {
+  const headers = [
+    "Timestamp",
+    "Action",
+    "Category",
+    "Actor",
+    "Location",
+    "Entity",
+    "Entity ID",
+    "Details",
+  ];
+  const lines = [headers.join(",")];
+  for (const item of items) {
+    lines.push(
+      [
+        escapeCsvField(item.createdAt),
+        escapeCsvField(item.action),
+        escapeCsvField(item.category),
+        escapeCsvField(item.actor),
+        escapeCsvField(item.location),
+        escapeCsvField(item.entity),
+        escapeCsvField(item.entityId ?? ""),
+        escapeCsvField(item.details),
+      ].join(","),
+    );
+  }
+  return lines.join("\r\n");
+}
+
 export function exportSalesCsv(items: SaleExportItem[], currency = "PHP"): string {
   const headers = [
     "Receipt No",
