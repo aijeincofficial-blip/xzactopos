@@ -32,7 +32,14 @@ import {
   type ProductInput,
   type ProductRow,
 } from "../lib/stock-api.ts";
-import { downloadCsv, exportProductsCsv, parseAndValidateImport, type ParsedProductImport } from "../lib/csv-helper.ts";
+import {
+  PRODUCTS_CSV_TEMPLATE,
+  downloadCsv,
+  exportProductsCsv,
+  matchExistingProduct,
+  parseAndValidateImport,
+  type ParsedProductImport,
+} from "../lib/csv-helper.ts";
 
 type ProblemKey = "name" | "price" | "cost" | "tax" | "reorder" | "opening" | "qty" | "count";
 
@@ -701,25 +708,43 @@ function CategoryDialog({
   );
 }
 
-/** CSV Import dialog */
+/** CSV Import dialog with upsert-by-SKU/barcode preview, template download, and spreadsheet paste support. */
 function ImportDialog({
   open,
   onOpenChange,
   locationId,
   categories,
+  existingRows,
+  currency,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   locationId: string;
   categories: Category[];
+  existingRows: ProductRow[];
+  currency: string;
 }) {
-  const { t } = useTranslation(["admin", "common"]);
+  const { t, i18n } = useTranslation(["admin", "common"]);
+  const msg = useErrorMessage();
   const qc = useQueryClient();
   const toast = useToast();
-  const [parsed, setParsed] = useState<{ valid: ParsedProductImport[]; errors: string[] } | null>(null);
+  const fmt = (n: number) => formatMoney(money(n, currency), i18n.language);
+  const [pasteText, setPasteText] = useState("");
+  const [parsed, setParsed] = useState<{ valid: ParsedProductImport[]; errors: string[]; tooMany: boolean } | null>(null);
   const [importing, setImporting] = useState(false);
   const [progress, setProgress] = useState(0);
   const [doneMsg, setDoneMsg] = useState<string | null>(null);
+  const [failedRows, setFailedRows] = useState<string[]>([]);
+
+  const handleParseText = (text: string) => {
+    if (!text.trim()) {
+      setParsed(null);
+      return;
+    }
+    setParsed(parseAndValidateImport(text, currency));
+    setDoneMsg(null);
+    setFailedRows([]);
+  };
 
   const handleFile = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -727,82 +752,204 @@ function ImportDialog({
     const reader = new FileReader();
     reader.onload = (evt) => {
       const text = String(evt.target?.result ?? "");
-      const res = parseAndValidateImport(text);
-      setParsed(res);
-      setDoneMsg(null);
+      setPasteText("");
+      handleParseText(text);
     };
     reader.readAsText(file);
   };
+
+  const previewRows = (parsed?.valid ?? []).map((item) => ({
+    item,
+    existing: matchExistingProduct(item, existingRows),
+  }));
+  const updateCount = previewRows.filter((r) => r.existing !== null).length;
+  const createCount = previewRows.length - updateCount;
 
   const executeImport = async () => {
     if (!parsed || parsed.valid.length === 0) return;
     setImporting(true);
     setProgress(0);
+    setFailedRows([]);
     const catMap = new Map(categories.map((c) => [c.name.toLowerCase().trim(), c.id]));
 
-    let count = 0;
-    for (const item of parsed.valid) {
+    let savedCount = 0;
+    let processed = 0;
+    const failures: string[] = [];
+
+    for (const { item, existing } of previewRows) {
+      processed++;
       try {
-        const catId = item.category ? catMap.get(item.category.toLowerCase().trim()) ?? null : null;
-        const res = await createProduct(
-          {
+        const csvCatId = item.category ? catMap.get(item.category.toLowerCase().trim()) ?? null : null;
+        if (existing) {
+          await updateProduct(existing, {
             name: item.name,
             price: item.price,
             cost: item.cost,
-            unit: item.unit,
+            unit: item.unit || existing.unit,
             taxRate: item.taxRate,
             tracked: item.tracked,
             active: item.active,
-            sku: item.sku,
-            barcode: item.barcode,
+            sku: item.sku || existing.sku,
+            barcode: item.barcode || (existing.barcode ?? ""),
             reorderPoint: item.reorderPoint,
-            categoryId: catId,
-          },
-          item.openingQty,
-          locationId,
-        );
-
-        if (item.expiresOn) {
-          await setExpiry(res.variantId, item.expiresOn, locationId);
+            categoryId: csvCatId ?? existing.categoryId,
+            breaksIntoVariantId: existing.breaksIntoVariantId,
+            breaksIntoQty: existing.breaksIntoQty,
+          });
+          if (item.expiresOn) {
+            await setExpiry(existing.variantId, item.expiresOn, locationId);
+          }
+        } else {
+          const res = await createProduct(
+            {
+              name: item.name,
+              price: item.price,
+              cost: item.cost,
+              unit: item.unit,
+              taxRate: item.taxRate,
+              tracked: item.tracked,
+              active: item.active,
+              sku: item.sku,
+              barcode: item.barcode,
+              reorderPoint: item.reorderPoint,
+              categoryId: csvCatId,
+            },
+            item.openingQty,
+            locationId,
+          );
+          if (item.expiresOn) {
+            await setExpiry(res.variantId, item.expiresOn, locationId);
+          }
         }
-        count++;
-        setProgress(Math.round((count / parsed.valid.length) * 100));
+        savedCount++;
       } catch (err) {
-        console.error("Failed to import item", item.name, err);
+        failures.push(`${item.name}: ${msg(err)}`);
       }
+      setProgress(Math.round((processed / previewRows.length) * 100));
     }
 
     setImporting(false);
-    const successMsg = t("products.importSuccess", { count });
-    setDoneMsg(successMsg);
-    toast.good(successMsg);
-    await Promise.all([qc.invalidateQueries({ queryKey: ["products"] }), qc.invalidateQueries({ queryKey: ["sellables"] })]);
+    setFailedRows(failures);
+    if (savedCount > 0) {
+      const successMsg = t("products.importSuccess", { count: savedCount });
+      setDoneMsg(successMsg);
+      toast.good(successMsg);
+    }
+    await Promise.all([
+      qc.invalidateQueries({ queryKey: ["products"] }),
+      qc.invalidateQueries({ queryKey: ["sellables"] }),
+    ]);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange} title={t("products.importDialogTitle")} closeLabel={t("common:actions.close")}>
       <div className="grid gap-3">
-        <p className="text-xs text-slate-500">{t("products.importDialogDesc")}</p>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-xs text-slate-500">{t("products.importDialogDesc")}</p>
+          <Button
+            variant="outline"
+            size="sm"
+            data-testid="import-download-template"
+            onClick={() => downloadCsv(PRODUCTS_CSV_TEMPLATE, "products-template.csv")}
+          >
+            <Download size={13} className="text-slate-500" aria-hidden />
+            <span>{t("products.importTemplateBtn")}</span>
+          </Button>
+        </div>
 
         <Field label={t("products.importFileLabel")}>
           <input
             type="file"
-            accept=".csv"
+            accept=".csv,.tsv,.txt"
+            data-testid="import-file-input"
             onChange={handleFile}
-            className="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-slate-100 hover:file:bg-slate-200"
+            className="block w-full text-xs text-slate-500 file:mr-3 file:rounded-md file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold hover:file:bg-slate-200"
+          />
+        </Field>
+
+        <Field label={t("products.importPasteLabel")}>
+          <textarea
+            rows={3}
+            data-testid="import-paste-input"
+            placeholder={t("products.importPastePlaceholder")}
+            value={pasteText}
+            onChange={(e) => {
+              const v = e.target.value;
+              setPasteText(v);
+              handleParseText(v);
+            }}
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-xs text-slate-800 focus:border-brand-500 focus:outline-none"
           />
         </Field>
 
         {parsed ? (
           <div className="grid gap-2 text-xs">
-            <div className="font-medium text-emerald-800 bg-emerald-50 border border-emerald-200 p-2.5 rounded">
-              ✓ {t("products.importPreview", { valid: parsed.valid.length })}
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-2.5 font-medium text-emerald-800">
+              <span>✓ {t("products.importPreview", { valid: parsed.valid.length })}</span>
+              {parsed.valid.length > 0 ? (
+                <span className="text-emerald-700">
+                  {t("products.importPreviewBreakdown", { created: createCount, updated: updateCount })}
+                </span>
+              ) : null}
             </div>
+
+            {parsed.tooMany ? <Alert tone="warn">{t("products.importTooMany")}</Alert> : null}
+
+            {previewRows.length > 0 ? (
+              <div className="max-h-48 overflow-auto rounded-lg border border-slate-200">
+                <table className="w-full border-collapse text-left text-xs">
+                  <thead className="sticky top-0 bg-slate-50 text-slate-600">
+                    <tr className="border-b border-slate-200">
+                      <th className="px-2.5 py-1.5 font-semibold">{t("products.importActionCol")}</th>
+                      <th className="px-2.5 py-1.5 font-semibold">{t("products.name")}</th>
+                      <th className="px-2.5 py-1.5 font-semibold">{t("products.sku")}</th>
+                      <th className="px-2.5 py-1.5 text-right font-semibold">{t("products.price")}</th>
+                      <th className="px-2.5 py-1.5 text-right font-semibold">{t("products.onHand")}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {previewRows.slice(0, 25).map(({ item, existing }, idx) => (
+                      <tr key={idx} className="bg-white">
+                        <td className="px-2.5 py-1.5">
+                          <Badge tone={existing ? "neutral" : "good"}>
+                            {existing ? t("products.importActionUpdate") : t("products.importActionNew")}
+                          </Badge>
+                        </td>
+                        <td className="max-w-[160px] truncate px-2.5 py-1.5 font-medium text-slate-900">
+                          {item.name}
+                        </td>
+                        <td className="px-2.5 py-1.5 font-mono text-slate-500">
+                          {item.sku || item.barcode || "—"}
+                        </td>
+                        <td className="px-2.5 py-1.5 text-right font-medium text-slate-900 tabular-nums">
+                          {fmt(item.price)}
+                        </td>
+                        <td className="px-2.5 py-1.5 text-right text-slate-600 tabular-nums">
+                          {existing ? "—" : item.openingQty}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : null}
+
             {parsed.errors.length > 0 ? (
-              <div className="text-amber-800 bg-amber-50 border border-amber-200 p-2.5 rounded max-h-32 overflow-y-auto">
+              <div className="max-h-32 overflow-y-auto rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-amber-800">
                 <span className="font-semibold">{t("products.importErrors", { count: parsed.errors.length })}</span>
-                <ul className="list-disc pl-4 mt-1">
+                <ul className="mt-1 list-disc pl-4">
                   {parsed.errors.slice(0, 10).map((err, i) => (
+                    <li key={i}>{err}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+
+            {failedRows.length > 0 ? (
+              <div className="max-h-32 overflow-y-auto rounded-lg border border-red-200 bg-red-50 p-2.5 text-red-800">
+                <span className="font-semibold">{t("products.importFailedRows", { count: failedRows.length })}</span>
+                <ul className="mt-1 list-disc pl-4">
+                  {failedRows.slice(0, 10).map((err, i) => (
                     <li key={i}>{err}</li>
                   ))}
                 </ul>
@@ -813,10 +960,10 @@ function ImportDialog({
 
         {importing ? (
           <div className="grid gap-1">
-            <span className="text-xs text-slate-600 font-medium">
+            <span className="text-xs font-medium text-slate-600">
               {t("products.importing")} ({progress}%)
             </span>
-            <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+            <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
               <div className="h-full bg-brand-600 transition-all" style={{ width: `${progress}%` }} />
             </div>
           </div>
@@ -824,10 +971,11 @@ function ImportDialog({
 
         {doneMsg ? <Alert tone="info">{doneMsg}</Alert> : null}
 
-        <div className="flex justify-end gap-2 mt-2">
+        <div className="mt-2 flex justify-end gap-2">
           <Button
+            data-testid="start-import-btn"
             disabled={!parsed || parsed.valid.length === 0 || importing}
-            onClick={executeImport}
+            onClick={() => void executeImport()}
           >
             {t("products.startImport")}
           </Button>
@@ -1232,6 +1380,8 @@ export function ProductsPage() {
         onOpenChange={setImportModal}
         locationId={store.id}
         categories={categories}
+        existingRows={q.data ?? []}
+        currency={currency}
       />
 
       {/* Barcode Labels Dialog */}

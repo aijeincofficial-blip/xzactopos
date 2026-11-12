@@ -1,4 +1,10 @@
+import { fromMajor } from "@pos/core";
 import type { ProductRow } from "./stock-api.ts";
+
+export const IMPORT_MAX_ROWS = 500;
+
+export const PRODUCTS_CSV_TEMPLATE =
+  "Name,SKU,Barcode,Category,Price,Cost,Unit,TaxRate,Tracked,Active,ReorderPoint,OnHand,ExpiresOn\r\n";
 
 export interface ParsedProductImport {
   name: string;
@@ -18,7 +24,11 @@ export interface ParsedProductImport {
 
 function escapeCsvField(val: string | number | boolean | null | undefined): string {
   if (val === null || val === undefined) return "";
-  const str = String(val);
+  let str = String(val);
+  // Guard against spreadsheet formula execution (=, +, @) matching Mobile export.dart
+  if (str.length > 0 && "=+@".includes(str[0]!)) {
+    str = `'${str}`;
+  }
   if (str.includes(",") || str.includes('"') || str.includes("\n") || str.includes("\r")) {
     return `"${str.replace(/"/g, '""')}"`;
   }
@@ -66,7 +76,8 @@ export function exportProductsCsv(rows: ProductRow[], _currency?: string): strin
 }
 
 export function downloadCsv(content: string, filename: string): void {
-  const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
+  const withBom = content.startsWith("\uFEFF") ? content : `\uFEFF${content}`;
+  const blob = new Blob([withBom], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.setAttribute("href", url);
@@ -198,16 +209,29 @@ export function exportCustomerLedgerCsv(
   return lines.join("\r\n");
 }
 
-/** Parses standard CSV text with quotes, escaped quotes (""), and commas. */
+/** Parses RFC-4180 CSV or spreadsheet-pasted TSV/semicolon text with quotes, escaped quotes (""), and BOM stripping. */
 export function parseCsv(text: string): string[][] {
+  const src = text.startsWith("\uFEFF") ? text.slice(1) : text;
+  const firstNonEmpty = src
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    .split("\n")
+    .find((l) => l.trim().length > 0) ?? "";
+  let delim = ",";
+  if (firstNonEmpty.includes("\t")) {
+    delim = "\t";
+  } else if ((firstNonEmpty.match(/;/g)?.length ?? 0) > (firstNonEmpty.match(/,/g)?.length ?? 0)) {
+    delim = ";";
+  }
+
   const rows: string[][] = [];
   let currentRow: string[] = [];
   let currentVal = "";
   let insideQuotes = false;
 
-  for (let i = 0; i < text.length; i++) {
-    const char = text[i];
-    const nextChar = text[i + 1];
+  for (let i = 0; i < src.length; i++) {
+    const char = src[i];
+    const nextChar = src[i + 1];
 
     if (char === '"') {
       if (insideQuotes && nextChar === '"') {
@@ -216,7 +240,7 @@ export function parseCsv(text: string): string[][] {
       } else {
         insideQuotes = !insideQuotes;
       }
-    } else if (char === "," && !insideQuotes) {
+    } else if (char === delim && !insideQuotes) {
       currentRow.push(currentVal.trim());
       currentVal = "";
     } else if ((char === "\r" || char === "\n") && !insideQuotes) {
@@ -242,26 +266,101 @@ export function parseCsv(text: string): string[][] {
   return rows;
 }
 
-export function parseAndValidateImport(csvText: string): { valid: ParsedProductImport[]; errors: string[] } {
+const HEADER_ALIASES: Record<string, readonly string[]> = {
+  name: ["name", "product", "item", "pangalan", "produkto"],
+  price: ["price", "presyo", "sellingprice"],
+  sku: ["sku"],
+  barcode: ["barcode", "code"],
+  category: ["category", "kategorya"],
+  cost: ["cost", "puhunan", "capital"],
+  unit: ["unit"],
+  taxrate: ["taxrate", "tax"],
+  tracked: ["tracked"],
+  active: ["active"],
+  reorderpoint: ["reorderpoint", "reorder"],
+  openingqty: ["onhand", "openingqty", "stock", "qty", "quantity", "bilang"],
+  expireson: ["expireson", "expiry"],
+};
+
+function parseCsvMoney(raw: string, currency: string): number | null {
+  const cleaned = raw.replace(/[₱\s,]|php/gi, "").trim();
+  if (!cleaned) return null;
+  try {
+    const m = fromMajor(cleaned, currency);
+    return m.amount >= 0 ? m.amount : null;
+  } catch {
+    return null;
+  }
+}
+
+export function matchExistingProduct(
+  item: Pick<ParsedProductImport, "sku" | "barcode">,
+  existingRows: readonly ProductRow[],
+): ProductRow | null {
+  const sku = item.sku.trim().toLowerCase();
+  if (sku) {
+    const bySku = existingRows.find((r) => r.sku.trim().toLowerCase() === sku);
+    if (bySku) return bySku;
+  }
+  const barcode = item.barcode.trim().toLowerCase();
+  if (barcode) {
+    const byBarcode = existingRows.find(
+      (r) => r.barcode && r.barcode.trim().toLowerCase() === barcode,
+    );
+    if (byBarcode) return byBarcode;
+  }
+  return null;
+}
+
+export function parseAndValidateImport(
+  csvText: string,
+  currency = "PHP",
+): { valid: ParsedProductImport[]; errors: string[]; tooMany: boolean } {
   const grid = parseCsv(csvText);
-  const headerRow = grid[0];
-  if (!headerRow || grid.length < 2) {
-    return { valid: [], errors: ["CSV file is empty or missing data rows."] };
+  const firstRow = grid[0];
+  if (!firstRow) {
+    return { valid: [], errors: ["CSV file is empty or missing data rows."], tooMany: false };
   }
 
-  const rawHeaders = headerRow.map((h) => h.toLowerCase().replace(/[^a-z0-9]/g, ""));
-  const headerMap = new Map<string, number>();
-  rawHeaders.forEach((h, idx) => headerMap.set(h, idx));
+  const normalizedFirst = firstRow.map((h) => h.toLowerCase().replace(/[^a-z0-9]/g, ""));
+  const colIndex = new Map<string, number>();
+  for (const [canonical, aliases] of Object.entries(HEADER_ALIASES)) {
+    const idx = normalizedFirst.findIndex((h) => aliases.includes(h));
+    if (idx >= 0) colIndex.set(canonical, idx);
+  }
 
-  const getCol = (row: string[], name: string): string => {
-    const idx = headerMap.get(name);
+  const hasHeader = colIndex.has("name") || colIndex.has("price");
+  if (hasHeader && grid.length < 2) {
+    return { valid: [], errors: ["CSV file is empty or missing data rows."], tooMany: false };
+  }
+
+  let startIdx = 1;
+  if (!hasHeader) {
+    // Headerless spreadsheet paste fallback matching Mobile parseProductCsv:
+    // name, price, barcode, cost, stock, unit
+    colIndex.set("name", 0);
+    colIndex.set("price", 1);
+    colIndex.set("barcode", 2);
+    colIndex.set("cost", 3);
+    colIndex.set("openingqty", 4);
+    colIndex.set("unit", 5);
+    startIdx = 0;
+  }
+
+  const getCol = (row: string[], key: string): string => {
+    const idx = colIndex.get(key);
     return idx !== undefined && row[idx] !== undefined ? row[idx]! : "";
   };
 
   const valid: ParsedProductImport[] = [];
   const errors: string[] = [];
+  let tooMany = false;
 
-  for (let i = 1; i < grid.length; i++) {
+  for (let i = startIdx; i < grid.length; i++) {
+    if (valid.length + errors.length >= IMPORT_MAX_ROWS) {
+      tooMany = true;
+      break;
+    }
     const row = grid[i];
     if (!row) continue;
     const lineNo = i + 1;
@@ -272,15 +371,15 @@ export function parseAndValidateImport(csvText: string): { valid: ParsedProductI
     }
 
     const priceRaw = getCol(row, "price");
-    const priceNum = parseFloat(priceRaw);
-    if (isNaN(priceNum) || priceNum < 0) {
+    const priceMinor = parseCsvMoney(priceRaw, currency);
+    if (priceMinor === null) {
       errors.push(`Line ${lineNo}: Invalid price "${priceRaw}".`);
       continue;
     }
 
     const costRaw = getCol(row, "cost");
-    const costNum = costRaw ? parseFloat(costRaw) : 0;
-    if (isNaN(costNum) || costNum < 0) {
+    const costMinor = costRaw ? parseCsvMoney(costRaw, currency) : 0;
+    if (costMinor === null) {
       errors.push(`Line ${lineNo}: Invalid cost "${costRaw}".`);
       continue;
     }
@@ -292,8 +391,12 @@ export function parseAndValidateImport(csvText: string): { valid: ParsedProductI
     const reorderRaw = getCol(row, "reorderpoint");
     const reorderPoint = reorderRaw ? parseFloat(reorderRaw) : 0;
 
-    const openingRaw = getCol(row, "onhand") || getCol(row, "openingqty");
+    const openingRaw = getCol(row, "openingqty");
     const openingQty = openingRaw ? parseFloat(openingRaw) : 0;
+    if (openingRaw && (isNaN(openingQty) || openingQty < 0)) {
+      errors.push(`Line ${lineNo}: Invalid stock quantity "${openingRaw}".`);
+      continue;
+    }
 
     const trackedRaw = getCol(row, "tracked").toLowerCase();
     const tracked = trackedRaw === "" ? true : ["true", "1", "yes"].includes(trackedRaw);
@@ -306,8 +409,8 @@ export function parseAndValidateImport(csvText: string): { valid: ParsedProductI
       sku: getCol(row, "sku"),
       barcode: getCol(row, "barcode"),
       category: getCol(row, "category"),
-      price: Math.round(priceNum * 100),
-      cost: Math.round(costNum * 100),
+      price: priceMinor,
+      cost: costMinor,
       unit: getCol(row, "unit") || "pc",
       taxRate: Math.max(0, Math.min(taxRate, 0.9999)),
       tracked,
@@ -318,5 +421,5 @@ export function parseAndValidateImport(csvText: string): { valid: ParsedProductI
     });
   }
 
-  return { valid, errors };
+  return { valid, errors, tooMany };
 }

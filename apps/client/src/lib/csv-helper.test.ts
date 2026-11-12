@@ -4,6 +4,7 @@ import {
   exportDayClosesCsv,
   exportProductsCsv,
   exportShiftsCsv,
+  matchExistingProduct,
   parseAndValidateImport,
   parseCsv,
 } from "./csv-helper.ts";
@@ -152,5 +153,59 @@ describe("csv-helper", () => {
     expect(csv).toContain("150.00");
     expect(csv).toContain("-50.00");
     expect(csv).toContain("cash");
+  });
+
+  it("parses Mobile export columns, Filipino headers, TSV paste, BOM, and ₱ formatted money without float drift", () => {
+    const mobileExport = "\uFEFFname,price,barcode,cost,stock,unit\r\nLucky Me Canton,\"₱ 1,299.99\",4807770270017,PHP 950.05,24,box";
+    const parsedMobile = parseAndValidateImport(mobileExport, "PHP");
+    expect(parsedMobile.errors).toEqual([]);
+    expect(parsedMobile.valid).toHaveLength(1);
+    expect(parsedMobile.valid[0]).toMatchObject({
+      name: "Lucky Me Canton",
+      price: 129999,
+      barcode: "4807770270017",
+      cost: 95005,
+      openingQty: 24,
+      unit: "box",
+    });
+
+    const filTsv = "Pangalan\tPresyo\tPuhunan\tBilang\nSardinas\t23.50\t19.25\t12";
+    const parsedFil = parseAndValidateImport(filTsv, "PHP");
+    expect(parsedFil.errors).toEqual([]);
+    expect(parsedFil.valid[0]).toMatchObject({
+      name: "Sardinas",
+      price: 2350,
+      cost: 1925,
+      openingQty: 12,
+    });
+  });
+
+  it("guards formula-injection cells and matches existing rows by SKU or barcode", () => {
+    const existing: ProductRow = {
+      productId: "p1",
+      variantId: "v1",
+      name: "=SUM(A1:A2)",
+      sku: "RICE-25KG",
+      barcode: "480001",
+      unit: "sack",
+      price: 155000,
+      cost: 130000,
+      reorderPoint: 5,
+      taxRate: 0,
+      tracked: true,
+      active: true,
+      qty: 10,
+      categoryId: null,
+      categoryName: null,
+      breaksIntoVariantId: null,
+      breaksIntoQty: null,
+      expiresOn: null,
+    };
+    const csv = exportProductsCsv([existing], "PHP");
+    expect(csv).toContain("'=SUM(A1:A2)");
+
+    expect(matchExistingProduct({ sku: "rice-25kg", barcode: "" }, [existing])?.variantId).toBe("v1");
+    expect(matchExistingProduct({ sku: "", barcode: "480001" }, [existing])?.variantId).toBe("v1");
+    expect(matchExistingProduct({ sku: "NEW-SKU", barcode: "999999" }, [existing])).toBeNull();
   });
 });
