@@ -318,6 +318,7 @@
     }
   },
   "reportsTitle": "Ulat",
+  "reportsAllStores": "Lahat ng tindahan",
   "reportsRefresh": "I-refresh",
   "reportsDays": "{count, plural, =1{{count} araw} other{{count} araw}}",
   "@reportsDays": {

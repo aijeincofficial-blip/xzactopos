@@ -32,11 +32,20 @@ class _Loaded {
 
 class _ReportsScreenState extends State<ReportsScreen> {
   int _days = 7;
+  String? _locationId;
+  List<StoreRef> _stores = const [];
+  bool _storesLoaded = false;
   Future<_Loaded?>? _load;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    if (!_storesLoaded) {
+      _storesLoaded = true;
+      CatalogScope.of(context).store.myStores().then((s) {
+        if (mounted) setState(() => _stores = s);
+      });
+    }
     _load ??= _fetch();
   }
 
@@ -47,11 +56,12 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   Future<_Loaded?> _fetch() async {
     final store = CatalogScope.of(context).store;
-    final key = 'report_$_days';
+    final loc = _locationId;
+    final key = loc == null ? 'report_$_days' : 'report_${_days}_$loc';
     final to = _today;
     final from = to.subtract(Duration(days: _days - 1));
     try {
-      final data = await widget.backend.reportSummary(from, to);
+      final data = await widget.backend.reportSummary(from, to, locationId: loc);
       final now = DateTime.now();
       await store.setMeta(key, jsonEncode({'at': now.toUtc().toIso8601String(), 'data': data}));
       return _Loaded(data, now, offline: false);
@@ -63,8 +73,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
     }
   }
 
-  void _reload({int? days}) {
+  void _reload({int? days, String? locationId, bool updateLocation = false}) {
     if (days != null) _days = days;
+    if (updateLocation) _locationId = locationId;
     final next = _fetch();
     setState(() {
       _load = next;
@@ -108,6 +119,36 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   onChanged: (d) => _reload(days: d),
                 ),
               ),
+              if (_stores.length > 1)
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.fromLTRB(Gap.l, Gap.xs, Gap.l, Gap.s),
+                  child: Row(
+                    children: [
+                      AppPillChip(
+                        key: const Key('report-branch-all'),
+                        label: t.reportsAllStores,
+                        icon: Icons.store_mall_directory_rounded,
+                        selected: _locationId == null,
+                        onTap: () {
+                          if (_locationId != null) _reload(locationId: null, updateLocation: true);
+                        },
+                      ),
+                      for (final s in _stores) ...[
+                        const SizedBox(width: Gap.s),
+                        AppPillChip(
+                          key: Key('report-branch-${s.id}'),
+                          label: s.name,
+                          icon: Icons.storefront_rounded,
+                          selected: _locationId == s.id,
+                          onTap: () {
+                            if (_locationId != s.id) _reload(locationId: s.id, updateLocation: true);
+                          },
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
               StreamBuilder<OutboxCounts>(
                 stream: scope.store.watchOutboxCounts(),
                 builder: (context, c) {

@@ -318,6 +318,7 @@
     }
   },
   "reportsTitle": "Reports",
+  "reportsAllStores": "All stores",
   "reportsRefresh": "Refresh",
   "reportsDays": "{count, plural, =1{{count} day} other{{count} days}}",
   "@reportsDays": {

@@ -592,6 +592,9 @@ class AppLocalizationsFil extends AppLocalizations {
   String get reportsTitle => 'Ulat';
 
   @override
+  String get reportsAllStores => 'Lahat ng tindahan';
+
+  @override
   String get reportsRefresh => 'I-refresh';
 
   @override

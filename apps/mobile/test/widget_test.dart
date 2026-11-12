@@ -53,13 +53,16 @@ class FakeBackend implements Backend {
   @override
   Future<Map<String, dynamic>?> myAccess() async => access;
   Map<String, dynamic>? report;
+  final reportsByLocation = <String?, Map<String, dynamic>>{};
   Object? reportError;
   final reportCalls = <(DateTime, DateTime)>[];
+  final reportLocations = <String?>[];
   @override
-  Future<Map<String, dynamic>> reportSummary(DateTime from, DateTime to) async {
+  Future<Map<String, dynamic>> reportSummary(DateTime from, DateTime to, {String? locationId}) async {
     reportCalls.add((from, to));
+    reportLocations.add(locationId);
     if (reportError != null) throw reportError!;
-    return report ?? <String, dynamic>{};
+    return reportsByLocation[locationId] ?? report ?? <String, dynamic>{};
   }
 
   @override

@@ -104,6 +104,17 @@ export type ReportMultiStoreResult = {
   server_time: string;
 };
 
+/** Filter locations down to active branches/warehouses accessible to the current user. */
+export function filterAccessibleReportLocations<T extends { id: string; active: boolean }>(
+  locations: readonly T[],
+  access: { role: string | null; locations: ReadonlyArray<{ id: string }> },
+): T[] {
+  const active = locations.filter((l) => l.active);
+  if (access.role === "superadmin") return active;
+  const allowed = new Set(access.locations.map((al) => al.id));
+  return active.filter((l) => allowed.has(l.id));
+}
+
 /** Fetch multi-store summary report from rollups. */
 export async function fetchMultiStoreReport(params: {
   from: string;
@@ -150,8 +161,20 @@ function escapeCsvField(val: string | number): string {
   return s;
 }
 
-/** Exports daily sales trend to CSV. */
-export function exportDailySalesCsv(data: ReportMultiStoreResult, tenantName: string) {
+function slugifyLocation(label?: string): string {
+  if (!label) return "";
+  const slug = label
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+  return slug ? `_${slug}` : "";
+}
+
+export function buildDailySalesCsv(
+  data: ReportMultiStoreResult,
+  tenantName: string,
+  locationLabel?: string,
+): { filename: string; content: string } {
   const headers = ["Date", "Gross Sales", "Discounts", "Net Sales", "COGS", "Estimated Profit", "Transactions", "Cash", "E-Wallet", "Card", "Utang"];
   const rows = data.days.map((d) => [
     d.day,
@@ -163,22 +186,37 @@ export function exportDailySalesCsv(data: ReportMultiStoreResult, tenantName: st
     d.txns,
     (d.cash / 100).toFixed(2),
     (d.ewallet / 100).toFixed(2),
-    (d.card / 100).toFixed(2),
+    ((d.card ?? 0) / 100).toFixed(2),
     (d.utang / 100).toFixed(2),
   ]);
 
-  const csvContent = [
+  const meta = [
     `# Daily Sales Report - ${escapeCsvField(tenantName)}`,
+    ...(locationLabel ? [`# Location: ${escapeCsvField(locationLabel)}`] : []),
     `# Period: ${data.from} to ${data.to}`,
-    headers.map(escapeCsvField).join(","),
-    ...rows.map((r) => r.map(escapeCsvField).join(",")),
-  ].join("\r\n");
+  ];
 
-  downloadCsv(`sales_daily_${data.from}_to_${data.to}.csv`, csvContent);
+  return {
+    filename: `sales_daily${slugifyLocation(locationLabel)}_${data.from}_to_${data.to}.csv`,
+    content: [
+      ...meta,
+      headers.map(escapeCsvField).join(","),
+      ...rows.map((r) => r.map(escapeCsvField).join(",")),
+    ].join("\r\n"),
+  };
 }
 
-/** Exports top products to CSV. */
-export function exportTopProductsCsv(data: ReportMultiStoreResult, tenantName: string) {
+/** Exports daily sales trend to CSV. */
+export function exportDailySalesCsv(data: ReportMultiStoreResult, tenantName: string, locationLabel?: string) {
+  const { filename, content } = buildDailySalesCsv(data, tenantName, locationLabel);
+  downloadCsv(filename, content);
+}
+
+export function buildTopProductsCsv(
+  data: ReportMultiStoreResult,
+  tenantName: string,
+  locationLabel?: string,
+): { filename: string; content: string } {
   const headers = ["Product Name", "SKU", "Quantity Sold", "Total Revenue", "COGS", "Gross Profit"];
   const rows = data.top_items.map((item) => [
     item.name,
@@ -189,14 +227,26 @@ export function exportTopProductsCsv(data: ReportMultiStoreResult, tenantName: s
     (item.profit / 100).toFixed(2),
   ]);
 
-  const csvContent = [
+  const meta = [
     `# Product Performance Report - ${escapeCsvField(tenantName)}`,
+    ...(locationLabel ? [`# Location: ${escapeCsvField(locationLabel)}`] : []),
     `# Period: ${data.from} to ${data.to}`,
-    headers.map(escapeCsvField).join(","),
-    ...rows.map((r) => r.map(escapeCsvField).join(",")),
-  ].join("\r\n");
+  ];
 
-  downloadCsv(`top_products_${data.from}_to_${data.to}.csv`, csvContent);
+  return {
+    filename: `top_products${slugifyLocation(locationLabel)}_${data.from}_to_${data.to}.csv`,
+    content: [
+      ...meta,
+      headers.map(escapeCsvField).join(","),
+      ...rows.map((r) => r.map(escapeCsvField).join(",")),
+    ].join("\r\n"),
+  };
+}
+
+/** Exports top products to CSV. */
+export function exportTopProductsCsv(data: ReportMultiStoreResult, tenantName: string, locationLabel?: string) {
+  const { filename, content } = buildTopProductsCsv(data, tenantName, locationLabel);
+  downloadCsv(filename, content);
 }
 
 /** Exports multi-store breakdown to CSV. */

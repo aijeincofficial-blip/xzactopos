@@ -28,6 +28,7 @@ import {
   exportStoresComparisonCsv,
   exportTopProductsCsv,
   fetchMultiStoreReport,
+  filterAccessibleReportLocations,
   snapshotDailyStock,
 } from "../lib/reports-api.ts";
 
@@ -85,11 +86,16 @@ export function ReportsPage() {
     staleTime: 60_000,
   });
 
-  const availableLocations = useMemo(() => {
-    const all = (locationsQuery.data ?? []).filter((l) => l.active);
-    if (access.role === "superadmin") return all;
-    return all.filter((l) => access.locations.some((al) => al.id === l.id));
-  }, [locationsQuery.data, access]);
+  const availableLocations = useMemo(
+    () => filterAccessibleReportLocations(locationsQuery.data ?? [], access),
+    [locationsQuery.data, access],
+  );
+
+  const selectedLocation = useMemo(
+    () => (selectedLocationId === "all" ? null : (availableLocations.find((l) => l.id === selectedLocationId) ?? null)),
+    [availableLocations, selectedLocationId],
+  );
+  const selectedLocationLabel = selectedLocation ? `${selectedLocation.code} · ${selectedLocation.name}` : undefined;
 
   const reportQuery = useQuery({
     queryKey: ["multi-store-report", fromDate, toDate, selectedLocationId],
@@ -170,11 +176,11 @@ export function ReportsPage() {
 
             {rep && (
               <div className="flex flex-wrap items-center gap-2">
-                <Button variant="outline" size="sm" onClick={() => exportDailySalesCsv(rep, access.tenant.name)}>
+                <Button variant="outline" size="sm" onClick={() => exportDailySalesCsv(rep, access.tenant.name, selectedLocationLabel)}>
                   <Download size={14} className="text-slate-500" aria-hidden />
                   <span>{t("admin:reports.exportDaily")}</span>
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => exportTopProductsCsv(rep, access.tenant.name)}>
+                <Button variant="outline" size="sm" onClick={() => exportTopProductsCsv(rep, access.tenant.name, selectedLocationLabel)}>
                   <Download size={14} className="text-slate-500" aria-hidden />
                   <span>{t("admin:reports.exportProducts")}</span>
                 </Button>
@@ -197,6 +203,7 @@ export function ReportsPage() {
             {t("admin:reports.location")}
           </span>
           <Select
+            data-testid="reports-location-filter"
             aria-label={t("admin:reports.location")}
             value={selectedLocationId}
             onChange={(e) => setSelectedLocationId(e.target.value)}
@@ -334,7 +341,11 @@ export function ReportsPage() {
                   </thead>
                   <tbody>
                     {rep.stores.map((s) => (
-                      <tr key={s.location_id}>
+                      <tr
+                        key={s.location_id}
+                        onClick={() => setSelectedLocationId(s.location_id)}
+                        className="cursor-pointer transition-colors hover:bg-slate-50"
+                      >
                         <Td>
                           <div className="font-semibold text-slate-900">{s.name}</div>
                           <div className="mt-0.5 flex items-center gap-2 text-xs text-slate-600">

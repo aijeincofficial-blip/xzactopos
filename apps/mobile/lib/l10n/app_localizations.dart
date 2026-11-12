@@ -1064,6 +1064,12 @@ abstract class AppLocalizations {
   /// **'Reports'**
   String get reportsTitle;
 
+  /// No description provided for @reportsAllStores.
+  ///
+  /// In en, this message translates to:
+  /// **'All stores'**
+  String get reportsAllStores;
+
   /// No description provided for @reportsRefresh.
   ///
   /// In en, this message translates to:

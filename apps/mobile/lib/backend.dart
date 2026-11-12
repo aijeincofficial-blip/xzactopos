@@ -40,7 +40,8 @@ abstract class Backend implements SyncApi, BinApi, TransferApi, OfflinePinApi {
   Future<Map<String, dynamic>?> myAccess();
 
   /// Sales report from the server's rollups (report_summary), for whole days [from] to [to] inclusive.
-  Future<Map<String, dynamic>> reportSummary(DateTime from, DateTime to);
+  /// When [locationId] is given, scopes rollups to that store; null aggregates across all accessible stores.
+  Future<Map<String, dynamic>> reportSummary(DateTime from, DateTime to, {String? locationId});
 
   /// Creates the solo store, then refreshes the session so the token carries tenant_id.
   Future<void> provisionSoloStore({
@@ -251,9 +252,13 @@ class SupabaseBackend implements Backend, DeviceApi, WarehouseApi, CountApi, Shi
   }
 
   @override
-  Future<Map<String, dynamic>> reportSummary(DateTime from, DateTime to) async {
+  Future<Map<String, dynamic>> reportSummary(DateTime from, DateTime to, {String? locationId}) async {
     String d(DateTime x) => '${x.year.toString().padLeft(4, '0')}-${x.month.toString().padLeft(2, '0')}-${x.day.toString().padLeft(2, '0')}';
-    final res = await _auth(() => _c.rpc('report_summary', params: {'p_from': d(from), 'p_to': d(to)}));
+    final res = await _auth(() => _c.rpc('report_summary', params: {
+          'p_from': d(from),
+          'p_to': d(to),
+          'p_location_id': locationId,
+        }));
     return (res as Map).cast<String, dynamic>();
   }
 

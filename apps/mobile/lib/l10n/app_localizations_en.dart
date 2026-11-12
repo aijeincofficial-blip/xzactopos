@@ -586,6 +586,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reportsTitle => 'Reports';
 
   @override
+  String get reportsAllStores => 'All stores';
+
+  @override
   String get reportsRefresh => 'Refresh';
 
   @override

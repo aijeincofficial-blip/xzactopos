@@ -168,6 +168,67 @@ void main() {
   testWidgets('no expenses, or an older server without them, shows no expense lines', (tester) async {
     await openReports(tester, data: sample());
     expect(find.byKey(const Key('report-net-profit')), findsNothing);
+    expect(find.byKey(const Key('report-branch-all')), findsNothing, reason: 'solo store hides branch chips');
+    await leave(tester);
+  });
+
+  testWidgets('multi-store owner filters reports per branch and caches each branch offline', (tester) async {
+    Map<String, dynamic> branchSample(int net, int cash) => {
+          'days': [
+            {'day': day(0), 'net': net, 'txns': 2},
+          ],
+          'totals': {'net': net, 'gross': net, 'discount': 0, 'cogs': 0, 'txns': 2, 'cash': cash, 'ewallet': net - cash, 'utang': 0},
+          'top_items': const [],
+          'utang': {'owed': 0, 'customers': const []},
+        };
+
+    final store = DriftStore(AppDatabase(NativeDatabase.memory()));
+    final b = FakeBackend(signedInAtStart: true)
+      ..access = {
+        'role': 'superadmin',
+        'tenant': {'id': 't-multi', 'name': 'Multi Store Co', 'base_currency': 'PHP'},
+        'locations': [
+          {'id': 's1', 'code': 'S01', 'name': 'Downtown', 'type': 'store'},
+          {'id': 's2', 'code': 'S02', 'name': 'Uptown', 'type': 'store'},
+        ],
+      }
+      ..reportsByLocation[null] = branchSample(42000, 30000)
+      ..reportsByLocation['s1'] = branchSample(24000, 20000)
+      ..reportsByLocation['s2'] = branchSample(18000, 10000);
+
+    await tester.pumpWidget(App(backend: b, openStore: ({bool safeMode = false}) => store, initialLocale: 'en'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('tab-more')));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const Key('tile-reports')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('tile-reports')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('report-branch-all')), findsOneWidget);
+    expect(find.byKey(const Key('report-branch-s1')), findsOneWidget);
+    expect(find.byKey(const Key('report-branch-s2')), findsOneWidget);
+    expect(b.reportLocations.last, isNull);
+    expect(text(tester, 'report-net'), '₱420.00');
+
+    await tester.tap(find.byKey(const Key('report-branch-s1')));
+    await tester.pumpAndSettle();
+    expect(b.reportLocations.last, 's1');
+    expect(text(tester, 'report-net'), '₱240.00');
+
+    await tester.tap(find.byKey(const Key('report-branch-s2')));
+    await tester.pumpAndSettle();
+    expect(b.reportLocations.last, 's2');
+    expect(text(tester, 'report-net'), '₱180.00');
+
+    // Offline fallback isolates each branch cache key
+    b.reportError = Exception('no signal');
+    await tester.tap(find.byKey(const Key('report-branch-s1')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('report-offline')), findsOneWidget);
+    expect(text(tester, 'report-net'), '₱240.00');
+
     await leave(tester);
   });
 }
