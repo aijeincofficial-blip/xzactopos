@@ -434,23 +434,52 @@ class _SellScreenState extends State<SellScreen> {
               ),
             ),
             Expanded(
-              child: StreamBuilder<Map<String, double>>(
-                stream: scope.store.watchStock(),
+              child: StreamBuilder<List<StockRow>>(
+                stream: scope.store.watchStockList(),
                 builder: (context, stockSnap) {
-                  final stock = stockSnap.data ?? const <String, double>{};
-                  return _query.trim().isEmpty ? _tiles(stock, cart) : _results(stock);
+                  final rows = stockSnap.data ?? const <StockRow>[];
+                  final today = dateOnly(DateTime.now());
+                  final stock = <String, double>{
+                    for (final r in rows)
+                      if (r.qty != null) r.product.variantId: r.qty!,
+                  };
+                  final expiryByVariant = <String, _ExpiryFlag>{
+                    for (final r in rows)
+                      if (r.expired(today))
+                        r.product.variantId: _ExpiryFlag.expired
+                      else if (r.expiringSoon(today))
+                        r.product.variantId: _ExpiryFlag.expiringSoon,
+                  };
+                  return Column(
+                    children: [
+                      Expanded(
+                        child: _query.trim().isEmpty
+                            ? _tiles(stock, expiryByVariant, cart)
+                            : _results(stock, expiryByVariant),
+                      ),
+                      ListenableBuilder(
+                        listenable: cart,
+                        builder: (_, _) {
+                          var expiredCartCount = 0;
+                          for (final l in cart.lines) {
+                            if (expiryByVariant[l.product.variantId] == _ExpiryFlag.expired) {
+                              expiredCartCount += 1;
+                            }
+                          }
+                          return _CartPanel(
+                            cart: cart,
+                            expiredCartCount: expiredCartCount,
+                            money: _money,
+                            onEditQty: _editQty,
+                            onEditLine: _editLine,
+                            onHold: cart.isEmpty ? null : _holdCart,
+                            onPay: cart.isEmpty ? null : () => _pay(cart),
+                          );
+                        },
+                      ),
+                    ],
+                  );
                 },
-              ),
-            ),
-            ListenableBuilder(
-              listenable: cart,
-              builder: (_, _) => _CartPanel(
-                cart: cart,
-                money: _money,
-                onEditQty: _editQty,
-                onEditLine: _editLine,
-                onHold: cart.isEmpty ? null : _holdCart,
-                onPay: cart.isEmpty ? null : () => _pay(cart),
               ),
             ),
           ],
@@ -556,7 +585,7 @@ class _SellScreenState extends State<SellScreen> {
     });
   }
 
-  Widget _tiles(Map<String, double> stock, Cart cart) {
+  Widget _tiles(Map<String, double> stock, Map<String, _ExpiryFlag> expiryByVariant, Cart cart) {
     final t = AppLocalizations.of(context);
     return FutureBuilder<List<ProductView>>(
       future: _quick,
@@ -605,6 +634,7 @@ class _SellScreenState extends State<SellScreen> {
                 return _Tile(
                   product: p,
                   left: p.trackStock ? stock[p.variantId] : null,
+                  expiryFlag: expiryByVariant[p.variantId],
                   money: _money,
                   pinned: _pinned.contains(p.variantId),
                   cartQty: qtyByVariant[p.variantId] ?? 0,
@@ -619,7 +649,7 @@ class _SellScreenState extends State<SellScreen> {
     );
   }
 
-  Widget _results(Map<String, double> stock) {
+  Widget _results(Map<String, double> stock, Map<String, _ExpiryFlag> expiryByVariant) {
     final t = AppLocalizations.of(context);
     final scope = CatalogScope.of(context);
     return StreamBuilder<List<ProductView>>(
@@ -635,12 +665,23 @@ class _SellScreenState extends State<SellScreen> {
           itemBuilder: (context, i) {
             final p = items[i];
             final left = p.trackStock ? stock[p.variantId] : null;
+            final expiryFlag = expiryByVariant[p.variantId];
             return ListTile(
               key: Key('result-${p.id}'),
               contentPadding: const EdgeInsets.symmetric(horizontal: Gap.xs, vertical: 2),
               leading: ProductThumb(productId: p.id, path: p.photoPath, size: 38),
               title: Text(p.name, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
-              subtitle: left == null ? null : _StockText(left: left, reorderPoint: p.reorderPoint),
+              subtitle: (left == null && expiryFlag == null)
+                  ? null
+                  : Wrap(
+                      spacing: 6,
+                      runSpacing: 2,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        if (left != null) _StockText(left: left, reorderPoint: p.reorderPoint),
+                        if (expiryFlag != null) _ExpiryPill(flag: expiryFlag),
+                      ],
+                    ),
               trailing: Text(
                 p.price == null ? '—' : _money(p.price!),
                 style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w700),
@@ -654,6 +695,42 @@ class _SellScreenState extends State<SellScreen> {
           },
         );
       },
+    );
+  }
+}
+
+enum _ExpiryFlag { expired, expiringSoon }
+
+class _ExpiryPill extends StatelessWidget {
+  const _ExpiryPill({required this.flag, this.badgeKey});
+  final _ExpiryFlag flag;
+  final Key? badgeKey;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
+    final isExpired = flag == _ExpiryFlag.expired;
+    final bg = isExpired
+        ? scheme.errorContainer
+        : scheme.payUtang.withValues(alpha: scheme.isDark ? 0.25 : 0.14);
+    final fg = isExpired ? scheme.error : scheme.payUtang;
+    return Container(
+      key: badgeKey,
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        isExpired ? t.sellExpiredBadge : t.sellExpiringSoonBadge,
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          color: fg,
+          height: 1.1,
+        ),
+      ),
     );
   }
 }
@@ -690,10 +767,12 @@ class _Tile extends StatelessWidget {
     required this.money,
     required this.onTap,
     required this.onLongPress,
+    this.expiryFlag,
     this.pinned = false,
     this.cartQty = 0,
   });
   final ProductView product;
+  final _ExpiryFlag? expiryFlag;
   final bool pinned;
   final double cartQty;
   final VoidCallback onLongPress;
@@ -770,6 +849,15 @@ class _Tile extends StatelessWidget {
                 ),
               ),
             ),
+          if (expiryFlag != null)
+            Positioned(
+              top: 0,
+              right: pinned ? 18 : 0,
+              child: _ExpiryPill(
+                flag: expiryFlag!,
+                badgeKey: Key('expiry-badge-${product.id}'),
+              ),
+            ),
           if (pinned)
             Positioned(
               top: 0,
@@ -789,9 +877,11 @@ class _CartPanel extends StatelessWidget {
     required this.onEditQty,
     required this.onEditLine,
     required this.onPay,
+    this.expiredCartCount = 0,
     this.onHold,
   });
   final Cart cart;
+  final int expiredCartCount;
   final String Function(int) money;
   final void Function(int) onEditQty;
   final void Function(int) onEditLine;
@@ -810,6 +900,35 @@ class _CartPanel extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (!cart.isEmpty && expiredCartCount > 0)
+              Container(
+                key: const Key('cart-expired-warning'),
+                width: double.infinity,
+                margin: const EdgeInsets.fromLTRB(Gap.m, 8, Gap.m, 2),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: scheme.errorContainer.withValues(alpha: scheme.isDark ? 0.45 : 0.7),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.warning_amber_rounded, size: 15, color: scheme.error),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        t.sellCartExpiredWarning(expiredCartCount),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                          color: scheme.onErrorContainer,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             if (!cart.isEmpty) ...[
               ConstrainedBox(
                 constraints: const BoxConstraints(maxHeight: 176),

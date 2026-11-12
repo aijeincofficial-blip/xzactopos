@@ -175,4 +175,38 @@ void main() {
     expect(find.byKey(const Key('pin-$_p1')), findsNothing);
     await leave(tester);
   });
+
+  testWidgets('expired and expiring soon badges show on tiles and cart warns on expired items', (tester) async {
+    final store = await openSell(tester);
+    final yesterday = DateTime.now().subtract(const Duration(days: 1));
+    final tomorrow = DateTime.now().add(const Duration(days: 2));
+
+    await store.setExpiry(
+      variantId: _v1,
+      expiresOn: yesterday,
+      opId: '0190a000-0000-7000-8000-0000000000e1',
+    );
+    await store.setExpiry(
+      variantId: _v2,
+      expiresOn: tomorrow,
+      opId: '0190a000-0000-7000-8000-0000000000e2',
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('expiry-badge-$_p1')), findsOneWidget);
+    expect(find.text('Expired'), findsOneWidget);
+    expect(find.byKey(const Key('expiry-badge-$_p2')), findsOneWidget);
+    expect(find.text('Exp soon'), findsOneWidget);
+    expect(find.byKey(const Key('cart-expired-warning')), findsNothing);
+
+    await tester.tap(find.byKey(const Key('tile-$_p2')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('cart-expired-warning')), findsNothing);
+
+    await tester.tap(find.byKey(const Key('tile-$_p1')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('cart-expired-warning')), findsOneWidget);
+
+    await leave(tester);
+  });
 }

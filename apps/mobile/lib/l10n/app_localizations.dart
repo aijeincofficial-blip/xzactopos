@@ -4541,7 +4541,7 @@ abstract class AppLocalizations {
   /// No description provided for @sellCartExpiredWarning.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{1 item in cart is expired — check package before selling} other{{count} items in cart are expired — check packages}}'**
+  /// **'{count, plural, =1{{count} item in cart is expired — check package before selling} other{{count} items in cart are expired — check packages}}'**
   String sellCartExpiredWarning(int count);
 }
 

@@ -26,6 +26,8 @@ export interface ProductRow {
   price: number | null;
   cost: number;
   reorderPoint: number;
+  defaultReorderPoint?: number;
+  isReorderOverride?: boolean;
   taxRate: number;
   tracked: boolean;
   active: boolean;
@@ -39,12 +41,13 @@ export interface ProductRow {
   photoPath?: string | null;
 }
 
-/** Joins products, default variant, price, store's stock level, categories, and expiry. Archived products are left out; inactive ones stay. */
+/** Joins products, default variant, price, store's stock level, categories, expiry, and per-location reorder overrides. Archived products are left out; inactive ones stay. */
 export function toProductRows(
   pull: CatalogPull,
   currency: string,
   levels: ReadonlyMap<string, number>,
   expiries?: ReadonlyMap<string, string | null>,
+  reorderOverrides?: ReadonlyMap<string, number>,
 ): ProductRow[] {
   const catMap = new Map((pull.categories?.rows ?? []).filter((c) => !c.deleted_at).map((c) => [c.id, c.name]));
   const products = new Map(pull.products.rows.filter((p) => !p.deleted_at).map((p) => [p.id, p]));
@@ -54,6 +57,8 @@ export function toProductRows(
     if (v.deleted_at || !v.is_default) continue;
     const p = products.get(v.product_id);
     if (!p) continue;
+    const defaultReorder = Number(v.reorder_point);
+    const overrideReorder = reorderOverrides?.get(v.id);
     out.push({
       productId: p.id,
       variantId: v.id,
@@ -63,7 +68,9 @@ export function toProductRows(
       unit: p.unit,
       price: prices.get(v.id) ?? null,
       cost: v.cost,
-      reorderPoint: Number(v.reorder_point),
+      reorderPoint: overrideReorder ?? defaultReorder,
+      defaultReorderPoint: defaultReorder,
+      isReorderOverride: overrideReorder !== undefined,
       taxRate: Number(p.tax_rate),
       tracked: p.track_stock,
       active: p.active && v.active,
@@ -107,25 +114,59 @@ export async function fetchStockLevels(locationId: string): Promise<Map<string, 
 }
 
 export async function fetchStockExpiries(locationId: string): Promise<Map<string, string | null>> {
-  const expiries = new Map<string, string | null>();
-  const { data, error } = await supabase
-    .from("stock_expiry")
-    .select("variant_id, expires_on")
-    .eq("location_id", locationId);
-  if (error) throw fromRaw(error);
-  for (const r of data ?? []) {
-    if (r.expires_on) expiries.set(r.variant_id, r.expires_on);
+  const slot = `expiries:${locationId}`;
+  try {
+    const expiries = new Map<string, string | null>();
+    const { data, error } = await supabase
+      .from("stock_expiry")
+      .select("variant_id, expires_on")
+      .eq("location_id", locationId);
+    if (error) throw fromRaw(error);
+    for (const r of data ?? []) {
+      if (r.expires_on) expiries.set(r.variant_id, r.expires_on);
+    }
+    savePosCache(slot, Array.from(expiries.entries()));
+    return expiries;
+  } catch (err) {
+    if (isNetworkFailure(err)) {
+      const cached = loadPosCache<Array<[string, string | null]>>(slot);
+      if (cached) return new Map(cached);
+    }
+    throw err;
   }
-  return expiries;
+}
+
+export async function fetchLocationReorderPoints(locationId: string): Promise<Map<string, number>> {
+  const slot = `reorder-points:${locationId}`;
+  try {
+    const overrides = new Map<string, number>();
+    const { data, error } = await supabase
+      .from("location_reorder_points")
+      .select("variant_id, reorder_point")
+      .eq("location_id", locationId);
+    if (error) throw fromRaw(error);
+    for (const r of data ?? []) {
+      overrides.set(r.variant_id, Number(r.reorder_point));
+    }
+    savePosCache(slot, Array.from(overrides.entries()));
+    return overrides;
+  } catch (err) {
+    if (isNetworkFailure(err)) {
+      const cached = loadPosCache<Array<[string, number]>>(slot);
+      if (cached) return new Map(cached);
+    }
+    throw err;
+  }
 }
 
 export async function fetchProductRows(currency: string, locationId: string): Promise<ProductRow[]> {
-  const [pull, levels, expiries] = await Promise.all([
+  const [pull, levels, expiries, reorderOverrides] = await Promise.all([
     pullCatalog(),
     fetchStockLevels(locationId),
     fetchStockExpiries(locationId).catch(() => new Map<string, string | null>()),
+    fetchLocationReorderPoints(locationId).catch(() => new Map<string, number>()),
   ]);
-  return toProductRows(pull, currency, levels, expiries);
+  return toProductRows(pull, currency, levels, expiries, reorderOverrides);
 }
 
 export type StockMovementType =

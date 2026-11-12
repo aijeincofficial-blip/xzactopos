@@ -193,6 +193,9 @@
     "splitRemove": "Remove tender",
     "splitClearAll": "Clear split",
     "splitExceeded": "Split payments exceed the order total. Remove a tender or adjust the discount.",
+    "expiredBadge": "Expired",
+    "expiringSoonBadge": "Exp soon",
+    "cartExpiryWarning": "{{count}} item(s) in this order have expired shelf dates — inspect package before completing checkout.",
     "receiptNo": "Receipt",
     "printReceipt": "Print Receipt",
     "thankYou": "Thank you for your purchase!",
@@ -1527,7 +1530,16 @@
     "actionTabCount": "Physical Count",
     "actionTabRestock": "Direct Stock In",
     "actionTabRepack": "Open Pack (Tingi)",
-    "actionTabExpiry": "Expiry Date"
+    "actionTabExpiry": "Expiry Date",
+    "actionTabReorder": "Reorder Level",
+    "reorderBtn": "Reorder",
+    "reorderOverrideBadge": "Custom",
+    "reorderPointLabel": "Low-stock alert threshold ({{unit}})",
+    "reorderDefaultHint": "Catalog default: {{qty}} {{unit}}. Set a custom threshold for {{location}} or reset to default.",
+    "reorderSaveBtn": "Save Threshold",
+    "reorderResetBtn": "Reset to Default",
+    "reorderSaved": "Saved reorder threshold for this location.",
+    "reorderReset": "Reset reorder threshold to catalog default."
   },
   "services": {
     "title": "Load & E-Wallet Ledger",

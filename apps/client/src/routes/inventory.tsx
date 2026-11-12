@@ -32,6 +32,7 @@ import { readStoredPortal, resolveEffectivePortal } from "../lib/portal.ts";
 import { useErrorMessage } from "../lib/i18n-helpers.ts";
 import { parseAmount } from "../lib/sale-math.ts";
 import { formatQty, parseQty, stockStatus } from "../lib/product-math.ts";
+import { setLocationReorderPoint } from "../lib/overview-api.ts";
 import {
   countStock,
   fetchCategories,
@@ -79,6 +80,9 @@ function StoreStockActionDialog({
   locationId,
   locationLabel,
   canSeeCost,
+  canAdjustStoreStock,
+  canSetReorder,
+  initialTab,
   onClose,
 }: {
   row: ProductRow;
@@ -87,6 +91,9 @@ function StoreStockActionDialog({
   locationId: string;
   locationLabel: string;
   canSeeCost: boolean;
+  canAdjustStoreStock: boolean;
+  canSetReorder: boolean;
+  initialTab?: "count" | "restock" | "repack" | "expiry" | "reorder";
   onClose: () => void;
 }) {
   const { t } = useTranslation(["admin", "common"]);
@@ -97,7 +104,9 @@ function StoreStockActionDialog({
   const hasRepack = Boolean(row.breaksIntoVariantId && row.breaksIntoQty);
   const pieceRow = hasRepack ? allRows.find((r) => r.variantId === row.breaksIntoVariantId) ?? null : null;
 
-  const [actionTab, setActionTab] = useState<"count" | "restock" | "repack" | "expiry">("count");
+  const [actionTab, setActionTab] = useState<"count" | "restock" | "repack" | "expiry" | "reorder">(
+    initialTab ?? (canAdjustStoreStock ? "count" : "reorder"),
+  );
   const [countedText, setCountedText] = useState(() => formatQty(Math.max(0, row.qty)));
   const [reason, setReason] = useState<"counted" | "damage" | "other">("counted");
 
@@ -107,6 +116,7 @@ function StoreStockActionDialog({
 
   const [packsText, setPacksText] = useState("1");
   const [expiryOnly, setExpiryOnly] = useState(row.expiresOn ?? "");
+  const [reorderText, setReorderText] = useState(() => formatQty(Math.max(0, row.reorderPoint)));
   const [formError, setFormError] = useState<string | null>(null);
 
   async function refreshInventory() {
@@ -114,6 +124,7 @@ function StoreStockActionDialog({
       qc.invalidateQueries({ queryKey: ["products"] }),
       qc.invalidateQueries({ queryKey: ["stock-movements"] }),
       qc.invalidateQueries({ queryKey: ["sellables"] }),
+      qc.invalidateQueries({ queryKey: ["overview", "reorder"] }),
     ]);
   }
 
@@ -193,11 +204,44 @@ function StoreStockActionDialog({
     onError: (e) => setFormError(msg(e)),
   });
 
+  const reorderMutation = useMutation({
+    mutationFn: async (resetToDefault: boolean) => {
+      if (resetToDefault) {
+        return setLocationReorderPoint({
+          locationId,
+          variantId: row.variantId,
+          reorderPoint: null,
+        });
+      }
+      const n = parseQty(reorderText, { allowZero: true });
+      if (n === null || n < 0) throw new Error("qty_invalid");
+      return setLocationReorderPoint({
+        locationId,
+        variantId: row.variantId,
+        reorderPoint: n,
+      });
+    },
+    onSuccess: async (_effective, resetToDefault) => {
+      toast.good(resetToDefault ? t("admin:inventory.reorderReset") : t("admin:inventory.reorderSaved"));
+      await refreshInventory();
+      onClose();
+    },
+    onError: (e) => {
+      const m = e instanceof Error && e.message === "qty_invalid" ? t("admin:products.problem.qty") : msg(e);
+      setFormError(m);
+    },
+  });
+
   const dialogTabs = [
-    { value: "count", label: t("admin:inventory.actionTabCount") },
-    { value: "restock", label: t("admin:inventory.actionTabRestock") },
-    ...(hasRepack ? [{ value: "repack", label: t("admin:inventory.actionTabRepack") }] : []),
-    { value: "expiry", label: t("admin:inventory.actionTabExpiry") },
+    ...(canAdjustStoreStock
+      ? [
+          { value: "count", label: t("admin:inventory.actionTabCount") },
+          { value: "restock", label: t("admin:inventory.actionTabRestock") },
+          ...(hasRepack ? [{ value: "repack", label: t("admin:inventory.actionTabRepack") }] : []),
+          { value: "expiry", label: t("admin:inventory.actionTabExpiry") },
+        ]
+      : []),
+    ...(canSetReorder ? [{ value: "reorder", label: t("admin:inventory.actionTabReorder"), testId: "inventory-tab-reorder" }] : []),
   ];
 
   return (
@@ -360,6 +404,52 @@ function StoreStockActionDialog({
               </div>
             </div>
           </TabPanel>
+
+          {canSetReorder ? (
+            <TabPanel value="reorder">
+              <div className="grid gap-3">
+                <p className="text-xs text-slate-600">
+                  {t("admin:inventory.reorderDefaultHint", {
+                    qty: formatQty(row.defaultReorderPoint ?? row.reorderPoint),
+                    unit: row.unit,
+                    location: locationLabel,
+                  })}
+                </p>
+                <Field label={t("admin:inventory.reorderPointLabel", { unit: row.unit })}>
+                  <Input
+                    data-testid="inventory-reorder-input"
+                    inputMode="decimal"
+                    placeholder="0"
+                    value={reorderText}
+                    onChange={(e) => setReorderText(e.target.value)}
+                  />
+                </Field>
+                <div className="flex justify-end gap-2 pt-2">
+                  {row.isReorderOverride ? (
+                    <Button
+                      variant="outline"
+                      data-testid="inventory-reorder-reset"
+                      disabled={reorderMutation.isPending}
+                      onClick={() => reorderMutation.mutate(true)}
+                    >
+                      {t("admin:inventory.reorderResetBtn")}
+                    </Button>
+                  ) : (
+                    <Button variant="outline" onClick={onClose}>
+                      {t("common:actions.cancel")}
+                    </Button>
+                  )}
+                  <Button
+                    data-testid="inventory-reorder-submit"
+                    disabled={reorderMutation.isPending}
+                    onClick={() => reorderMutation.mutate(false)}
+                  >
+                    {t("admin:inventory.reorderSaveBtn")}
+                  </Button>
+                </div>
+              </div>
+            </TabPanel>
+          ) : null}
         </Tabs>
       </div>
     </Dialog>
@@ -370,7 +460,7 @@ export function InventoryPage() {
   const { t, i18n } = useTranslation(["admin", "common"]);
   const msg = useErrorMessage();
   const navigate = useNavigate();
-  const { access, can } = useSession();
+  const { access, ctx, can } = useSession();
   const { activeStore, activeWarehouse } = useActiveLocation();
   const path = useRouterState({ select: (s) => s.location.pathname });
   const mode = tenantMode(access);
@@ -391,6 +481,7 @@ export function InventoryPage() {
   const [movFilter, setMovFilter] = useState<MovementFilter>("all");
   const [movSearch, setMovSearch] = useState("");
   const [adjustingRow, setAdjustingRow] = useState<ProductRow | null>(null);
+  const [adjustInitialTab, setAdjustInitialTab] = useState<"count" | "reorder" | undefined>(undefined);
 
   const productsQuery = useQuery({
     queryKey: ["products", activeLoc?.id, currency],
@@ -496,12 +587,19 @@ export function InventoryPage() {
   const canManageCatalog = can("catalog.manage", activeLoc.id);
   const canSeeCost = canManageCatalog || can("reports.warehouse", activeLoc.id);
   const canAdjustStoreStock = activeLoc.type === "store" && can("stock.adjust_store", activeLoc.id);
+  const locGrant = ctx.locations[activeLoc.id];
+  const canSetLocationReorder =
+    ctx.active &&
+    ctx.tenantActive &&
+    (ctx.role === "superadmin" ||
+      locGrant?.position === "manager" ||
+      (ctx.role === "warehouse" && Boolean(locGrant)));
   const canOpenBins =
     activeLoc.type === "warehouse" &&
     (can("transfer.manage", activeLoc.id) ||
       can("stock.adjust_store", activeLoc.id) ||
       can("locations.manage", activeLoc.id));
-  const showActionsCol = canAdjustStoreStock || canOpenBins;
+  const showActionsCol = canAdjustStoreStock || canOpenBins || canSetLocationReorder;
 
   const canReceiveWarehouseInPos =
     !isWarehousePortal && mode === "full" && access.modules.warehouse && can("sale.create", activeLoc.id);
@@ -732,7 +830,18 @@ export function InventoryPage() {
                           )}
                         </Td>
                         <Td numeric className="text-slate-600">
-                          {r.tracked && r.reorderPoint > 0 ? `${formatQty(r.reorderPoint)} ${r.unit}` : "—"}
+                          {r.tracked && r.reorderPoint > 0 ? (
+                            <span className="inline-flex items-center justify-end gap-1.5">
+                              <span>
+                                {formatQty(r.reorderPoint)} {r.unit}
+                              </span>
+                              {r.isReorderOverride ? (
+                                <Badge tone="neutral">{t("admin:inventory.reorderOverrideBadge")}</Badge>
+                              ) : null}
+                            </span>
+                          ) : (
+                            "—"
+                          )}
                         </Td>
                         <Td
                           numeric
@@ -758,21 +867,42 @@ export function InventoryPage() {
                                 variant="outline"
                                 size="sm"
                                 data-testid={`inv-adjust-${r.sku}`}
-                                onClick={() => setAdjustingRow(r)}
+                                onClick={() => {
+                                  setAdjustInitialTab("count");
+                                  setAdjustingRow(r);
+                                }}
                               >
                                 <SlidersHorizontal size={14} aria-hidden />
                                 <span>{t("admin:inventory.adjustBtn")}</span>
                               </Button>
-                            ) : canOpenBins && r.tracked ? (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => void navigate({ to: "/app/bins" })}
-                              >
-                                <Boxes size={14} aria-hidden />
-                                <span>{t("admin:inventory.binsBtn")}</span>
-                              </Button>
-                            ) : null}
+                            ) : (
+                              <div className="inline-flex items-center justify-end gap-1.5">
+                                {canSetLocationReorder && r.tracked ? (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    data-testid={`inv-reorder-${r.sku}`}
+                                    onClick={() => {
+                                      setAdjustInitialTab("reorder");
+                                      setAdjustingRow(r);
+                                    }}
+                                  >
+                                    <SlidersHorizontal size={14} aria-hidden />
+                                    <span>{t("admin:inventory.reorderBtn")}</span>
+                                  </Button>
+                                ) : null}
+                                {canOpenBins && r.tracked ? (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => void navigate({ to: "/app/bins" })}
+                                  >
+                                    <Boxes size={14} aria-hidden />
+                                    <span>{t("admin:inventory.binsBtn")}</span>
+                                  </Button>
+                                ) : null}
+                              </div>
+                            )}
                           </Td>
                         ) : null}
                       </tr>
@@ -890,7 +1020,13 @@ export function InventoryPage() {
           locationId={activeLoc.id}
           locationLabel={`${activeLoc.code} · ${activeLoc.name}`}
           canSeeCost={canSeeCost}
-          onClose={() => setAdjustingRow(null)}
+          canAdjustStoreStock={canAdjustStoreStock}
+          canSetReorder={canSetLocationReorder}
+          initialTab={adjustInitialTab}
+          onClose={() => {
+            setAdjustingRow(null);
+            setAdjustInitialTab(undefined);
+          }}
         />
       ) : null}
     </div>

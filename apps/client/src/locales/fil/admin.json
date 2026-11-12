@@ -193,6 +193,9 @@
     "splitRemove": "Alisin ang bayad",
     "splitClearAll": "Alisin lahat",
     "splitExceeded": "Lampas sa kabuuan ang mga hating bayad. Alisin ang isang bayad o baguhin ang diskwento.",
+    "expiredBadge": "Paso",
+    "expiringSoonBadge": "Malapit mapaso",
+    "cartExpiryWarning": "{{count}} item sa order na ito ay paso na ang petsa — suriin muna ang pakete bago tapusin ang bayad.",
     "receiptNo": "Resibo",
     "printReceipt": "I-print ang Resibo",
     "thankYou": "Salamat sa iyong pagtangkilik!",
@@ -1527,7 +1530,16 @@
     "actionTabCount": "Pisikal na Bilang",
     "actionTabRestock": "Direktang Dagdag-Stock",
     "actionTabRepack": "Buksan ang Pakete (Tingi)",
-    "actionTabExpiry": "Petsa ng Pagkapaso"
+    "actionTabExpiry": "Petsa ng Pagkapaso",
+    "actionTabReorder": "Antas ng Order",
+    "reorderBtn": "Antas",
+    "reorderOverrideBadge": "Sarili",
+    "reorderPointLabel": "Babala kapag paubos ({{unit}})",
+    "reorderDefaultHint": "Default sa katalogo: {{qty}} {{unit}}. Magtakda ng sariling antas para sa {{location}} o ibalik sa default.",
+    "reorderSaveBtn": "I-save ang Antas",
+    "reorderResetBtn": "Ibalik sa Default",
+    "reorderSaved": "Na-save ang antas ng babala sa lokasyong ito.",
+    "reorderReset": "Ibinalik sa default ng katalogo ang antas ng babala."
   },
   "services": {
     "title": "Load at E-Wallet Ledger",

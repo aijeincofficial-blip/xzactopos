@@ -59,7 +59,13 @@ import {
   type Sellable,
   type SoldReceipt,
 } from "../lib/sell-api.ts";
-import { fetchCategories, fetchStockLevels } from "../lib/stock-api.ts";
+import {
+  fetchCategories,
+  fetchLocationReorderPoints,
+  fetchStockExpiries,
+  fetchStockLevels,
+  getExpiryStatus,
+} from "../lib/stock-api.ts";
 import { supabase } from "../lib/supabase.ts";
 import { SupervisorPinDialog } from "../components/supervisor-pin-dialog.tsx";
 import { PosShiftControl } from "../components/pos-shift-dialog.tsx";
@@ -140,6 +146,20 @@ export function SellPage() {
     queryFn: () => fetchStockLevels(store!.id),
     enabled: Boolean(store?.id),
     staleTime: 15_000,
+  });
+
+  const expiryQuery = useQuery({
+    queryKey: ["pos-stock-expiries", store?.id],
+    queryFn: () => fetchStockExpiries(store!.id).catch(() => new Map<string, string | null>()),
+    enabled: Boolean(store?.id),
+    staleTime: 30_000,
+  });
+
+  const reorderQuery = useQuery({
+    queryKey: ["pos-reorder-points", store?.id],
+    queryFn: () => fetchLocationReorderPoints(store!.id).catch(() => new Map<string, number>()),
+    enabled: Boolean(store?.id),
+    staleTime: 30_000,
   });
 
   const [search, setSearch] = useState("");
@@ -292,6 +312,19 @@ export function SellPage() {
     () => cart.reduce((sum, l) => sum + (Number.isFinite(l.qty) && l.qty > 0 ? l.qty : 0), 0),
     [cart],
   );
+
+  const expiryMap = expiryQuery.data;
+  const reorderMap = reorderQuery.data;
+  const expiredCartCount = useMemo(() => {
+    if (!expiryMap || cart.length === 0) return 0;
+    let count = 0;
+    for (const l of cart) {
+      if (getExpiryStatus(expiryMap.get(l.variantId) ?? null) === "expired") {
+        count += 1;
+      }
+    }
+    return count;
+  }, [cart, expiryMap]);
 
   const shown = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -988,12 +1021,14 @@ export function SellPage() {
                 const pinned = isPinned(s.sku);
                 const inCartQty = cartQtyByVariant.get(s.variantId) ?? 0;
                 const stockQty = s.tracked && stockMap ? (stockMap.get(s.variantId) ?? 0) : null;
+                const effectiveReorder = reorderMap?.get(s.variantId) ?? s.reorderPoint ?? 0;
                 const isOut = stockQty !== null && stockQty <= 0;
                 const isLow =
                   stockQty !== null &&
                   stockQty > 0 &&
-                  (s.reorderPoint ?? 0) > 0 &&
-                  stockQty <= (s.reorderPoint ?? 0);
+                  effectiveReorder > 0 &&
+                  stockQty <= effectiveReorder;
+                const expStatus = getExpiryStatus(expiryMap?.get(s.variantId) ?? null);
 
                 return (
                   <li
@@ -1017,7 +1052,14 @@ export function SellPage() {
                           size="md"
                           active={inCartQty > 0}
                         />
-                        {inCartQty > 0 ? <Badge tone="good">×{inCartQty}</Badge> : null}
+                        <div className="flex flex-wrap items-center justify-end gap-1">
+                          {expStatus === "expired" ? (
+                            <Badge tone="danger">{t("sell.expiredBadge")}</Badge>
+                          ) : expStatus === "expiring_soon" ? (
+                            <Badge tone="warn">{t("sell.expiringSoonBadge")}</Badge>
+                          ) : null}
+                          {inCartQty > 0 ? <Badge tone="good">×{inCartQty}</Badge> : null}
+                        </div>
                       </div>
 
                       <div className="min-w-0">
@@ -1177,6 +1219,14 @@ export function SellPage() {
 
         {/* Scrollable Ticket Line Items */}
         <div className="min-h-[140px] flex-1 overflow-y-auto px-4 py-2.5">
+          {expiredCartCount > 0 ? (
+            <div
+              data-testid="cart-expiry-warning"
+              className="mb-2.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-900"
+            >
+              {t("sell.cartExpiryWarning", { count: expiredCartCount })}
+            </div>
+          ) : null}
           {cart.length === 0 ? (
             <div className="flex h-full flex-col items-center justify-center gap-2 py-8 text-center">
               <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-slate-400">

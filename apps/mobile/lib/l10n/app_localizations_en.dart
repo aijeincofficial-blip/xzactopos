@@ -2639,7 +2639,7 @@ class AppLocalizationsEn extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count items in cart are expired — check packages',
-      one: '1 item in cart is expired — check package before selling',
+      one: '$count item in cart is expired — check package before selling',
     );
     return '$_temp0';
   }

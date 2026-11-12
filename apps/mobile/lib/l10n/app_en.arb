@@ -1484,7 +1484,7 @@
   "todayNoMatches": "No sales match your search.",
   "sellExpiredBadge": "Expired",
   "sellExpiringSoonBadge": "Exp soon",
-  "sellCartExpiredWarning": "{count, plural, =1{1 item in cart is expired — check package before selling} other{{count} items in cart are expired — check packages}}",
+  "sellCartExpiredWarning": "{count, plural, =1{{count} item in cart is expired — check package before selling} other{{count} items in cart are expired — check packages}}",
   "@sellCartExpiredWarning": {
     "placeholders": {
       "count": {

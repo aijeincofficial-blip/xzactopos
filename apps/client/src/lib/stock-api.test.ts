@@ -66,6 +66,31 @@ describe("toProductRows", () => {
     expect(rows[1]!.breaksIntoVariantId).toBe(null);
     expect(rows[1]!.expiresOn).toBe(null);
   });
+
+  it("applies per-location reorder point overrides while preserving catalog default", () => {
+    const rows = toProductRows(
+      {
+        products: page([prod("p1"), prod("p2")]),
+        product_variants: page([
+          vari("v1", "p1", { reorder_point: "5.000" }),
+          vari("v2", "p2", { reorder_point: "10.000" }),
+        ]),
+        variant_prices: page([]),
+      } as never,
+      "PHP",
+      new Map([["v1", 8], ["v2", 8]]),
+      undefined,
+      new Map([["v1", 15]]),
+    );
+
+    expect(rows[0]!.reorderPoint).toBe(15);
+    expect(rows[0]!.defaultReorderPoint).toBe(5);
+    expect(rows[0]!.isReorderOverride).toBe(true);
+
+    expect(rows[1]!.reorderPoint).toBe(10);
+    expect(rows[1]!.defaultReorderPoint).toBe(10);
+    expect(rows[1]!.isReorderOverride).toBe(false);
+  });
 });
 
 describe("getExpiryStatus", () => {
