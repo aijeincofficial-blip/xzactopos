@@ -3,7 +3,9 @@ import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tansta
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { formatMoney, money } from "@pos/core";
+import { Download } from "lucide-react";
 import { Alert, Badge, Button, Card, Dialog, EmptyState, ErrorState, Field, Input, PageHeader, Select, Table, TableSkeleton, Tabs, TabPanel, useToast } from "../components/ui.tsx";
+import { downloadCsv, exportReorderListCsv } from "../lib/csv-helper.ts";
 import { useSession } from "../lib/session.tsx";
 import { useErrorMessage } from "../lib/i18n-helpers.ts";
 import { formatQty } from "../lib/product-math.ts";
@@ -132,6 +134,30 @@ function ReorderTab({ warehouses }: { warehouses: Array<{ id: string; code: stri
     navigate({ to: "/app/purchasing" });
   };
 
+  const handleExportReorderCsv = () => {
+    if (rows.length === 0) return;
+    const csv = exportReorderListCsv(
+      rows.map((r) => {
+        const status = reorderStatus(r);
+        return {
+          warehouse: r.location_code,
+          product: r.product_name,
+          sku: r.sku,
+          onHand: r.qty_on_hand,
+          reorderPoint: r.reorder_point,
+          thresholdType: r.is_override ? "custom" : "default",
+          incoming: r.incoming_qty,
+          onOrder: r.on_order_qty,
+          status: t(`overview.reorder.statusLabel.${status}`),
+          shortfall: status === "order" ? r.shortfall : 0,
+        };
+      }),
+    );
+    const stamp = new Date().toISOString().slice(0, 10);
+    downloadCsv(csv, `warehouse-reorder-${stamp}.csv`);
+    toast.good(t("overview.reorder.exportedToast", { count: rows.length }));
+  };
+
   const saveThresholdMut = useMutation({
     mutationFn: async (point: number | null) => {
       if (!editingRow) return;
@@ -157,6 +183,16 @@ function ReorderTab({ warehouses }: { warehouses: Array<{ id: string; code: stri
   return (
     <div className="grid gap-4">
       <WarehouseFilter warehouses={warehouses} value={warehouseId} onChange={setWarehouseId}>
+        <Button
+          size="sm"
+          variant="outline"
+          data-testid="export-reorder-csv"
+          disabled={rows.length === 0}
+          onClick={handleExportReorderCsv}
+        >
+          <Download size={15} aria-hidden />
+          <span>{t("overview.reorder.exportCsv")}</span>
+        </Button>
         {needOrderRows.length > 0 ? (
           <Button
             size="sm"

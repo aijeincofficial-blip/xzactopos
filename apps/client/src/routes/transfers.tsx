@@ -1,7 +1,9 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Download } from "lucide-react";
 import { Alert, Badge, Button, Card, Dialog, ErrorState, Field, Input, PageHeader, Select, Table, useToast } from "../components/ui.tsx";
+import { downloadCsv, exportTransfersCsv } from "../lib/csv-helper.ts";
 import { useSession } from "../lib/session.tsx";
 import { useActiveLocation } from "../lib/location-context.tsx";
 import { useErrorMessage } from "../lib/i18n-helpers.ts";
@@ -314,6 +316,55 @@ export function TransfersPage() {
     }
   }
 
+  function statusLabel(status: TransferStatus): string {
+    switch (status) {
+      case "draft":
+        return t("admin:transfers.statusDraft");
+      case "shipped":
+        return t("admin:transfers.statusShipped");
+      case "received":
+        return t("admin:transfers.statusReceived");
+      case "cancelled":
+        return t("admin:transfers.statusCancelled");
+    }
+  }
+
+  function handleExportTransfersCsv() {
+    const list = transfersQuery.data ?? [];
+    if (list.length === 0) return;
+    const csv = exportTransfersCsv(
+      list.map((trf) => {
+        const items = trf.transfer_items ?? [];
+        const shippedUnits = items.reduce((sum, i) => sum + Number(i.qty_shipped), 0);
+        const receivedUnits =
+          trf.status === "received"
+            ? items.reduce((sum, i) => sum + Number(i.qty_received ?? 0), 0)
+            : null;
+        const origin = trf.from_location
+          ? `${trf.from_location.name} (${trf.from_location.code})`
+          : trf.from_location_id;
+        const destination = trf.to_location
+          ? `${trf.to_location.name} (${trf.to_location.code})`
+          : trf.to_location_id;
+        return {
+          transferNo: trf.transfer_no,
+          status: statusLabel(trf.status),
+          origin,
+          destination,
+          lines: items.length,
+          shippedUnits,
+          receivedUnits,
+          discrepancy: trf.has_discrepancy,
+          createdAt: trf.created_at,
+          notes: trf.notes,
+        };
+      }),
+    );
+    const stamp = new Date().toISOString().slice(0, 10);
+    downloadCsv(csv, `transfers-${stamp}.csv`);
+    toast.good(t("admin:transfers.exportedToast", { count: list.length }));
+  }
+
   return (
     <div className="grid gap-6">
       {/* Header */}
@@ -321,11 +372,23 @@ export function TransfersPage() {
         title={t("admin:transfers.title")}
         subtitle={t("admin:transfers.subtitle")}
         actions={
-          canCreate ? (
-            <Button onClick={openCreateTransferModal}>
-              {t("admin:transfers.newTransfer")}
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              data-testid="export-transfers-csv"
+              disabled={(transfersQuery.data ?? []).length === 0}
+              onClick={handleExportTransfersCsv}
+            >
+              <Download size={15} aria-hidden />
+              <span>{t("admin:transfers.exportCsv")}</span>
             </Button>
-          ) : undefined
+            {canCreate ? (
+              <Button onClick={openCreateTransferModal}>
+                {t("admin:transfers.newTransfer")}
+              </Button>
+            ) : null}
+          </div>
         }
       />
 
@@ -752,100 +815,105 @@ export function TransfersPage() {
         title={t("admin:transfers.manifestTitle")}
         closeLabel={t("common:actions.close")}
       >
-        <div className="grid gap-4 print:p-0">
-          <div className="border-b border-slate-200 pb-3">
-            <div className="flex justify-between">
+        <div className="grid gap-4">
+          <div
+            className="printable-statement grid gap-4 rounded-md border border-slate-200 bg-white p-4 text-slate-900"
+            data-testid="printable-transfer-manifest"
+          >
+            <div className="border-b border-slate-200 pb-3">
+              <div className="flex justify-between">
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900">{access.tenant.name}</h2>
+                  <div className="text-sm font-semibold text-slate-700">
+                    {t("admin:transfers.stockTransferManifest")}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm font-mono font-bold text-slate-900">
+                    {manifestTransfer?.transfer_no}
+                  </div>
+                  <div className="text-xs text-slate-500">
+                    {manifestTransfer?.created_at &&
+                      new Date(manifestTransfer.created_at).toLocaleDateString(i18n.language, {
+                        dateStyle: "medium",
+                      })}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Location Details */}
+            <div className="grid grid-cols-2 gap-4 rounded-md border border-slate-100 bg-slate-50 p-3 text-xs">
               <div>
-                <h2 className="text-lg font-bold text-slate-900">{access.tenant.name}</h2>
-                <div className="text-sm font-semibold text-slate-700">
-                  {t("admin:transfers.stockTransferManifest")}
+                <div className="font-semibold uppercase tracking-wider text-slate-400">
+                  {t("admin:transfers.dispatchedFrom")}
                 </div>
-              </div>
-              <div className="text-right">
-                <div className="text-sm font-mono font-bold text-slate-900">
-                  {manifestTransfer?.transfer_no}
+                <div className="font-bold text-slate-800">
+                  {manifestTransfer?.from_location?.name} ({manifestTransfer?.from_location?.code})
                 </div>
-                <div className="text-xs text-slate-500">
-                  {manifestTransfer?.created_at &&
-                    new Date(manifestTransfer.created_at).toLocaleDateString(i18n.language, {
-                      dateStyle: "medium",
-                    })}
+                <div className="text-slate-500">{manifestTransfer?.from_location?.address}</div>
+              </div>
+              <div>
+                <div className="font-semibold uppercase tracking-wider text-slate-400">
+                  {t("admin:transfers.destination")}
                 </div>
+                <div className="font-bold text-slate-800">
+                  {manifestTransfer?.to_location?.name} ({manifestTransfer?.to_location?.code})
+                </div>
+                <div className="text-slate-500">{manifestTransfer?.to_location?.address}</div>
               </div>
             </div>
-          </div>
 
-          {/* Location Details */}
-          <div className="grid grid-cols-2 gap-4 rounded-md border border-slate-100 bg-slate-50 p-3 text-xs">
-            <div>
-              <div className="font-semibold uppercase tracking-wider text-slate-400">
-                {t("admin:transfers.dispatchedFrom")}
+            {manifestTransfer?.notes && (
+              <div className="rounded-md border border-slate-100 p-2.5 text-xs text-slate-600">
+                <span className="font-semibold text-slate-700">{t("admin:transfers.notes")}:</span>{" "}
+                {manifestTransfer.notes}
               </div>
-              <div className="font-bold text-slate-800">
-                {manifestTransfer?.from_location?.name} ({manifestTransfer?.from_location?.code})
-              </div>
-              <div className="text-slate-500">{manifestTransfer?.from_location?.address}</div>
-            </div>
-            <div>
-              <div className="font-semibold uppercase tracking-wider text-slate-400">
-                {t("admin:transfers.destination")}
-              </div>
-              <div className="font-bold text-slate-800">
-                {manifestTransfer?.to_location?.name} ({manifestTransfer?.to_location?.code})
-              </div>
-              <div className="text-slate-500">{manifestTransfer?.to_location?.address}</div>
-            </div>
-          </div>
+            )}
 
-          {manifestTransfer?.notes && (
-            <div className="rounded-md border border-slate-100 p-2.5 text-xs text-slate-600">
-              <span className="font-semibold text-slate-700">{t("admin:transfers.notes")}:</span>{" "}
-              {manifestTransfer.notes}
-            </div>
-          )}
-
-          {/* Items Table */}
-          <table className="w-full text-left text-xs text-slate-600">
-            <thead className="border-b border-slate-200 bg-slate-50 font-semibold uppercase text-slate-500">
-              <tr>
-                <th className="px-3 py-2">{t("admin:transfers.product")}</th>
-                <th className="px-3 py-2 text-right">{t("admin:transfers.shippedQty")}</th>
-                <th className="px-3 py-2 text-right">{t("admin:transfers.receivedQty")}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {manifestTransfer?.transfer_items?.map((item) => (
-                <tr key={item.id}>
-                  <td className="px-3 py-2">
-                    <div className="font-semibold text-slate-800">
-                      {item.variant?.product?.name ?? "Unknown"}
-                    </div>
-                    <div className="text-slate-400">{item.variant?.sku}</div>
-                  </td>
-                  <td className="px-3 py-2 text-right font-medium">{item.qty_shipped}</td>
-                  <td className="px-3 py-2 text-right font-medium">
-                    {item.qty_received ?? "—"}
-                  </td>
+            {/* Items Table */}
+            <table className="w-full text-left text-xs text-slate-600">
+              <thead className="border-b border-slate-200 bg-slate-50 font-semibold uppercase text-slate-500">
+                <tr>
+                  <th className="px-3 py-2">{t("admin:transfers.product")}</th>
+                  <th className="px-3 py-2 text-right">{t("admin:transfers.shippedQty")}</th>
+                  <th className="px-3 py-2 text-right">{t("admin:transfers.receivedQty")}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {manifestTransfer?.transfer_items?.map((item) => (
+                  <tr key={item.id}>
+                    <td className="px-3 py-2">
+                      <div className="font-semibold text-slate-800">
+                        {item.variant?.product?.name ?? "Unknown"}
+                      </div>
+                      <div className="text-slate-400">{item.variant?.sku}</div>
+                    </td>
+                    <td className="px-3 py-2 text-right font-medium">{item.qty_shipped}</td>
+                    <td className="px-3 py-2 text-right font-medium">
+                      {item.qty_received ?? "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
 
-          {/* Signatures */}
-          <div className="mt-4 grid grid-cols-2 gap-8 border-t border-slate-200 pt-6 text-xs text-slate-600">
-            <div className="border-t border-dashed border-slate-300 pt-1 text-center">
-              {t("admin:transfers.dispatchedBySignature")}
-            </div>
-            <div className="border-t border-dashed border-slate-300 pt-1 text-center">
-              {t("admin:transfers.receivedBySignature")}
+            {/* Signatures */}
+            <div className="mt-4 grid grid-cols-2 gap-8 border-t border-slate-200 pt-6 text-xs text-slate-600">
+              <div className="border-t border-dashed border-slate-300 pt-1 text-center">
+                {t("admin:transfers.dispatchedBySignature")}
+              </div>
+              <div className="border-t border-dashed border-slate-300 pt-1 text-center">
+                {t("admin:transfers.receivedBySignature")}
+              </div>
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 border-t border-slate-100 pt-3 print:hidden">
+          <div className="no-print flex justify-end gap-2 border-t border-slate-100 pt-3">
             <Button variant="outline" onClick={() => setManifestTransfer(null)}>
               {t("common:actions.close")}
             </Button>
-            <Button onClick={() => window.print()}>
+            <Button data-testid="print-manifest-btn" onClick={() => window.print()}>
               🖨️ {t("admin:transfers.printManifest")}
             </Button>
           </div>
@@ -909,8 +977,8 @@ export function TransfersPage() {
             setPickingShortReason("");
           }
         }}
-        title={`${t("admin:transfers.pickList", { defaultValue: "Pick List" })}: ${pickListTransfer?.transfer_no ?? ""}`}
-        closeLabel={t("common:actions.close", { defaultValue: "Close" })}
+        title={`${t("admin:transfers.pickList")}: ${pickListTransfer?.transfer_no ?? ""}`}
+        closeLabel={t("common:actions.close")}
       >
         <div className="grid gap-4">
           {pickListQuery.isLoading ? (
@@ -919,15 +987,12 @@ export function TransfersPage() {
             <ErrorState
               message={msg(pickListQuery.error)}
               onRetry={() => pickListQuery.refetch()}
-              retryLabel={t("common:actions.retry", { defaultValue: "Retry" })}
+              retryLabel={t("common:actions.retry")}
             />
           ) : !pickListQuery.data ? (
             <Card className="grid gap-3 p-4 text-center">
               <div className="text-sm text-slate-600">
-                {t(
-                  "admin:transfers.noPickListYet",
-                  { defaultValue: "No pick list has been generated yet for this draft transfer. Generate a walking-route pick list to guide warehouse item picking into staging." },
-                )}
+                {t("admin:transfers.noPickListYet")}
               </div>
               <div className="pt-2">
                 <Button
@@ -936,40 +1001,59 @@ export function TransfersPage() {
                   data-testid="generate-picklist-btn"
                 >
                   {generatePickListMutation.isPending
-                    ? t("admin:transfers.generating", { defaultValue: "Generating..." })
-                    : t("admin:transfers.generatePickList", { defaultValue: "Generate Walking-Route Pick List" })}
+                    ? t("admin:transfers.generating")
+                    : t("admin:transfers.generatePickList")}
                 </Button>
               </div>
             </Card>
           ) : (
-            <div className="grid gap-3">
-              <div className="flex flex-wrap items-center justify-between gap-2 rounded bg-slate-50 p-2.5 text-xs text-slate-600">
+            <div
+              className="printable-statement grid gap-3 rounded-md border border-slate-200 bg-white p-4 text-slate-900"
+              data-testid="printable-pick-list"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-2 border-b border-slate-200 pb-3">
                 <div>
-                  <span className="font-semibold text-slate-800">{pickListQuery.data.pick_list_no}</span>
-                  <span className="ml-2 font-mono text-slate-400">({pickListQuery.data.items.length} items)</span>
+                  <h3 className="text-base font-bold text-slate-900">{access.tenant.name}</h3>
+                  <div className="text-xs font-semibold text-slate-600">
+                    {t("admin:transfers.warehousePickList")}
+                  </div>
+                  <div className="mt-1 text-xs text-slate-500">
+                    {pickListTransfer?.from_location?.name} ({pickListTransfer?.from_location?.code}) →{" "}
+                    {pickListTransfer?.to_location?.name} ({pickListTransfer?.to_location?.code})
+                  </div>
                 </div>
-                <Badge
-                  tone={
-                    pickListQuery.data.status === "completed"
-                      ? "good"
-                      : pickListQuery.data.status === "in_progress"
-                        ? "warn"
-                        : "neutral"
-                  }
-                >
-                  {pickListQuery.data.status}
-                </Badge>
+                <div className="text-right">
+                  <div className="font-mono text-sm font-bold text-slate-900">
+                    {pickListQuery.data.pick_list_no}
+                  </div>
+                  <div className="font-mono text-xs text-slate-500">
+                    {pickListTransfer?.transfer_no} · {pickListQuery.data.items.length} {t("admin:transfers.lines")}
+                  </div>
+                  <div className="mt-1">
+                    <Badge
+                      tone={
+                        pickListQuery.data.status === "completed"
+                          ? "good"
+                          : pickListQuery.data.status === "in_progress"
+                            ? "warn"
+                            : "neutral"
+                      }
+                    >
+                      {pickListQuery.data.status}
+                    </Badge>
+                  </div>
+                </div>
               </div>
 
-              <div className="max-h-80 overflow-y-auto rounded-md border border-slate-200">
+              <div className="print-unbounded max-h-80 overflow-y-auto rounded-md border border-slate-200">
                 <Table bare>
                   <thead className="bg-slate-50 text-xs text-slate-500 uppercase">
                     <tr>
-                      <th className="p-2 text-left">{t("admin:transfers.colBin", { defaultValue: "Bin / Location" })}</th>
-                      <th className="p-2 text-left">{t("admin:transfers.colItem", { defaultValue: "Item" })}</th>
-                      <th className="p-2 text-right">{t("admin:transfers.colRequested", { defaultValue: "Req" })}</th>
-                      <th className="p-2 text-right">{t("admin:transfers.colPicked", { defaultValue: "Picked" })}</th>
-                      <th className="p-2 text-center">{t("common:actions.actions", { defaultValue: "Actions" })}</th>
+                      <th className="p-2 text-left">{t("admin:transfers.colBin")}</th>
+                      <th className="p-2 text-left">{t("admin:transfers.colItem")}</th>
+                      <th className="p-2 text-right">{t("admin:transfers.colRequested")}</th>
+                      <th className="p-2 text-right">{t("admin:transfers.colPicked")}</th>
+                      <th className="no-print p-2 text-center">{t("common:actions.actions", { defaultValue: "Actions" })}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -993,7 +1077,7 @@ export function TransfersPage() {
                           <td className="p-2 text-right font-mono font-semibold text-slate-900">
                             {item.qty_picked}
                           </td>
-                          <td className="p-2 text-center">
+                          <td className="no-print p-2 text-center">
                             {isComplete ? (
                               <Badge tone="good">✓ Picked</Badge>
                             ) : isPickingThis ? (
@@ -1047,7 +1131,7 @@ export function TransfersPage() {
                                 }}
                                 data-testid={`pick-item-btn-${item.sku}`}
                               >
-                                {t("admin:transfers.pick", { defaultValue: "Pick" })}
+                                {t("admin:transfers.pick")}
                               </Button>
                             )}
                           </td>
@@ -1057,10 +1141,14 @@ export function TransfersPage() {
                   </tbody>
                 </Table>
               </div>
+
+              <div className="mt-3 border-t border-dashed border-slate-300 pt-2 text-center text-xs text-slate-500">
+                {t("admin:transfers.pickedBySignature")}
+              </div>
             </div>
           )}
 
-          <div className="flex justify-end gap-2 border-t border-slate-100 pt-3">
+          <div className="no-print flex justify-end gap-2 border-t border-slate-100 pt-3">
             <Button
               variant="outline"
               onClick={() => {
@@ -1068,8 +1156,13 @@ export function TransfersPage() {
                 setPickingItemId(null);
               }}
             >
-              {t("common:actions.close", { defaultValue: "Close" })}
+              {t("common:actions.close")}
             </Button>
+            {pickListQuery.data ? (
+              <Button data-testid="print-picklist-btn" onClick={() => window.print()}>
+                🖨️ {t("admin:transfers.printPickList")}
+              </Button>
+            ) : null}
           </div>
         </div>
       </Dialog>

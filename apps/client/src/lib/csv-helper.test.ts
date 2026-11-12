@@ -5,9 +5,11 @@ import {
   exportDayClosesCsv,
   exportExpensesCsv,
   exportProductsCsv,
+  exportReorderListCsv,
   exportSalesCsv,
   exportServiceTxnsCsv,
   exportShiftsCsv,
+  exportTransfersCsv,
   matchExistingProduct,
   parseAndValidateImport,
   parseCsv,
@@ -328,5 +330,47 @@ describe("csv-helper", () => {
     expect(csv).toContain(
       "2026-11-12T11:15:00Z,active,Cash Out,GCash,500.00,15.00,-485.00,500.00,09171234567,'@suki,",
     );
+  });
+
+  it("exports stock transfers and warehouse reorder lists to CSV", () => {
+    const trfCsv = exportTransfersCsv([
+      {
+        transferNo: "TRF-261112-0001",
+        status: "In Transit",
+        origin: "Central Warehouse (WH1)",
+        destination: "Poblacion Main (S01)",
+        lines: 2,
+        shippedUnits: 48,
+        receivedUnits: null,
+        discrepancy: false,
+        createdAt: "2026-11-12T08:00:00Z",
+        notes: "=Fragile cartons",
+      },
+    ]);
+    expect(trfCsv).toContain(
+      "Transfer No,Status,Origin,Destination,Lines,Shipped Units,Received Units,Discrepancy,Created At,Notes",
+    );
+    expect(trfCsv).toContain(
+      "TRF-261112-0001,In Transit,Central Warehouse (WH1),Poblacion Main (S01),2,48,,no,2026-11-12T08:00:00Z,'=Fragile cartons",
+    );
+
+    const reorderCsv = exportReorderListCsv([
+      {
+        warehouse: "WH1",
+        product: "Lucky Me Pancit Canton",
+        sku: "LM-PC-01",
+        onHand: 4,
+        reorderPoint: 20,
+        thresholdType: "custom",
+        incoming: 0,
+        onOrder: 0,
+        status: "Order now",
+        shortfall: 16,
+      },
+    ]);
+    expect(reorderCsv).toContain(
+      "Warehouse,Product,SKU,On Hand,Reorder Point,Threshold Type,In Transit,On Order,Status,Shortfall",
+    );
+    expect(reorderCsv).toContain("WH1,Lucky Me Pancit Canton,LM-PC-01,4,20,custom,0,0,Order now,16");
   });
 });

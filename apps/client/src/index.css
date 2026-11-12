@@ -492,6 +492,10 @@ body {
     box-shadow: none !important;
     border: none !important;
   }
+  .printable-statement .print-unbounded {
+    max-height: none !important;
+    overflow: visible !important;
+  }
   .no-print {
     display: none !important;
   }

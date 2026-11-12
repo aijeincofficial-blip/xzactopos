@@ -266,6 +266,98 @@ export function exportServiceTxnsCsv(items: ServiceTxnExportItem[], currency = "
   return lines.join("\r\n");
 }
 
+export interface TransferExportItem {
+  transferNo: string;
+  status: string;
+  origin: string;
+  destination: string;
+  lines: number;
+  shippedUnits: number;
+  receivedUnits: number | null;
+  discrepancy: boolean;
+  createdAt: string;
+  notes: string | null;
+}
+
+export function exportTransfersCsv(items: TransferExportItem[]): string {
+  const headers = [
+    "Transfer No",
+    "Status",
+    "Origin",
+    "Destination",
+    "Lines",
+    "Shipped Units",
+    "Received Units",
+    "Discrepancy",
+    "Created At",
+    "Notes",
+  ];
+  const lines = [headers.join(",")];
+  for (const item of items) {
+    lines.push(
+      [
+        escapeCsvField(item.transferNo),
+        escapeCsvField(item.status),
+        escapeCsvField(item.origin),
+        escapeCsvField(item.destination),
+        escapeCsvField(item.lines),
+        escapeCsvField(item.shippedUnits),
+        escapeCsvField(item.receivedUnits !== null ? item.receivedUnits : ""),
+        escapeCsvField(item.discrepancy ? "yes" : "no"),
+        escapeCsvField(item.createdAt),
+        escapeCsvField(item.notes ?? ""),
+      ].join(","),
+    );
+  }
+  return lines.join("\r\n");
+}
+
+export interface ReorderExportItem {
+  warehouse: string;
+  product: string;
+  sku: string;
+  onHand: number;
+  reorderPoint: number;
+  thresholdType: "custom" | "default";
+  incoming: number;
+  onOrder: number;
+  status: string;
+  shortfall: number;
+}
+
+export function exportReorderListCsv(items: ReorderExportItem[]): string {
+  const headers = [
+    "Warehouse",
+    "Product",
+    "SKU",
+    "On Hand",
+    "Reorder Point",
+    "Threshold Type",
+    "In Transit",
+    "On Order",
+    "Status",
+    "Shortfall",
+  ];
+  const lines = [headers.join(",")];
+  for (const item of items) {
+    lines.push(
+      [
+        escapeCsvField(item.warehouse),
+        escapeCsvField(item.product),
+        escapeCsvField(item.sku),
+        escapeCsvField(item.onHand),
+        escapeCsvField(item.reorderPoint),
+        escapeCsvField(item.thresholdType),
+        escapeCsvField(item.incoming),
+        escapeCsvField(item.onOrder),
+        escapeCsvField(item.status),
+        escapeCsvField(item.shortfall),
+      ].join(","),
+    );
+  }
+  return lines.join("\r\n");
+}
+
 export function exportExpensesCsv(items: ExpenseExportItem[], currency = "PHP"): string {
   const headers = [
     "Spent At",
