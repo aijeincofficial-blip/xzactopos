@@ -673,12 +673,12 @@ mixin DriftSales implements SalesStore {
     return db
         .customSelect(
           '''
-          select kind, amount, note, occurred_at, local_no, pending from (
-            select l.kind, l.amount, l.note, l.occurred_at, s.local_no as local_no, 0 as pending
+          select kind, amount, note, occurred_at, local_no, sale_no, pending from (
+            select l.kind, l.amount, l.note, l.occurred_at, s.local_no as local_no, s.sale_no as sale_no, 0 as pending
             from server_ledger l left join sales s on s.id = l.sale_id
             where l.customer_id = ?1
             union all
-            select l.kind, l.amount, l.note, l.occurred_at, s.local_no as local_no,
+            select l.kind, l.amount, l.note, l.occurred_at, s.local_no as local_no, s.sale_no as sale_no,
                    (l.confirmed_after is null) as pending
             from local_ledger l left join sales s on s.id = l.sale_id
             where l.customer_id = ?1
@@ -695,6 +695,7 @@ mixin DriftSales implements SalesStore {
                   amount: r.read<int>('amount'),
                   note: r.readNullable<String>('note'),
                   localNo: r.readNullable<String>('local_no'),
+                  saleNo: r.readNullable<String>('sale_no'),
                   at: DateTime.parse(r.read<String>('occurred_at')).toLocal(),
                   pending: r.read<bool>('pending'),
                 )

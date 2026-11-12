@@ -2648,4 +2648,33 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get terminalSection => 'POS Terminal';
+
+  @override
+  String get terminalDefaultName => 'This Phone';
+
+  @override
+  String terminalIdSubtitle(String id) {
+    return 'Terminal ID $id';
+  }
+
+  @override
+  String get terminalRenameAction => 'Rename';
+
+  @override
+  String get terminalRenameTitle => 'Rename POS Terminal';
+
+  @override
+  String get terminalNameLabel => 'Terminal name';
+
+  @override
+  String get terminalNameHint => 'e.g. Counter 2 Phone';
+
+  @override
+  String get terminalNameSaved => 'Terminal name saved';
+
+  @override
+  String get utangExportLedgerCsv => 'Export CSV';
 }

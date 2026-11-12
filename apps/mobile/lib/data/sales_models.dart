@@ -320,6 +320,7 @@ class LedgerEntryView {
     required this.kind,
     required this.amount,
     this.localNo,
+    this.saleNo,
     this.note,
     required this.at,
     required this.pending,
@@ -328,9 +329,13 @@ class LedgerEntryView {
   final String kind; // charge | payment | adjust
   final int amount;
   final String? localNo;
+  final String? saleNo;
   final String? note;
   final DateTime at;
   final bool pending;
+
+  /// Confirmed server receipt number when present, else provisional local receipt number.
+  String? get displayNo => saleNo ?? localNo;
 }
 
 /// One product on the Stock screen. [qty] is null when nobody has counted it yet.

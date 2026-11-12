@@ -4549,6 +4549,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{{count} item in cart is expired — check package before selling} other{{count} items in cart are expired — check packages}}'**
   String sellCartExpiredWarning(int count);
+
+  /// No description provided for @terminalSection.
+  ///
+  /// In en, this message translates to:
+  /// **'POS Terminal'**
+  String get terminalSection;
+
+  /// No description provided for @terminalDefaultName.
+  ///
+  /// In en, this message translates to:
+  /// **'This Phone'**
+  String get terminalDefaultName;
+
+  /// No description provided for @terminalIdSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Terminal ID {id}'**
+  String terminalIdSubtitle(String id);
+
+  /// No description provided for @terminalRenameAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename'**
+  String get terminalRenameAction;
+
+  /// No description provided for @terminalRenameTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename POS Terminal'**
+  String get terminalRenameTitle;
+
+  /// No description provided for @terminalNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Terminal name'**
+  String get terminalNameLabel;
+
+  /// No description provided for @terminalNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Counter 2 Phone'**
+  String get terminalNameHint;
+
+  /// No description provided for @terminalNameSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Terminal name saved'**
+  String get terminalNameSaved;
+
+  /// No description provided for @utangExportLedgerCsv.
+  ///
+  /// In en, this message translates to:
+  /// **'Export CSV'**
+  String get utangExportLedgerCsv;
 }
 
 class _AppLocalizationsDelegate

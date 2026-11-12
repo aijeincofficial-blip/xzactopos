@@ -440,23 +440,36 @@ class CustomerScreen extends StatelessWidget {
                             TextButton(key: const Key('clear-due'), onPressed: () => _clearDue(context, c), child: Text(t.utangDueClear)),
                         ]),
                       ],
-                      Wrap(
-                        spacing: 8,
-                        children: [
-                          TextButton.icon(
-                            key: const Key('send-statement'),
-                            icon: const Icon(Icons.ios_share_rounded, size: 17),
-                            onPressed: () => _sendStatement(context, c),
-                            label: Text(t.utangSendStatement),
-                          ),
-                          if (scope.canManageStock)
-                            TextButton(
-                              key: const Key('adjust-balance'),
-                              onPressed: () => _adjust(context, c),
-                              child: Text(t.utangAdjust),
+                        Wrap(
+                          spacing: 8,
+                          children: [
+                            TextButton.icon(
+                              key: const Key('send-statement'),
+                              icon: const Icon(Icons.ios_share_rounded, size: 17),
+                              onPressed: () => _sendStatement(context, c),
+                              label: Text(t.utangSendStatement),
                             ),
-                        ],
-                      ),
+                            TextButton.icon(
+                              key: const Key('export-ledger-csv'),
+                              icon: const Icon(Icons.download_rounded, size: 17),
+                              onPressed: () async {
+                                final entries = await scope.store.watchLedger(c.id).first;
+                                final safeName = c.name.trim().toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '-');
+                                await csvSharer.share(
+                                  fileName: 'utang-${safeName.isEmpty ? 'customer' : safeName}.csv',
+                                  csv: utangLedgerCsv(entries, scope.store.baseCurrency),
+                                );
+                              },
+                              label: Text(t.utangExportLedgerCsv),
+                            ),
+                            if (scope.canManageStock)
+                              TextButton(
+                                key: const Key('adjust-balance'),
+                                onPressed: () => _adjust(context, c),
+                                child: Text(t.utangAdjust),
+                              ),
+                          ],
+                        ),
                     ]),
                   ),
                   Expanded(
@@ -476,7 +489,7 @@ class CustomerScreen extends StatelessWidget {
                             };
                             final sub = [
                               DateFormat.yMMMd(locale).add_jm().format(e.at),
-                              if (e.localNo != null) e.localNo!,
+                              if (e.displayNo != null) e.displayNo!,
                               if (e.note != null && e.note != 'void') e.note!,
                             ].join(' · ');
                             return ListTile(

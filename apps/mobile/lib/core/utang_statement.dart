@@ -81,7 +81,8 @@ String utangStatementText({
       ..add('')
       ..add('${labels.recent}:');
     for (final e in order.take(statementMaxLines).map((i) => ledger[i])) {
-      out.add('${dayKey(e.at)}  ${kind(e.kind)}  ${signed(e.amount)}');
+      final ref = e.displayNo == null ? '' : ' (${e.displayNo})';
+      out.add('${dayKey(e.at)}  ${kind(e.kind)}$ref  ${signed(e.amount)}');
     }
   }
   return out.join('\n');

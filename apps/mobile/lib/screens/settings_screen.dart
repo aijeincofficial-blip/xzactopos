@@ -10,6 +10,7 @@ import '../core/theme_picker.dart';
 import '../l10n/app_localizations.dart';
 import '../sync/store_session.dart';
 import '../sync/sync_badge.dart';
+import '../sync/sync_engine.dart';
 import 'password_screens.dart';
 
 /// Dedicated Settings Screen for Solo POS.
@@ -242,6 +243,12 @@ class SettingsScreen extends StatelessWidget {
             _SectionHeader(title: t.printerSection.toUpperCase()),
             _PrinterSettingsCard(storeName: storeName),
 
+            if (CatalogScope.maybeOf(context) != null) ...[
+              const SizedBox(height: Gap.l),
+              _SectionHeader(title: t.terminalSection.toUpperCase()),
+              const _TerminalIdentityCard(),
+            ],
+
             const SizedBox(height: Gap.l),
 
             // Security & Credentials Card
@@ -457,6 +464,161 @@ class _SectionHeader extends StatelessWidget {
           letterSpacing: 0.6,
         ),
       ),
+    );
+  }
+}
+
+class _TerminalIdentityCard extends StatefulWidget {
+  const _TerminalIdentityCard();
+
+  @override
+  State<_TerminalIdentityCard> createState() => _TerminalIdentityCardState();
+}
+
+class _TerminalIdentityCardState extends State<_TerminalIdentityCard> {
+  String _shortId = '';
+  String? _customName;
+  bool _loaded = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_loaded) {
+      _loaded = true;
+      _loadIdentity();
+    }
+  }
+
+  static String _shortCode(String id) {
+    final clean = id.replaceAll('-', '').trim().toUpperCase();
+    return clean.length <= 8 ? clean : clean.substring(clean.length - 8);
+  }
+
+  Future<void> _loadIdentity() async {
+    final scope = CatalogScope.maybeOf(context);
+    if (scope == null) return;
+    final id = await scope.store.deviceId();
+    final name = await scope.store.meta(SyncEngine.deviceNameKey);
+    if (!mounted) return;
+    setState(() {
+      _shortId = _shortCode(id);
+      _customName = (name != null && name.trim().isNotEmpty) ? name.trim() : null;
+    });
+  }
+
+  Future<void> _rename(BuildContext context) async {
+    final scope = CatalogScope.maybeOf(context);
+    if (scope == null) return;
+    final t = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+
+    final saved = await showDialog<String>(
+      context: context,
+      builder: (_) => _TerminalRenameDialog(initialName: _customName ?? ''),
+    );
+    if (saved == null) return;
+
+    final nextName = saved.isEmpty ? null : saved;
+    await scope.store.setMeta(SyncEngine.deviceNameKey, nextName);
+    await scope.engine.registerDevice(force: true);
+    if (!mounted) return;
+    setState(() => _customName = nextName);
+    messenger.showSnackBar(SnackBar(content: Text(t.terminalNameSaved)));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
+    final label = _customName ?? t.terminalDefaultName;
+
+    return AppCard(
+      padding: const EdgeInsets.all(Gap.l),
+      child: Row(
+        children: [
+          CoinBadge(icon: Icons.point_of_sale_rounded, color: scheme.primary, size: 36),
+          const SizedBox(width: Gap.m),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  key: const Key('settings-device-name'),
+                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+                ),
+                if (_shortId.isNotEmpty)
+                  Text(
+                    t.terminalIdSubtitle('#$_shortId'),
+                    key: const Key('settings-device-id'),
+                    style: TextStyle(fontSize: 12, color: scheme.outline),
+                  ),
+              ],
+            ),
+          ),
+          FilledButton.tonal(
+            key: const Key('settings-rename-device'),
+            style: FilledButton.styleFrom(
+              shape: const StadiumBorder(),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              minimumSize: const Size(0, 36),
+            ),
+            onPressed: () => _rename(context),
+            child: Text(
+              t.terminalRenameAction,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TerminalRenameDialog extends StatefulWidget {
+  const _TerminalRenameDialog({required this.initialName});
+  final String initialName;
+
+  @override
+  State<_TerminalRenameDialog> createState() => _TerminalRenameDialogState();
+}
+
+class _TerminalRenameDialogState extends State<_TerminalRenameDialog> {
+  late final TextEditingController _controller =
+      TextEditingController(text: widget.initialName);
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
+    return AlertDialog(
+      title: Text(t.terminalRenameTitle),
+      content: TextField(
+        key: const Key('device-name-field'),
+        controller: _controller,
+        autofocus: true,
+        maxLength: 60,
+        decoration: InputDecoration(
+          labelText: t.terminalNameLabel,
+          hintText: t.terminalNameHint,
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(t.cancel),
+        ),
+        FilledButton(
+          key: const Key('device-name-save'),
+          onPressed: () => Navigator.of(context).pop(_controller.text.trim()),
+          child: Text(t.save),
+        ),
+      ],
     );
   }
 }

@@ -1499,5 +1499,21 @@
         "type": "int"
       }
     }
-  }
+  },
+  "terminalSection": "POS Terminal",
+  "terminalDefaultName": "This Phone",
+  "terminalIdSubtitle": "Terminal ID {id}",
+  "@terminalIdSubtitle": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "terminalRenameAction": "Rename",
+  "terminalRenameTitle": "Rename POS Terminal",
+  "terminalNameLabel": "Terminal name",
+  "terminalNameHint": "e.g. Counter 2 Phone",
+  "terminalNameSaved": "Terminal name saved",
+  "utangExportLedgerCsv": "Export CSV"
 }

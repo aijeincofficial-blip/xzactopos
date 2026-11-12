@@ -39,6 +39,21 @@ String utangCsv(List<CustomerView> customers, String currency) => [
       for (final c in customers) csvRow([c.name, c.phone ?? '', _plain(c.balance, currency)]),
     ].join('\r\n');
 
+/// One customer's utang ledger history (newest first), carrying both provisional `receipt_no` and confirmed `sale_no`.
+String utangLedgerCsv(List<LedgerEntryView> ledger, String currency) => [
+      csvRow(['occurred_at_utc', 'kind', 'receipt_no', 'sale_no', 'amount', 'note', 'not_sent']),
+      for (final e in ledger)
+        csvRow([
+          e.at.toUtc().toIso8601String(),
+          e.kind,
+          e.localNo ?? '',
+          e.saleNo ?? '',
+          _plain(e.amount, currency),
+          e.note ?? '',
+          e.pending ? 'yes' : 'no',
+        ]),
+    ].join('\r\n');
+
 /// Stock per product; quantity is empty when the product was never counted.
 String stockCsv(List<StockRow> rows) => [
       csvRow(['product', 'sku', 'unit', 'quantity', 'reorder_point', 'low']),

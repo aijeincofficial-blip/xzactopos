@@ -2662,4 +2662,33 @@ class AppLocalizationsFil extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get terminalSection => 'POS Terminal';
+
+  @override
+  String get terminalDefaultName => 'Teleponong Ito';
+
+  @override
+  String terminalIdSubtitle(String id) {
+    return 'Terminal ID $id';
+  }
+
+  @override
+  String get terminalRenameAction => 'Pangalanan';
+
+  @override
+  String get terminalRenameTitle => 'Pangalanan ang POS Terminal';
+
+  @override
+  String get terminalNameLabel => 'Pangalan ng terminal';
+
+  @override
+  String get terminalNameHint => 'hal. Kaha 2 Telepono';
+
+  @override
+  String get terminalNameSaved => 'Na-save ang pangalan ng terminal';
+
+  @override
+  String get utangExportLedgerCsv => 'I-export sa CSV';
 }

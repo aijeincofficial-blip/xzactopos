@@ -1499,5 +1499,21 @@
         "type": "int"
       }
     }
-  }
+  },
+  "terminalSection": "POS Terminal",
+  "terminalDefaultName": "Teleponong Ito",
+  "terminalIdSubtitle": "Terminal ID {id}",
+  "@terminalIdSubtitle": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "terminalRenameAction": "Pangalanan",
+  "terminalRenameTitle": "Pangalanan ang POS Terminal",
+  "terminalNameLabel": "Pangalan ng terminal",
+  "terminalNameHint": "hal. Kaha 2 Telepono",
+  "terminalNameSaved": "Na-save ang pangalan ng terminal",
+  "utangExportLedgerCsv": "I-export sa CSV"
 }
