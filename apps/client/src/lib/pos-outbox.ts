@@ -2,7 +2,20 @@ import { useSyncExternalStore } from "react";
 import { ApiError, rpc } from "./api.ts";
 import { isOnline } from "./network.ts";
 
-export type PosOutboxOpKind = "upsert_customer" | "record_sale";
+export const POS_OUTBOX_OP_KINDS = [
+  "upsert_customer",
+  "record_sale",
+  "record_utang_payment",
+  "record_expense",
+  "record_service_txn",
+  "open_shift",
+] as const;
+
+export type PosOutboxOpKind = (typeof POS_OUTBOX_OP_KINDS)[number];
+
+function isPosOutboxOpKind(v: unknown): v is PosOutboxOpKind {
+  return typeof v === "string" && (POS_OUTBOX_OP_KINDS as readonly string[]).includes(v);
+}
 
 export interface QueuedPosOp {
   opId: string;
@@ -119,7 +132,7 @@ function parseOutboxRaw(raw: string | null): QueuedPosOp[] {
       if (!item || typeof item !== "object") continue;
       const r = item as Record<string, unknown>;
       if (typeof r.opId !== "string" || !r.opId) continue;
-      if (r.kind !== "upsert_customer" && r.kind !== "record_sale") continue;
+      if (!isPosOutboxOpKind(r.kind)) continue;
       if (!r.payload || typeof r.payload !== "object") continue;
       out.push({
         opId: r.opId,
@@ -242,6 +255,180 @@ export function applyOptimisticStockDeltas(
     }
   }
   return merged;
+}
+
+export interface OptimisticLedgerEntry {
+  id: string;
+  customer_id: string;
+  kind: "charge" | "payment";
+  amount: number;
+  sale_id: string | null;
+  note: string | null;
+  occurred_at: string;
+  method: "cash" | "ewallet";
+  location_id: string | null;
+  pending: true;
+}
+
+/** Extracts optimistic customer ledger entries (utang charges from offline sales + offline utang repayments). */
+export function pendingOptimisticUtangLedger(
+  ops: ReadonlyArray<QueuedPosOp> = loadPosOutbox(),
+): OptimisticLedgerEntry[] {
+  const out: OptimisticLedgerEntry[] = [];
+  for (const op of ops) {
+    if (op.state !== "pending" && op.state !== "failed") continue;
+    if (op.kind === "record_utang_payment") {
+      const customerId = typeof op.payload.customer_id === "string" ? op.payload.customer_id : null;
+      const amt = Number(op.payload.amount);
+      if (!customerId || !Number.isFinite(amt) || amt <= 0) continue;
+      out.push({
+        id: op.opId,
+        customer_id: customerId,
+        kind: "payment",
+        amount: -amt,
+        sale_id: null,
+        note: typeof op.payload.note === "string" ? op.payload.note : null,
+        occurred_at: typeof op.payload.occurred_at === "string" ? op.payload.occurred_at : op.createdAt,
+        method: op.payload.method === "ewallet" ? "ewallet" : "cash",
+        location_id: typeof op.payload.location_id === "string" ? op.payload.location_id : (op.locationId ?? null),
+        pending: true,
+      });
+    } else if (op.kind === "record_sale") {
+      const customerId = typeof op.payload.customer_id === "string" ? op.payload.customer_id : null;
+      if (!customerId) continue;
+      const payments = Array.isArray(op.payload.payments) ? op.payload.payments : [];
+      let utangSum = 0;
+      for (const rawPay of payments) {
+        if (!rawPay || typeof rawPay !== "object") continue;
+        const p = rawPay as Record<string, unknown>;
+        if (p.method === "utang") {
+          const a = Number(p.amount);
+          if (Number.isFinite(a) && a > 0) utangSum += a;
+        }
+      }
+      if (utangSum <= 0) continue;
+      out.push({
+        id: `${op.opId}:utang`,
+        customer_id: customerId,
+        kind: "charge",
+        amount: utangSum,
+        sale_id: typeof op.payload.id === "string" ? op.payload.id : null,
+        note: typeof op.payload.local_no === "string" ? op.payload.local_no : null,
+        occurred_at: typeof op.payload.sold_at === "string" ? op.payload.sold_at : op.createdAt,
+        method: "cash",
+        location_id: typeof op.payload.location_id === "string" ? op.payload.location_id : (op.locationId ?? null),
+        pending: true,
+      });
+    }
+  }
+  return out;
+}
+
+export interface OptimisticExpenseItem {
+  id: string;
+  location_id: string;
+  amount: number;
+  currency: string;
+  category: string;
+  note: string | null;
+  paid_from: "cash" | "ewallet";
+  wallet: string | null;
+  spent_at: string;
+  voided_at: null;
+  void_reason: null;
+  created_by: null;
+  pending: true;
+}
+
+/** Extracts optimistic expenses queued offline for `locationId`. */
+export function pendingOptimisticExpenses(
+  locationId: string,
+  currency = "PHP",
+  ops: ReadonlyArray<QueuedPosOp> = loadPosOutbox(),
+): OptimisticExpenseItem[] {
+  const out: OptimisticExpenseItem[] = [];
+  for (const op of ops) {
+    if (op.kind !== "record_expense") continue;
+    const loc = typeof op.payload.location_id === "string" ? op.payload.location_id : op.locationId;
+    if (loc !== locationId) continue;
+    const id = typeof op.payload.id === "string" ? op.payload.id : op.opId;
+    const amount = Number(op.payload.amount);
+    if (!Number.isFinite(amount) || amount <= 0) continue;
+    out.push({
+      id,
+      location_id: locationId,
+      amount,
+      currency,
+      category: typeof op.payload.category === "string" ? op.payload.category : "other",
+      note: typeof op.payload.note === "string" ? op.payload.note : null,
+      paid_from: op.payload.paid_from === "ewallet" ? "ewallet" : "cash",
+      wallet: typeof op.payload.wallet === "string" ? op.payload.wallet : null,
+      spent_at: typeof op.payload.spent_at === "string" ? op.payload.spent_at : op.createdAt,
+      voided_at: null,
+      void_reason: null,
+      created_by: null,
+      pending: true,
+    });
+  }
+  return out.sort((a, b) => b.spent_at.localeCompare(a.spent_at));
+}
+
+export interface OptimisticServiceTxnItem {
+  id: string;
+  location_id: string;
+  kind: string;
+  wallet: string;
+  amount: number;
+  fee: number;
+  price: number | null;
+  currency: string;
+  ref: string | null;
+  note: string | null;
+  txn_at: string;
+  voided_at: null;
+  void_reason: null;
+  created_by: null;
+  pending: true;
+}
+
+/** Extracts optimistic load/e-wallet service entries queued offline for `locationId`. */
+export function pendingOptimisticServiceTxns(
+  locationId: string,
+  currency = "PHP",
+  ops: ReadonlyArray<QueuedPosOp> = loadPosOutbox(),
+): OptimisticServiceTxnItem[] {
+  const out: OptimisticServiceTxnItem[] = [];
+  for (const op of ops) {
+    if (op.kind !== "record_service_txn") continue;
+    const loc = typeof op.payload.location_id === "string" ? op.payload.location_id : op.locationId;
+    if (loc !== locationId) continue;
+    const id = typeof op.payload.id === "string" ? op.payload.id : op.opId;
+    const kind = typeof op.payload.kind === "string" ? op.payload.kind : "cash_in";
+    const wallet = typeof op.payload.wallet === "string" ? op.payload.wallet : "gcash";
+    const amount = Number(op.payload.amount);
+    if (!Number.isFinite(amount) || amount === 0) continue;
+    const price = op.payload.price !== undefined ? Number(op.payload.price) : null;
+    const rawFee = op.payload.fee !== undefined ? Number(op.payload.fee) : 0;
+    const fee = kind === "load" && price !== null ? Math.max(0, price - amount) : Math.max(0, rawFee);
+    out.push({
+      id,
+      location_id: locationId,
+      kind,
+      wallet,
+      amount,
+      fee,
+      price,
+      currency,
+      ref: typeof op.payload.ref === "string" ? op.payload.ref : null,
+      note: typeof op.payload.note === "string" ? op.payload.note : null,
+      txn_at: typeof op.payload.txn_at === "string" ? op.payload.txn_at : op.createdAt,
+      voided_at: null,
+      void_reason: null,
+      created_by: null,
+      pending: true,
+    });
+  }
+  return out.sort((a, b) => b.txn_at.localeCompare(a.txn_at));
 }
 
 let inFlightFlush: Promise<{ synced: number; remaining: number; failed: number }> | null = null;

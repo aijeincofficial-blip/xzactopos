@@ -9,6 +9,9 @@ import {
   loadPosCache,
   loadPosOutbox,
   pendingOptimisticCustomers,
+  pendingOptimisticExpenses,
+  pendingOptimisticServiceTxns,
+  pendingOptimisticUtangLedger,
   retryFailedPosOps,
   savePosCache,
   setPosOutboxTenant,
@@ -147,5 +150,131 @@ describe("pos-outbox", () => {
 
     discardPosOp("op-2", storage);
     expect(loadPosOutbox(storage)).toEqual([]);
+  });
+
+  it("extracts optimistic utang ledger entries, store expenses, and service transactions", () => {
+    const storage = new MemoryStorage();
+    enqueuePosOp(
+      {
+        opId: "op-sale-utang",
+        kind: "record_sale",
+        locationId: "loc-1",
+        payload: {
+          id: "sale-u1",
+          local_no: "WAB-261112-0009",
+          customer_id: "cust-1",
+          sold_at: "2026-11-12T02:00:00Z",
+          location_id: "loc-1",
+          payments: [
+            { method: "cash", amount: 1000 },
+            { method: "utang", amount: 4500 },
+          ],
+        },
+      },
+      storage,
+    );
+    enqueuePosOp(
+      {
+        opId: "op-pay-utang",
+        kind: "record_utang_payment",
+        locationId: "loc-1",
+        payload: {
+          customer_id: "cust-1",
+          amount: 2000,
+          method: "cash",
+          note: "Bayad partial",
+          location_id: "loc-1",
+          occurred_at: "2026-11-12T03:00:00Z",
+        },
+      },
+      storage,
+    );
+    enqueuePosOp(
+      {
+        opId: "op-exp-1",
+        kind: "record_expense",
+        locationId: "loc-1",
+        payload: {
+          id: "exp-1",
+          location_id: "loc-1",
+          amount: 35000,
+          category: "utilities",
+          paid_from: "cash",
+          note: "Ice delivery",
+          spent_at: "2026-11-12T04:00:00Z",
+        },
+      },
+      storage,
+    );
+    enqueuePosOp(
+      {
+        opId: "op-svc-1",
+        kind: "record_service_txn",
+        locationId: "loc-1",
+        payload: {
+          id: "svc-1",
+          location_id: "loc-1",
+          kind: "load",
+          wallet: "load",
+          amount: 5000,
+          price: 5300,
+          ref: "09171234567",
+          txn_at: "2026-11-12T05:00:00Z",
+        },
+      },
+      storage,
+    );
+
+    const ops = loadPosOutbox(storage);
+    const ledger = pendingOptimisticUtangLedger(ops);
+    expect(ledger).toEqual([
+      {
+        id: "op-sale-utang:utang",
+        customer_id: "cust-1",
+        kind: "charge",
+        amount: 4500,
+        sale_id: "sale-u1",
+        note: "WAB-261112-0009",
+        occurred_at: "2026-11-12T02:00:00Z",
+        method: "cash",
+        location_id: "loc-1",
+        pending: true,
+      },
+      {
+        id: "op-pay-utang",
+        customer_id: "cust-1",
+        kind: "payment",
+        amount: -2000,
+        sale_id: null,
+        note: "Bayad partial",
+        occurred_at: "2026-11-12T03:00:00Z",
+        method: "cash",
+        location_id: "loc-1",
+        pending: true,
+      },
+    ]);
+
+    const exps = pendingOptimisticExpenses("loc-1", "PHP", ops);
+    expect(exps).toHaveLength(1);
+    expect(exps[0]).toMatchObject({
+      id: "exp-1",
+      amount: 35000,
+      category: "utilities",
+      paid_from: "cash",
+      pending: true,
+    });
+    expect(pendingOptimisticExpenses("loc-2", "PHP", ops)).toEqual([]);
+
+    const svcs = pendingOptimisticServiceTxns("loc-1", "PHP", ops);
+    expect(svcs).toHaveLength(1);
+    expect(svcs[0]).toMatchObject({
+      id: "svc-1",
+      kind: "load",
+      wallet: "load",
+      amount: 5000,
+      price: 5300,
+      fee: 300,
+      pending: true,
+    });
   });
 });

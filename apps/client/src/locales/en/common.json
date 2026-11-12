@@ -25,6 +25,28 @@
   "offline": {
     "badge": "Offline",
     "bannerTitle": "You are currently offline",
-    "bannerDescription": "Cloud sync is paused. Back-office data may be outdated, and changes cannot be saved until internet connectivity is restored."
+    "bannerDescription": "POS sales, customer utang repayments, expenses, and load/e-wallet services are saved locally and sync automatically when internet returns.",
+    "queuedToast": "Saved offline — queued to sync when internet returns.",
+    "queuedBadge": "Queued",
+    "syncPendingPill": "{{count}} pending",
+    "syncFailedPill": "{{count}} failed",
+    "syncingPill": "Syncing {{count}}...",
+    "syncedToast": "Synced {{count}} queued item(s).",
+    "inspectorTitle": "Sync & Offline Outbox",
+    "inspectorDesc": "Operations saved on this browser while offline are sent in order as soon as connectivity returns.",
+    "inspectorEmpty": "All local operations are synced with the cloud.",
+    "syncNow": "Sync now",
+    "retryAll": "Retry failed",
+    "discard": "Discard",
+    "statePending": "Queued",
+    "stateFailed": "Needs attention",
+    "opKind": {
+      "record_sale": "POS Sale",
+      "upsert_customer": "New Customer",
+      "record_utang_payment": "Utang Repayment",
+      "record_expense": "Store Expense",
+      "record_service_txn": "Load / E-Wallet Service",
+      "open_shift": "Open Cashier Shift"
+    }
   }
 }

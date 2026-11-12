@@ -1,6 +1,14 @@
 import { uuidv7 } from "@pos/core";
 import { fromRaw } from "./api.ts";
+import { isOnline } from "./network.ts";
 import type { OfflineApprovalPayload } from "./offline-pin-api.ts";
+import {
+  enqueuePosOp,
+  isNetworkFailure,
+  loadPosCache,
+  pendingOptimisticServiceTxns,
+  savePosCache,
+} from "./pos-outbox.ts";
 import { pushOp } from "./sell-api.ts";
 import { supabase } from "./supabase.ts";
 
@@ -34,6 +42,7 @@ export interface ServiceTxnRow {
   voided_at: string | null;
   void_reason: string | null;
   created_by: string | null;
+  pending?: boolean;
 }
 
 export interface WalletFloatRow {
@@ -106,29 +115,102 @@ export function computeOperatingExpenseBreakdown(expenses: {
   };
 }
 
-export async function fetchStoreWalletFloats(locationId: string): Promise<WalletFloatRow[]> {
-  const { data, error } = await supabase
-    .from("wallet_float")
-    .select("location_id, wallet, balance, txn_count, negative")
-    .eq("location_id", locationId);
-
-  if (error) throw fromRaw(error);
+function mergeWalletFloats(base: WalletFloatRow[], locationId: string): WalletFloatRow[] {
   const order: ServiceWallet[] = ["gcash", "maya", "load", "other"];
-  return ((data ?? []) as WalletFloatRow[]).sort(
+  const byWallet = new Map<ServiceWallet, WalletFloatRow>(
+    base.map((row) => [row.wallet, { ...row }]),
+  );
+  for (const opt of pendingOptimisticServiceTxns(locationId)) {
+    const wallet = opt.wallet as ServiceWallet;
+    const kind = opt.kind as ServiceKind;
+    const delta = serviceFloatEffect(kind, opt.amount);
+    const existing = byWallet.get(wallet);
+    if (existing) {
+      const nextBalance = existing.balance + delta;
+      byWallet.set(wallet, {
+        ...existing,
+        balance: nextBalance,
+        txn_count: existing.txn_count + 1,
+        negative: nextBalance < 0,
+      });
+    } else {
+      byWallet.set(wallet, {
+        location_id: locationId,
+        wallet,
+        balance: delta,
+        txn_count: 1,
+        negative: delta < 0,
+      });
+    }
+  }
+  return Array.from(byWallet.values()).sort(
     (a, b) => order.indexOf(a.wallet) - order.indexOf(b.wallet),
   );
 }
 
-export async function fetchRecentServiceTxns(locationId: string): Promise<ServiceTxnRow[]> {
-  const { data, error } = await supabase
-    .from("service_txns")
-    .select("id, location_id, kind, wallet, amount, fee, price, currency, ref, note, txn_at, voided_at, void_reason, created_by")
-    .eq("location_id", locationId)
-    .order("txn_at", { ascending: false })
-    .limit(50);
+function mergeServiceTxns(
+  base: ServiceTxnRow[],
+  locationId: string,
+  currency = "PHP",
+): ServiceTxnRow[] {
+  const byId = new Map(base.map((t) => [t.id, t]));
+  for (const opt of pendingOptimisticServiceTxns(locationId, currency)) {
+    if (!byId.has(opt.id)) {
+      byId.set(opt.id, {
+        ...opt,
+        kind: opt.kind as ServiceKind,
+        wallet: opt.wallet as ServiceWallet,
+      });
+    }
+  }
+  return Array.from(byId.values()).sort((a, b) => b.txn_at.localeCompare(a.txn_at));
+}
 
-  if (error) throw fromRaw(error);
-  return (data ?? []) as ServiceTxnRow[];
+export async function fetchStoreWalletFloats(locationId: string): Promise<WalletFloatRow[]> {
+  const slot = `wallet-floats:${locationId}`;
+  try {
+    const { data, error } = await supabase
+      .from("wallet_float")
+      .select("location_id, wallet, balance, txn_count, negative")
+      .eq("location_id", locationId);
+
+    if (error) throw fromRaw(error);
+    const rows = (data ?? []) as WalletFloatRow[];
+    savePosCache(slot, rows);
+    return mergeWalletFloats(rows, locationId);
+  } catch (err) {
+    if (isNetworkFailure(err)) {
+      const cached = loadPosCache<WalletFloatRow[]>(slot) ?? [];
+      return mergeWalletFloats(cached, locationId);
+    }
+    throw err;
+  }
+}
+
+export async function fetchRecentServiceTxns(
+  locationId: string,
+  currency = "PHP",
+): Promise<ServiceTxnRow[]> {
+  const slot = `service-txns:${locationId}`;
+  try {
+    const { data, error } = await supabase
+      .from("service_txns")
+      .select("id, location_id, kind, wallet, amount, fee, price, currency, ref, note, txn_at, voided_at, void_reason, created_by")
+      .eq("location_id", locationId)
+      .order("txn_at", { ascending: false })
+      .limit(50);
+
+    if (error) throw fromRaw(error);
+    const rows = (data ?? []) as ServiceTxnRow[];
+    savePosCache(slot, rows);
+    return mergeServiceTxns(rows, locationId, currency);
+  } catch (err) {
+    if (isNetworkFailure(err)) {
+      const cached = loadPosCache<ServiceTxnRow[]>(slot) ?? [];
+      return mergeServiceTxns(cached, locationId, currency);
+    }
+    throw err;
+  }
 }
 
 export interface RecordServiceTxnInput {
@@ -146,9 +228,11 @@ export interface RecordServiceTxnInput {
   offlineApproval?: OfflineApprovalPayload;
 }
 
-export async function recordServiceTxn(input: RecordServiceTxnInput): Promise<string> {
+export async function submitServiceTxn(
+  input: RecordServiceTxnInput,
+): Promise<{ id: string; queuedOffline?: boolean }> {
   const id = input.id ?? uuidv7();
-  await pushOp("record_service_txn", {
+  const payload: Record<string, unknown> = {
     id,
     location_id: input.locationId,
     kind: input.kind,
@@ -161,8 +245,27 @@ export async function recordServiceTxn(input: RecordServiceTxnInput): Promise<st
     ...(input.note?.trim() ? { note: input.note.trim() } : {}),
     ...(input.approvalId ? { approval_id: input.approvalId } : {}),
     ...(input.offlineApproval ? { offline_approval: input.offlineApproval } : {}),
-  });
-  return id;
+  };
+
+  if (!isOnline()) {
+    enqueuePosOp({ opId: uuidv7(), kind: "record_service_txn", payload, locationId: input.locationId });
+    return { id, queuedOffline: true };
+  }
+  try {
+    await pushOp("record_service_txn", payload);
+    return { id };
+  } catch (err) {
+    if (isNetworkFailure(err)) {
+      enqueuePosOp({ opId: uuidv7(), kind: "record_service_txn", payload, locationId: input.locationId });
+      return { id, queuedOffline: true };
+    }
+    throw err;
+  }
+}
+
+export async function recordServiceTxn(input: RecordServiceTxnInput): Promise<string> {
+  const res = await submitServiceTxn(input);
+  return res.id;
 }
 
 export async function voidServiceTxn(input: {

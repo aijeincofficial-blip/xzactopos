@@ -62,7 +62,7 @@ export function ExpensesPage() {
 
   const expensesQuery = useQuery({
     queryKey: ["expenses", store?.id],
-    queryFn: () => fetchRecentExpenses(store?.id ?? ""),
+    queryFn: () => fetchRecentExpenses(store?.id ?? "", currency),
     enabled: Boolean(store),
     refetchInterval: 60_000,
   });
@@ -80,7 +80,7 @@ export function ExpensesPage() {
       if (minor === null || minor <= 0) {
         throw new Error(t("expenses.amountInvalid"));
       }
-      await recordExpense({
+      return recordExpense({
         amount: minor,
         category,
         paid_from: paidFrom,
@@ -89,12 +89,12 @@ export function ExpensesPage() {
         locationId: store.id,
       });
     },
-    onSuccess: async () => {
+    onSuccess: async (res) => {
       setAmountText("");
       setNote("");
       setAddError(null);
       setShowAdd(false);
-      toast.good(t("common:saved"));
+      toast.good(res.queuedOffline ? t("common:offline.queuedToast") : t("common:saved"));
       await refreshAll();
     },
     onError: (e) => {
@@ -272,6 +272,8 @@ export function ExpensesPage() {
                       </span>
                       {isVoided ? (
                         <Badge tone="warn">{t("expenses.voided")}</Badge>
+                      ) : exp.pending ? (
+                        <Badge tone="warn">{t("common:offline.queuedBadge")}</Badge>
                       ) : (
                         <Button
                           size="sm"

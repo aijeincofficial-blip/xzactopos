@@ -110,7 +110,7 @@ export function UtangPage() {
       if (minor === null || minor <= 0) {
         throw new Error(t("utang.amountInvalid"));
       }
-      await recordUtangPayment({
+      return recordUtangPayment({
         customerId: selectedCustomer.customerId,
         amount: minor,
         method: payMethod,
@@ -118,11 +118,11 @@ export function UtangPage() {
         locationId: store.id,
       });
     },
-    onSuccess: async () => {
+    onSuccess: async (res) => {
       setPayAmount("");
       setPayNote("");
       setPayError(null);
-      toast.good(t("common:saved"));
+      toast.good(res.queuedOffline ? t("common:offline.queuedToast") : t("common:saved"));
       await refreshAll();
     },
     onError: (e) => {
@@ -492,9 +492,12 @@ export function UtangPage() {
                     className="flex items-center justify-between border-b border-slate-100 pb-1.5 last:border-0"
                   >
                     <div>
-                      <span className="block font-semibold">
-                        {t(`utang.kind.${entry.kind}`)}
-                        {entry.note ? ` - ${entry.note}` : ""}
+                      <span className="flex items-center gap-2 font-semibold">
+                        <span>
+                          {t(`utang.kind.${entry.kind}`)}
+                          {entry.note ? ` - ${entry.note}` : ""}
+                        </span>
+                        {entry.pending ? <Badge tone="warn">{t("common:offline.queuedBadge")}</Badge> : null}
                       </span>
                       <span className="text-xs text-slate-400">
                         {entry.occurred_at.slice(0, 10)} {entry.method ? `· ${entry.method}` : ""}

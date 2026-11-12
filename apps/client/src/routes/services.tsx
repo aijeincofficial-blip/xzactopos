@@ -28,9 +28,9 @@ import {
   EWALLET_OPTIONS,
   fetchRecentServiceTxns,
   fetchStoreWalletFloats,
-  recordServiceTxn,
   serviceCashEffect,
   serviceFloatEffect,
+  submitServiceTxn,
   voidServiceTxn,
   type RecordServiceTxnInput,
   type ServiceKind,
@@ -99,7 +99,7 @@ export function ServicesPage() {
 
   const txnsQuery = useQuery({
     queryKey: ["service-txns", store?.id],
-    queryFn: () => fetchRecentServiceTxns(store?.id ?? ""),
+    queryFn: () => fetchRecentServiceTxns(store?.id ?? "", currency),
     enabled: Boolean(store),
     refetchInterval: 60_000,
   });
@@ -166,9 +166,9 @@ export function ServicesPage() {
 
   const recordMut = useMutation({
     mutationFn: async (input: RecordServiceTxnInput) => {
-      await recordServiceTxn(input);
+      return submitServiceTxn(input);
     },
-    onSuccess: async () => {
+    onSuccess: async (res) => {
       setPendingRecord(null);
       setFormOpen(false);
       setAmountText("");
@@ -177,7 +177,7 @@ export function ServicesPage() {
       setRefText("");
       setNoteText("");
       setFormError(null);
-      toast.good(t("common:saved"));
+      toast.good(res.queuedOffline ? t("common:offline.queuedToast") : t("common:saved"));
       await refreshAll();
     },
     onError: (e) => {
@@ -571,6 +571,8 @@ export function ServicesPage() {
                       </span>
                       {isVoided ? (
                         <Badge tone="warn">{t("services.voided")}</Badge>
+                      ) : txn.pending ? (
+                        <Badge tone="warn">{t("common:offline.queuedBadge")}</Badge>
                       ) : canVoid ? (
                         <Button
                           size="sm"

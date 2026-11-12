@@ -25,6 +25,28 @@
   "offline": {
     "badge": "Offline",
     "bannerTitle": "Kasalukuyang walang internet",
-    "bannerDescription": "Naka-pause ang cloud sync. Maaaring luma ang datos, at hindi mai-save ang mga pagbabago hanggang magbalik ang koneksyon."
+    "bannerDescription": "Ang mga benta sa POS, bayad sa utang, gastos, at load/e-wallet services ay naka-save sa browser na ito at kusang mase-sync pagbalik ng internet.",
+    "queuedToast": "Na-save offline — nakapila para ma-sync pagbalik ng internet.",
+    "queuedBadge": "Nakapila",
+    "syncPendingPill": "{{count}} nakapila",
+    "syncFailedPill": "{{count}} pumalya",
+    "syncingPill": "Sini-sync ({{count}})...",
+    "syncedToast": "Na-sync ang {{count}} nakapilang tala.",
+    "inspectorTitle": "Sync at Offline Outbox",
+    "inspectorDesc": "Ang mga transaksyong na-save habang offline ay ipapadala nang sunod-sunod pagbalik ng koneksyon.",
+    "inspectorEmpty": "Lahat ng lokal na transaksyon ay naka-sync na sa cloud.",
+    "syncNow": "I-sync ngayon",
+    "retryAll": "Ulitin ang pumalya",
+    "discard": "Alisin",
+    "statePending": "Nakapila",
+    "stateFailed": "Kailangang suriin",
+    "opKind": {
+      "record_sale": "Benta sa POS",
+      "upsert_customer": "Bagong Customer",
+      "record_utang_payment": "Bayad sa Utang",
+      "record_expense": "Gastos sa Tindahan",
+      "record_service_txn": "Load / E-Wallet Service",
+      "open_shift": "Buksan ang Shift"
+    }
   }
 }
