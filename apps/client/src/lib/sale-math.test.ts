@@ -1,11 +1,16 @@
 import { describe, expect, it } from "vitest";
 import {
   buildPayments,
+  cartGrossSubtotal,
+  cartLineDiscounts,
+  cartNeedsDiscountApproval,
   cartSubtotal,
   cartTotal,
+  cartTotalDiscount,
   changeDue,
   computePartialReturnRefund,
   draftProblem,
+  lineGrossTotal,
   lineTax,
   lineTotal,
   localReceiptNo,
@@ -239,5 +244,103 @@ describe("computePartialReturnRefund", () => {
       ],
     });
     expect(r2).toBe(17100);
+  });
+});
+
+describe("per-line discounts and price overrides", () => {
+  it("computes net line totals, cart subtotals, and record_sale item discount fields", () => {
+    const l1 = line({ variantId: "v1", qty: 2, unitPrice: 5000, catalogPrice: 5000, discount: 1000, taxRate: 0.12 });
+    const l2 = line({ variantId: "v2", qty: 1, unitPrice: 3000, catalogPrice: 3000, discount: 0 });
+    expect(lineGrossTotal(2, 5000)).toBe(10000);
+    expect(lineTotal(2, 5000, 1000)).toBe(9000);
+    expect(cartGrossSubtotal([l1, l2])).toBe(13000);
+    expect(cartLineDiscounts([l1, l2])).toBe(1000);
+    expect(cartSubtotal([l1, l2])).toBe(12000);
+    expect(cartTotalDiscount([l1, l2], 500)).toBe(1500);
+    expect(cartTotal([l1, l2], 500)).toBe(11500);
+
+    const d = draft({
+      lines: [l1, l2],
+      discount: 500,
+      payments: [{ method: "cash", amount: 11500, tendered: 12000 }],
+    });
+    expect(draftProblem(d)).toBeNull();
+    const p = salePayload(d) as {
+      subtotal: number;
+      discount: number;
+      total: number;
+      items: Array<Record<string, unknown>>;
+    };
+    expect(p.subtotal).toBe(12000);
+    expect(p.discount).toBe(500);
+    expect(p.total).toBe(11500);
+    expect(p.items[0]).toMatchObject({
+      variant_id: "v1",
+      unit_price: 5000,
+      discount: 1000,
+      line_total: 9000,
+      tax: lineTax(9000, 0.12),
+    });
+    expect("discount" in (p.items[1] ?? {})).toBe(false);
+  });
+
+  it("rejects per-line discounts above gross line total or negative unit prices", () => {
+    expect(
+      draftProblem(
+        draft({
+          lines: [line({ qty: 1, unitPrice: 1000, discount: 1001 })],
+          payments: [{ method: "cash", amount: 0, tendered: 0 }],
+        }),
+      ),
+    ).toBe("discount_invalid");
+    expect(
+      draftProblem(
+        draft({
+          lines: [line({ qty: 1, unitPrice: -100 })],
+          payments: [],
+        }),
+      ),
+    ).toBe("amount_invalid");
+  });
+
+  it("requires supervisor approval for cashiers on combined discount > limit or price reduction", () => {
+    // 10% limit: 1000 line discount on 10,000 gross = 10% -> allowed without PIN
+    expect(
+      cartNeedsDiscountApproval({
+        role: "cashier",
+        lines: [line({ qty: 1, unitPrice: 10000, catalogPrice: 10000, discount: 1000 })],
+        cartDiscount: 0,
+        maxDiscountPercent: 10,
+      }),
+    ).toBe(false);
+
+    // 800 line discount + 300 cart discount = 1,100 on 10,000 gross (11% > 10%) -> needs PIN
+    expect(
+      cartNeedsDiscountApproval({
+        role: "cashier",
+        lines: [line({ qty: 1, unitPrice: 10000, catalogPrice: 10000, discount: 800 })],
+        cartDiscount: 300,
+        maxDiscountPercent: 10,
+      }),
+    ).toBe(true);
+
+    // Downward unit price override below catalog price -> needs PIN for cashier, not for admin/owner
+    const overridden = [line({ qty: 1, unitPrice: 9500, catalogPrice: 10000, discount: 0 })];
+    expect(
+      cartNeedsDiscountApproval({
+        role: "cashier",
+        lines: overridden,
+        cartDiscount: 0,
+        maxDiscountPercent: 10,
+      }),
+    ).toBe(true);
+    expect(
+      cartNeedsDiscountApproval({
+        role: "superadmin",
+        lines: overridden,
+        cartDiscount: 5000,
+        maxDiscountPercent: 10,
+      }),
+    ).toBe(false);
   });
 });

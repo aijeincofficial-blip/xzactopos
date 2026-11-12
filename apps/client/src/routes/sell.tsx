@@ -16,6 +16,7 @@ import {
   ShoppingBag,
   Smartphone,
   Star,
+  Tag,
   Trash2,
   UserPlus,
   X,
@@ -27,11 +28,14 @@ import { useErrorMessage } from "../lib/i18n-helpers.ts";
 import { ApiError } from "../lib/api.ts";
 import { dayInTimezone } from "../lib/today.ts";
 import {
-  cartSubtotal,
   buildPayments,
+  cartLineDiscounts,
+  cartNeedsDiscountApproval,
+  cartSubtotal,
   cartTotal,
   changeDue,
   draftProblem,
+  lineGrossTotal,
   lineTotal,
   parseAmount,
   type CartLine,
@@ -138,6 +142,9 @@ export function SellPage() {
   const [approvalId, setApprovalId] = useState<string | null>(null);
   const [offlineApproval, setOfflineApproval] = useState<OfflineApprovalPayload | null>(null);
   const [showApprovalDialog, setShowApprovalDialog] = useState(false);
+  const [editingVariantId, setEditingVariantId] = useState<string | null>(null);
+  const [linePriceText, setLinePriceText] = useState("");
+  const [lineDiscText, setLineDiscText] = useState("");
   const attempt = useRef<{ key: string; id: string; opId: string } | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const discountInputRef = useRef<HTMLInputElement | null>(null);
@@ -164,13 +171,16 @@ export function SellPage() {
   const maxDiscountPct = settingsQuery.data?.max_cashier_discount_percent ?? 10;
   const discount = parseAmount(discountText, currency);
   const tendered = parseAmount(tenderedText, currency);
+  const lineDiscounts = cartLineDiscounts(cart);
   const subtotal = cartSubtotal(cart);
   const total = discount === null ? subtotal : cartTotal(cart, discount);
 
-  const isDiscountOverLimit =
-    access.role === "cashier" &&
-    subtotal > 0 &&
-    (discount ?? 0) * 100 > subtotal * maxDiscountPct;
+  const isDiscountOverLimit = cartNeedsDiscountApproval({
+    role: access.role,
+    lines: cart,
+    cartDiscount: discount ?? 0,
+    maxDiscountPercent: maxDiscountPct,
+  });
 
   const paidNow = paidText.trim() === "" ? null : parseAmount(paidText, currency);
   const paidInvalid = paidText.trim() !== "" && paidNow === null;
@@ -236,8 +246,14 @@ export function SellPage() {
     saveStoredPinned(next);
   }
 
+  function clearApproval() {
+    setApprovalId(null);
+    setOfflineApproval(null);
+  }
+
   function add(s: Sellable, qty = 1) {
     setProblem(null);
+    clearApproval();
     setCart((c) => {
       const i = c.findIndex((l) => l.variantId === s.variantId);
       if (i >= 0) return c.map((l, k) => (k === i ? { ...l, qty: Number((l.qty + qty).toFixed(3)) } : l));
@@ -248,12 +264,65 @@ export function SellPage() {
           name: s.name,
           qty,
           unitPrice: s.price,
+          catalogPrice: s.price,
+          discount: 0,
           unitCost: s.cost,
           taxRate: s.taxRate,
           tracked: s.tracked,
         },
       ];
     });
+  }
+
+  function openLineEditor(l: CartLine) {
+    if (editingVariantId === l.variantId) {
+      setEditingVariantId(null);
+      return;
+    }
+    setEditingVariantId(l.variantId);
+    setLinePriceText(formatMajorInput(l.unitPrice));
+    setLineDiscText((l.discount ?? 0) > 0 ? formatMajorInput(l.discount ?? 0) : "");
+  }
+
+  function applyLinePriceText(variantId: string, text: string) {
+    setLinePriceText(text);
+    const parsed = parseAmount(text, currency);
+    if (parsed === null) return;
+    setProblem(null);
+    clearApproval();
+    setCart((c) =>
+      c.map((l) => {
+        if (l.variantId !== variantId) return l;
+        const gross = lineGrossTotal(l.qty, parsed);
+        const clampedDisc = Math.min(l.discount ?? 0, gross);
+        return { ...l, unitPrice: parsed, discount: clampedDisc };
+      }),
+    );
+  }
+
+  function applyLineDiscText(variantId: string, text: string) {
+    setLineDiscText(text);
+    const parsed = text.trim() === "" ? 0 : parseAmount(text, currency);
+    if (parsed === null) return;
+    setProblem(null);
+    clearApproval();
+    setCart((c) =>
+      c.map((l) => {
+        if (l.variantId !== variantId) return l;
+        return { ...l, discount: parsed };
+      }),
+    );
+  }
+
+  function resetLinePricing(l: CartLine) {
+    const orig = l.catalogPrice ?? l.unitPrice;
+    setLinePriceText(formatMajorInput(orig));
+    setLineDiscText("");
+    setProblem(null);
+    clearApproval();
+    setCart((c) =>
+      c.map((x) => (x.variantId === l.variantId ? { ...x, unitPrice: orig, discount: 0 } : x)),
+    );
   }
 
   function onSearchEnter() {
@@ -269,10 +338,12 @@ export function SellPage() {
 
   function setQty(variantId: string, text: string) {
     const qty = Number(text);
+    clearApproval();
     setCart((c) => c.map((l) => (l.variantId === variantId ? { ...l, qty: Number.isFinite(qty) ? qty : 0 } : l)));
   }
 
   function stepCartQty(variantId: string, delta: number) {
+    clearApproval();
     setCart((c) =>
       c
         .map((l) => {
@@ -295,6 +366,7 @@ export function SellPage() {
     setApprovalId(null);
     setOfflineApproval(null);
     setShowApprovalDialog(false);
+    setEditingVariantId(null);
     attempt.current = null;
   }
 
@@ -354,7 +426,8 @@ export function SellPage() {
               product_name: line.name,
               qty: line.qty,
               unit_price: line.unitPrice,
-              line_total: lineTotal(line.qty, line.unitPrice),
+              ...(line.discount && line.discount > 0 ? { discount: line.discount } : {}),
+              line_total: lineTotal(line.qty, line.unitPrice, line.discount ?? 0),
             })),
             subtotal,
             discount,
@@ -866,53 +939,147 @@ export function SellPage() {
             </div>
           ) : (
             <ul className="divide-y divide-slate-100">
-              {cart.map((l) => (
-                <li key={l.variantId} className="grid gap-1.5 py-2.5 first:pt-0 last:pb-0">
-                  <div className="flex items-baseline justify-between gap-2">
-                    <span className="truncate text-sm font-semibold text-slate-900">{l.name}</span>
-                    <span className="text-sm font-semibold text-slate-900 tabular-nums">
-                      {fmt(lineTotal(l.qty, l.unitPrice))}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs text-slate-400 tabular-nums">{fmt(l.unitPrice)}</span>
-                    <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        aria-label={`Decrease ${l.name}`}
-                        onClick={() => stepCartQty(l.variantId, -1)}
-                        className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                      >
-                        <Minus size={13} aria-hidden />
-                      </button>
-                      <Input
-                        aria-label={t("sell.qty")}
-                        data-testid={`qty-${l.variantId}`}
-                        inputMode="decimal"
-                        value={String(l.qty)}
-                        onChange={(e) => setQty(l.variantId, e.target.value)}
-                        className="h-7 w-14 px-1.5 py-0.5 text-center text-xs tabular-nums"
-                      />
-                      <button
-                        type="button"
-                        aria-label={`Increase ${l.name}`}
-                        onClick={() => stepCartQty(l.variantId, 1)}
-                        className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                      >
-                        <Plus size={13} aria-hidden />
-                      </button>
-                      <button
-                        type="button"
-                        aria-label={t("sell.remove")}
-                        onClick={() => setCart((c) => c.filter((x) => x.variantId !== l.variantId))}
-                        className="ml-1 flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-slate-400 hover:bg-red-50 hover:text-red-600"
-                      >
-                        <X size={14} aria-hidden />
-                      </button>
+              {cart.map((l) => {
+                const lineDisc = l.discount ?? 0;
+                const gross = lineGrossTotal(l.qty, l.unitPrice);
+                const net = lineTotal(l.qty, l.unitPrice, lineDisc);
+                const isPriceChanged = l.catalogPrice !== undefined && l.unitPrice !== l.catalogPrice;
+                const isEditing = editingVariantId === l.variantId;
+                return (
+                  <li key={l.variantId} className="grid gap-1.5 py-2.5 first:pt-0 last:pb-0">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <span className="truncate text-sm font-semibold text-slate-900">{l.name}</span>
+                      <span className="flex items-baseline gap-1.5 tabular-nums">
+                        {lineDisc > 0 ? (
+                          <span className="text-xs text-slate-400 line-through">{fmt(gross)}</span>
+                        ) : null}
+                        <span className="text-sm font-semibold text-slate-900">{fmt(net)}</span>
+                      </span>
                     </div>
-                  </div>
-                </li>
-              ))}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <button
+                          type="button"
+                          data-testid={`edit-line-${l.variantId}`}
+                          title={t("sell.editLine")}
+                          aria-label={t("sell.editLine")}
+                          onClick={() => openLineEditor(l)}
+                          className={`inline-flex cursor-pointer items-center gap-1 rounded-md border px-1.5 py-0.5 text-xs tabular-nums transition-colors ${
+                            isEditing || isPriceChanged || lineDisc > 0
+                              ? "border-brand-200 bg-brand-50 font-medium text-brand-700"
+                              : "border-transparent text-slate-500 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-700"
+                          }`}
+                        >
+                          <Tag size={11} aria-hidden />
+                          <span>{fmt(l.unitPrice)}</span>
+                          {lineDisc > 0 ? (
+                            <span className="text-emerald-700">(-{fmt(lineDisc)})</span>
+                          ) : null}
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          aria-label={`Decrease ${l.name}`}
+                          onClick={() => stepCartQty(l.variantId, -1)}
+                          className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                        >
+                          <Minus size={13} aria-hidden />
+                        </button>
+                        <Input
+                          aria-label={t("sell.qty")}
+                          data-testid={`qty-${l.variantId}`}
+                          inputMode="decimal"
+                          value={String(l.qty)}
+                          onChange={(e) => setQty(l.variantId, e.target.value)}
+                          className="h-7 w-14 px-1.5 py-0.5 text-center text-xs tabular-nums"
+                        />
+                        <button
+                          type="button"
+                          aria-label={`Increase ${l.name}`}
+                          onClick={() => stepCartQty(l.variantId, 1)}
+                          className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                        >
+                          <Plus size={13} aria-hidden />
+                        </button>
+                        <button
+                          type="button"
+                          aria-label={t("sell.remove")}
+                          onClick={() => {
+                            clearApproval();
+                            if (editingVariantId === l.variantId) setEditingVariantId(null);
+                            setCart((c) => c.filter((x) => x.variantId !== l.variantId));
+                          }}
+                          className="ml-1 flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-slate-400 hover:bg-red-50 hover:text-red-600"
+                        >
+                          <X size={14} aria-hidden />
+                        </button>
+                      </div>
+                    </div>
+
+                    {isPriceChanged && !isEditing && l.catalogPrice !== undefined ? (
+                      <div className="text-[11px] text-amber-700">
+                        {t("sell.priceOverridden", { catalog: fmt(l.catalogPrice) })}
+                      </div>
+                    ) : null}
+
+                    {isEditing ? (
+                      <div
+                        data-testid={`line-editor-${l.variantId}`}
+                        className="mt-1 grid gap-2 rounded-lg border border-slate-200 bg-slate-50/90 p-2.5 text-xs"
+                      >
+                        <div className="grid grid-cols-2 gap-2">
+                          <label className="grid gap-1 text-slate-600">
+                            <span className="font-medium">{t("sell.unitPrice")}</span>
+                            <Input
+                              data-testid={`line-price-${l.variantId}`}
+                              inputMode="decimal"
+                              value={linePriceText}
+                              onChange={(e) => applyLinePriceText(l.variantId, e.target.value)}
+                              className="h-7.5 bg-white text-right text-xs tabular-nums"
+                            />
+                          </label>
+                          <label className="grid gap-1 text-slate-600">
+                            <span className="font-medium">{t("sell.lineDiscount")}</span>
+                            <Input
+                              data-testid={`line-discount-${l.variantId}`}
+                              inputMode="decimal"
+                              placeholder="0.00"
+                              value={lineDiscText}
+                              onChange={(e) => applyLineDiscText(l.variantId, e.target.value)}
+                              className="h-7.5 bg-white text-right text-xs tabular-nums"
+                            />
+                          </label>
+                        </div>
+                        <div className="flex items-center justify-between gap-2 pt-0.5">
+                          {isPriceChanged || lineDisc > 0 ? (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              data-testid={`reset-line-${l.variantId}`}
+                              onClick={() => resetLinePricing(l)}
+                              className="h-7 px-2 text-xs"
+                            >
+                              {t("sell.resetLinePricing")}
+                            </Button>
+                          ) : (
+                            <span />
+                          )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            data-testid={`close-line-${l.variantId}`}
+                            onClick={() => setEditingVariantId(null)}
+                            className="h-7 px-2.5 text-xs"
+                          >
+                            {t("sell.applyLinePricing")}
+                          </Button>
+                        </div>
+                      </div>
+                    ) : null}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>
@@ -920,6 +1087,12 @@ export function SellPage() {
         {/* Pinned Register Checkout & Tender Pad */}
         <div className="grid gap-3 border-t border-slate-200/90 bg-slate-50/70 px-4 py-3.5 text-sm">
           <div className="grid gap-1.5">
+            {lineDiscounts > 0 ? (
+              <div className="flex items-baseline justify-between text-xs text-emerald-700">
+                <span>{t("sell.lineDiscountsTotal")}</span>
+                <span className="font-medium tabular-nums">-{fmt(lineDiscounts)}</span>
+              </div>
+            ) : null}
             <div className="flex items-baseline justify-between text-xs text-slate-500">
               <span>{t("sell.subtotal")}</span>
               <span className="tabular-nums">{fmt(subtotal)}</span>
@@ -936,7 +1109,10 @@ export function SellPage() {
                 inputMode="decimal"
                 placeholder="0.00"
                 value={discountText}
-                onChange={(e) => setDiscountText(e.target.value)}
+                onChange={(e) => {
+                  clearApproval();
+                  setDiscountText(e.target.value);
+                }}
               />
             </label>
             <div

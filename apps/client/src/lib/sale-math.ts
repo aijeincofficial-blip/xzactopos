@@ -10,9 +10,14 @@ import { fromMajor } from "@pos/core";
 /** Quantity in thousandths. */
 export const milli = (qty: number): number => Math.round(qty * 1000);
 
-/** qty x price, rounded half up. */
-export function lineTotal(qty: number, unitPrice: number): number {
+/** Gross line total before per-line discount: qty x price, rounded half up. */
+export function lineGrossTotal(qty: number, unitPrice: number): number {
   return Math.floor((milli(qty) * unitPrice + 500) / 1000);
+}
+
+/** Net line total: (qty x price, rounded half up) - discount, clamped at 0. */
+export function lineTotal(qty: number, unitPrice: number, discount = 0): number {
+  return Math.max(0, lineGrossTotal(qty, unitPrice) - discount);
 }
 
 /** Tax contained in a tax-inclusive line total: total x rate / (1 + rate), in whole centavos (0.12 = 12%). */
@@ -27,17 +32,51 @@ export interface CartLine {
   name: string;
   qty: number;
   unitPrice: number;
+  catalogPrice?: number;
+  discount?: number;
   unitCost: number;
   taxRate: number;
   tracked: boolean;
 }
 
+export function cartGrossSubtotal(lines: readonly CartLine[]): number {
+  return lines.reduce((a, l) => a + lineGrossTotal(l.qty, l.unitPrice), 0);
+}
+
+export function cartLineDiscounts(lines: readonly CartLine[]): number {
+  return lines.reduce((a, l) => a + (l.discount ?? 0), 0);
+}
+
 export function cartSubtotal(lines: readonly CartLine[]): number {
-  return lines.reduce((a, l) => a + lineTotal(l.qty, l.unitPrice), 0);
+  return lines.reduce((a, l) => a + lineTotal(l.qty, l.unitPrice, l.discount ?? 0), 0);
+}
+
+export function cartTotalDiscount(lines: readonly CartLine[], cartDiscount: number): number {
+  return cartDiscount + cartLineDiscounts(lines);
 }
 
 export function cartTotal(lines: readonly CartLine[], discount: number): number {
   return cartSubtotal(lines) - discount;
+}
+
+/**
+ * Returns true when a cashier's line-level or cart-level discounts (or downward price overrides)
+ * require supervisor PIN approval (`action: "sale_discount"`).
+ */
+export function cartNeedsDiscountApproval(params: {
+  role: string | null;
+  lines: readonly CartLine[];
+  cartDiscount: number;
+  maxDiscountPercent: number;
+}): boolean {
+  const { role, lines, cartDiscount, maxDiscountPercent } = params;
+  if (role !== "cashier" || lines.length === 0) return false;
+  if (lines.some((l) => l.catalogPrice !== undefined && l.unitPrice < l.catalogPrice)) {
+    return true;
+  }
+  const gross = cartGrossSubtotal(lines);
+  const totalDisc = cartTotalDiscount(lines, cartDiscount);
+  return gross > 0 && totalDisc * 100 > gross * maxDiscountPercent;
 }
 
 /** Change to give back for a cash payment of `amount` when the customer handed over `tendered`. */
@@ -82,11 +121,18 @@ export type DraftProblem =
   | "payments_mismatch"
   | "tendered_too_low"
   | "customer_required"
-  | "qty_invalid";
+  | "qty_invalid"
+  | "amount_invalid";
 
 export function draftProblem(d: SaleDraft): DraftProblem | null {
   if (d.lines.length === 0) return "empty";
   if (d.lines.some((l) => !(l.qty > 0) || l.qty >= 1_000_000)) return "qty_invalid";
+  if (d.lines.some((l) => !Number.isInteger(l.unitPrice) || l.unitPrice < 0)) return "amount_invalid";
+  for (const l of d.lines) {
+    const disc = l.discount ?? 0;
+    const gross = lineGrossTotal(l.qty, l.unitPrice);
+    if (!Number.isInteger(disc) || disc < 0 || disc > gross) return "discount_invalid";
+  }
   const sub = cartSubtotal(d.lines);
   if (d.discount < 0 || d.discount > sub) return "discount_invalid";
   const paid = d.payments.reduce((a, p) => a + p.amount, 0);
@@ -114,13 +160,15 @@ export function salePayload(d: SaleDraft): Record<string, unknown> {
     total: sub - d.discount,
     ...(d.customerId ? { customer_id: d.customerId } : {}),
     items: d.lines.map((l) => {
-      const total = lineTotal(l.qty, l.unitPrice);
+      const disc = l.discount ?? 0;
+      const total = lineTotal(l.qty, l.unitPrice, disc);
       return {
         variant_id: l.variantId,
         name: l.name,
         qty: l.qty,
         unit_price: l.unitPrice,
         unit_cost: l.unitCost,
+        ...(disc > 0 ? { discount: disc } : {}),
         tax: lineTax(total, l.taxRate),
         line_total: total,
       };
