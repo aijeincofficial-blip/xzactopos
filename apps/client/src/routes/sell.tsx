@@ -66,6 +66,13 @@ import {
   fetchStockLevels,
   getExpiryStatus,
 } from "../lib/stock-api.ts";
+import { fetchCustomersWithBalances } from "../lib/utang-api.ts";
+import {
+  evaluateCustomerCreditStatus,
+  filterCustomersForPos,
+  isOverdue,
+  type CustomerBalanceInput,
+} from "../lib/utang-math.ts";
 import { supabase } from "../lib/supabase.ts";
 import { SupervisorPinDialog } from "../components/supervisor-pin-dialog.tsx";
 import { PosShiftControl } from "../components/pos-shift-dialog.tsx";
@@ -288,6 +295,51 @@ export function SellPage() {
   const onUtang = splitResult.onUtang;
   const change = splitResult.change;
   const customers = useQuery({ queryKey: ["customers"], queryFn: fetchCustomers, staleTime: 30_000 });
+  const customerBalances = useQuery({
+    queryKey: ["customers", "balances"],
+    queryFn: fetchCustomersWithBalances,
+    staleTime: 30_000,
+  });
+  const [customerQuery, setCustomerQuery] = useState("");
+  const todayInStoreTz = useMemo(() => dayInTimezone(access.tenant.timezone), [access.tenant.timezone]);
+
+  const allCustomerBalances = useMemo<CustomerBalanceInput[]>(() => {
+    const byId = new Map<string, CustomerBalanceInput>();
+    for (const b of customerBalances.data ?? []) {
+      byId.set(b.customerId, b);
+    }
+    for (const c of customers.data ?? []) {
+      if (!byId.has(c.id)) {
+        byId.set(c.id, {
+          customerId: c.id,
+          name: c.name,
+          phone: c.phone,
+          dueOn: null,
+          balance: 0,
+        });
+      }
+    }
+    return Array.from(byId.values());
+  }, [customerBalances.data, customers.data]);
+
+  const filteredCustomerOptions = useMemo(() => {
+    const matches = filterCustomersForPos(allCustomerBalances, customerQuery);
+    if (customerId && !matches.some((c) => c.customerId === customerId)) {
+      const selected = allCustomerBalances.find((c) => c.customerId === customerId);
+      if (selected) return [selected, ...matches];
+    }
+    return matches;
+  }, [allCustomerBalances, customerQuery, customerId]);
+
+  const selectedCustomerBalance = useMemo(
+    () => (customerId ? allCustomerBalances.find((c) => c.customerId === customerId) ?? null : null),
+    [allCustomerBalances, customerId],
+  );
+
+  const creditStatus = useMemo(
+    () => evaluateCustomerCreditStatus(selectedCustomerBalance, todayInStoreTz, onUtang),
+    [selectedCustomerBalance, todayInStoreTz, onUtang],
+  );
 
   const [customPinned, setCustomPinned] = useState<string[] | null>(() => getStoredPinned());
 
@@ -472,6 +524,7 @@ export function SellPage() {
     setPaidText("");
     setSplitTenders([]);
     setCustomerId("");
+    setCustomerQuery("");
     setProblem(null);
     setApprovalId(null);
     setOfflineApproval(null);
@@ -593,6 +646,7 @@ export function SellPage() {
     onSuccess: (r) => {
       void qc.invalidateQueries({ queryKey: ["pos-stock-levels", store?.id] });
       void qc.invalidateQueries({ queryKey: ["shift-expected-now"] });
+      void qc.invalidateQueries({ queryKey: ["customers"] });
       setDone(r);
       reset();
     },
@@ -1156,32 +1210,100 @@ export function SellPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Select
-              aria-label={t("sell.customer")}
-              data-testid="customer"
-              value={customerId}
-              onChange={(e) => setCustomerId(e.target.value)}
-              className="h-8.5 flex-1 text-xs"
-            >
-              <option value="">{method === "utang" ? t("sell.chooseCustomer") : t("sell.noCustomer")}</option>
-              {(customers.data ?? []).map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </Select>
-            {!showNew ? (
-              <Button
-                variant="outline"
-                size="sm"
-                data-testid="new-customer"
-                onClick={() => setShowNew(true)}
-                title={t("sell.newCustomer")}
+          <div className="grid gap-1.5">
+            {allCustomerBalances.length >= 4 || customerQuery.trim() !== "" ? (
+              <div className="relative">
+                <Search
+                  size={13}
+                  className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"
+                  aria-hidden
+                />
+                <Input
+                  data-testid="customer-search"
+                  value={customerQuery}
+                  onChange={(e) => setCustomerQuery(e.target.value)}
+                  placeholder={t("sell.customerSearchPlaceholder")}
+                  className="h-7.5 pl-7 pr-7 text-xs"
+                />
+                {customerQuery ? (
+                  <button
+                    type="button"
+                    aria-label={t("sell.cancel")}
+                    onClick={() => setCustomerQuery("")}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer text-slate-400 hover:text-slate-600"
+                  >
+                    <X size={12} />
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
+
+            <div className="flex items-center gap-2">
+              <Select
+                aria-label={t("sell.customer")}
+                data-testid="customer"
+                value={customerId}
+                onChange={(e) => setCustomerId(e.target.value)}
+                className="h-8.5 flex-1 text-xs"
               >
-                <UserPlus size={14} className="text-slate-500" aria-hidden />
-                <span className="sr-only sm:not-sr-only">{t("sell.newCustomer")}</span>
-              </Button>
+                <option value="">{method === "utang" ? t("sell.chooseCustomer") : t("sell.noCustomer")}</option>
+                {filteredCustomerOptions.map((c) => {
+                  const overdue = isOverdue(c.balance, c.dueOn, todayInStoreTz);
+                  return (
+                    <option key={c.customerId} value={c.customerId}>
+                      {c.name}
+                      {c.balance > 0
+                        ? ` · ${fmt(c.balance)}${overdue ? ` (${t("utang.overdue")})` : ""}`
+                        : ""}
+                    </option>
+                  );
+                })}
+              </Select>
+              {!showNew ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  data-testid="new-customer"
+                  onClick={() => setShowNew(true)}
+                  title={t("sell.newCustomer")}
+                >
+                  <UserPlus size={14} className="text-slate-500" aria-hidden />
+                  <span className="sr-only sm:not-sr-only">{t("sell.newCustomer")}</span>
+                </Button>
+              ) : null}
+            </div>
+
+            {customerQuery.trim() !== "" && filteredCustomerOptions.length === 0 ? (
+              <p className="text-[11px] text-slate-500">{t("sell.customerNoMatch")}</p>
+            ) : null}
+
+            {creditStatus.hasBalance ? (
+              <div
+                data-testid={creditStatus.overdue ? "customer-overdue-warning" : "customer-balance-pill"}
+                className={`rounded-lg border px-2.5 py-1.5 text-xs ${
+                  creditStatus.overdue
+                    ? "border-red-200 bg-red-50 text-red-900"
+                    : "border-amber-200 bg-amber-50 text-amber-900"
+                }`}
+              >
+                <div className="font-semibold tabular-nums">
+                  {creditStatus.overdue
+                    ? t("sell.customerOverdueWarning", {
+                        amount: fmt(creditStatus.currentBalance),
+                        due: creditStatus.dueOn ?? "",
+                      })
+                    : t("sell.customerOwesInfo", {
+                        amount: fmt(creditStatus.currentBalance),
+                      })}
+                </div>
+                {onUtang > 0 ? (
+                  <div className="mt-0.5 text-[11px] opacity-90 tabular-nums">
+                    {t("sell.customerProjectedUtang", {
+                      amount: fmt(creditStatus.projectedBalance),
+                    })}
+                  </div>
+                ) : null}
+              </div>
             ) : null}
           </div>
 

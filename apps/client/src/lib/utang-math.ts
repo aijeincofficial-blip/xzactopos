@@ -47,3 +47,45 @@ export function computeCustomerBalances(
       return a.name.localeCompare(b.name);
     });
 }
+
+export interface CustomerCreditStatus {
+  hasBalance: boolean;
+  overdue: boolean;
+  currentBalance: number;
+  projectedBalance: number;
+  dueOn: string | null;
+}
+
+/** Filter and sort customers alphabetically for fast POS counter lookup by name or phone. */
+export function filterCustomersForPos(
+  customers: ReadonlyArray<CustomerBalanceInput>,
+  query: string,
+): CustomerBalanceInput[] {
+  const q = query.trim().toLowerCase();
+  const filtered = q
+    ? customers.filter(
+        (c) =>
+          c.name.toLowerCase().includes(q) ||
+          (c.phone !== null && c.phone.toLowerCase().includes(q)),
+      )
+    : [...customers];
+  return filtered.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/** Evaluate whether a selected POS customer already owes Utang or is past their promised due date. */
+export function evaluateCustomerCreditStatus(
+  customer: Pick<CustomerBalanceInput, "balance" | "dueOn"> | null | undefined,
+  today: string,
+  additionalUtangMinor = 0,
+): CustomerCreditStatus {
+  const currentBalance = customer ? Math.max(0, customer.balance) : 0;
+  const dueOn = customer?.dueOn ?? null;
+  const add = Math.max(0, additionalUtangMinor);
+  return {
+    hasBalance: currentBalance > 0,
+    overdue: isOverdue(currentBalance, dueOn, today),
+    currentBalance,
+    projectedBalance: currentBalance + add,
+    dueOn,
+  };
+}
