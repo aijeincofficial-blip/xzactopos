@@ -10,6 +10,7 @@ import 'package:xzactopos_mobile/core/shift_printer.dart';
 import 'package:xzactopos_mobile/data/db.dart';
 import 'package:xzactopos_mobile/data/drift_store.dart';
 import 'package:xzactopos_mobile/data/shift_models.dart';
+import 'package:xzactopos_mobile/data/staff_models.dart';
 import 'package:xzactopos_mobile/l10n/app_localizations.dart';
 
 import 'widget_test.dart' show FakeBackend;
@@ -74,6 +75,32 @@ class ShiftBackend extends FakeBackend implements ShiftApi {
     if (hold != null) return hold!.future;
     return server;
   }
+}
+
+class StaffShiftBackend extends ShiftBackend implements StaffApi {
+  StaffShiftBackend(this.members);
+  final List<StaffMember> members;
+
+  @override
+  Future<List<StaffMember>> listStaff() async => members;
+
+  @override
+  Future<List<StaffStore>> listStores() async => const [];
+
+  @override
+  Future<String> createCashier({
+    required String username,
+    required String fullName,
+    required String password,
+    required String locationId,
+  }) async =>
+      'new-cashier';
+
+  @override
+  Future<void> setActive(String userId, bool active) async {}
+
+  @override
+  Future<void> clearPin(String userId) async {}
 }
 
 Future<DriftStore> openApp(WidgetTester tester, {String? role, String locale = 'en', FakeBackend? backend, Size? size}) async {
@@ -399,6 +426,43 @@ void main() {
     // Lands on Z report
     expect(find.byKey(const Key('z-diff')), findsOneWidget);
     expect(find.text('Supervisor closed end of day'), findsOneWidget);
+
+    await leave(tester);
+  });
+
+  testWidgets('supervisor close resolves staff names and records closedBy on Z slip', (tester) async {
+    final backend = StaffShiftBackend(const [
+      StaffMember(userId: 'cashier-maria-uuid', username: 'maria', fullName: 'Maria Santos', role: 'cashier', active: true),
+      StaffMember(userId: 'u1', username: 'mgr', fullName: 'Store Manager', role: 'admin', active: true),
+    ]);
+    final store = await openApp(tester, role: 'admin', backend: backend);
+    await store.startShift(
+      id: 'sh-maria',
+      cashierId: 'cashier-maria-uuid',
+      openingCash: 15000,
+      opId: 'op-maria',
+      at: DateTime.now().subtract(const Duration(hours: 2)),
+    );
+    await store.opDone('op-maria');
+
+    await openShiftScreen(tester);
+    expect(find.text('Cashier: Maria Santos'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('shift-supervisor-close-sh-maria')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Close shift (Supervisor)'), findsOneWidget);
+    expect(find.byKey(const Key('close-sheet-cashier')), findsOneWidget);
+
+    await tester.enterText(find.byKey(const Key('close-sheet-counted')), '150.00');
+    await tester.tap(find.byKey(const Key('close-sheet-confirm')));
+    await tester.pumpAndSettle();
+
+    final saved = await store.shift('sh-maria');
+    expect(saved?.closedBy, backend.userId);
+    expect(find.byKey(const Key('z-cashier')), findsOneWidget);
+    expect(find.byKey(const Key('z-closed-by')), findsOneWidget);
+    expect(find.text('Closed by: Store Manager'), findsOneWidget);
 
     await leave(tester);
   });

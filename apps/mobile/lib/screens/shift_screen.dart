@@ -9,20 +9,46 @@ import '../core/shift_printer.dart';
 import '../core/theme.dart';
 import '../core/ui.dart';
 import '../data/shift_models.dart';
+import '../data/staff_models.dart';
 import '../l10n/app_localizations.dart';
 import '../sync/store_session.dart';
 import 'denomination_sheet.dart';
 import '../sync/sync_badge.dart';
 
+String _shortUserId(String? id) {
+  if (id == null || id.isEmpty) return '...';
+  return id.length > 8 ? id.substring(0, 8) : id;
+}
+
+String resolveStaffLabel(String? id, Map<String, String> staffNames) {
+  if (id == null || id.isEmpty) return '...';
+  return staffNames[id] ?? _shortUserId(id);
+}
+
 /// The text of a shift slip for sharing (an X reading while the shift is open, the Z report once closed).
-String shiftSlipText(AppLocalizations t, String store, String ccy, String locale, ShiftView s, XReading? x) {
+String shiftSlipText(
+  AppLocalizations t,
+  String store,
+  String ccy,
+  String locale,
+  ShiftView s,
+  XReading? x, {
+  String? cashierName,
+  String? closedByName,
+}) {
   String money(int a) => Money(a, ccy).format(locale);
   String when(DateTime d) => DateFormat.yMMMd(locale).add_jm().format(d);
   final b = StringBuffer()
     ..writeln(store)
-    ..writeln(s.isOpen ? t.shiftTitle : t.shiftZTitle)
-    ..writeln(t.shiftOpenedLine(when(s.openedAt)));
+    ..writeln(s.isOpen ? t.shiftTitle : t.shiftZTitle);
+  if (cashierName != null && cashierName.isNotEmpty) {
+    b.writeln(t.shiftCashierLabel(cashierName));
+  }
+  b.writeln(t.shiftOpenedLine(when(s.openedAt)));
   if (s.closedAt != null) b.writeln(t.shiftClosedLine(when(s.closedAt!)));
+  if (closedByName != null && closedByName.isNotEmpty) {
+    b.writeln(t.shiftClosedByLabel(closedByName));
+  }
   b.writeln('${t.shiftOpeningLabel}: ${money(s.openingCash)}');
   if (x != null) {
     b
@@ -60,6 +86,8 @@ class ShiftScreen extends StatefulWidget {
 class _ShiftScreenState extends State<ShiftScreen> {
   final _opening = TextEditingController();
   bool _openingLoaded = false;
+  bool _staffLoaded = false;
+  Map<String, String> _staffNames = const {};
   String? _error;
   bool _busy = false;
 
@@ -78,6 +106,18 @@ class _ShiftScreenState extends State<ShiftScreen> {
           setState(() => _opening.text = Money(last.countedCash!, store.baseCurrency).toDecimalString());
         }
       });
+    }
+    if (!_staffLoaded) {
+      _staffLoaded = true;
+      final api = widget.backend;
+      if (api is StaffApi) {
+        (api as StaffApi).listStaff().then((members) {
+          if (!mounted) return;
+          setState(() {
+            _staffNames = {for (final m in members) m.userId: m.shownName};
+          });
+        }).catchError((_) {});
+      }
     }
   }
 
@@ -121,7 +161,11 @@ class _ShiftScreenState extends State<ShiftScreen> {
   }
 
   void _openSlip(String id) => Navigator.of(context).push(
-        MaterialPageRoute<void>(builder: (_) => CatalogScope.of(context).wrap(ShiftSlipScreen(shiftId: id, storeName: widget.storeName))),
+        MaterialPageRoute<void>(
+          builder: (_) => CatalogScope.of(context).wrap(
+            ShiftSlipScreen(shiftId: id, storeName: widget.storeName, staffNames: _staffNames),
+          ),
+        ),
       );
 
   Future<void> _close(ShiftView shift, XReading x) async {
@@ -134,7 +178,13 @@ class _ShiftScreenState extends State<ShiftScreen> {
       ),
       builder: (ctx) => Padding(
         padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-        child: _CloseSheet(scope: scope, backend: widget.backend, shift: shift, phoneExpected: x.expected),
+        child: _CloseSheet(
+          scope: scope,
+          backend: widget.backend,
+          shift: shift,
+          phoneExpected: x.expected,
+          staffNames: _staffNames,
+        ),
       ),
     );
     if (id != null && mounted) _openSlip(id);
@@ -355,7 +405,10 @@ class _ShiftScreenState extends State<ShiftScreen> {
                           child: Row(children: [
                             Expanded(
                               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                Text(t.shiftCashierLabel(s.cashierId?.substring(0, 8) ?? '...'), style: const TextStyle(fontWeight: FontWeight.w700)),
+                                Text(
+                                  t.shiftCashierLabel(resolveStaffLabel(s.cashierId, _staffNames)),
+                                  style: const TextStyle(fontWeight: FontWeight.w700),
+                                ),
                                 const SizedBox(height: 2),
                                 Text(
                                   '${t.shiftOpenedLine(when(s.openedAt))} · ${money(s.openingCash)}',
@@ -404,11 +457,25 @@ class _ShiftScreenState extends State<ShiftScreen> {
                                       DateFormat.yMMMd(locale).add_jm().format(s.openedAt),
                                       style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
                                     ),
+                                    if (all && s.cashierId != null) ...[
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        t.shiftCashierLabel(resolveStaffLabel(s.cashierId, _staffNames)),
+                                        style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12, fontWeight: FontWeight.w600),
+                                      ),
+                                    ],
                                     const SizedBox(height: 2),
                                     Text(
                                       '${t.dayCloseCounted}: ${money(s.countedCash ?? 0)}',
                                       style: TextStyle(color: scheme.outline, fontSize: 13),
                                     ),
+                                    if (s.closedBy != null && s.closedBy != s.cashierId) ...[
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        t.shiftClosedByLabel(resolveStaffLabel(s.closedBy, _staffNames)),
+                                        style: TextStyle(color: scheme.outline, fontSize: 12),
+                                      ),
+                                    ],
                                   ],
                                 ),
                               ),
@@ -439,11 +506,18 @@ class _ShiftScreenState extends State<ShiftScreen> {
 
 /// Count the drawer and close the shift. While online it shows the server's own expected cash; offline, the phone's.
 class _CloseSheet extends StatefulWidget {
-  const _CloseSheet({required this.scope, required this.backend, required this.shift, required this.phoneExpected});
+  const _CloseSheet({
+    required this.scope,
+    required this.backend,
+    required this.shift,
+    required this.phoneExpected,
+    this.staffNames = const {},
+  });
   final CatalogScope scope;
   final Backend backend;
   final ShiftView shift;
   final int phoneExpected;
+  final Map<String, String> staffNames;
 
   @override
   State<_CloseSheet> createState() => _CloseSheetState();
@@ -506,6 +580,7 @@ class _CloseSheetState extends State<_CloseSheet> {
       countedCash: counted,
       expectedCash: _expected,
       note: _note.text,
+      closedBy: widget.backend.userId,
       opId: const Uuid().v7(),
     );
     widget.scope.engine.poke();
@@ -523,12 +598,21 @@ class _CloseSheetState extends State<_CloseSheet> {
     final diff = counted == null ? null : counted - _expected;
     String diffText(int d) => d == 0 ? t.dayCloseExact : (d < 0 ? t.dayCloseShort(money(-d)) : t.dayCloseOver(money(d)));
     Color diffColor(int d) => d == 0 ? scheme.success : (d < 0 ? scheme.error : scheme.payUtang);
+    final isSupervisorClose = widget.shift.cashierId != null && widget.shift.cashierId != widget.backend.userId;
 
     return SafeArea(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(Gap.xl),
         child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          Text(t.shiftCloseAsk, style: Theme.of(context).textTheme.titleLarge),
+          Text(isSupervisorClose ? t.shiftSupervisorClose : t.shiftCloseAsk, style: Theme.of(context).textTheme.titleLarge),
+          if (isSupervisorClose) ...[
+            const SizedBox(height: Gap.xs),
+            Text(
+              t.shiftCashierLabel(resolveStaffLabel(widget.shift.cashierId, widget.staffNames)),
+              key: const Key('close-sheet-cashier'),
+              style: TextStyle(color: scheme.onSurfaceVariant, fontWeight: FontWeight.w600, fontSize: 13),
+            ),
+          ],
           const SizedBox(height: Gap.m),
           Text(t.dayCloseExpected, style: TextStyle(color: scheme.outline, fontSize: 13)),
           Text(money(_expected), key: const Key('close-sheet-expected'), style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w900)),
@@ -580,9 +664,10 @@ class _CloseSheetState extends State<_CloseSheet> {
 
 /// The report of one shift: the Z report once it is closed (it can be shared and opened again from the history).
 class ShiftSlipScreen extends StatelessWidget {
-  const ShiftSlipScreen({super.key, required this.shiftId, required this.storeName});
+  const ShiftSlipScreen({super.key, required this.shiftId, required this.storeName, this.staffNames = const {}});
   final String shiftId;
   final String storeName;
+  final Map<String, String> staffNames;
 
   @override
   Widget build(BuildContext context) {
@@ -604,6 +689,9 @@ class ShiftSlipScreen extends StatelessWidget {
           final d = s.difference ?? 0;
           String diffText() => d == 0 ? t.dayCloseExact : (d < 0 ? t.dayCloseShort(money(-d)) : t.dayCloseOver(money(d)));
           Color diffColor() => d == 0 ? scheme.success : (d < 0 ? scheme.error : scheme.payUtang);
+          final cashierLabel = s.cashierId != null ? resolveStaffLabel(s.cashierId, staffNames) : null;
+          final closedByLabel =
+              (s.closedBy != null && s.closedBy != s.cashierId) ? resolveStaffLabel(s.closedBy, staffNames) : null;
           Widget line(String label, String value, {Key? key}) => Padding(
                 padding: const EdgeInsets.symmetric(vertical: 3),
                 child: Row(children: [Expanded(child: Text(label)), Text(value, key: key, style: const TextStyle(fontWeight: FontWeight.w700))]),
@@ -614,8 +702,20 @@ class ShiftSlipScreen extends StatelessWidget {
               child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                 Text(storeName, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
                 const SizedBox(height: Gap.xs),
+                if (cashierLabel != null && (scope.isAdminOrSuperadmin || staffNames.containsKey(s.cashierId)))
+                  Text(
+                    t.shiftCashierLabel(cashierLabel),
+                    key: const Key('z-cashier'),
+                    style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
                 Text(t.shiftOpenedLine(when(s.openedAt)), style: TextStyle(color: scheme.outline, fontSize: 13)),
                 if (s.closedAt != null) Text(t.shiftClosedLine(when(s.closedAt!)), style: TextStyle(color: scheme.outline, fontSize: 13)),
+                if (closedByLabel != null)
+                  Text(
+                    t.shiftClosedByLabel(closedByLabel),
+                    key: const Key('z-closed-by'),
+                    style: TextStyle(color: scheme.outline, fontSize: 13),
+                  ),
                 const Divider(height: Gap.xl),
                 line(t.shiftOpeningLabel, money(s.openingCash)),
                 line(t.dayCloseExpected, money(s.expectedCash ?? 0), key: const Key('z-expected')),
@@ -641,7 +741,20 @@ class ShiftSlipScreen extends StatelessWidget {
               Expanded(
                 child: OutlinedButton(
                   key: const Key('z-share'),
-                  onPressed: () => textSharer.shareText(shiftSlipText(t, storeName, ccy, locale, s, null)),
+                  onPressed: () => textSharer.shareText(
+                    shiftSlipText(
+                      t,
+                      storeName,
+                      ccy,
+                      locale,
+                      s,
+                      null,
+                      cashierName: (cashierLabel != null && (scope.isAdminOrSuperadmin || staffNames.containsKey(s.cashierId)))
+                          ? cashierLabel
+                          : null,
+                      closedByName: closedByLabel,
+                    ),
+                  ),
                   child: Text(t.shiftShareX),
                 ),
               ),

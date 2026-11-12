@@ -128,6 +128,7 @@ abstract class ShiftStore {
     required int countedCash,
     required int expectedCash,
     String? note,
+    String? closedBy,
     required String opId,
     DateTime? at,
   });

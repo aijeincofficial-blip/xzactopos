@@ -2088,6 +2088,11 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
+  String shiftClosedByLabel(String name) {
+    return 'Isinara ni: $name';
+  }
+
+  @override
   String get printerSection => 'Resibo at Thermal Printer';
 
   @override

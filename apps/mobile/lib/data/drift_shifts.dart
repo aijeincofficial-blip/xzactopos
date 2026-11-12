@@ -201,11 +201,13 @@ mixin DriftShifts implements ShiftStore {
     required int countedCash,
     required int expectedCash,
     String? note,
+    String? closedBy,
     required String opId,
     DateTime? at,
   }) {
     if (countedCash < 0) throw ArgumentError('Counted cash cannot be negative');
     final n = _text200(note);
+    final closer = closedBy != null && closedBy.trim().isNotEmpty ? closedBy.trim() : null;
     return db.transaction(() async {
       final s = await (db.select(db.shifts)..where((x) => x.id.equals(id))).getSingleOrNull();
       if (s == null) throw const ShiftException('shift_not_found');
@@ -217,6 +219,7 @@ mixin DriftShifts implements ShiftStore {
         countedCash: Value(countedCash),
         difference: Value(countedCash - expectedCash),
         note: Value(n),
+        closedBy: closer == null ? const Value.absent() : Value(closer),
       ));
       await enqueue(opId, 'close_shift', id, {
         'id': id,

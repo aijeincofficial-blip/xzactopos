@@ -3518,6 +3518,12 @@ abstract class AppLocalizations {
   /// **'Cashier: {name}'**
   String shiftCashierLabel(String name);
 
+  /// No description provided for @shiftClosedByLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed by: {name}'**
+  String shiftClosedByLabel(String name);
+
   /// No description provided for @printerSection.
   ///
   /// In en, this message translates to:

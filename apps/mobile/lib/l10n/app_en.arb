@@ -1201,6 +1201,14 @@
       }
     }
   },
+  "shiftClosedByLabel": "Closed by: {name}",
+  "@shiftClosedByLabel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "printerSection": "Receipt & Thermal Printer",
   "printerSectionHint": "Connect a thermal ESC/POS network printer or use system print",
   "printerEngine": "Printer mode",

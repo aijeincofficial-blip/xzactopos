@@ -1201,6 +1201,14 @@
       }
     }
   },
+  "shiftClosedByLabel": "Isinara ni: {name}",
+  "@shiftClosedByLabel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "printerSection": "Resibo at Thermal Printer",
   "printerSectionHint": "Ikonekta sa thermal ESC/POS network printer o gamitin ang system print",
   "printerEngine": "Modo ng printer",

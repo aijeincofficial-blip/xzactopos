@@ -2078,6 +2078,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String shiftClosedByLabel(String name) {
+    return 'Closed by: $name';
+  }
+
+  @override
   String get printerSection => 'Receipt & Thermal Printer';
 
   @override
