@@ -5,6 +5,7 @@ import { formatMoney, money, uuidv7 } from "@pos/core";
 import {
   Banknote,
   CheckCircle2,
+  CloudOff,
   CreditCard,
   HandCoins,
   Keyboard,
@@ -13,6 +14,7 @@ import {
   Play,
   Plus,
   Printer,
+  RefreshCw,
   ScanBarcode,
   Search,
   ShoppingBag,
@@ -77,6 +79,14 @@ import {
   resumeHeldOrder,
   type HeldOrder,
 } from "../lib/held-orders.ts";
+import { useOnlineStatus } from "../lib/network.ts";
+import {
+  applyOptimisticStockDeltas,
+  flushPosOutbox,
+  retryFailedPosOps,
+  setPosOutboxTenant,
+  usePosOutboxSnapshot,
+} from "../lib/pos-outbox.ts";
 
 const WALLETS: Wallet[] = ["gcash", "maya", "other"];
 const CASH_BILLS_MAJOR = [50, 100, 200, 500, 1000] as const;
@@ -98,6 +108,10 @@ export function SellPage() {
   const { t, i18n } = useTranslation("admin");
   const msg = useErrorMessage();
   const { access, can } = useSession();
+  setPosOutboxTenant(access.tenant.id);
+  const online = useOnlineStatus();
+  const outboxOps = usePosOutboxSnapshot();
+  const [syncingOutbox, setSyncingOutbox] = useState(false);
   const currency = access.tenant.base_currency;
   const fmt = (n: number) => formatMoney(money(n, currency), i18n.language);
 
@@ -166,6 +180,44 @@ export function SellPage() {
   useEffect(() => {
     setHeldOrders(store?.id ? loadHeldOrders(store.id) : []);
   }, [store?.id]);
+
+  const pendingOutboxCount = useMemo(
+    () => outboxOps.filter((o) => o.state === "pending").length,
+    [outboxOps],
+  );
+  const failedOutboxCount = useMemo(
+    () => outboxOps.filter((o) => o.state === "failed").length,
+    [outboxOps],
+  );
+
+  async function runOutboxSync(manual = false) {
+    if (!online && !manual) return;
+    if (manual && failedOutboxCount > 0) {
+      retryFailedPosOps();
+    }
+    setSyncingOutbox(true);
+    try {
+      const res = await flushPosOutbox();
+      if (res.synced > 0) {
+        toast.good(t("sell.outboxSynced", { count: res.synced }));
+        await Promise.all([
+          qc.invalidateQueries({ queryKey: ["pos-stock-levels", store?.id] }),
+          qc.invalidateQueries({ queryKey: ["customers"] }),
+        ]);
+      }
+    } finally {
+      setSyncingOutbox(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!online || pendingOutboxCount === 0) return;
+    void runOutboxSync(false);
+    const timer = window.setInterval(() => {
+      void runOutboxSync(false);
+    }, 30_000);
+    return () => window.clearInterval(timer);
+  }, [online, pendingOutboxCount, store?.id]);
 
   const settingsQuery = useQuery({
     queryKey: ["tenant-settings-controls"],
@@ -619,19 +671,34 @@ export function SellPage() {
           <Card className="grid gap-6" data-testid="sale-done">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
-                  <CheckCircle2 size={24} aria-hidden />
+                <div
+                  className={`flex h-12 w-12 items-center justify-center rounded-xl ${
+                    done.queuedOffline ? "bg-amber-50 text-amber-600" : "bg-emerald-50 text-emerald-600"
+                  }`}
+                >
+                  {done.queuedOffline ? <CloudOff size={24} aria-hidden /> : <CheckCircle2 size={24} aria-hidden />}
                 </div>
                 <div>
-                  <h2 className="text-lg font-semibold text-slate-900">{t("sell.done")}</h2>
+                  <h2 className="text-lg font-semibold text-slate-900">
+                    {done.queuedOffline ? t("sell.doneOffline") : t("sell.done")}
+                  </h2>
                   <div className="font-mono text-xs text-slate-500">
                     {t("sell.receiptNo")}{" "}
                     <span className="font-semibold text-slate-900">{done.saleNo ?? done.localNo}</span>
                   </div>
                 </div>
               </div>
-              <Badge tone="good">{store.code}</Badge>
+              <Badge tone={done.queuedOffline ? "warn" : "good"}>{store.code}</Badge>
             </div>
+
+            {done.queuedOffline ? (
+              <div
+                data-testid="offline-sale-banner"
+                className="rounded-xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-xs font-medium text-amber-900"
+              >
+                {t("sell.offlineSaleNotice")}
+              </div>
+            ) : null}
 
             <div className="grid gap-2 rounded-xl border border-slate-200/80 bg-slate-50/70 p-4">
               <span className="text-xs font-semibold tracking-wider text-slate-500 uppercase">
@@ -678,7 +745,10 @@ export function SellPage() {
     );
   }
 
-  const stockMap = stockQuery.data;
+  const stockMap = useMemo(() => {
+    if (!stockQuery.data || !store) return undefined;
+    return applyOptimisticStockDeltas(stockQuery.data, store.id, outboxOps);
+  }, [stockQuery.data, store, outboxOps]);
   const cashTarget = paidNow !== null ? paidNow : total;
 
   return (
@@ -724,6 +794,39 @@ export function SellPage() {
                 </span>
               </div>
             </div>
+
+            {!online || outboxOps.length > 0 ? (
+              <button
+                type="button"
+                data-testid="pos-outbox-status"
+                disabled={!online && outboxOps.length === 0}
+                onClick={() => void runOutboxSync(true)}
+                className={`inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border px-2.5 py-2 text-xs font-semibold transition-colors disabled:cursor-default ${
+                  failedOutboxCount > 0
+                    ? "border-red-200 bg-red-50 text-red-800 hover:bg-red-100"
+                    : !online
+                      ? "border-amber-200 bg-amber-50 text-amber-900"
+                      : "border-brand-200 bg-brand-50 text-brand-700 hover:bg-brand-100"
+                }`}
+              >
+                {!online ? (
+                  <CloudOff size={14} className="text-amber-600" aria-hidden />
+                ) : (
+                  <RefreshCw size={14} className={syncingOutbox ? "animate-spin text-brand-600" : "text-brand-600"} aria-hidden />
+                )}
+                <span>
+                  {failedOutboxCount > 0
+                    ? t("sell.outboxFailedPill", { count: failedOutboxCount })
+                    : !online
+                      ? pendingOutboxCount > 0
+                        ? t("sell.offlineQueuedPill", { count: pendingOutboxCount })
+                        : t("sell.offlineReadyPill")
+                      : syncingOutbox
+                        ? t("sell.outboxSyncing", { count: pendingOutboxCount })
+                        : t("sell.outboxSyncNow", { count: pendingOutboxCount })}
+                </span>
+              </button>
+            ) : null}
 
             <span
               className="hidden shrink-0 items-center gap-1.5 rounded-lg border border-slate-200/80 bg-slate-50 px-2.5 py-2 text-xs text-slate-500 xl:inline-flex"

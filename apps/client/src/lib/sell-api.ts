@@ -1,5 +1,13 @@
 import { uuidv7 } from "@pos/core";
 import { ApiError, fromRaw, rpc } from "./api.ts";
+import { isOnline } from "./network.ts";
+import {
+  enqueuePosOp,
+  isNetworkFailure,
+  loadPosCache,
+  pendingOptimisticCustomers,
+  savePosCache,
+} from "./pos-outbox.ts";
 import { supabase } from "./supabase.ts";
 import { localReceiptNo, salePayload, type SaleDraft } from "./sale-math.ts";
 
@@ -95,7 +103,18 @@ export async function pullCatalog(): Promise<CatalogPull> {
 }
 
 export async function fetchSellables(currency: string): Promise<Sellable[]> {
-  return toSellables(await pullCatalog(), currency);
+  const slot = `sellables:${currency}`;
+  try {
+    const rows = toSellables(await pullCatalog(), currency);
+    savePosCache(slot, rows);
+    return rows;
+  } catch (err) {
+    if (isNetworkFailure(err)) {
+      const cached = loadPosCache<Sellable[]>(slot);
+      if (cached) return cached;
+    }
+    throw err;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -168,12 +187,26 @@ export interface SoldReceipt {
   saleId: string;
   localNo: string;
   saleNo: string | null;
+  queuedOffline?: boolean;
 }
 
-/** Sends the sale once (online only; the op id makes a retry safe). */
+/** Sends the sale immediately when online, or queues an idempotent `record_sale` op when offline/unreachable. */
 export async function submitSale(draft: SaleDraft, opId: string = uuidv7()): Promise<SoldReceipt> {
-  const r = await pushOp<{ sale_id: string; local_no: string; sale_no: string | null }>("record_sale", salePayload(draft), opId);
-  return { saleId: r.sale_id, localNo: r.local_no, saleNo: r.sale_no };
+  const payload = salePayload(draft);
+  if (!isOnline()) {
+    enqueuePosOp({ opId, kind: "record_sale", payload, locationId: draft.locationId });
+    return { saleId: draft.id, localNo: draft.localNo, saleNo: null, queuedOffline: true };
+  }
+  try {
+    const r = await pushOp<{ sale_id: string; local_no: string; sale_no: string | null }>("record_sale", payload, opId);
+    return { saleId: r.sale_id, localNo: r.local_no, saleNo: r.sale_no };
+  } catch (err) {
+    if (isNetworkFailure(err)) {
+      enqueuePosOp({ opId, kind: "record_sale", payload, locationId: draft.locationId });
+      return { saleId: draft.id, localNo: draft.localNo, saleNo: null, queuedOffline: true };
+    }
+    throw err;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -186,17 +219,56 @@ export interface Customer {
   phone: string | null;
 }
 
-export async function fetchCustomers(): Promise<Customer[]> {
-  const { data, error } = await supabase.from("customers").select("id, name, phone").is("deleted_at", null).order("name").limit(1000);
-  if (error) throw fromRaw(error);
-  return data;
+function mergeOptimisticCustomers(base: Customer[]): Customer[] {
+  const byId = new Map(base.map((c) => [c.id, c]));
+  for (const pending of pendingOptimisticCustomers()) {
+    if (!byId.has(pending.id)) byId.set(pending.id, pending);
+  }
+  return Array.from(byId.values()).sort((a, b) => a.name.localeCompare(b.name));
 }
 
-/** Creates a customer (the id is made here, like the phone does) and returns it. */
+export async function fetchCustomers(): Promise<Customer[]> {
+  try {
+    const { data, error } = await supabase.from("customers").select("id, name, phone").is("deleted_at", null).order("name").limit(1000);
+    if (error) throw fromRaw(error);
+    savePosCache("customers", data);
+    return mergeOptimisticCustomers(data);
+  } catch (err) {
+    if (isNetworkFailure(err)) {
+      const cached = loadPosCache<Customer[]>("customers");
+      if (cached) return mergeOptimisticCustomers(cached);
+      const pending = pendingOptimisticCustomers();
+      if (pending.length > 0) return mergeOptimisticCustomers([]);
+    }
+    throw err;
+  }
+}
+
+/** Creates a customer (the id is made here, like the phone does) and queues offline if needed. */
 export async function createCustomer(name: string, phone: string): Promise<Customer> {
   const id = uuidv7();
-  await pushOp("upsert_customer", { id, name: name.trim(), ...(phone.trim() ? { phone: phone.trim() } : {}) });
-  return { id, name: name.trim(), phone: phone.trim() || null };
+  const opId = uuidv7();
+  const trimmedName = name.trim();
+  const trimmedPhone = phone.trim();
+  const payload: Record<string, unknown> = {
+    id,
+    name: trimmedName,
+    ...(trimmedPhone ? { phone: trimmedPhone } : {}),
+  };
+  if (!isOnline()) {
+    enqueuePosOp({ opId, kind: "upsert_customer", payload });
+    return { id, name: trimmedName, phone: trimmedPhone || null };
+  }
+  try {
+    await pushOp("upsert_customer", payload, opId);
+    return { id, name: trimmedName, phone: trimmedPhone || null };
+  } catch (err) {
+    if (isNetworkFailure(err)) {
+      enqueuePosOp({ opId, kind: "upsert_customer", payload });
+      return { id, name: trimmedName, phone: trimmedPhone || null };
+    }
+    throw err;
+  }
 }
 
 export interface SaleRow {

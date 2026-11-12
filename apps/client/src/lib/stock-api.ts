@@ -1,5 +1,11 @@
 import { uuidv7 } from "@pos/core";
 import { fromRaw, rpc } from "./api.ts";
+import {
+  applyOptimisticStockDeltas,
+  isNetworkFailure,
+  loadPosCache,
+  savePosCache,
+} from "./pos-outbox.ts";
 import { supabase } from "./supabase.ts";
 import { pullCatalog, pushOp, type CatalogPull } from "./sell-api.ts";
 
@@ -74,20 +80,30 @@ export function toProductRows(
 }
 
 export async function fetchStockLevels(locationId: string): Promise<Map<string, number>> {
-  const levels = new Map<string, number>();
-  // paged by the primary key so a large catalog is never cut at the API's row limit
-  for (let from = 0; ; from += 1000) {
-    const { data, error } = await supabase
-      .from("stock_levels")
-      .select("variant_id, qty_on_hand")
-      .eq("location_id", locationId)
-      .order("variant_id")
-      .range(from, from + 999);
-    if (error) throw fromRaw(error);
-    for (const r of data) levels.set(r.variant_id, Number(r.qty_on_hand));
-    if (data.length < 1000) break;
+  const slot = `stock:${locationId}`;
+  try {
+    const levels = new Map<string, number>();
+    // paged by the primary key so a large catalog is never cut at the API's row limit
+    for (let from = 0; ; from += 1000) {
+      const { data, error } = await supabase
+        .from("stock_levels")
+        .select("variant_id, qty_on_hand")
+        .eq("location_id", locationId)
+        .order("variant_id")
+        .range(from, from + 999);
+      if (error) throw fromRaw(error);
+      for (const r of data) levels.set(r.variant_id, Number(r.qty_on_hand));
+      if (data.length < 1000) break;
+    }
+    savePosCache(slot, Array.from(levels.entries()));
+    return applyOptimisticStockDeltas(levels, locationId);
+  } catch (err) {
+    if (isNetworkFailure(err)) {
+      const cached = loadPosCache<Array<[string, number]>>(slot);
+      if (cached) return applyOptimisticStockDeltas(new Map(cached), locationId);
+    }
+    throw err;
   }
-  return levels;
 }
 
 export async function fetchStockExpiries(locationId: string): Promise<Map<string, string | null>> {
@@ -192,17 +208,27 @@ export async function fetchStockMovements(locationId: string, limit = 150): Prom
 }
 
 export async function fetchCategories(): Promise<Category[]> {
-  const { data, error } = await supabase
-    .from("categories")
-    .select("id, name, parent_id")
-    .is("deleted_at", null)
-    .order("name");
-  if (error) throw fromRaw(error);
-  return (data ?? []).map((c) => ({
-    id: c.id,
-    name: c.name,
-    parentId: c.parent_id,
-  }));
+  try {
+    const { data, error } = await supabase
+      .from("categories")
+      .select("id, name, parent_id")
+      .is("deleted_at", null)
+      .order("name");
+    if (error) throw fromRaw(error);
+    const rows = (data ?? []).map((c) => ({
+      id: c.id,
+      name: c.name,
+      parentId: c.parent_id,
+    }));
+    savePosCache("categories", rows);
+    return rows;
+  } catch (err) {
+    if (isNetworkFailure(err)) {
+      const cached = loadPosCache<Category[]>("categories");
+      if (cached) return cached;
+    }
+    throw err;
+  }
 }
 
 export async function upsertCategory(input: { id?: string; name: string; parentId?: string | null }): Promise<Category> {
