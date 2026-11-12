@@ -31,6 +31,7 @@ import {
   filterAccessibleReportLocations,
   snapshotDailyStock,
 } from "../lib/reports-api.ts";
+import { computeOperatingExpenseBreakdown } from "../lib/services-api.ts";
 
 function toDateString(d: Date): string {
   const year = d.getFullYear();
@@ -153,6 +154,13 @@ export function ReportsPage() {
       { key: "utang", label: t("admin:reports.utangCredit"), amount: rep.totals.utang, pct: Math.round((rep.totals.utang / sum) * 100), barClass: "bg-amber-500" },
     ];
   }, [rep, t]);
+
+  const expBreakdown = useMemo(
+    () => (rep ? computeOperatingExpenseBreakdown(rep.expenses) : null),
+    [rep],
+  );
+  const netProfitAfterExpenses =
+    rep && expBreakdown ? rep.totals.profit - expBreakdown.operatingExpenses : 0;
 
   const canSnapshot = can("stock.adjust_warehouse") || access.role === "superadmin";
 
@@ -568,6 +576,143 @@ export function ReportsPage() {
                 </div>
               </Card>
             </div>
+          </div>
+
+          {/* Expenses & Net Profit + Load & E-Wallet Services */}
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <Card className="grid content-start gap-4" data-testid="reports-expenses-card">
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="text-base font-semibold text-slate-900">
+                  {t("admin:reports.expensesTitle")}
+                </h2>
+                <Badge>{rep.expenses.count}</Badge>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
+                  <div className="text-xs font-semibold tracking-wider text-slate-600 uppercase">
+                    {t("admin:reports.operatingExpenses")}
+                  </div>
+                  <div className="mt-1 text-xl font-semibold text-slate-900 tabular-nums">
+                    {fmt(expBreakdown?.operatingExpenses ?? 0)}
+                  </div>
+                </div>
+                <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
+                  <div className="text-xs font-semibold tracking-wider text-slate-600 uppercase">
+                    {t("admin:reports.netProfitAfterExpenses")}
+                  </div>
+                  <div
+                    className={`mt-1 text-xl font-semibold tabular-nums ${
+                      netProfitAfterExpenses >= 0 ? "text-emerald-700" : "text-red-700"
+                    }`}
+                  >
+                    {fmt(netProfitAfterExpenses)}
+                  </div>
+                </div>
+              </div>
+
+              {rep.expenses.by_category.length === 0 ? (
+                <p className="text-sm text-slate-500">{t("admin:reports.noExpensesInRange")}</p>
+              ) : (
+                <ul className="divide-y divide-slate-100 rounded-md border border-slate-200">
+                  {rep.expenses.by_category.map((c) => (
+                    <li
+                      key={c.category}
+                      className="flex items-center justify-between gap-3 px-3.5 py-2.5 text-sm"
+                    >
+                      <span className="flex items-center gap-2 text-slate-700">
+                        <span>{t(`admin:expenses.categories.${c.category}`, { defaultValue: c.category })}</span>
+                        <span className="text-xs text-slate-400">({c.count})</span>
+                      </span>
+                      <span className="font-semibold text-slate-900 tabular-nums">{fmt(c.amount)}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {expBreakdown && expBreakdown.stockBought > 0 ? (
+                <Alert tone="info">
+                  {t("admin:reports.stockPurchasesExcluded", {
+                    amount: fmt(expBreakdown.stockBought),
+                  })}
+                </Alert>
+              ) : null}
+            </Card>
+
+            <Card className="grid content-start gap-4" data-testid="reports-services-card">
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="text-base font-semibold text-slate-900">
+                  {t("admin:reports.servicesTitle")}
+                </h2>
+                <Badge>{rep.services.count}</Badge>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
+                  <div className="text-xs font-semibold tracking-wider text-slate-600 uppercase">
+                    {t("admin:reports.serviceFeesEarned")}
+                  </div>
+                  <div className="mt-1 text-xl font-semibold text-emerald-700 tabular-nums">
+                    {fmt(rep.services.fee_total)}
+                  </div>
+                </div>
+                <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
+                  <div className="text-xs font-semibold tracking-wider text-slate-600 uppercase">
+                    {t("admin:reports.customerServiceTxns")}
+                  </div>
+                  <div className="mt-1 text-xl font-semibold text-slate-900 tabular-nums">
+                    {rep.services.count}
+                  </div>
+                </div>
+              </div>
+
+              {rep.services.by_kind.length === 0 ? (
+                <p className="text-sm text-slate-500">{t("admin:reports.noServicesInRange")}</p>
+              ) : (
+                <ul className="divide-y divide-slate-100 rounded-md border border-slate-200">
+                  {rep.services.by_kind.map((k) => (
+                    <li
+                      key={k.kind}
+                      className="flex items-center justify-between gap-3 px-3.5 py-2.5 text-sm"
+                    >
+                      <span className="flex items-center gap-2 text-slate-700">
+                        <span>{t(`admin:services.kinds.${k.kind}`, { defaultValue: k.kind })}</span>
+                        <span className="text-xs text-slate-400">({k.count})</span>
+                      </span>
+                      <span className="flex items-baseline gap-2 tabular-nums">
+                        {k.fee > 0 ? (
+                          <span className="text-xs font-medium text-emerald-700">+{fmt(k.fee)}</span>
+                        ) : null}
+                        <span className="font-semibold text-slate-900">{fmt(k.amount)}</span>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {rep.services.float.length > 0 ? (
+                <div className="grid gap-2">
+                  <div className="text-xs font-semibold tracking-wider text-slate-600 uppercase">
+                    {t("admin:reports.walletFloatBalances")}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {rep.services.float.map((f) => (
+                      <div
+                        key={f.wallet}
+                        className={`inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-xs ${
+                          f.balance < 0
+                            ? "border-amber-300 bg-amber-50 text-amber-900"
+                            : "border-slate-200 bg-slate-50 text-slate-800"
+                        }`}
+                      >
+                        <span className="font-medium">
+                          {t(`admin:services.wallets.${f.wallet}`, { defaultValue: f.wallet })}
+                        </span>
+                        <span className="font-semibold tabular-nums">{fmt(f.balance)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </Card>
           </div>
         </>
       )}

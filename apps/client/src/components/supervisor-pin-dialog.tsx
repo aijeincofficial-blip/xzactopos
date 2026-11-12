@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Alert, Button, Dialog, Field, Input, Select } from "./ui.tsx";
-import { approveSupervisorAction, fetchStoreApprovers } from "../lib/approvals-api.ts";
+import { approveSupervisorAction, fetchStoreApprovers, type ApprovalAction } from "../lib/approvals-api.ts";
 import {
   pullOfflinePins,
   getCachedOfflinePins,
@@ -15,7 +15,7 @@ export interface SupervisorPinDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   locationId: string;
-  action: "sale_discount" | "void_sale";
+  action: ApprovalAction;
   refId: string;
   title?: string;
   description?: string;
@@ -137,8 +137,18 @@ export function SupervisorPinDialog({
     }
   }
 
-  const defaultTitle = action === "sale_discount" ? t("supervisor.discountTitle") : t("supervisor.voidTitle");
-  const defaultDesc = action === "sale_discount" ? t("supervisor.discountDesc") : t("supervisor.voidDesc");
+  const defaultTitle =
+    action === "sale_discount"
+      ? t("supervisor.discountTitle")
+      : action === "void_sale"
+        ? t("supervisor.voidTitle")
+        : t("supervisor.dialogTitle");
+  const defaultDesc =
+    action === "sale_discount"
+      ? t("supervisor.discountDesc")
+      : action === "void_sale"
+        ? t("supervisor.voidDesc")
+        : t("supervisor.dialogDesc");
 
   return (
     <Dialog

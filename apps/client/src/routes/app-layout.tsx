@@ -30,6 +30,7 @@ import {
   Settings,
   ShieldCheck,
   ShoppingCart,
+  Smartphone,
   Store,
   Sun,
   Truck,
@@ -68,6 +69,7 @@ const NAV = [
   { to: "/app/receive-stock", key: "receiveStock", icon: ArrowDownToLine, group: "daily", portal: "pos", perm: "sale.create", fullOnly: true },
   { to: "/app/sales", key: "sales", icon: Receipt, group: "daily", portal: "pos", perm: "sale.create", fullOnly: false },
   { to: "/app/utang", key: "utang", icon: HandCoins, group: "daily", portal: "pos", perm: "sale.create", fullOnly: false },
+  { to: "/app/services", key: "services", icon: Smartphone, group: "daily", portal: "pos", perm: "sale.create", fullOnly: false },
   { to: "/app/expenses", key: "expenses", icon: Banknote, group: "daily", portal: "pos", perm: "shift.manage", fullOnly: false },
   { to: "/app/day-close", key: "dayClose", icon: PowerOff, group: "daily", portal: "pos", perm: "shift.manage", fullOnly: false },
 

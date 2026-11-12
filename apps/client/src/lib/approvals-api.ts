@@ -22,12 +22,21 @@ export interface SupervisorApprovalResult {
   hint?: string;
 }
 
+export type ApprovalAction =
+  | "sale_discount"
+  | "void_sale"
+  | "record_expense"
+  | "void_expense"
+  | "close_day"
+  | "record_service_txn"
+  | "void_service_txn";
+
 /**
  * Requests a supervisor approval using the supervisor's PIN.
  * Returns { ok: true, approval_id, ... } or { ok: false, hint: "pin_wrong" | "pin_locked" | "pin_not_set" }.
  */
 export async function approveSupervisorAction(
-  action: "sale_discount" | "void_sale" | "record_expense" | "void_expense" | "close_day" | "record_service_txn" | "void_service_txn",
+  action: ApprovalAction,
   refId: string,
   pin: string,
   locationId?: string,

@@ -20,6 +20,7 @@ import { SalesPage } from "./routes/sales.tsx";
 import { InventoryPage } from "./routes/inventory.tsx";
 import { ProductsPage } from "./routes/products.tsx";
 import { UtangPage } from "./routes/utang.tsx";
+import { ServicesPage } from "./routes/services.tsx";
 import { ExpensesPage } from "./routes/expenses.tsx";
 import { DayClosePage } from "./routes/day-close.tsx";
 import { UpgradePage } from "./routes/upgrade.tsx";
@@ -171,6 +172,7 @@ const inventory = createRoute({
 });
 const products = createRoute({ getParentRoute: () => app, path: "/products", beforeLoad: requires("catalog.manage"), component: ProductsPage });
 const utang = createRoute({ getParentRoute: () => app, path: "/utang", beforeLoad: requires("sale.create"), component: UtangPage });
+const services = createRoute({ getParentRoute: () => app, path: "/services", beforeLoad: requires("sale.create"), component: ServicesPage });
 const expenses = createRoute({ getParentRoute: () => app, path: "/expenses", beforeLoad: requires("shift.manage"), component: ExpensesPage });
 const dayClose = createRoute({ getParentRoute: () => app, path: "/day-close", beforeLoad: requires("shift.manage"), component: DayClosePage });
 const upgrade = createRoute({ getParentRoute: () => app, path: "/upgrade", beforeLoad: requires("tenant.modules"), component: UpgradePage });
@@ -197,7 +199,7 @@ const routeTree = root.addChildren([
   resetPassword,
   warehouseLogin,
   login,
-  app.addChildren([dashboard, setup, sell, receiveStock, sales, inventory, products, utang, expenses, dayClose, upgrade, settings, transfers, bins, purchasing, counts, overview, reports, locations, users, modules, platform, forbidden]),
+  app.addChildren([dashboard, setup, sell, receiveStock, sales, inventory, products, utang, services, expenses, dayClose, upgrade, settings, transfers, bins, purchasing, counts, overview, reports, locations, users, modules, platform, forbidden]),
 ]);
 
 export function makeRouter(queryClient: QueryClient) {

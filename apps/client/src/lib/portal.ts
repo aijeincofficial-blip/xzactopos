@@ -37,6 +37,7 @@ const POS_ROUTE_PREFIXES = [
   "/app/receive-stock",
   "/app/sales",
   "/app/utang",
+  "/app/services",
   "/app/expenses",
   "/app/day-close",
 ] as const;
