@@ -40,17 +40,20 @@ SaleDetail detail({bool voided = false, int discount = 0, bool utang = false}) =
 class RecordingPrinter implements ReceiptPrinter {
   final printed = <String>[];
   final shared = <String>[];
+  ReceiptLabels? lastLabels;
   Object? failWith;
   @override
   bool get available => true;
   @override
   Future<void> print(SaleDetail sale, {required String storeName, required String currency, required String locale, required ReceiptLabels labels}) async {
     if (failWith != null) throw failWith!;
+    lastLabels = labels;
     printed.add('${sale.summary.localNo}|$storeName|$currency|$locale');
   }
 
   @override
   Future<void> share(SaleDetail sale, {required String storeName, required String currency, required String locale, required ReceiptLabels labels}) async {
+    lastLabels = labels;
     shared.add(sale.summary.localNo);
   }
 }
@@ -127,6 +130,59 @@ void main() {
     await tester.tap(find.byKey(const Key('sale-s1')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('receipt-print')), findsNothing);
+    await leave(tester);
+  });
+
+  testWidgets('receipt screen shows custom header, footer, and store address and forwards them to printer', (tester) async {
+    final printer = RecordingPrinter();
+    receiptPrinter = printer;
+    final store = await openHome(
+      tester,
+      access: const {
+        'role': 'superadmin',
+        'tenant': {
+          'id': 't1',
+          'name': 'Tindahan ni Nena',
+          'base_currency': 'PHP',
+          'receipt_header': 'TIN 999-888-777',
+          'receipt_footer': 'Maraming salamat suki!',
+        },
+        'locations': [
+          {
+            'id': 's1',
+            'type': 'store',
+            'code': 'S01',
+            'name': 'Poblacion Main',
+            'address': '45 Mabini St, Poblacion',
+          },
+        ],
+      },
+    );
+    await store.commitSale(
+      SaleDraft(
+          id: 's-brand',
+          soldAt: DateTime.now(),
+          lines: const [SaleLine(variantId: _v1, name: 'Kape', qty: 1, unitPrice: 1000)],
+          payments: const [PaymentDraft('cash', 1000)]),
+      opId: 'op-brand',
+    );
+    await tester.tap(find.byKey(const Key('tile-today')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('sale-s-brand')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('receipt-store-address')), findsOneWidget);
+    expect(find.text('45 Mabini St, Poblacion'), findsOneWidget);
+    expect(find.byKey(const Key('receipt-custom-header')), findsOneWidget);
+    expect(find.text('TIN 999-888-777'), findsOneWidget);
+    expect(find.byKey(const Key('receipt-custom-footer')), findsOneWidget);
+    expect(find.text('Maraming salamat suki!'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('receipt-print')));
+    await tester.pumpAndSettle();
+    expect(printer.lastLabels?.storeAddress, '45 Mabini St, Poblacion');
+    expect(printer.lastLabels?.receiptHeader, 'TIN 999-888-777');
+    expect(printer.lastLabels?.receiptFooter, 'Maraming salamat suki!');
     await leave(tester);
   });
 }

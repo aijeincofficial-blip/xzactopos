@@ -113,6 +113,41 @@ void main() {
       expect(text, contains('TOTAL'));
       expect(text, contains('Maraming Salamat!'));
     });
+
+    test('prints store address, custom receipt header, and custom receipt footer lines', () {
+      final brandedLabels = ReceiptLabels(
+        number: (no) => 'Receipt: $no',
+        subtotal: 'Subtotal',
+        discount: 'Discount',
+        total: 'TOTAL',
+        cashReceived: 'Cash Received',
+        ewallet: 'E-Wallet',
+        change: 'Change',
+        onUtang: 'Utang',
+        cancelled: 'Cancelled',
+        thanks: 'Default Thanks',
+        storeAddress: '123 Rizal St, Poblacion',
+        receiptHeader: 'TIN 123-456-789\nVAT REG',
+        receiptFooter: 'Salamat suki!\nKeep receipt for exchange.',
+      );
+
+      final bytes = encodeReceipt(
+        sale,
+        storeName: 'Nena Main Store',
+        currency: 'PHP',
+        locale: 'en',
+        labels: brandedLabels,
+      );
+
+      final text = latin1.decode(bytes);
+      expect(text, contains('Nena Main Store'));
+      expect(text, contains('123 Rizal St, Poblacion'));
+      expect(text, contains('TIN 123-456-789'));
+      expect(text, contains('VAT REG'));
+      expect(text, contains('Salamat suki!'));
+      expect(text, contains('Keep receipt for exchange.'));
+      expect(text, isNot(contains('Default Thanks')));
+    });
   });
 
   group('encodeShiftSlip', () {

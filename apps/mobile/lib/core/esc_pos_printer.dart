@@ -146,6 +146,19 @@ Uint8List encodeReceipt(
   enc.setTextSize();
   enc.setBold(false);
 
+  final address = labels.storeAddress?.trim();
+  if (address != null && address.isNotEmpty) {
+    for (final ln in address.split(RegExp(r'\r?\n'))) {
+      if (ln.trim().isNotEmpty) enc.line(ln.trim());
+    }
+  }
+  final header = labels.receiptHeader?.trim();
+  if (header != null && header.isNotEmpty) {
+    for (final ln in header.split(RegExp(r'\r?\n'))) {
+      if (ln.trim().isNotEmpty) enc.line(ln.trim());
+    }
+  }
+
   enc.line(labels.number(sale.displayNo));
   enc.line(DateFormat.yMMMd(locale).add_jm().format(sale.summary.soldAt));
   if (sale.summary.voided) {
@@ -201,7 +214,14 @@ Uint8List encodeReceipt(
 
   enc.divider();
   enc.setAlignCenter();
-  enc.line(labels.thanks);
+  final footer = labels.receiptFooter?.trim();
+  if (footer != null && footer.isNotEmpty) {
+    for (final ln in footer.split(RegExp(r'\r?\n'))) {
+      if (ln.trim().isNotEmpty) enc.line(ln.trim());
+    }
+  } else {
+    enc.line(labels.thanks);
+  }
   enc.feed(3);
   enc.cut();
 

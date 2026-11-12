@@ -21,7 +21,9 @@ export interface ReceiptData {
   tenantName: string;
   storeName: string;
   storeCode?: string;
-  storeAddress?: string;
+  storeAddress?: string | null;
+  receiptHeader?: string | null;
+  receiptFooter?: string | null;
   receiptNo: string;
   soldAt: string | Date;
   cashierName?: string;
@@ -55,7 +57,16 @@ export function ReceiptSlipView({ receipt }: { receipt: ReceiptData }) {
         <p className="text-xs text-slate-600">
           {receipt.storeName} {receipt.storeCode ? `(${receipt.storeCode})` : ""}
         </p>
-        {receipt.storeAddress ? <p className="text-[10px] text-slate-500">{receipt.storeAddress}</p> : null}
+        {receipt.storeAddress?.trim() ? (
+          <p className="text-[10px] text-slate-500 whitespace-pre-line" data-testid="receipt-store-address">
+            {receipt.storeAddress.trim()}
+          </p>
+        ) : null}
+        {receipt.receiptHeader?.trim() ? (
+          <p className="mt-1 text-[10px] text-slate-600 whitespace-pre-line" data-testid="receipt-custom-header">
+            {receipt.receiptHeader.trim()}
+          </p>
+        ) : null}
         {receipt.isVoided ? (
           <div className="my-1.5 inline-block rounded bg-red-100 text-red-800 px-2 py-0.5 text-[11px] font-bold tracking-wider">
             *** {t("sales.status.voided").toUpperCase()} ***
@@ -161,7 +172,13 @@ export function ReceiptSlipView({ receipt }: { receipt: ReceiptData }) {
 
       {/* Footer */}
       <div className="text-center pt-1 text-[10px] text-slate-500">
-        <p>{t("sell.thankYou") || "Thank you for your purchase!"}</p>
+        {receipt.receiptFooter?.trim() ? (
+          <p className="whitespace-pre-line text-slate-600" data-testid="receipt-custom-footer">
+            {receipt.receiptFooter.trim()}
+          </p>
+        ) : (
+          <p>{t("sell.thankYou") || "Thank you for your purchase!"}</p>
+        )}
       </div>
     </div>
   );

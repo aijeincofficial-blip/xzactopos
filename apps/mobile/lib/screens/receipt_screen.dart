@@ -29,11 +29,24 @@ class ReceiptScreen extends StatefulWidget {
   State<ReceiptScreen> createState() => _ReceiptScreenState();
 }
 
+class _ReceiptBranding {
+  const _ReceiptBranding({
+    this.storeName,
+    this.storeAddress,
+    this.receiptHeader,
+    this.receiptFooter,
+  });
+  final String? storeName;
+  final String? storeAddress;
+  final String? receiptHeader;
+  final String? receiptFooter;
+}
+
 class _ReceiptScreenState extends State<ReceiptScreen> {
   late Stream<SaleDetail?> _detail;
   late Stream<TodayTotals> _today;
   late Stream<List<StockRow>> _stock;
-  late Future<String?> _storeName;
+  late Future<_ReceiptBranding> _branding;
   bool _loaded = false;
   bool _autoPrinted = false;
 
@@ -46,7 +59,30 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
     _detail = store.watchSale(widget.saleId);
     _today = store.watchToday();
     _stock = store.watchStockList();
-    _storeName = store.meta('store_name');
+    _branding = () async {
+      final name = await store.meta('store_name');
+      final header = await store.meta('receipt_header');
+      final footer = await store.meta('receipt_footer');
+      final activeId = await store.activeStoreNow();
+      final stores = await store.myStores();
+      String? address;
+      if (activeId != null) {
+        for (final s in stores) {
+          if (s.id == activeId) {
+            address = s.address;
+            break;
+          }
+        }
+      } else if (stores.length == 1) {
+        address = stores.first.address;
+      }
+      return _ReceiptBranding(
+        storeName: name,
+        storeAddress: address,
+        receiptHeader: header,
+        receiptFooter: footer,
+      );
+    }();
 
     if (widget.justSold && activePrinterConfig.autoPrint && !_autoPrinted) {
       _autoPrinted = true;
@@ -129,7 +165,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
     }
   }
 
-  ReceiptLabels _labels(AppLocalizations t) => ReceiptLabels(
+  ReceiptLabels _labels(AppLocalizations t, _ReceiptBranding b) => ReceiptLabels(
     number: t.receiptNumber,
     subtotal: t.receiptSubtotal,
     discount: t.receiptDiscount,
@@ -141,6 +177,9 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
     onUtang: t.receiptOnUtang,
     cancelled: t.receiptCancelled,
     thanks: t.receiptThanks,
+    storeAddress: b.storeAddress,
+    receiptHeader: b.receiptHeader,
+    receiptFooter: b.receiptFooter,
   );
 
   Future<void> _output(SaleDetail d, {required bool share}) async {
@@ -149,8 +188,9 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
     final messenger = ScaffoldMessenger.of(context);
     final locale = Localizations.localeOf(context).languageCode;
     try {
-      final name = await _storeName ?? '';
-      final labels = _labels(t);
+      final b = await _branding;
+      final name = b.storeName ?? '';
+      final labels = _labels(t, b);
       if (share) {
         await receiptPrinter.share(
           d,
@@ -261,18 +301,52 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                                 _buildReceiptLogo(),
                                 const SizedBox(height: 6),
 
-                                // Store Name
-                                FutureBuilder<String?>(
-                                  future: _storeName,
-                                  builder: (_, n) => Text(
-                                    n.data ?? 'Tindahan Ni Rosa',
-                                    textAlign: TextAlign.center,
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: Color(0xFF1E293B),
-                                    ),
-                                  ),
+                                // Store Name + Address + Custom Receipt Header
+                                FutureBuilder<_ReceiptBranding>(
+                                  future: _branding,
+                                  builder: (_, snap) {
+                                    final b = snap.data;
+                                    final addr = b?.storeAddress?.trim();
+                                    final hdr = b?.receiptHeader?.trim();
+                                    return Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          b?.storeName ?? 'Tindahan Ni Rosa',
+                                          textAlign: TextAlign.center,
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600,
+                                            color: Color(0xFF1E293B),
+                                          ),
+                                        ),
+                                        if (addr != null && addr.isNotEmpty) ...[
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            addr,
+                                            key: const Key('receipt-store-address'),
+                                            textAlign: TextAlign.center,
+                                            style: const TextStyle(
+                                              fontSize: 11,
+                                              color: Color(0xFF64748B),
+                                            ),
+                                          ),
+                                        ],
+                                        if (hdr != null && hdr.isNotEmpty) ...[
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            hdr,
+                                            key: const Key('receipt-custom-header'),
+                                            textAlign: TextAlign.center,
+                                            style: const TextStyle(
+                                              fontSize: 11,
+                                              color: Color(0xFF475569),
+                                            ),
+                                          ),
+                                        ],
+                                      ],
+                                    );
+                                  },
                                 ),
                                 const SizedBox(height: 14),
 
@@ -472,14 +546,22 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                                     ),
                                   ),
                                 const SizedBox(height: 6),
-                                Text(
-                                  t.receiptThanks,
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    fontSize: 12.5,
-                                    fontWeight: FontWeight.w600,
-                                    color: Color(0xFF64748B),
-                                  ),
+                                FutureBuilder<_ReceiptBranding>(
+                                  future: _branding,
+                                  builder: (_, snap) {
+                                    final ftr = snap.data?.receiptFooter?.trim();
+                                    final hasCustom = ftr != null && ftr.isNotEmpty;
+                                    return Text(
+                                      hasCustom ? ftr : t.receiptThanks,
+                                      key: hasCustom ? const Key('receipt-custom-footer') : null,
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xFF64748B),
+                                      ),
+                                    );
+                                  },
                                 ),
                               ],
                             ),

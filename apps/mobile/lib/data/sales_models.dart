@@ -702,17 +702,26 @@ class ConversionView {
 
 /// One store the signed-in user may work at (F-01), from `get_my_access` locations of type `store`.
 class StoreRef {
-  const StoreRef({required this.id, required this.name});
+  const StoreRef({required this.id, required this.name, this.address});
   final String id;
   final String name;
+  final String? address;
 
-  Map<String, dynamic> toJson() => {'id': id, 'name': name};
-  factory StoreRef.fromJson(Map<String, dynamic> j) => StoreRef(id: j['id'] as String, name: (j['name'] as String?) ?? '');
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        if (address != null && address!.isNotEmpty) 'address': address,
+      };
+  factory StoreRef.fromJson(Map<String, dynamic> j) => StoreRef(
+        id: j['id'] as String,
+        name: (j['name'] as String?) ?? '',
+        address: (j['address'] as String?)?.trim().isNotEmpty == true ? (j['address'] as String).trim() : null,
+      );
 
   @override
-  bool operator ==(Object other) => other is StoreRef && other.id == id && other.name == name;
+  bool operator ==(Object other) => other is StoreRef && other.id == id && other.name == name && other.address == address;
   @override
-  int get hashCode => Object.hash(id, name);
+  int get hashCode => Object.hash(id, name, address);
   @override
   String toString() => 'StoreRef($id, $name)';
 }

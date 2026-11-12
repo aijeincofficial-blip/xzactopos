@@ -247,7 +247,7 @@ export function SellPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("tenant_settings")
-        .select("max_cashier_discount_percent, max_cashier_void_amount, cashier_can_void_own")
+        .select("max_cashier_discount_percent, max_cashier_void_amount, cashier_can_void_own, receipt_header, receipt_footer")
         .single();
       if (error) return null;
       return data;
@@ -556,6 +556,9 @@ export function SellPage() {
             tenantName: access.tenant.name,
             storeName: store.name,
             storeCode: store.code,
+            storeAddress: store.address ?? null,
+            receiptHeader: settingsQuery.data?.receipt_header ?? access.tenant.receipt_header ?? null,
+            receiptFooter: settingsQuery.data?.receipt_footer ?? access.tenant.receipt_footer ?? null,
             receiptNo: r.saleNo ?? r.localNo,
             soldAt: new Date(),
             cashierName: access.full_name || access.username,

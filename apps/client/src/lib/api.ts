@@ -55,8 +55,10 @@ export interface MyAccess extends MyAccessPayload {
     timezone: string;
     setup_completed: boolean;
     mode?: "solo" | "full";
+    receipt_header?: string | null;
+    receipt_footer?: string | null;
   };
-  locations: Array<MyAccessPayload["locations"][number] & { code: string; name: string }>;
+  locations: Array<MyAccessPayload["locations"][number] & { code: string; name: string; address?: string | null }>;
 }
 
 export const getMyAccess = () => rpc<MyAccess>("get_my_access");

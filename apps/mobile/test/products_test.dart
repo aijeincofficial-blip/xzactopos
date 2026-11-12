@@ -16,7 +16,7 @@ late FakeBackend backend;
 /// the 800x600 default (a wide screen) sets this to false first and it is restored afterwards.
 bool phoneSizedScreen = true;
 
-Future<DriftStore> openHome(WidgetTester tester) async {
+Future<DriftStore> openHome(WidgetTester tester, {Map<String, dynamic>? access}) async {
   if (phoneSizedScreen) {
     tester.view.physicalSize = const Size(1080, 2340);
     tester.view.devicePixelRatio = 2.625;
@@ -24,9 +24,10 @@ Future<DriftStore> openHome(WidgetTester tester) async {
   }
   final store = DriftStore(AppDatabase(NativeDatabase.memory()));
   backend = FakeBackend(signedInAtStart: true)
-    ..access = {
-      'tenant': {'id': 't1', 'name': 'Tindahan ni Nena', 'base_currency': 'PHP'},
-    };
+    ..access = access ??
+        {
+          'tenant': {'id': 't1', 'name': 'Tindahan ni Nena', 'base_currency': 'PHP'},
+        };
   await tester.pumpWidget(App(backend: backend, openStore: ({bool safeMode = false}) => store, initialLocale: 'en'));
   await tester.pumpAndSettle();
   return store;

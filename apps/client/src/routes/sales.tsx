@@ -137,7 +137,7 @@ export function SalesPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("tenant_settings")
-        .select("max_cashier_void_amount, cashier_can_void_own")
+        .select("max_cashier_void_amount, cashier_can_void_own, receipt_header, receipt_footer")
         .single();
       if (error) return null;
       return data;
@@ -629,8 +629,11 @@ export function SalesPage() {
             onClose={() => setShowReceiptModal(false)}
             receipt={{
               tenantName: access.tenant.name,
-              storeName: store?.name ?? "",
-              storeCode: store?.code ?? "",
+              storeName: (access.locations.find((l) => l.id === d.sale.location_id) ?? store)?.name ?? "",
+              storeCode: (access.locations.find((l) => l.id === d.sale.location_id) ?? store)?.code ?? "",
+              storeAddress: (access.locations.find((l) => l.id === d.sale.location_id) ?? store)?.address ?? null,
+              receiptHeader: settingsQuery.data?.receipt_header ?? access.tenant.receipt_header ?? null,
+              receiptFooter: settingsQuery.data?.receipt_footer ?? access.tenant.receipt_footer ?? null,
               receiptNo: d.sale.sale_no ?? d.sale.local_no,
               soldAt: d.sale.sold_at,
               cashierName: access.full_name || access.username,

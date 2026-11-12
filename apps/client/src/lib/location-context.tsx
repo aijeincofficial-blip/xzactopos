@@ -6,6 +6,7 @@ export interface ActiveLocation {
   type: "store" | "warehouse";
   code: string;
   name: string;
+  address?: string | null;
 }
 
 export interface LocationContextValue {

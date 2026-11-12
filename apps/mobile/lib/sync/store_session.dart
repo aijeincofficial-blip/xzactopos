@@ -14,7 +14,11 @@ typedef OpenStore = LocalStore Function({bool safeMode});
 List<StoreRef> storesOf(Map<String, dynamic> access) => [
       for (final l in ((access['locations'] as List?) ?? const []).whereType<Map>())
         if (l['type'] == 'store' && l['id'] is String)
-          StoreRef(id: l['id'] as String, name: (l['name'] as String?) ?? (l['code'] as String?) ?? ''),
+          StoreRef(
+            id: l['id'] as String,
+            name: (l['name'] as String?) ?? (l['code'] as String?) ?? '',
+            address: (l['address'] as String?)?.trim().isNotEmpty == true ? (l['address'] as String).trim() : null,
+          ),
     ];
 
 /// What a phone pulls for a signed-in role (F-13h). A warehouse clerk works in a warehouse, not a store: warehouse data and
@@ -92,6 +96,10 @@ class _StoreSessionState extends State<StoreSession> {
         stores: storesOf(widget.access),
         discardUnsent: _discardUnsent);
     await _store.setMeta('store_name', tenant['name'] as String?);
+    final header = (tenant['receipt_header'] as String?)?.trim();
+    final footer = (tenant['receipt_footer'] as String?)?.trim();
+    await _store.setMeta('receipt_header', header != null && header.isNotEmpty ? header : null);
+    await _store.setMeta('receipt_footer', footer != null && footer.isNotEmpty ? footer : null);
     _engine.start();
   }
 

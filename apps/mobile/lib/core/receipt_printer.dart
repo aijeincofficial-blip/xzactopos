@@ -22,6 +22,9 @@ class ReceiptLabels {
     required this.onUtang,
     required this.cancelled,
     required this.thanks,
+    this.storeAddress,
+    this.receiptHeader,
+    this.receiptFooter,
   });
 
   /// "Receipt no. {no}" with the number already filled in by [number(no)].
@@ -36,6 +39,9 @@ class ReceiptLabels {
   final String onUtang;
   final String cancelled;
   final String thanks;
+  final String? storeAddress;
+  final String? receiptHeader;
+  final String? receiptFooter;
 }
 
 /// Where a finished receipt goes besides the screen.
@@ -106,6 +112,10 @@ Future<Uint8List> buildReceiptPdf(
   final s = d.summary;
   final cash = d.payments.where((p) => p.method == 'cash').fold<int>(0, (a, p) => a + (p.tendered ?? p.amount));
   final ewallet = d.payments.where((p) => p.method == 'ewallet').fold<int>(0, (a, p) => a + p.amount);
+  final card = d.payments.where((p) => p.method == 'card').fold<int>(0, (a, p) => a + p.amount);
+  final address = labels.storeAddress?.trim();
+  final header = labels.receiptHeader?.trim();
+  final footer = labels.receiptFooter?.trim();
 
   pw.Widget row(String l, String r, {bool bold = false, double size = 8}) => pw.Padding(
         padding: const pw.EdgeInsets.symmetric(vertical: 1),
@@ -120,6 +130,12 @@ Future<Uint8List> buildReceiptPdf(
     pageFormat: receiptPageFormat,
     build: (_) => pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.stretch, children: [
       pw.Text(storeName, textAlign: pw.TextAlign.center, style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
+      if (address != null && address.isNotEmpty)
+        pw.Text(address, textAlign: pw.TextAlign.center, style: const pw.TextStyle(fontSize: 7.5)),
+      if (header != null && header.isNotEmpty) ...[
+        pw.SizedBox(height: 1.5),
+        pw.Text(header, textAlign: pw.TextAlign.center, style: const pw.TextStyle(fontSize: 7.5)),
+      ],
       pw.SizedBox(height: 2),
       pw.Text(labels.number(d.displayNo), textAlign: pw.TextAlign.center, style: const pw.TextStyle(fontSize: 8)),
       pw.Text(DateFormat.yMMMd(locale).add_jm().format(s.soldAt), textAlign: pw.TextAlign.center, style: const pw.TextStyle(fontSize: 8)),
@@ -133,10 +149,15 @@ Future<Uint8List> buildReceiptPdf(
       pw.SizedBox(height: 3),
       if (cash > 0) row(labels.cashReceived, money(cash)),
       if (ewallet > 0) row(labels.ewallet, money(ewallet)),
+      if (card > 0) row(labels.card, money(card)),
       if (d.change > 0) row(labels.change, money(d.change)),
       if (d.utang > 0) row(labels.onUtang, money(d.utang)),
       pw.SizedBox(height: 6),
-      pw.Text(labels.thanks, textAlign: pw.TextAlign.center, style: const pw.TextStyle(fontSize: 9)),
+      pw.Text(
+        footer != null && footer.isNotEmpty ? footer : labels.thanks,
+        textAlign: pw.TextAlign.center,
+        style: const pw.TextStyle(fontSize: 8.5),
+      ),
     ]),
   ));
   return doc.save();
