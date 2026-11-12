@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { ApiError } from "./api.ts";
 import {
   applyOptimisticStockDeltas,
+  describeQueuedPosOp,
   discardPosOp,
   enqueuePosOp,
   flushPosOutbox,
@@ -275,6 +276,19 @@ describe("pos-outbox", () => {
       price: 5300,
       fee: 300,
       pending: true,
+    });
+
+    expect(describeQueuedPosOp(ops[0]!)).toEqual({
+      primaryRef: "WAB-261112-0009",
+      amountMinor: 5500,
+    });
+    expect(describeQueuedPosOp(ops[1]!)).toEqual({
+      primaryRef: "cash",
+      amountMinor: 2000,
+    });
+    expect(describeQueuedPosOp(ops[3]!)).toEqual({
+      primaryRef: "LOAD",
+      amountMinor: 5000,
     });
   });
 });

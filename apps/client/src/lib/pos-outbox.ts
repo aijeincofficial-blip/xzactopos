@@ -431,6 +431,54 @@ export function pendingOptimisticServiceTxns(
   return out.sort((a, b) => b.txn_at.localeCompare(a.txn_at));
 }
 
+/** Extracts a concise summary (receipt #, customer name, or minor-unit amount) for Outbox Inspector display. */
+export function describeQueuedPosOp(op: QueuedPosOp): {
+  primaryRef: string | null;
+  amountMinor: number | null;
+} {
+  const p = op.payload;
+  switch (op.kind) {
+    case "record_sale": {
+      const localNo = typeof p.local_no === "string" ? p.local_no : null;
+      const payments = Array.isArray(p.payments) ? p.payments : [];
+      let sum = 0;
+      for (const item of payments) {
+        if (item && typeof item === "object") {
+          const amt = Number((item as Record<string, unknown>).amount);
+          if (Number.isFinite(amt) && amt > 0) sum += amt;
+        }
+      }
+      return { primaryRef: localNo, amountMinor: sum > 0 ? sum : null };
+    }
+    case "upsert_customer":
+      return {
+        primaryRef: typeof p.name === "string" ? p.name : null,
+        amountMinor: null,
+      };
+    case "record_utang_payment":
+      return {
+        primaryRef: typeof p.method === "string" ? p.method : null,
+        amountMinor: Number.isFinite(Number(p.amount)) ? Number(p.amount) : null,
+      };
+    case "record_expense":
+      return {
+        primaryRef: typeof p.category === "string" ? p.category : null,
+        amountMinor: Number.isFinite(Number(p.amount)) ? Number(p.amount) : null,
+      };
+    case "record_service_txn":
+      return {
+        primaryRef:
+          typeof p.wallet === "string" ? p.wallet.toUpperCase() : null,
+        amountMinor: Number.isFinite(Number(p.amount)) ? Number(p.amount) : null,
+      };
+    case "open_shift":
+      return {
+        primaryRef: null,
+        amountMinor: Number.isFinite(Number(p.opening_cash)) ? Number(p.opening_cash) : 0,
+      };
+  }
+}
+
 let inFlightFlush: Promise<{ synced: number; remaining: number; failed: number }> | null = null;
 
 async function defaultPushBatch(

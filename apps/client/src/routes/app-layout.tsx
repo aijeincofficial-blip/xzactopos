@@ -57,6 +57,7 @@ import { listStoreIncomingTransfers } from "../lib/transfers-api.ts";
 import { applyTheme, nextTheme, readTheme, type ThemeChoice } from "../lib/theme.ts";
 import { Badge, Button, Card, PageHeader } from "../components/ui.tsx";
 import { LanguageSelect } from "../components/LanguageSelect.tsx";
+import { SyncStatusPill } from "../components/sync-status-pill.tsx";
 import { useOnlineStatus } from "../lib/network.ts";
 
 type NavGroup = "daily" | "warehouseOps" | "stock" | "business";
@@ -558,14 +559,11 @@ export function AppLayout() {
             </div>
           ) : null}
 
-          {!isOnline ? (
-            <div data-testid="offline-badge">
-              <Badge tone="warn">
-                <WifiOff size={13} aria-hidden />
-                <span>{t("common:offline.badge")}</span>
-              </Badge>
-            </div>
-          ) : null}
+          <SyncStatusPill
+            tenantId={access.tenant.id}
+            currency={access.tenant.base_currency}
+            timezone={access.tenant.timezone}
+          />
 
           {/* Portal Switcher for Owners / Multi-Portal Roles */}
           {showNav && canSwitchPortal ? (
