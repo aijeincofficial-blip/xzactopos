@@ -2677,4 +2677,36 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get utangExportLedgerCsv => 'Export CSV';
+
+  @override
+  String get whStockFilterAll => 'All';
+
+  @override
+  String get whStockFilterLow => 'Low stock';
+
+  @override
+  String get whStockFilterOut => 'Out of stock';
+
+  @override
+  String get whStockFilterNegative => 'Below zero';
+
+  @override
+  String whStockBadgeLow(String point) {
+    return 'Reorder at $point';
+  }
+
+  @override
+  String get whStockBadgeOut => 'Out of stock';
+
+  @override
+  String get whStockBadgeNegative => 'Below zero';
+
+  @override
+  String get whStockScanBarcode => 'Scan barcode';
+
+  @override
+  String get whStockClearSearch => 'Clear search';
+
+  @override
+  String get whStockNoFiltered => 'No stock items match your filter.';
 }

@@ -2691,4 +2691,36 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get utangExportLedgerCsv => 'I-export sa CSV';
+
+  @override
+  String get whStockFilterAll => 'Lahat';
+
+  @override
+  String get whStockFilterLow => 'Paubos';
+
+  @override
+  String get whStockFilterOut => 'Ubos';
+
+  @override
+  String get whStockFilterNegative => 'Negatibo';
+
+  @override
+  String whStockBadgeLow(String point) {
+    return 'Mag-order sa $point';
+  }
+
+  @override
+  String get whStockBadgeOut => 'Ubos na';
+
+  @override
+  String get whStockBadgeNegative => 'Mas mababa sa zero';
+
+  @override
+  String get whStockScanBarcode => 'Mag-scan ng barcode';
+
+  @override
+  String get whStockClearSearch => 'Burahin ang hinahanap';
+
+  @override
+  String get whStockNoFiltered => 'Walang stock na tumugma sa filter.';
 }

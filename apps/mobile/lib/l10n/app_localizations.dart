@@ -4603,6 +4603,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Export CSV'**
   String get utangExportLedgerCsv;
+
+  /// No description provided for @whStockFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get whStockFilterAll;
+
+  /// No description provided for @whStockFilterLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Low stock'**
+  String get whStockFilterLow;
+
+  /// No description provided for @whStockFilterOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Out of stock'**
+  String get whStockFilterOut;
+
+  /// No description provided for @whStockFilterNegative.
+  ///
+  /// In en, this message translates to:
+  /// **'Below zero'**
+  String get whStockFilterNegative;
+
+  /// No description provided for @whStockBadgeLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Reorder at {point}'**
+  String whStockBadgeLow(String point);
+
+  /// No description provided for @whStockBadgeOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Out of stock'**
+  String get whStockBadgeOut;
+
+  /// No description provided for @whStockBadgeNegative.
+  ///
+  /// In en, this message translates to:
+  /// **'Below zero'**
+  String get whStockBadgeNegative;
+
+  /// No description provided for @whStockScanBarcode.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan barcode'**
+  String get whStockScanBarcode;
+
+  /// No description provided for @whStockClearSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get whStockClearSearch;
+
+  /// No description provided for @whStockNoFiltered.
+  ///
+  /// In en, this message translates to:
+  /// **'No stock items match your filter.'**
+  String get whStockNoFiltered;
 }
 
 class _AppLocalizationsDelegate

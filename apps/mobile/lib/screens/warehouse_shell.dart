@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../app.dart' show LanguageButton;
 import '../backend.dart';
+import '../core/camera_scanner.dart';
 import '../core/theme.dart';
 import '../core/ui.dart';
 import '../data/local_store.dart';
@@ -432,6 +433,8 @@ class _ReceiptTile extends StatelessWidget {
 // Stock
 // ---------------------------------------------------------------------------------------------------------------------
 
+enum WhStockFilter { all, low, out, negative }
+
 class StockTab extends StatefulWidget {
   const StockTab({super.key});
   @override
@@ -439,7 +442,49 @@ class StockTab extends StatefulWidget {
 }
 
 class _StockTabState extends State<StockTab> {
+  final _searchController = TextEditingController();
   String _query = '';
+  WhStockFilter _filter = WhStockFilter.all;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _scanBarcode(BuildContext context, LocalStore store) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final unknownMsg = AppLocalizations.of(context).whScanUnknown;
+    final code = await cameraScanner.scanOne(context);
+    if (code == null || !mounted) return;
+    final trimmed = code.trim();
+    if (trimmed.isEmpty) return;
+    final found = await store.findByBarcode(trimmed);
+    if (!mounted) return;
+    _searchController.text = trimmed;
+    setState(() => _query = trimmed);
+    if (found == null) {
+      messenger.showSnackBar(SnackBar(content: Text(unknownMsg)));
+    }
+  }
+
+  static bool _matchesSearch(ProductView? p, String q) {
+    if (q.isEmpty) return true;
+    final name = (p?.name ?? '').toLowerCase();
+    final sku = (p?.sku ?? '').toLowerCase();
+    final barcode = (p?.barcode ?? '').toLowerCase();
+    return name.contains(q) || sku.contains(q) || barcode.contains(q);
+  }
+
+  static bool _matchesHealth(WhStockRow r, ProductView? p, WhStockFilter filter) {
+    final reorder = p?.reorderPoint ?? 0;
+    return switch (filter) {
+      WhStockFilter.all => true,
+      WhStockFilter.low => r.qty > 0 && reorder > 0 && r.qty <= reorder,
+      WhStockFilter.out => r.qty == 0,
+      WhStockFilter.negative => r.qty < 0,
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -456,61 +501,210 @@ class _StockTabState extends State<StockTab> {
           builder: (context, psnap) => StreamBuilder<List<WhStockRow>>(
             stream: store.watchWarehouseStock(wh.id),
             builder: (context, ssnap) {
-              final names = {for (final p in psnap.data ?? const <ProductView>[]) p.variantId: p.name};
+              final products = psnap.data ?? const <ProductView>[];
+              final byVariant = {
+                for (final p in products) p.variantId: p,
+              };
+              final allRows = ssnap.data ?? const <WhStockRow>[];
+              final byStockVariant = {
+                for (final r in allRows) r.variantId: r,
+              };
+              final candidateRows = _filter == WhStockFilter.out
+                  ? <WhStockRow>[
+                      for (final r in allRows)
+                        if (r.qty == 0) r,
+                      for (final p in products)
+                        if (p.active &&
+                            p.trackStock &&
+                            p.sku != openAmountSku &&
+                            !byStockVariant.containsKey(p.variantId))
+                          WhStockRow(variantId: p.variantId, qty: 0, pending: 0),
+                    ]
+                  : allRows;
               final q = _query.trim().toLowerCase();
               final rows = [
-                for (final r in ssnap.data ?? const <WhStockRow>[])
-                  if (q.isEmpty || (names[r.variantId] ?? '').toLowerCase().contains(q)) r,
-              ]..sort((a, b) => (names[a.variantId] ?? '').compareTo(names[b.variantId] ?? ''));
+                for (final r in candidateRows)
+                  if (_matchesSearch(byVariant[r.variantId], q) &&
+                      _matchesHealth(r, byVariant[r.variantId], _filter))
+                    r,
+              ]..sort(
+                  (a, b) => (byVariant[a.variantId]?.name ?? '').compareTo(
+                    byVariant[b.variantId]?.name ?? '',
+                  ),
+                );
+
+              final suffixButtons = <Widget>[
+                if (_query.isNotEmpty)
+                  IconButton(
+                    key: const Key('stock-clear-search'),
+                    tooltip: t.whStockClearSearch,
+                    icon: const Icon(Icons.close_rounded, size: 18),
+                    onPressed: () {
+                      _searchController.clear();
+                      setState(() => _query = '');
+                    },
+                  ),
+                if (cameraScanner.available)
+                  IconButton(
+                    key: const Key('stock-scan-barcode'),
+                    tooltip: t.whStockScanBarcode,
+                    icon: const Icon(Icons.qr_code_scanner_rounded, size: 20),
+                    onPressed: () => _scanBarcode(context, store),
+                  ),
+              ];
+
               return Column(children: [
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(Gap.l, Gap.m, Gap.l, Gap.s),
+                  padding: const EdgeInsets.fromLTRB(Gap.l, Gap.m, Gap.l, Gap.xs),
                   child: TextField(
                     key: const Key('stock-search'),
-                    decoration: InputDecoration(prefixIcon: const Icon(Icons.search_rounded), hintText: t.whSearchStock),
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      prefixIcon: const Icon(Icons.search_rounded),
+                      hintText: t.whSearchStock,
+                      suffixIcon: suffixButtons.isEmpty
+                          ? null
+                          : Row(mainAxisSize: MainAxisSize.min, children: suffixButtons),
+                    ),
                     onChanged: (v) => setState(() => _query = v),
+                  ),
+                ),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(Gap.l, 0, Gap.l, Gap.s),
+                    child: Wrap(
+                      spacing: Gap.xs,
+                      runSpacing: Gap.xs,
+                      children: [
+                        for (final entry in <(WhStockFilter, String, String)>[
+                          (WhStockFilter.all, 'stock-filter-all', t.whStockFilterAll),
+                          (WhStockFilter.low, 'stock-filter-low', t.whStockFilterLow),
+                          (WhStockFilter.out, 'stock-filter-out', t.whStockFilterOut),
+                          (WhStockFilter.negative, 'stock-filter-negative', t.whStockFilterNegative),
+                        ])
+                          AppPillChip(
+                            key: Key(entry.$2),
+                            label: entry.$3,
+                            height: 32,
+                            selected: _filter == entry.$1,
+                            onTap: () => setState(() => _filter = entry.$1),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
                 Expanded(
                   child: rows.isEmpty
-                      ? _Empty(text: t.whNoStock, textKey: const Key('no-stock'))
+                      ? _Empty(
+                          text: allRows.isEmpty ? t.whNoStock : t.whStockNoFiltered,
+                          textKey: const Key('no-stock'),
+                        )
                       : ListView(
                           padding: const EdgeInsets.fromLTRB(Gap.l, Gap.xs, Gap.l, Gap.xxl),
                           children: [
                             for (final r in rows)
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: Gap.s),
-                                child: AppCard(
-                                  key: Key('stock-${r.variantId}'),
-                                  padding: const EdgeInsets.symmetric(horizontal: Gap.m, vertical: Gap.s + 2),
-                                  onTap: wh.binsEnabled ? () => _showBins(context, store, wh, r.variantId, names[r.variantId] ?? t.whUnknownProduct) : null,
-                                  child: Row(children: [
-                                    CoinBadge(icon: Icons.inventory_2_rounded, color: scheme.primary, size: 36),
-                                    const SizedBox(width: Gap.m),
-                                    Expanded(
-                                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                        Text(names[r.variantId] ?? t.whUnknownProduct, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
-                                        if (r.pending > 0)
-                                          Padding(
-                                            padding: const EdgeInsets.only(top: 2),
-                                            child: Text(t.whStockPending(_qty(r.pending)), style: TextStyle(fontSize: 12, color: scheme.tertiary, fontWeight: FontWeight.w600)),
-                                          ),
-                                      ]),
-                                    ),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color: scheme.primaryContainer,
-                                        borderRadius: BorderRadius.circular(999),
+                              Builder(builder: (context) {
+                                final p = byVariant[r.variantId];
+                                final name = p?.name ?? t.whUnknownProduct;
+                                final reorder = p?.reorderPoint ?? 0;
+                                final isNeg = r.qty < 0;
+                                final isOut = r.qty == 0;
+                                final isLow = r.qty > 0 && reorder > 0 && r.qty <= reorder;
+                                final metaParts = <String>[
+                                  if (p != null && p.sku.isNotEmpty) p.sku,
+                                  if (p?.barcode != null && p!.barcode!.isNotEmpty) p.barcode!,
+                                ];
+                                final pillBg = (isNeg || isOut)
+                                    ? scheme.errorContainer
+                                    : isLow
+                                        ? Colors.orange.shade100
+                                        : scheme.primaryContainer;
+                                final pillFg = (isNeg || isOut)
+                                    ? scheme.onErrorContainer
+                                    : isLow
+                                        ? Colors.orange.shade900
+                                        : scheme.onPrimaryContainer;
+
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: Gap.s),
+                                  child: AppCard(
+                                    key: Key('stock-${r.variantId}'),
+                                    padding: const EdgeInsets.symmetric(horizontal: Gap.m, vertical: Gap.s + 2),
+                                    onTap: wh.binsEnabled ? () => _showBins(context, store, wh, r.variantId, name) : null,
+                                    child: Row(children: [
+                                      CoinBadge(
+                                        icon: Icons.inventory_2_rounded,
+                                        color: (isNeg || isOut)
+                                            ? scheme.error
+                                            : isLow
+                                                ? Colors.orange.shade800
+                                                : scheme.primary,
+                                        size: 36,
                                       ),
-                                      child: Text(
-                                        _qty(r.qty),
-                                        style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: scheme.onPrimaryContainer),
+                                      const SizedBox(width: Gap.m),
+                                      Expanded(
+                                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                          Text(name, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+                                          if (metaParts.isNotEmpty)
+                                            Padding(
+                                              padding: const EdgeInsets.only(top: 1),
+                                              child: Text(
+                                                metaParts.join(' · '),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: TextStyle(fontSize: 11, color: scheme.outline),
+                                              ),
+                                            ),
+                                          if (isNeg)
+                                            Padding(
+                                              padding: const EdgeInsets.only(top: 2),
+                                              child: Text(
+                                                t.whStockBadgeNegative,
+                                                key: Key('stock-badge-negative-${r.variantId}'),
+                                                style: TextStyle(fontSize: 11, color: scheme.error, fontWeight: FontWeight.w700),
+                                              ),
+                                            )
+                                          else if (isOut)
+                                            Padding(
+                                              padding: const EdgeInsets.only(top: 2),
+                                              child: Text(
+                                                t.whStockBadgeOut,
+                                                key: Key('stock-badge-out-${r.variantId}'),
+                                                style: TextStyle(fontSize: 11, color: scheme.error, fontWeight: FontWeight.w700),
+                                              ),
+                                            )
+                                          else if (isLow)
+                                            Padding(
+                                              padding: const EdgeInsets.only(top: 2),
+                                              child: Text(
+                                                t.whStockBadgeLow(_qty(reorder)),
+                                                key: Key('stock-badge-low-${r.variantId}'),
+                                                style: TextStyle(fontSize: 11, color: Colors.orange.shade800, fontWeight: FontWeight.w700),
+                                              ),
+                                            ),
+                                          if (r.pending > 0)
+                                            Padding(
+                                              padding: const EdgeInsets.only(top: 2),
+                                              child: Text(t.whStockPending(_qty(r.pending)), style: TextStyle(fontSize: 12, color: scheme.tertiary, fontWeight: FontWeight.w600)),
+                                            ),
+                                        ]),
                                       ),
-                                    ),
-                                  ]),
-                                ),
-                              ),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: pillBg,
+                                          borderRadius: BorderRadius.circular(999),
+                                        ),
+                                        child: Text(
+                                          _qty(r.qty),
+                                          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: pillFg),
+                                        ),
+                                      ),
+                                    ]),
+                                  ),
+                                );
+                              }),
                           ],
                         ),
                 ),

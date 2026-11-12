@@ -1515,5 +1515,22 @@
   "terminalNameLabel": "Terminal name",
   "terminalNameHint": "e.g. Counter 2 Phone",
   "terminalNameSaved": "Terminal name saved",
-  "utangExportLedgerCsv": "Export CSV"
+  "utangExportLedgerCsv": "Export CSV",
+  "whStockFilterAll": "All",
+  "whStockFilterLow": "Low stock",
+  "whStockFilterOut": "Out of stock",
+  "whStockFilterNegative": "Below zero",
+  "whStockBadgeLow": "Reorder at {point}",
+  "@whStockBadgeLow": {
+    "placeholders": {
+      "point": {
+        "type": "String"
+      }
+    }
+  },
+  "whStockBadgeOut": "Out of stock",
+  "whStockBadgeNegative": "Below zero",
+  "whStockScanBarcode": "Scan barcode",
+  "whStockClearSearch": "Clear search",
+  "whStockNoFiltered": "No stock items match your filter."
 }

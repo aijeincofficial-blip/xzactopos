@@ -3,11 +3,14 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:xzactopos_mobile/app.dart';
+import 'package:xzactopos_mobile/core/camera_scanner.dart';
 import 'package:xzactopos_mobile/data/db.dart';
 import 'package:xzactopos_mobile/data/drift_store.dart';
 import 'package:xzactopos_mobile/data/local_store.dart' show ProductDraft;
 import 'package:xzactopos_mobile/data/warehouse_models.dart';
 
+import 'camera_scan_test.dart' show FakeCamera;
+import 'flutter_test_config.dart' show NoCamera;
 import 'widget_test.dart' show FakeBackend;
 
 const _w1 = 'w1000000-0000-4000-8000-000000000001';
@@ -285,6 +288,117 @@ void main() {
       await tab(tester, k);
     }
     expect(tester.takeException(), isNull);
+    await leave(tester);
+  });
+
+  testWidgets('stock tab searches by SKU and barcode, scans via camera, and filters by stock health', (tester) async {
+    addTearDown(() => cameraScanner = const NoCamera());
+    cameraScanner = FakeCamera(one: '4800099112233');
+
+    const pLow = 'c3000000-0000-4000-8000-000000000003';
+    const vLow = 'v3000000-0000-4000-8000-000000000003';
+    const pOut = 'c4000000-0000-4000-8000-000000000004';
+    const vOut = 'v4000000-0000-4000-8000-000000000004';
+    const pNeg = 'c5000000-0000-4000-8000-000000000005';
+    const vNeg = 'v5000000-0000-4000-8000-000000000005';
+
+    await open(
+      tester,
+      before: (store) async {
+        await store.saveProduct(
+          const ProductDraft(
+            id: pLow,
+            variantId: vLow,
+            name: 'Soy Sauce 1L',
+            sku: 'SOY-1L',
+            barcode: '4800099112233',
+            price: 6500,
+            reorderPoint: 12,
+          ),
+          opId: 'op-low',
+        );
+        await store.saveProduct(
+          const ProductDraft(
+            id: pOut,
+            variantId: vOut,
+            name: 'Vinegar 1L',
+            sku: 'VIN-1L',
+            price: 5000,
+            reorderPoint: 10,
+          ),
+          opId: 'op-out',
+        );
+        await store.saveProduct(
+          const ProductDraft(
+            id: pNeg,
+            variantId: vNeg,
+            name: 'Brown Sugar 1kg',
+            sku: 'SUG-1KG',
+            price: 8500,
+          ),
+          opId: 'op-neg',
+        );
+        await store.applyPullWarehouse(
+          _pull(
+            warehouses: [_wh(_w1, 'W1')],
+            stock: [
+              _stock(_w1, _rice, 40),
+              _stock(_w1, vLow, 5),
+              _stock(_w1, vOut, 0),
+              _stock(_w1, vNeg, -3),
+            ],
+          ),
+        );
+      },
+    );
+
+    await tab(tester, 'tab-stock');
+
+    // Badges appear on active warehouse rows (low and negative); zero-qty rows appear under Out of stock
+    expect(find.byKey(const Key('stock-badge-low-$vLow')), findsOneWidget);
+    expect(find.byKey(const Key('stock-badge-negative-$vNeg')), findsOneWidget);
+    expect(find.byKey(const Key('stock-$vOut')), findsNothing);
+
+    // Filter by Low stock
+    await tester.tap(find.byKey(const Key('stock-filter-low')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('stock-$vLow')), findsOneWidget);
+    expect(find.byKey(const Key('stock-$_rice')), findsNothing);
+    expect(find.byKey(const Key('stock-$vOut')), findsNothing);
+    expect(find.byKey(const Key('stock-$vNeg')), findsNothing);
+
+    // Filter by Out of stock
+    await tester.tap(find.byKey(const Key('stock-filter-out')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('stock-$vOut')), findsOneWidget);
+    expect(find.byKey(const Key('stock-badge-out-$vOut')), findsOneWidget);
+    expect(find.byKey(const Key('stock-$vLow')), findsNothing);
+    expect(find.byKey(const Key('stock-$vNeg')), findsNothing);
+
+    // Filter by Below zero
+    await tester.tap(find.byKey(const Key('stock-filter-negative')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('stock-$vNeg')), findsOneWidget);
+    expect(find.byKey(const Key('stock-$vOut')), findsNothing);
+
+    // Back to All, search by SKU
+    await tester.tap(find.byKey(const Key('stock-filter-all')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('stock-search')), 'SUG-1KG');
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('stock-$vNeg')), findsOneWidget);
+    expect(find.byKey(const Key('stock-$_rice')), findsNothing);
+
+    // Clear search, then scan barcode via camera button
+    await tester.tap(find.byKey(const Key('stock-clear-search')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('stock-$_rice')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('stock-scan-barcode')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('stock-$vLow')), findsOneWidget);
+    expect(find.byKey(const Key('stock-$_rice')), findsNothing);
+
     await leave(tester);
   });
 }

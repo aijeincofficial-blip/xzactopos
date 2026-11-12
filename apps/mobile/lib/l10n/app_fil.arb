@@ -1515,5 +1515,22 @@
   "terminalNameLabel": "Pangalan ng terminal",
   "terminalNameHint": "hal. Kaha 2 Telepono",
   "terminalNameSaved": "Na-save ang pangalan ng terminal",
-  "utangExportLedgerCsv": "I-export sa CSV"
+  "utangExportLedgerCsv": "I-export sa CSV",
+  "whStockFilterAll": "Lahat",
+  "whStockFilterLow": "Paubos",
+  "whStockFilterOut": "Ubos",
+  "whStockFilterNegative": "Negatibo",
+  "whStockBadgeLow": "Mag-order sa {point}",
+  "@whStockBadgeLow": {
+    "placeholders": {
+      "point": {
+        "type": "String"
+      }
+    }
+  },
+  "whStockBadgeOut": "Ubos na",
+  "whStockBadgeNegative": "Mas mababa sa zero",
+  "whStockScanBarcode": "Mag-scan ng barcode",
+  "whStockClearSearch": "Burahin ang hinahanap",
+  "whStockNoFiltered": "Walang stock na tumugma sa filter."
 }
