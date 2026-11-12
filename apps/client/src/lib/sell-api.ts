@@ -122,6 +122,7 @@ export async function fetchSellables(currency: string): Promise<Sellable[]> {
 // ---------------------------------------------------------------------------
 
 const DEVICE_KEY = "pos.deviceId";
+const DEVICE_NAME_KEY = "pos.deviceName";
 const CODE_KEY = "pos.deviceCode";
 const SEQ_KEY = "pos.receiptSeq";
 const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -131,6 +132,22 @@ function store(): Storage | null {
     return localStorage;
   } catch {
     return null;
+  }
+}
+
+export function getStoredWebDeviceName(): string | null {
+  const raw = store()?.getItem(DEVICE_NAME_KEY)?.trim();
+  return raw ? raw : null;
+}
+
+export function setStoredWebDeviceName(name: string | null): void {
+  const s = store();
+  if (!s) return;
+  const trimmed = name?.trim() ?? "";
+  if (trimmed) {
+    s.setItem(DEVICE_NAME_KEY, trimmed);
+  } else {
+    s.removeItem(DEVICE_NAME_KEY);
   }
 }
 
@@ -153,7 +170,11 @@ export function webDevice(): { id: string; code: string } {
 /** Best effort: the server also registers an unknown device on the first sale, so a failure is harmless. */
 export async function registerWebDevice(): Promise<void> {
   try {
-    await rpc("register_device", { p_id: webDevice().id, p_name: "Web browser", p_platform: "web" });
+    await rpc("register_device", {
+      p_id: webDevice().id,
+      p_name: getStoredWebDeviceName(),
+      p_platform: "web",
+    });
   } catch {
     /* the sale registers it on the spot */
   }

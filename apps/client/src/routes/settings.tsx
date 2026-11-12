@@ -4,9 +4,19 @@ import { Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchTenantSettings, updateTenantSettings } from "../lib/settings-api.ts";
 import { fieldErrors, tenantSettingsSchema } from "../lib/schemas.ts";
-import { accessQuery } from "../lib/session.tsx";
+import { accessQuery, useSession } from "../lib/session.tsx";
 import { useErrorMessage, useValidationMessage } from "../lib/i18n-helpers.ts";
 import { Alert, Badge, Button, Card, Dialog, ErrorState, Field, Input, PageHeader, Select, Table, useToast } from "../components/ui.tsx";
+import {
+  fetchTenantDevices,
+  filterDevices,
+  renameDevice,
+  setDeviceRetired,
+  shortDeviceId,
+  summarizeDevices,
+  type DeviceRow,
+} from "../lib/devices-api.ts";
+import { registerWebDevice, webDevice } from "../lib/sell-api.ts";
 import {
   fetchStorageMetrics,
   runArchiveMaintenance,
@@ -32,10 +42,12 @@ function timezones(): string[] {
 
 export function SettingsPage() {
   const { t } = useTranslation(["admin", "common"]);
+  const { access } = useSession();
   const qc = useQueryClient();
   const errMsg = useErrorMessage();
   const vm = useValidationMessage();
   const toast = useToast();
+  const currentBrowserId = useMemo(() => webDevice().id, []);
 
   const q = useQuery({
     queryKey: ["tenant-settings"],
@@ -64,6 +76,67 @@ export function SettingsPage() {
   // Currency & FX Rate states
   const [currencyDialogOpen, setCurrencyDialogOpen] = useState(false);
   const [editingCurrency, setEditingCurrency] = useState<TenantCurrency | null>(null);
+
+  // Registered POS Terminals & Devices states
+  const [deviceSearch, setDeviceSearch] = useState("");
+  const [showRetiredDevices, setShowRetiredDevices] = useState(false);
+  const [renamingDeviceId, setRenamingDeviceId] = useState<string | null>(null);
+  const [deviceNameDraft, setDeviceNameDraft] = useState("");
+
+  const devicesQuery = useQuery({
+    queryKey: ["tenant-devices"],
+    queryFn: fetchTenantDevices,
+  });
+
+  const registerCurrentBrowserMut = useMutation({
+    mutationFn: async () => {
+      await registerWebDevice();
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["tenant-devices"] }),
+        qc.invalidateQueries({ queryKey: ["tenant-settings"] }),
+      ]);
+      toast.good(t("settings.devicesRegisteredToast"));
+    },
+    onError: (e) => {
+      toast.error(errMsg(e));
+    },
+  });
+
+  const renameDeviceMut = useMutation({
+    mutationFn: async ({ id, nextName }: { id: string; nextName: string }) => {
+      await renameDevice(id, nextName);
+    },
+    onSuccess: async () => {
+      setRenamingDeviceId(null);
+      setDeviceNameDraft("");
+      await qc.invalidateQueries({ queryKey: ["tenant-devices"] });
+      toast.good(t("settings.devicesRenamedToast"));
+    },
+    onError: (e) => {
+      toast.error(errMsg(e));
+    },
+  });
+
+  const toggleRetireDeviceMut = useMutation({
+    mutationFn: async ({ id, retired }: { id: string; retired: boolean }) => {
+      await setDeviceRetired(id, retired);
+      return retired;
+    },
+    onSuccess: async (retired) => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["tenant-devices"] }),
+        qc.invalidateQueries({ queryKey: ["tenant-settings"] }),
+      ]);
+      toast.good(
+        retired ? t("settings.devicesRetiredToast") : t("settings.devicesRestoredToast"),
+      );
+    },
+    onError: (e) => {
+      toast.error(errMsg(e));
+    },
+  });
 
   const refCurrenciesQuery = useQuery({
     queryKey: ["reference-currencies"],
@@ -560,6 +633,37 @@ export function SettingsPage() {
           </div>
         </Card>
 
+        {/* Registered POS Terminals & Devices (F-02) */}
+        <RegisteredDevicesCard
+          devices={devicesQuery.data ?? []}
+          isLoading={devicesQuery.isPending}
+          maxDevices={d.limits.max_devices}
+          currentBrowserId={currentBrowserId}
+          currentUserId={access.user_id}
+          isSuperadmin={access.role === "superadmin"}
+          search={deviceSearch}
+          onSearchChange={setDeviceSearch}
+          showRetired={showRetiredDevices}
+          onShowRetiredChange={setShowRetiredDevices}
+          renamingId={renamingDeviceId}
+          nameDraft={deviceNameDraft}
+          onStartRename={(dev) => {
+            setRenamingDeviceId(dev.id);
+            setDeviceNameDraft(dev.name ?? "");
+          }}
+          onCancelRename={() => {
+            setRenamingDeviceId(null);
+            setDeviceNameDraft("");
+          }}
+          onNameDraftChange={setDeviceNameDraft}
+          onSaveRename={(id) => renameDeviceMut.mutate({ id, nextName: deviceNameDraft })}
+          isSavingRename={renameDeviceMut.isPending}
+          onToggleRetire={(id, retired) => toggleRetireDeviceMut.mutate({ id, retired })}
+          isTogglingRetire={toggleRetireDeviceMut.isPending}
+          onRegisterThisBrowser={() => registerCurrentBrowserMut.mutate()}
+          isRegisteringBrowser={registerCurrentBrowserMut.isPending}
+        />
+
         {/* Free-Tier Storage & Maintenance Card */}
         {storageQuery.data ? (
           <Card className="grid gap-4">
@@ -862,5 +966,314 @@ function CurrencyRateDialog({
         </div>
       </div>
     </Dialog>
+  );
+}
+
+function RegisteredDevicesCard({
+  devices,
+  isLoading,
+  maxDevices,
+  currentBrowserId,
+  currentUserId,
+  isSuperadmin,
+  search,
+  onSearchChange,
+  showRetired,
+  onShowRetiredChange,
+  renamingId,
+  nameDraft,
+  onStartRename,
+  onCancelRename,
+  onNameDraftChange,
+  onSaveRename,
+  isSavingRename,
+  onToggleRetire,
+  isTogglingRetire,
+  onRegisterThisBrowser,
+  isRegisteringBrowser,
+}: {
+  devices: DeviceRow[];
+  isLoading: boolean;
+  maxDevices: number;
+  currentBrowserId: string;
+  currentUserId: string;
+  isSuperadmin: boolean;
+  search: string;
+  onSearchChange: (v: string) => void;
+  showRetired: boolean;
+  onShowRetiredChange: (v: boolean) => void;
+  renamingId: string | null;
+  nameDraft: string;
+  onStartRename: (dev: DeviceRow) => void;
+  onCancelRename: () => void;
+  onNameDraftChange: (v: string) => void;
+  onSaveRename: (id: string) => void;
+  isSavingRename: boolean;
+  onToggleRetire: (id: string, retired: boolean) => void;
+  isTogglingRetire: boolean;
+  onRegisterThisBrowser: () => void;
+  isRegisteringBrowser: boolean;
+}) {
+  const { t } = useTranslation(["admin", "common"]);
+
+  const summary = useMemo(
+    () => summarizeDevices(devices, maxDevices),
+    [devices, maxDevices],
+  );
+  const visible = useMemo(
+    () =>
+      filterDevices(devices, {
+        search,
+        showRetired,
+        currentDeviceId: currentBrowserId,
+      }),
+    [devices, search, showRetired, currentBrowserId],
+  );
+  const currentRegistered = useMemo(
+    () => devices.some((d) => d.id === currentBrowserId && !d.deleted_at),
+    [devices, currentBrowserId],
+  );
+
+  function defaultTerminalLabel(platform: string | null): string {
+    const p = (platform ?? "").toLowerCase();
+    if (p === "android") return t("settings.devicesDefaultAndroid");
+    if (p === "ios") return t("settings.devicesDefaultIos");
+    if (p === "web") return t("settings.devicesDefaultWeb");
+    return t("settings.devicesDefaultTerminal");
+  }
+
+  return (
+    <Card className="grid gap-4" data-testid="registered-devices-card">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-semibold">{t("settings.devicesSection")}</h2>
+          <p className="text-xs text-slate-500">{t("settings.devicesDesc")}</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge tone={summary.atLimit ? "danger" : summary.nearLimit ? "warn" : "good"}>
+            {t("settings.devicesQuotaBadge", {
+              active: summary.activeCount,
+              max: summary.maxDevices,
+            })}
+          </Badge>
+          {summary.retiredCount > 0 ? (
+            <Badge tone="neutral">
+              {t("settings.devicesRetiredCount", { count: summary.retiredCount })}
+            </Badge>
+          ) : null}
+          {!currentRegistered ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              data-testid="register-this-browser-btn"
+              disabled={isRegisteringBrowser}
+              onClick={onRegisterThisBrowser}
+            >
+              {t("settings.devicesRegisterBrowser")}
+            </Button>
+          ) : null}
+        </div>
+      </div>
+
+      {/* Quota bar */}
+      <div className="grid gap-1.5">
+        <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
+          <div
+            className={`h-full transition-all ${
+              summary.atLimit
+                ? "bg-rose-500"
+                : summary.nearLimit
+                  ? "bg-amber-500"
+                  : "bg-brand-600"
+            }`}
+            style={{ width: `${summary.percentUsed}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Search & retired filter */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="w-full sm:max-w-xs">
+          <Input
+            data-testid="devices-search"
+            value={search}
+            onChange={(e) => onSearchChange(e.target.value)}
+            placeholder={t("settings.devicesSearchPlaceholder")}
+          />
+        </div>
+        {summary.retiredCount > 0 || showRetired ? (
+          <label className="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer">
+            <input
+              type="checkbox"
+              data-testid="devices-show-retired"
+              checked={showRetired}
+              onChange={(e) => onShowRetiredChange(e.target.checked)}
+              className="h-4 w-4 rounded border-slate-300 text-slate-900"
+            />
+            <span>{t("settings.devicesShowRetired")}</span>
+          </label>
+        ) : null}
+      </div>
+
+      {isLoading ? (
+        <p className="text-xs text-slate-500">{t("settings.loading")}</p>
+      ) : visible.length === 0 ? (
+        <p className="text-sm text-slate-500 italic" data-testid="devices-empty">
+          {devices.length === 0
+            ? t("settings.devicesEmpty")
+            : t("settings.devicesNoMatches")}
+        </p>
+      ) : (
+        <div className="overflow-x-auto rounded-lg border border-slate-200">
+          <Table bare>
+            <thead className="bg-slate-50 text-xs text-slate-500 uppercase">
+              <tr>
+                <th className="p-2.5 text-left">{t("settings.devicesColTerminal")}</th>
+                <th className="p-2.5 text-left">{t("settings.devicesColPlatform")}</th>
+                <th className="p-2.5 text-left">{t("settings.devicesColOwner")}</th>
+                <th className="p-2.5 text-left">{t("settings.devicesColLastSeen")}</th>
+                <th className="p-2.5 text-center">{t("settings.currencyStatus")}</th>
+                <th className="p-2.5 text-right">{t("settings.currencyActions")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {visible.map((dev) => {
+                const isRetired = Boolean(dev.deleted_at);
+                const isThisBrowser = dev.id === currentBrowserId;
+                const canUpdate = isSuperadmin || dev.user_id === currentUserId;
+                const canRetire = isSuperadmin;
+                const isRenaming = renamingId === dev.id;
+                const ownerLabel =
+                  dev.owner_name ||
+                  dev.owner_username ||
+                  (dev.user_id ? `#${shortDeviceId(dev.user_id)}` : "—");
+
+                return (
+                  <tr
+                    key={dev.id}
+                    data-testid={`device-row-${dev.id}`}
+                    className={`border-t border-slate-100 text-sm ${
+                      isRetired ? "opacity-60 bg-slate-50/40" : ""
+                    }`}
+                  >
+                    <td className="p-2.5">
+                      {isRenaming ? (
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <Input
+                            data-testid="device-name-input"
+                            value={nameDraft}
+                            maxLength={60}
+                            placeholder={defaultTerminalLabel(dev.platform)}
+                            onChange={(e) => onNameDraftChange(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                onSaveRename(dev.id);
+                              } else if (e.key === "Escape") {
+                                e.preventDefault();
+                                onCancelRename();
+                              }
+                            }}
+                            className="h-8 max-w-52 text-xs"
+                          />
+                          <Button
+                            type="button"
+                            size="sm"
+                            data-testid="save-device-name-btn"
+                            disabled={isSavingRename}
+                            onClick={() => onSaveRename(dev.id)}
+                          >
+                            {t("common:actions.save")}
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            onClick={onCancelRename}
+                          >
+                            {t("common:actions.cancel")}
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-semibold text-slate-900">
+                            {dev.name || defaultTerminalLabel(dev.platform)}
+                          </span>
+                          {isThisBrowser ? (
+                            <Badge tone="good" data-testid="device-this-browser">
+                              {t("settings.devicesThisBrowser")}
+                            </Badge>
+                          ) : null}
+                          <span className="font-mono text-xs text-slate-400">
+                            #{shortDeviceId(dev.id)}
+                          </span>
+                        </div>
+                      )}
+                    </td>
+                    <td className="p-2.5">
+                      <Badge tone="neutral">
+                        {(dev.platform ?? "pos").toUpperCase()}
+                      </Badge>
+                    </td>
+                    <td className="p-2.5 text-slate-700">{ownerLabel}</td>
+                    <td className="p-2.5 font-mono text-xs text-slate-500">
+                      {dev.last_seen_at.slice(0, 10)} {dev.last_seen_at.slice(11, 16)}
+                    </td>
+                    <td className="p-2.5 text-center">
+                      <Badge tone={isRetired ? "warn" : "good"}>
+                        {isRetired
+                          ? t("settings.devicesStatusRetired")
+                          : t("settings.status.active")}
+                      </Badge>
+                    </td>
+                    <td className="p-2.5 text-right">
+                      <div className="inline-flex items-center gap-1.5">
+                        {canUpdate && !isRenaming ? (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            data-testid={`rename-device-${dev.id}`}
+                            onClick={() => onStartRename(dev)}
+                          >
+                            {t("settings.devicesRename")}
+                          </Button>
+                        ) : null}
+                        {canRetire && !isRenaming ? (
+                          isRetired ? (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              data-testid={`restore-device-${dev.id}`}
+                              disabled={isTogglingRetire}
+                              onClick={() => onToggleRetire(dev.id, false)}
+                            >
+                              {t("settings.devicesRestore")}
+                            </Button>
+                          ) : (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              data-testid={`retire-device-${dev.id}`}
+                              disabled={isTogglingRetire}
+                              onClick={() => onToggleRetire(dev.id, true)}
+                            >
+                              {t("settings.devicesRetire")}
+                            </Button>
+                          )
+                        ) : null}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </Table>
+        </div>
+      )}
+    </Card>
   );
 }

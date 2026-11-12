@@ -43,7 +43,7 @@ export async function fetchTenantSettings(): Promise<TenantSettingsData> {
     supabase.from("tenant_limits").select("max_locations, max_users, max_devices, max_products").maybeSingle(),
     supabase.from("locations").select("id", { count: "exact", head: true }).is("deleted_at", null),
     supabase.from("profiles").select("user_id", { count: "exact", head: true }).is("deleted_at", null),
-    supabase.from("devices").select("id", { count: "exact", head: true }).is("revoked_at", null),
+    supabase.from("devices").select("id", { count: "exact", head: true }).is("deleted_at", null),
     supabase.from("products").select("id", { count: "exact", head: true }).is("deleted_at", null),
   ]);
 

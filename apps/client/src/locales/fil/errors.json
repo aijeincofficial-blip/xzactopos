@@ -103,5 +103,6 @@
   "op_id_reused": "Nagamit na ang request na iyon sa ibang bagay.",
   "return_exceeds_sold": "Hindi maaaring lumampas ang daming ibabalik sa natitirang nabiling dami.",
   "has_partial_returns": "May bahagyang naibalik na sa resibong ito. Ibalik na lang ang natitirang mga item.",
-  "sale_voided": "Hindi maaaring magbalik ng item mula sa kinanselang benta."
+  "sale_voided": "Hindi maaaring magbalik ng item mula sa kinanselang benta.",
+  "device_limit": "Naabot na ang limitasyon ng aktibong device sa inyong plano. Magretiro muna ng hindi ginagamit na telepono."
 }

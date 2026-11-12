@@ -103,5 +103,6 @@
   "op_id_reused": "That request was already used for something else.",
   "return_exceeds_sold": "Return quantity cannot exceed the remaining sold quantity.",
   "has_partial_returns": "This receipt already has partial returns. Return the remaining items instead.",
-  "sale_voided": "Cannot return items from a cancelled sale."
+  "sale_voided": "Cannot return items from a cancelled sale.",
+  "device_limit": "You reached the active device limit of your plan. Retire an unused phone first."
 }
