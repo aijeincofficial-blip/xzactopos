@@ -109,7 +109,7 @@ export function SyncStatusPill({
         type="button"
         data-testid="global-sync-pill"
         onClick={() => setOpen(true)}
-        className={`inline-flex min-h-[36px] cursor-pointer items-center gap-2 rounded-full border-[1.5px] px-3 font-mono text-xs font-semibold transition-colors ${toneClass}`}
+        className={`inline-flex min-h-[36px] shrink-0 cursor-pointer items-center gap-2 whitespace-nowrap rounded-full border-[1.5px] px-3 font-mono text-xs font-semibold transition-colors ${toneClass}`}
       >
         {showSyncedOnly ? (
           <>

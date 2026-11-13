@@ -16,7 +16,7 @@ const buttonVariants = cva(
         danger: "border-[1.5px] border-sw-meal-fg/25 bg-sw-meal text-sw-meal-fg hover:opacity-90",
         ghost: "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
       },
-      size: { md: "min-h-[44px] px-5 py-2", sm: "min-h-[36px] px-3.5 py-1.5 text-xs" },
+      size: { md: "min-h-[44px] px-5 py-2", sm: "min-h-[36px] whitespace-nowrap px-3.5 py-1.5 text-xs" },
     },
     defaultVariants: { variant: "primary", size: "md" },
   },
@@ -104,7 +104,7 @@ export function Badge({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-full border-[1.5px] px-2.5 py-0.5 font-mono text-[11px] font-semibold",
+        "inline-flex items-center gap-1 whitespace-nowrap rounded-full border-[1.5px] px-2.5 py-0.5 font-mono text-[11px] font-semibold",
         tone === "good" && "border-ok-dot/25 bg-ok-bg text-ok-fg",
         tone === "warn" && "border-sw-pastry-fg/20 bg-sw-pastry text-sw-pastry-fg",
         tone === "danger" && "border-sw-meal-fg/20 bg-sw-meal text-sw-meal-fg",
@@ -281,7 +281,7 @@ export function StatCard({
   return (
     <div className={cn("rounded-[24px] border-[1.5px] border-slate-200 bg-white p-5", className)}>
       <div className="font-mono text-[11px] font-semibold tracking-[0.08em] text-slate-500 uppercase">{label}</div>
-      <div className="mt-2 font-display text-3xl leading-none font-extrabold tracking-[-0.03em] text-slate-900 tabular-nums sm:text-[36px]">
+      <div className="mt-2 font-display text-2xl leading-none font-extrabold tracking-[-0.03em] text-slate-900 tabular-nums sm:text-[28px] xl:text-[32px]">
         {value}
       </div>
       {subtext ? <div className="mt-1.5 text-xs text-slate-500">{subtext}</div> : null}

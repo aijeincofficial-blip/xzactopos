@@ -857,15 +857,15 @@ export function InventoryPage() {
                           {!r.tracked ? (
                             <Badge tone="neutral">{t("admin:inventory.statusUntracked")}</Badge>
                           ) : st === "out" ? (
-                            <span className="inline-flex items-center rounded-full bg-ink px-2.5 py-0.5 font-mono text-[11px] font-semibold text-text-on-dark">
+                            <span className="inline-flex items-center whitespace-nowrap rounded-full bg-ink px-2.5 py-0.5 font-mono text-[11px] font-semibold text-text-on-dark">
                               {t("admin:inventory.statusOut")}
                             </span>
                           ) : st === "low" ? (
-                            <span className="inline-flex items-center rounded-full bg-sw-meal px-2.5 py-0.5 font-mono text-[11px] font-semibold text-sw-meal-fg">
+                            <span className="inline-flex items-center whitespace-nowrap rounded-full bg-sw-meal px-2.5 py-0.5 font-mono text-[11px] font-semibold text-sw-meal-fg">
                               {t("admin:inventory.statusLow")}
                             </span>
                           ) : (
-                            <span className="inline-flex items-center rounded-full bg-ok-bg px-2.5 py-0.5 font-mono text-[11px] font-semibold text-ok-fg">
+                            <span className="inline-flex items-center whitespace-nowrap rounded-full bg-ok-bg px-2.5 py-0.5 font-mono text-[11px] font-semibold text-ok-fg">
                               {t("admin:inventory.statusInStock")}
                             </span>
                           )}

@@ -74,10 +74,10 @@ export function SetupPage() {
   const steps = ["business", "languages", "modules"] as const;
 
   return (
-    <Card className="grid gap-4">
+    <Card className="mx-auto grid w-full max-w-xl gap-4">
       <div>
-        <h1 className="text-xl font-semibold">{t("setup.title")}</h1>
-        <p className="text-sm text-slate-500">
+        <h1 className="font-display text-2xl font-extrabold tracking-tight text-slate-900">{t("setup.title")}</h1>
+        <p className="mt-1 font-mono text-xs font-semibold tracking-[0.06em] text-slate-500 uppercase">
           {t("setup.step", { current: step + 1, total: steps.length })}: {t(`setup.steps.${steps[step]!}`)}
         </p>
       </div>
