@@ -30,7 +30,7 @@ import { applyTheme, nextTheme, readTheme, type ThemeChoice } from "../lib/theme
 import { Alert, Badge, Button, Card, Dialog, Field, Input, TabPanel, Tabs, useToast } from "../components/ui.tsx";
 import { LanguageSelect } from "../components/LanguageSelect.tsx";
 
-function ThemeCycleButton() {
+export function ThemeCycleButton() {
   const { t } = useTranslation("common");
   const [choice, setChoice] = useState<ThemeChoice>(() => readTheme());
   const Icon = choice === "dark" ? Moon : choice === "light" ? Sun : Monitor;
@@ -508,7 +508,7 @@ export function WarehousePortalLoginPage() {
           </Button>
 
           <div className="pt-1 text-center">
-            <Link to="/" className="text-sm text-slate-600 hover:text-slate-900">
+            <Link to="/login" className="text-sm text-slate-600 hover:text-slate-900">
               {t("warehouse.posLink")}
             </Link>
           </div>
@@ -612,7 +612,7 @@ export function SoloSignUpPage() {
             </>
           )}
           <div className="pt-2 text-center">
-            <Link to="/" className="text-sm text-slate-600 hover:text-slate-900">
+            <Link to="/login" className="text-sm text-slate-600 hover:text-slate-900">
               {t("signup.haveAccount")}
             </Link>
           </div>
@@ -695,7 +695,7 @@ export function LoginPage() {
             >
               {t("login.forgotLink")}
             </Button>
-            <Link to="/" className="text-sm text-slate-600 hover:text-slate-900">
+            <Link to="/login" className="text-sm text-slate-600 hover:text-slate-900">
               {t("login.otherBusiness")}
             </Link>
           </div>
@@ -746,7 +746,7 @@ export function ResetPasswordPage() {
           // Signed in without tenant or expired recovery session: fall back to sign-in screen.
         }
       }
-      await navigate({ to: "/" });
+      await navigate({ to: "/login" });
     } catch (err) {
       setFormError(errMsg(err));
     } finally {
@@ -791,7 +791,7 @@ export function ResetPasswordPage() {
             {busy ? t("reset.saving") : t("reset.submit")}
           </Button>
           <div className="pt-1 text-center">
-            <Link to="/" className="text-sm text-slate-600 hover:text-slate-900">
+            <Link to="/login" className="text-sm text-slate-600 hover:text-slate-900">
               {t("reset.backToSignIn")}
             </Link>
           </div>

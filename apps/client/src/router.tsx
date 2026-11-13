@@ -15,6 +15,7 @@ import { signOut } from "./lib/api.ts";
 import { tenantMode } from "./lib/mode.ts";
 import { readStoredPortal, resolveRoleLandingPath } from "./lib/portal.ts";
 
+const LandingPage = lazyRouteComponent(() => import("./routes/landing.tsx"), "LandingPage");
 const HomePage = lazyRouteComponent(() => import("./routes/public.tsx"), "HomePage");
 const LoginPage = lazyRouteComponent(() => import("./routes/public.tsx"), "LoginPage");
 const ResetPasswordPage = lazyRouteComponent(() => import("./routes/public.tsx"), "ResetPasswordPage");
@@ -57,6 +58,17 @@ const root = createRootRouteWithContext<RouterContext>()({ component: Outlet });
 const home = createRoute({
   getParentRoute: () => root,
   path: "/",
+  beforeLoad: () => {
+    if (typeof window !== "undefined" && window.location.hash.includes("type=recovery")) {
+      throw redirect({ to: "/reset-password" });
+    }
+  },
+  component: LandingPage,
+});
+
+const posPortalLogin = createRoute({
+  getParentRoute: () => root,
+  path: "/login",
   beforeLoad: async ({ context }) => {
     if (typeof window !== "undefined" && window.location.hash.includes("type=recovery")) {
       throw redirect({ to: "/reset-password" });
@@ -112,7 +124,7 @@ const app = createRoute({
     if (!access) {
       // Signed in but no usable account (deactivated, archived): drop the session so login can retry.
       if (await hasSession()) await signOut();
-      throw redirect({ to: "/" });
+      throw redirect({ to: "/login" });
     }
     const onSetup = location.pathname.startsWith("/app/setup");
     if (!access.tenant.setup_completed && access.role === "superadmin" && !onSetup) throw redirect({ to: "/app/setup" });
@@ -204,6 +216,7 @@ const forbidden = createRoute({ getParentRoute: () => app, path: "/forbidden", c
 
 const routeTree = root.addChildren([
   home,
+  posPortalLogin,
   signup,
   resetPassword,
   warehouseLogin,
