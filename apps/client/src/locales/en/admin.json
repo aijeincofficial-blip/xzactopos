@@ -1205,6 +1205,12 @@
       "allStatuses": "All statuses",
       "filterWarehouse": "Warehouse",
       "allWarehouses": "All warehouses",
+      "filterSupplier": "Supplier",
+      "allSuppliers": "All suppliers",
+      "search": "Search",
+      "searchPlaceholder": "Order #, supplier, or SKU...",
+      "exportCsv": "Export CSV",
+      "exportedToast": "Exported {{count}} purchase orders to CSV.",
       "poNo": "Order #",
       "warehouse": "Warehouse",
       "supplier": "Supplier",
@@ -1256,6 +1262,8 @@
     },
     "detail": {
       "title": "Order {{no}}",
+      "printPo": "Print PO",
+      "printHeading": "Purchase Order {{no}}",
       "ordered": "Ordered",
       "received": "Received",
       "remaining": "Still expected",
@@ -1415,7 +1423,11 @@
       "cancelReason": "Cancelled: {{reason}}",
       "counted": "counted",
       "system": "system",
-      "zero": "not found"
+      "zero": "not found",
+      "exportCsv": "Export CSV",
+      "exportedToast": "Exported count variance for {{no}} to CSV.",
+      "printVariance": "Print variance",
+      "printTitle": "Count Variance Report {{no}}"
     }
   },
   "overview": {
@@ -1425,9 +1437,25 @@
     "showMore": "Show more",
     "tabs": {
       "reorder": "To reorder",
+      "stores": "Store replenishment",
       "transit": "In transit",
       "product": "Find a product",
       "negative": "Below zero"
+    },
+    "stores": {
+      "filterStore": "Store",
+      "allStores": "All stores",
+      "summary": "{{count}} store items need replenishment",
+      "none": "All stores are above reorder point.",
+      "store": "Store",
+      "product": "Product",
+      "storeStock": "Store stock",
+      "point": "Reorder at",
+      "shortfall": "Shortfall",
+      "warehouseAvail": "Warehouse available",
+      "actions": "Dispatch",
+      "noWarehouseStock": "Out in warehouses",
+      "dispatch": "Send from warehouse"
     },
     "filter": {
       "warehouse": "Warehouse",
@@ -1545,6 +1573,8 @@
     "kpiAlerts": "Attention Needed",
     "kpiAlertsSubtext": "{{out}} out · {{low}} low · {{expiring}} expiring",
     "tabStock": "Stock On Hand",
+    "exportCsv": "Export CSV",
+    "exportedToast": "Exported {{count}} inventory items to CSV.",
     "tabMovements": "Movement Ledger",
     "searchPlaceholder": "Search product name, SKU, or scan barcode...",
     "allCategories": "All Categories",

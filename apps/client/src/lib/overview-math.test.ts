@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildStoreReplenishmentRows,
   nextReorderCursor,
   nextTransitCursor,
   reorderStatus,
@@ -132,5 +133,46 @@ describe("nextNegativeCursor", () => {
     expect(nextNegativeCursor(rows, 2)).toEqual({ location: "b", variant: "2" });
     expect(nextNegativeCursor(rows, 3)).toBeNull();
     expect(nextNegativeCursor([], 2)).toBeNull();
+  });
+});
+
+describe("buildStoreReplenishmentRows", () => {
+  it("flags low store stock against overrides and pairs with highest-stock warehouse", () => {
+    const rows = buildStoreReplenishmentRows({
+      stores: [{ id: "s1", code: "S01", name: "Main Store" }],
+      warehouses: [
+        { id: "w1", code: "WH1", name: "North Hub" },
+        { id: "w2", code: "WH2", name: "South Hub" },
+      ],
+      variants: [
+        { id: "v1", sku: "RICE-25", product_name: "Rice 25kg", default_reorder_point: 5, track_stock: true },
+        { id: "v2", sku: "OIL-1L", product_name: "Oil 1L", default_reorder_point: 5, track_stock: true },
+        { id: "v3", sku: "SVC-1", product_name: "Service Fee", default_reorder_point: 10, track_stock: false },
+      ],
+      stockLevels: [
+        { location_id: "s1", variant_id: "v1", qty_on_hand: 3 },
+        { location_id: "w1", variant_id: "v1", qty_on_hand: 12 },
+        { location_id: "w2", variant_id: "v1", qty_on_hand: 40 },
+        { location_id: "s1", variant_id: "v2", qty_on_hand: 8 },
+      ],
+      reorderOverrides: [{ location_id: "s1", variant_id: "v1", reorder_point: 10 }],
+    });
+
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toEqual({
+      store_id: "s1",
+      store_code: "S01",
+      store_name: "Main Store",
+      variant_id: "v1",
+      sku: "RICE-25",
+      product_name: "Rice 25kg",
+      store_qty: 3,
+      reorder_point: 10,
+      shortfall: 7,
+      warehouse_total: 52,
+      best_warehouse_id: "w2",
+      best_warehouse_code: "WH2",
+      best_warehouse_qty: 40,
+    });
   });
 });

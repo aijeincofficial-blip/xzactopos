@@ -1205,6 +1205,12 @@
       "allStatuses": "Lahat ng status",
       "filterWarehouse": "Bodega",
       "allWarehouses": "Lahat ng bodega",
+      "filterSupplier": "Supplier",
+      "allSuppliers": "Lahat ng supplier",
+      "search": "Hanapin",
+      "searchPlaceholder": "Order #, supplier, o SKU...",
+      "exportCsv": "I-export ang CSV",
+      "exportedToast": "Nai-export ang {{count}} purchase order sa CSV.",
       "poNo": "Order #",
       "warehouse": "Bodega",
       "supplier": "Supplier",
@@ -1256,6 +1262,8 @@
     },
     "detail": {
       "title": "Order {{no}}",
+      "printPo": "I-print ang PO",
+      "printHeading": "Purchase Order {{no}}",
       "ordered": "Inorder",
       "received": "Natanggap",
       "remaining": "Inaasahan pa",
@@ -1415,7 +1423,11 @@
       "cancelReason": "Kinansela: {{reason}}",
       "counted": "nabilang",
       "system": "system",
-      "zero": "hindi nakita"
+      "zero": "hindi nakita",
+      "exportCsv": "I-export ang CSV",
+      "exportedToast": "Nai-export ang variance ng bilangan {{no}} sa CSV.",
+      "printVariance": "I-print ang variance",
+      "printTitle": "Ulat ng Variance sa Bilangan {{no}}"
     }
   },
   "overview": {
@@ -1425,9 +1437,25 @@
     "showMore": "Magpakita pa",
     "tabs": {
       "reorder": "Oorderin",
+      "stores": "Punan ang tindahan",
       "transit": "Nasa biyahe",
       "product": "Maghanap ng produkto",
       "negative": "Mas mababa sa zero"
+    },
+    "stores": {
+      "filterStore": "Tindahan",
+      "allStores": "Lahat ng tindahan",
+      "summary": "{{count}} item sa tindahan ang kailangang punan",
+      "none": "Lahat ng tindahan ay nasa itaas ng reorder point.",
+      "store": "Tindahan",
+      "product": "Produkto",
+      "storeStock": "Stock sa tindahan",
+      "point": "Mag-order sa",
+      "shortfall": "Kulang",
+      "warehouseAvail": "Mayroon sa bodega",
+      "actions": "Ipadala",
+      "noWarehouseStock": "Ubos sa mga bodega",
+      "dispatch": "Ipadala mula bodega"
     },
     "filter": {
       "warehouse": "Bodega",
@@ -1545,6 +1573,8 @@
     "kpiAlerts": "Kailangang Pansinin",
     "kpiAlertsSubtext": "{{out}} ubos · {{low}} paubos · {{expiring}} malapit mapaso",
     "tabStock": "Kasalukuyang Stock",
+    "exportCsv": "I-export ang CSV",
+    "exportedToast": "Nai-export ang {{count}} aytem ng imbentaryo sa CSV.",
     "tabMovements": "Galaw ng Stock",
     "searchPlaceholder": "Maghanap ng pangalan ng produkto, SKU, o mag-scan ng barcode...",
     "allCategories": "Lahat ng Kategorya",

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Download } from "lucide-react";
@@ -56,6 +56,25 @@ export function TransfersPage() {
   ]);
   const [createFormErrors, setCreateFormErrors] = useState<Record<string, string>>({});
   const [createError, setCreateError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const raw = sessionStorage.getItem("xzactopos:draft-transfer");
+    if (!raw) return;
+    sessionStorage.removeItem("xzactopos:draft-transfer");
+    try {
+      const draft = JSON.parse(raw) as {
+        fromLocationId?: string;
+        toLocationId?: string;
+        items?: Array<{ variantId: string; qty: number }>;
+      };
+      if (draft.fromLocationId) setFromLocId(draft.fromLocationId);
+      if (draft.toLocationId) setToLocId(draft.toLocationId);
+      if (draft.items && draft.items.length > 0) setFormItems(draft.items);
+      setShowCreateModal(true);
+    } catch {
+      // ignore invalid draft payload
+    }
+  }, []);
 
   // Receive form state
   const [receiveItems, setReceiveItems] = useState<Array<{ variantId: string; qtyReceived: number }>>([]);

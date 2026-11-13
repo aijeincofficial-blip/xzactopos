@@ -1,4 +1,6 @@
 import { rpc } from "./api.ts";
+import { supabase } from "./supabase.ts";
+import { buildStoreReplenishmentRows, type StoreReplenishmentRow } from "./overview-math.ts";
 
 // The three read-only warehouse views (F-13f). They run as the signed-in user, so row-level security decides which
 // warehouses appear; nothing here filters by role.
@@ -168,4 +170,75 @@ export async function negativeStockList(args: {
     stock_value: numOrNull(r.stock_value),
     last_movement_at: (r.last_movement_at as string | null) ?? null,
   }));
+}
+
+export async function fetchStoreReplenishment(args: {
+  stores: ReadonlyArray<{ id: string; code: string; name: string }>;
+  warehouses: ReadonlyArray<{ id: string; code: string; name: string }>;
+  storeId?: string;
+}): Promise<StoreReplenishmentRow[]> {
+  const targetStores = args.storeId ? args.stores.filter((s) => s.id === args.storeId) : args.stores;
+  if (targetStores.length === 0) return [];
+  const locationIds = [...targetStores.map((s) => s.id), ...args.warehouses.map((w) => w.id)];
+
+  const [variantsRes, levelsRes, overridesRes] = await Promise.all([
+    supabase
+      .from("product_variants")
+      .select("id, sku, reorder_point, product:products!inner(name, track_stock, active, deleted_at)")
+      .eq("active", true)
+      .is("deleted_at", null)
+      .limit(1000),
+    supabase
+      .from("stock_levels")
+      .select("location_id, variant_id, qty_on_hand")
+      .in("location_id", locationIds)
+      .limit(5000),
+    supabase
+      .from("location_reorder_points")
+      .select("location_id, variant_id, reorder_point")
+      .in(
+        "location_id",
+        targetStores.map((s) => s.id),
+      )
+      .limit(2000),
+  ]);
+
+  if (variantsRes.error) throw variantsRes.error;
+  if (levelsRes.error) throw levelsRes.error;
+  if (overridesRes.error) throw overridesRes.error;
+
+  const variants = (variantsRes.data ?? [])
+    .map((r) => {
+      const prod = r.product as unknown as {
+        name: string;
+        track_stock: boolean;
+        active: boolean;
+        deleted_at: string | null;
+      } | null;
+      if (!prod || !prod.active || prod.deleted_at) return null;
+      return {
+        id: r.id as string,
+        sku: r.sku as string,
+        product_name: prod.name,
+        default_reorder_point: num(r.reorder_point ?? 0),
+        track_stock: Boolean(prod.track_stock),
+      };
+    })
+    .filter((v): v is NonNullable<typeof v> => v !== null);
+
+  return buildStoreReplenishmentRows({
+    stores: targetStores,
+    warehouses: args.warehouses,
+    variants,
+    stockLevels: (levelsRes.data ?? []).map((r) => ({
+      location_id: r.location_id as string,
+      variant_id: r.variant_id as string,
+      qty_on_hand: num(r.qty_on_hand),
+    })),
+    reorderOverrides: (overridesRes.data ?? []).map((r) => ({
+      location_id: r.location_id as string,
+      variant_id: r.variant_id as string,
+      reorder_point: num(r.reorder_point),
+    })),
+  });
 }

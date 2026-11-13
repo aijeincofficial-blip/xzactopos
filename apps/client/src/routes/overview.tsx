@@ -22,6 +22,7 @@ import {
 } from "../lib/overview-math.ts";
 import {
   PAGE_SIZE,
+  fetchStoreReplenishment,
   negativeStockList,
   setLocationReorderPoint,
   warehouseReorderList,
@@ -34,14 +35,20 @@ import {
 import { listCountWarehouses } from "../lib/counts-api.ts";
 import { listVariantOptions } from "../lib/purchasing-api.ts";
 
-type Tab = "reorder" | "transit" | "product" | "negative";
+type Tab = "reorder" | "stores" | "transit" | "product" | "negative";
 
 export function OverviewPage() {
   const { t } = useTranslation(["admin", "common"]);
-  const { can } = useSession();
+  const { access, can } = useSession();
   const [tab, setTab] = useState<Tab>("reorder");
   const warehousesQ = useQuery({ queryKey: ["overview", "warehouses"], queryFn: listCountWarehouses });
   const warehouses = (warehousesQ.data ?? []).filter((w) => can("reports.warehouse", w.id));
+  const stores = access.locations.filter((l) => l.type === "store");
+  const visibleTabs = (
+    stores.length > 0
+      ? (["reorder", "stores", "transit", "product", "negative"] as const)
+      : (["reorder", "transit", "product", "negative"] as const)
+  ).map((k) => ({ value: k, label: t(`overview.tabs.${k}`), testId: `ov-tab-${k}` }));
 
   return (
     <div className="grid gap-4">
@@ -51,10 +58,20 @@ export function OverviewPage() {
         value={tab}
         onValueChange={(v) => setTab(v as Tab)}
         label={t("overview.title")}
-        tabs={(["reorder", "transit", "product", "negative"] as const).map((k) => ({ value: k, label: t(`overview.tabs.${k}`), testId: `ov-tab-${k}` }))}
+        tabs={visibleTabs}
       >
         <TabPanel value={tab}>
-          {tab === "reorder" ? <ReorderTab warehouses={warehouses} /> : tab === "transit" ? <TransitTab warehouses={warehouses} /> : tab === "negative" ? <NegativeTab /> : <ProductTab />}
+          {tab === "reorder" ? (
+            <ReorderTab warehouses={warehouses} />
+          ) : tab === "stores" ? (
+            <StoreReplenishmentTab stores={stores} warehouses={warehouses} />
+          ) : tab === "transit" ? (
+            <TransitTab warehouses={warehouses} />
+          ) : tab === "negative" ? (
+            <NegativeTab />
+          ) : (
+            <ProductTab />
+          )}
         </TabPanel>
       </Tabs>
     </div>
@@ -651,6 +668,127 @@ function ProductTab() {
           </Table>
         </Card>
       )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------------------------------------ store replenishment */
+
+function StoreReplenishmentTab({
+  stores,
+  warehouses,
+}: {
+  stores: ReadonlyArray<{ id: string; code: string; name: string }>;
+  warehouses: ReadonlyArray<{ id: string; code: string; name: string }>;
+}) {
+  const { t } = useTranslation(["admin", "common"]);
+  const msg = useErrorMessage();
+  const navigate = useNavigate();
+  const { can } = useSession();
+  const [storeId, setStoreId] = useState("");
+  const q = useQuery({
+    queryKey: ["overview", "store-replenishment", storeId, stores.map((s) => s.id).join(",")],
+    queryFn: () => fetchStoreReplenishment({ stores, warehouses, storeId: storeId || undefined }),
+    enabled: stores.length > 0,
+  });
+  const rows = q.data ?? [];
+
+  return (
+    <div className="grid gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <span className="text-xs font-semibold text-slate-500">{t("overview.stores.filterStore")}</span>
+          <Select value={storeId} onChange={(e) => setStoreId(e.target.value)} data-testid="ov-store-filter" className="w-56">
+            <option value="">{t("overview.stores.allStores")}</option>
+            {stores.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.code} · {s.name}
+              </option>
+            ))}
+          </Select>
+        </div>
+        <span className="text-sm font-medium text-slate-600" data-testid="store-replenish-summary">
+          {t("overview.stores.summary", { count: rows.length })}
+        </span>
+      </div>
+
+      {q.isError ? (
+        <ErrorState
+          message={msg(q.error)}
+          onRetry={() => void q.refetch()}
+          retryLabel={t("common:actions.retry")}
+        />
+      ) : null}
+
+      <Card className="overflow-x-auto p-0">
+        {q.isLoading ? (
+          <TableSkeleton rows={5} cols={7} />
+        ) : rows.length === 0 ? (
+          <div className="p-4" data-testid="store-replenish-none">
+            <EmptyState title={t("overview.stores.none")} />
+          </div>
+        ) : (
+          <Table bare>
+            <thead>
+              <tr className="border-b border-slate-200 text-slate-500">
+                {(["store", "product", "storeStock", "point", "shortfall", "warehouseAvail", "actions"] as const).map((c) => (
+                  <th key={c} className="px-3 py-2 font-semibold">
+                    {t(`overview.stores.${c}`)}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr
+                  key={`${r.store_id}:${r.variant_id}`}
+                  className="border-b border-slate-100"
+                  data-testid={`store-replenish-${r.store_code}-${r.sku}`}
+                >
+                  <td className="px-3 py-2 font-medium">{r.store_code} · {r.store_name}</td>
+                  <td className="px-3 py-2">{r.product_name} · {r.sku}</td>
+                  <td className="px-3 py-2">
+                    <Badge tone={r.store_qty <= 0 ? "danger" : "warn"}>{formatQty(r.store_qty)}</Badge>
+                  </td>
+                  <td className="px-3 py-2">{formatQty(r.reorder_point)}</td>
+                  <td className="px-3 py-2 font-medium text-amber-700">{formatQty(r.shortfall)}</td>
+                  <td className="px-3 py-2">
+                    {r.warehouse_total > 0 ? (
+                      <span className="text-sm text-emerald-700">
+                        {formatQty(r.warehouse_total)} ({r.best_warehouse_code}: {formatQty(r.best_warehouse_qty)})
+                      </span>
+                    ) : (
+                      <span className="text-xs text-slate-400">{t("overview.stores.noWarehouseStock")}</span>
+                    )}
+                  </td>
+                  <td className="px-3 py-2">
+                    {r.best_warehouse_id && can("transfer.manage", r.best_warehouse_id) ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        data-testid={`dispatch-store-${r.store_code}-${r.sku}`}
+                        onClick={() => {
+                          sessionStorage.setItem(
+                            "xzactopos:draft-transfer",
+                            JSON.stringify({
+                              fromLocationId: r.best_warehouse_id,
+                              toLocationId: r.store_id,
+                              items: [{ variantId: r.variant_id, qty: Math.min(r.shortfall, r.best_warehouse_qty) }],
+                            }),
+                          );
+                          void navigate({ to: "/app/transfers" });
+                        }}
+                      >
+                        {t("overview.stores.dispatch")}
+                      </Button>
+                    ) : null}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        )}
+      </Card>
     </div>
   );
 }

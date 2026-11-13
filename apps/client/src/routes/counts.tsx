@@ -2,7 +2,9 @@ import { Fragment, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { uuidv7 } from "@pos/core";
+import { Download, Printer } from "lucide-react";
 import { Alert, Badge, Button, Card, Dialog, EmptyState, ErrorState, Field, Input, Select, Table, PageHeader, useToast } from "../components/ui.tsx";
+import { downloadCsv, exportCountVarianceCsv } from "../lib/csv-helper.ts";
 import { useSession } from "../lib/session.tsx";
 import { useErrorMessage } from "../lib/i18n-helpers.ts";
 import { formatQty } from "../lib/product-math.ts";
@@ -485,8 +487,33 @@ function CancelDialog({ count, onClose }: { count: StockCount; onClose: () => vo
 
 function History({ counts }: { counts: StockCount[] }) {
   const { t, i18n } = useTranslation("admin");
+  const { access } = useSession();
+  const toast = useToast();
   const variantsQ = useQuery({ queryKey: ["po", "variants"], queryFn: listVariantOptions });
   const [openId, setOpenId] = useState<string | null>(null);
+  const [printCount, setPrintCount] = useState<StockCount | null>(null);
+
+  const exportCountCsv = (c: StockCount) => {
+    const csv = exportCountVarianceCsv(
+      c.stock_count_items.map((l) => {
+        const v = l.variant ?? variantsQ.data?.find((x) => x.id === l.variant_id);
+        const sys = Number(l.qty_system);
+        const cnt = Number(l.qty_counted);
+        return {
+          product: v?.product?.name ?? v?.sku ?? "?",
+          sku: v?.sku ?? "",
+          bin: l.bin?.code ?? null,
+          systemQty: sys,
+          countedQty: cnt,
+          delta: l.qty_variance !== null ? Number(l.qty_variance) : cnt - sys,
+          reason: l.auto_zero ? t("counts.history.zero") : null,
+        };
+      }),
+    );
+    downloadCsv(csv, `count-variance-${c.count_no}.csv`);
+    toast.good(t("counts.history.exportedToast", { no: c.count_no }));
+  };
+
   return (
     <Card className="overflow-x-auto p-0" data-testid="count-history">
       <h2 className="px-4 pt-4 font-medium">{t("counts.history.title")}</h2>
@@ -535,6 +562,28 @@ function History({ counts }: { counts: StockCount[] }) {
                             );
                           })}
                         </ul>
+                        {c.stock_count_items.length > 0 ? (
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              data-testid={`export-count-csv-${c.count_no}`}
+                              onClick={() => exportCountCsv(c)}
+                            >
+                              <Download size={14} aria-hidden />
+                              <span>{t("counts.history.exportCsv")}</span>
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              data-testid={`print-count-${c.count_no}`}
+                              onClick={() => setPrintCount(c)}
+                            >
+                              <Printer size={14} aria-hidden />
+                              <span>{t("counts.history.printVariance")}</span>
+                            </Button>
+                          </div>
+                        ) : null}
                       </td>
                     </tr>
                   ) : null}
@@ -544,6 +593,53 @@ function History({ counts }: { counts: StockCount[] }) {
           </tbody>
         </Table>
       )}
+      {printCount ? (
+        <Dialog
+          open
+          onOpenChange={(o) => !o && setPrintCount(null)}
+          title={t("counts.history.printTitle", { no: printCount.count_no })}
+          closeLabel={t("counts.close")}
+        >
+          <div className="printable-statement grid gap-3 text-sm" data-testid="printable-count-variance">
+            <div className="hidden print:block border-b border-slate-300 pb-2">
+              <div className="text-base font-bold">{access.tenant.name}</div>
+              <div className="text-xs text-slate-600">{t("counts.history.printTitle", { no: printCount.count_no })}</div>
+            </div>
+            <Table bare>
+              <thead>
+                <tr className="border-b border-slate-200 text-slate-500">
+                  <th className="py-1 font-medium">{t("counts.table.product")}</th>
+                  <th className="py-1 font-medium">{t("counts.table.system")}</th>
+                  <th className="py-1 font-medium">{t("counts.table.count")}</th>
+                  <th className="py-1 font-medium">{t("counts.table.difference")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {printCount.stock_count_items.map((l) => {
+                  const v = l.qty_variance === null ? null : Number(l.qty_variance);
+                  return (
+                    <tr key={l.id} className="border-b border-slate-100">
+                      <td className="py-1">
+                        {productLabel(l.variant ?? variantsQ.data?.find((x) => x.id === l.variant_id))}
+                        {l.bin ? ` (${l.bin.code})` : ""}
+                      </td>
+                      <td className="py-1">{formatQty(Number(l.qty_system))}</td>
+                      <td className="py-1">{formatQty(Number(l.qty_counted))}</td>
+                      <td className="py-1">{v === null ? "—" : signed(v)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </Table>
+          </div>
+          <div className="no-print mt-4 flex justify-end border-t border-slate-100 pt-3">
+            <Button variant="outline" onClick={() => window.print()} data-testid="print-count-btn">
+              <Printer size={15} aria-hidden />
+              <span>{t("counts.history.printVariance")}</span>
+            </Button>
+          </div>
+        </Dialog>
+      ) : null}
     </Card>
   );
 }

@@ -358,6 +358,121 @@ export function exportReorderListCsv(items: ReorderExportItem[]): string {
   return lines.join("\r\n");
 }
 
+export interface PoExportItem {
+  poNo: string;
+  warehouse: string;
+  supplier: string;
+  status: string;
+  expectedAt: string | null;
+  progressPercent: number | null;
+  expectedValue: number; // minor units
+  notes: string | null;
+}
+
+export function exportPurchaseOrdersCsv(items: PoExportItem[], currency = "PHP"): string {
+  const headers = [
+    "PO No",
+    "Warehouse",
+    "Supplier",
+    "Status",
+    "Expected On",
+    "Received %",
+    `Expected Value (${currency})`,
+    "Notes",
+  ];
+  const lines = [headers.join(",")];
+  for (const item of items) {
+    lines.push(
+      [
+        escapeCsvField(item.poNo),
+        escapeCsvField(item.warehouse),
+        escapeCsvField(item.supplier),
+        escapeCsvField(item.status),
+        escapeCsvField(item.expectedAt ?? ""),
+        escapeCsvField(item.progressPercent !== null ? `${item.progressPercent}%` : ""),
+        escapeCsvField((item.expectedValue / 100).toFixed(2)),
+        escapeCsvField(item.notes ?? ""),
+      ].join(","),
+    );
+  }
+  return lines.join("\r\n");
+}
+
+export interface InventoryExportItem {
+  name: string;
+  sku: string;
+  barcode: string | null;
+  category: string | null;
+  onHand: number;
+  reorderPoint: number;
+  status: string;
+  cost: number | null; // minor units
+  price: number | null; // minor units
+  expiresOn: string | null;
+}
+
+export function exportInventoryCsv(items: InventoryExportItem[], currency = "PHP"): string {
+  const headers = [
+    "Product",
+    "SKU",
+    "Barcode",
+    "Category",
+    "On Hand",
+    "Reorder Point",
+    "Status",
+    `Cost (${currency})`,
+    `Price (${currency})`,
+    "Expires On",
+  ];
+  const lines = [headers.join(",")];
+  for (const item of items) {
+    lines.push(
+      [
+        escapeCsvField(item.name),
+        escapeCsvField(item.sku),
+        escapeCsvField(item.barcode ?? ""),
+        escapeCsvField(item.category ?? ""),
+        escapeCsvField(item.onHand),
+        escapeCsvField(item.reorderPoint),
+        escapeCsvField(item.status),
+        item.cost !== null ? escapeCsvField((item.cost / 100).toFixed(2)) : "",
+        item.price !== null ? escapeCsvField((item.price / 100).toFixed(2)) : "",
+        escapeCsvField(item.expiresOn ?? ""),
+      ].join(","),
+    );
+  }
+  return lines.join("\r\n");
+}
+
+export interface CountVarianceExportItem {
+  sku: string;
+  product: string;
+  bin: string | null;
+  systemQty: number;
+  countedQty: number;
+  delta: number;
+  reason: string | null;
+}
+
+export function exportCountVarianceCsv(items: CountVarianceExportItem[]): string {
+  const headers = ["Product", "SKU", "Bin", "System Qty", "Counted Qty", "Variance", "Reason"];
+  const lines = [headers.join(",")];
+  for (const item of items) {
+    lines.push(
+      [
+        escapeCsvField(item.product),
+        escapeCsvField(item.sku),
+        escapeCsvField(item.bin ?? ""),
+        escapeCsvField(item.systemQty),
+        escapeCsvField(item.countedQty),
+        escapeCsvField(item.delta),
+        escapeCsvField(item.reason ?? ""),
+      ].join(","),
+    );
+  }
+  return lines.join("\r\n");
+}
+
 export function exportExpensesCsv(items: ExpenseExportItem[], currency = "PHP"): string {
   const headers = [
     "Spent At",

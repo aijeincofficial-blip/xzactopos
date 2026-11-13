@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatMoney, money } from "@pos/core";
-import { ArrowDownToLine, ArrowLeftRight, Boxes, ClipboardCheck, Package, SlidersHorizontal } from "lucide-react";
+import { ArrowDownToLine, ArrowLeftRight, Boxes, ClipboardCheck, Download, Package, SlidersHorizontal } from "lucide-react";
 import {
   Alert,
   Badge,
@@ -32,6 +32,7 @@ import { readStoredPortal, resolveEffectivePortal } from "../lib/portal.ts";
 import { useErrorMessage } from "../lib/i18n-helpers.ts";
 import { parseAmount } from "../lib/sale-math.ts";
 import { formatQty, parseQty, stockStatus } from "../lib/product-math.ts";
+import { downloadCsv, exportInventoryCsv } from "../lib/csv-helper.ts";
 import { setLocationReorderPoint } from "../lib/overview-api.ts";
 import {
   countStock,
@@ -459,6 +460,7 @@ function StoreStockActionDialog({
 export function InventoryPage() {
   const { t, i18n } = useTranslation(["admin", "common"]);
   const msg = useErrorMessage();
+  const toast = useToast();
   const navigate = useNavigate();
   const { access, ctx, can } = useSession();
   const { activeStore, activeWarehouse } = useActiveLocation();
@@ -610,6 +612,26 @@ export function InventoryPage() {
   const hasPrimaryWarehouseDispatch = canDispatchToPos;
   const hasPrimaryPosReceive = !isWarehousePortal && canReceiveWarehouseInPos;
 
+  function handleExportInventoryCsv() {
+    const csv = exportInventoryCsv(
+      filteredStockRows.map((r) => ({
+        name: r.name,
+        sku: r.sku,
+        barcode: r.barcode,
+        category: r.categoryName,
+        onHand: r.qty,
+        reorderPoint: r.reorderPoint,
+        status: stockStatus(r),
+        cost: canSeeCost ? r.cost : null,
+        price: r.price,
+        expiresOn: r.expiresOn,
+      })),
+      currency,
+    );
+    downloadCsv(csv, `inventory-${activeLoc!.code}-${new Date().toISOString().slice(0, 10)}.csv`);
+    toast.good(t("admin:inventory.exportedToast", { count: filteredStockRows.length }));
+  }
+
   return (
     <div className="grid gap-6" data-testid="inventory-page">
       <PageHeader
@@ -617,6 +639,16 @@ export function InventoryPage() {
         subtitle={t("admin:inventory.subtitle", { location: `${activeLoc.code} · ${activeLoc.name}` })}
         actions={
           <>
+            <Button
+              variant="outline"
+              size="sm"
+              data-testid="export-inventory-csv"
+              disabled={filteredStockRows.length === 0}
+              onClick={handleExportInventoryCsv}
+            >
+              <Download size={15} aria-hidden />
+              <span>{t("admin:inventory.exportCsv")}</span>
+            </Button>
             {canManageCatalog ? (
               <Button
                 variant={hasPrimaryPosReceive || hasPrimaryWarehouseDispatch ? "outline" : "primary"}

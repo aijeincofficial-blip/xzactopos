@@ -2,7 +2,9 @@ import { Fragment, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { formatMoney, money, uuidv7 } from "@pos/core";
+import { Download, Printer } from "lucide-react";
 import { Alert, Badge, Button, Card, Dialog, Field, Input, Select, Table, TableSkeleton, PageHeader, Tabs, TabPanel, EmptyState, ErrorState, useToast } from "../components/ui.tsx";
+import { downloadCsv, exportPurchaseOrdersCsv } from "../lib/csv-helper.ts";
 import { useSession } from "../lib/session.tsx";
 import { useErrorMessage } from "../lib/i18n-helpers.ts";
 import { formatQty } from "../lib/product-math.ts";
@@ -86,9 +88,13 @@ function OrdersTab() {
   const msg = useErrorMessage();
   const qc = useQueryClient();
   const toast = useToast();
+  const { access } = useSession();
+  const currency = access.tenant.base_currency;
   const warehouses = useWarehouses();
   const [status, setStatus] = useState("");
   const [warehouseId, setWarehouseId] = useState("");
+  const [supplierId, setSupplierId] = useState("");
+  const [search, setSearch] = useState("");
   const [modal, setModal] = useState<Modal>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -136,7 +142,49 @@ function OrdersTab() {
   }, []);
 
   const orders = useQuery({ queryKey: ["po", "orders"], queryFn: listPurchaseOrders });
-  const rows = (orders.data ?? []).filter((p) => (!status || p.status === status) && (!warehouseId || p.warehouse_id === warehouseId));
+  const suppliersQ = useQuery({ queryKey: ["po", "suppliers"], queryFn: listSuppliers });
+  const rows = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return (orders.data ?? []).filter((p) => {
+      if (status && p.status !== status) return false;
+      if (warehouseId && p.warehouse_id !== warehouseId) return false;
+      if (supplierId && p.supplier_id !== supplierId) return false;
+      if (q) {
+        const matchPo = p.po_no.toLowerCase().includes(q);
+        const matchSup = (p.supplier?.name ?? "").toLowerCase().includes(q);
+        const matchWh = (p.warehouse?.code ?? "").toLowerCase().includes(q);
+        const matchItem = p.po_items.some(
+          (i) =>
+            (i.variant?.sku ?? "").toLowerCase().includes(q) ||
+            (i.variant?.product?.name ?? "").toLowerCase().includes(q),
+        );
+        if (!matchPo && !matchSup && !matchWh && !matchItem) return false;
+      }
+      return true;
+    });
+  }, [orders.data, status, warehouseId, supplierId, search]);
+
+  function handleExportCsv() {
+    const csv = exportPurchaseOrdersCsv(
+      rows.map((po) => {
+        const progress = poProgress(po.po_items);
+        const total = po.po_items.reduce((s, i) => s + (lineValue(i.qty_ordered, i.unit_cost) ?? 0), 0);
+        return {
+          poNo: po.po_no,
+          warehouse: po.warehouse?.code ?? "",
+          supplier: po.supplier?.name ?? "",
+          status: t(`purchasing.status.${po.status}`),
+          expectedAt: po.expected_at,
+          progressPercent: po.status === "draft" || po.status === "cancelled" ? null : progress.percent,
+          expectedValue: total,
+          notes: po.notes,
+        };
+      }),
+      currency,
+    );
+    downloadCsv(csv, `purchase-orders-${new Date().toISOString().slice(0, 10)}.csv`);
+    toast.good(t("purchasing.orders.exportedToast", { count: rows.length }));
+  }
 
   const submit = useMutation({
     mutationFn: (id: string) => submitPo(id),
@@ -154,6 +202,16 @@ function OrdersTab() {
   return (
     <div className="grid gap-4">
       <Card className="flex flex-wrap items-end gap-3">
+        <div className="min-w-[180px] flex-1">
+          <Field label={t("purchasing.orders.search")}>
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={t("purchasing.orders.searchPlaceholder")}
+              data-testid="po-search"
+            />
+          </Field>
+        </div>
         <Field label={t("purchasing.orders.filterStatus")}>
           <Select value={status} onChange={(e) => setStatus(e.target.value)} data-testid="filter-status">
             <option value="">{t("purchasing.orders.allStatuses")}</option>
@@ -174,7 +232,21 @@ function OrdersTab() {
             ))}
           </Select>
         </Field>
-        <div className="ml-auto flex gap-2">
+        <Field label={t("purchasing.orders.filterSupplier")}>
+          <Select value={supplierId} onChange={(e) => setSupplierId(e.target.value)} data-testid="po-filter-supplier">
+            <option value="">{t("purchasing.orders.allSuppliers")}</option>
+            {(suppliersQ.data ?? []).map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <div className="ml-auto flex flex-wrap gap-2">
+          <Button variant="outline" onClick={handleExportCsv} disabled={rows.length === 0} data-testid="export-po-csv">
+            <Download size={15} aria-hidden />
+            <span>{t("purchasing.orders.exportCsv")}</span>
+          </Button>
           <Button variant="outline" onClick={() => setModal({ kind: "walkin" })} disabled={warehouses.length === 0} data-testid="open-walkin">
             {t("purchasing.orders.receiveNoPo")}
           </Button>
@@ -557,12 +629,23 @@ function DetailDialog({ po, onClose }: { po: PurchaseOrder; onClose: () => void 
   const total = po.po_items.reduce((s, i) => s + (lineValue(i.qty_ordered, i.unit_cost) ?? 0), 0);
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()} title={t("purchasing.detail.title", { no: po.po_no })} closeLabel={t("purchasing.close")}>
-      <div className="grid gap-3 text-sm">
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge tone={poStatusTone(po.status)}>{t(`purchasing.status.${po.status}`)}</Badge>
-          <span>
-            {po.warehouse?.code} · {po.supplier?.name}
-          </span>
+      <div className="printable-statement grid gap-3 text-sm" data-testid="printable-po">
+        <div className="hidden print:block border-b border-slate-300 pb-2">
+          <div className="text-base font-bold">{access.tenant.name}</div>
+          <div className="text-xs text-slate-600">{t("purchasing.detail.printHeading", { no: po.po_no })}</div>
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge tone={poStatusTone(po.status)}>{t(`purchasing.status.${po.status}`)}</Badge>
+            <span className="font-medium">
+              {po.warehouse?.code} · {po.supplier?.name}
+            </span>
+          </div>
+          {po.expected_at ? (
+            <span className="text-xs text-slate-500">
+              {t("purchasing.orders.expected")}: {po.expected_at}
+            </span>
+          ) : null}
         </div>
         {po.notes ? <p className="text-slate-600">{po.notes}</p> : null}
         {po.cancel_reason ? <p className="text-slate-600">{t("purchasing.detail.cancelReason", { reason: po.cancel_reason })}</p> : null}
@@ -596,6 +679,12 @@ function DetailDialog({ po, onClose }: { po: PurchaseOrder; onClose: () => void 
         <p className="text-right font-medium">
           {t("purchasing.detail.value")}: {fmt(total)}
         </p>
+      </div>
+      <div className="no-print mt-4 flex justify-end gap-2 border-t border-slate-100 pt-3">
+        <Button variant="outline" onClick={() => window.print()} data-testid="print-po-btn">
+          <Printer size={15} aria-hidden />
+          <span>{t("purchasing.detail.printPo")}</span>
+        </Button>
       </div>
     </Dialog>
   );

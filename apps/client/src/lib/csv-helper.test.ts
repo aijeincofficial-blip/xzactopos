@@ -5,6 +5,9 @@ import {
   exportDayClosesCsv,
   exportExpensesCsv,
   exportProductsCsv,
+  exportPurchaseOrdersCsv,
+  exportInventoryCsv,
+  exportCountVarianceCsv,
   exportReorderListCsv,
   exportSalesCsv,
   exportServiceTxnsCsv,
@@ -372,5 +375,59 @@ describe("csv-helper", () => {
       "Warehouse,Product,SKU,On Hand,Reorder Point,Threshold Type,In Transit,On Order,Status,Shortfall",
     );
     expect(reorderCsv).toContain("WH1,Lucky Me Pancit Canton,LM-PC-01,4,20,custom,0,0,Order now,16");
+  });
+
+  it("exports purchase orders, inventory valuation, and stock count variances to CSV", () => {
+    const poCsv = exportPurchaseOrdersCsv(
+      [
+        {
+          poNo: "PO-261113-0001",
+          warehouse: "WH1",
+          supplier: "San Miguel Corp",
+          status: "ordered",
+          expectedAt: "2026-11-15",
+          progressPercent: 50,
+          expectedValue: 125000,
+          notes: "=Deliver to Bay 2",
+        },
+      ],
+      "PHP",
+    );
+    expect(poCsv).toContain("PO No,Warehouse,Supplier,Status,Expected On,Received %,Expected Value (PHP),Notes");
+    expect(poCsv).toContain("PO-261113-0001,WH1,San Miguel Corp,ordered,2026-11-15,50%,1250.00,'=Deliver to Bay 2");
+
+    const invCsv = exportInventoryCsv(
+      [
+        {
+          name: "Sinandomeng Rice 25kg",
+          sku: "RICE-25KG",
+          barcode: "4800011223344",
+          category: "Grains",
+          onHand: 18,
+          reorderPoint: 10,
+          status: "Healthy",
+          cost: 120000,
+          price: 155000,
+          expiresOn: null,
+        },
+      ],
+      "PHP",
+    );
+    expect(invCsv).toContain("Product,SKU,Barcode,Category,On Hand,Reorder Point,Status,Cost (PHP),Price (PHP),Expires On");
+    expect(invCsv).toContain("Sinandomeng Rice 25kg,RICE-25KG,4800011223344,Grains,18,10,Healthy,1200.00,1550.00,");
+
+    const countCsv = exportCountVarianceCsv([
+      {
+        sku: "RICE-25KG",
+        product: "Sinandomeng Rice 25kg",
+        bin: "A-01",
+        systemQty: 20,
+        countedQty: 18,
+        delta: -2,
+        reason: "+Damaged sack",
+      },
+    ]);
+    expect(countCsv).toContain("Product,SKU,Bin,System Qty,Counted Qty,Variance,Reason");
+    expect(countCsv).toContain("Sinandomeng Rice 25kg,RICE-25KG,A-01,20,18,-2,'+Damaged sack");
   });
 });
