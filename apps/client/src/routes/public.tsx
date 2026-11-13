@@ -27,8 +27,9 @@ import { accessQuery, hasSession, lastSlug, rememberSlug } from "../lib/session.
 import { saveStoredPortal } from "../lib/portal.ts";
 import { useErrorMessage, useValidationMessage } from "../lib/i18n-helpers.ts";
 import { applyTheme, nextTheme, readTheme, type ThemeChoice } from "../lib/theme.ts";
-import { Alert, Badge, Button, Card, Dialog, Field, Input, TabPanel, Tabs, useToast } from "../components/ui.tsx";
+import { Alert, Button, Dialog, Field, Input, TabPanel, Tabs, useToast } from "../components/ui.tsx";
 import { LanguageSelect } from "../components/LanguageSelect.tsx";
+import { Receipt, ReceiptDash } from "../ui/Receipt.tsx";
 
 export function ThemeCycleButton() {
   const { t } = useTranslation("common");
@@ -38,7 +39,7 @@ export function ThemeCycleButton() {
     <Button
       variant="ghost"
       size="sm"
-      className="px-2.5"
+      className="px-2.5 text-muted-on-dark hover:bg-ink-2 hover:text-lime"
       aria-label={`${t("theme.label")}: ${t(`theme.${choice}`)}`}
       title={`${t("theme.label")}: ${t(`theme.${choice}`)}`}
       onClick={() => {
@@ -62,35 +63,41 @@ function Shell({
   const { t } = useTranslation("auth");
   const isWh = portal === "warehouse";
   return (
-    <main className="mx-auto grid min-h-screen w-full max-w-md content-center gap-6 px-4 py-10">
-      <header className="flex items-center justify-between gap-3">
-        <Link to={isWh ? "/warehouse" : "/"} className="flex items-center gap-3 text-slate-900">
-          <img
-            src="/logo_squircle.png"
-            alt="XZACTO POS"
-            width={40}
-            height={40}
-            className="h-10 w-10 rounded-xl border border-slate-200/90 object-cover shadow-xs"
-          />
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-lg font-semibold tracking-tight text-slate-900">XZACTO</span>
-              <Badge tone={isWh ? "warn" : "neutral"}>
+    <div className="min-h-screen w-full bg-ink text-text-on-dark">
+      <main className="mx-auto grid min-h-screen w-full max-w-md content-center gap-6 px-4 py-10">
+        <header className="flex flex-wrap items-center justify-between gap-3">
+          <Link to="/" className="grid gap-1.5">
+            <div className="flex items-center gap-2.5">
+              <img
+                src="/brand/xzacto-logo-on-dark.svg"
+                alt="xzacto"
+                width={118}
+                height={32}
+                className="h-8 w-auto"
+              />
+              <span
+                className={
+                  isWh
+                    ? "rounded-full bg-sw-pastry px-2.5 py-0.5 font-mono text-[11px] font-semibold tracking-[0.06em] text-sw-pastry-fg uppercase"
+                    : "rounded-full bg-lime px-2.5 py-0.5 font-mono text-[11px] font-semibold tracking-[0.06em] text-ink uppercase"
+                }
+              >
                 {isWh ? t("warehouse.badge") : "POS"}
-              </Badge>
+              </span>
             </div>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-muted-on-dark">
               {isWh ? t("warehouse.tagline") : t("brand.tagline")}
             </p>
+          </Link>
+          <div className="flex items-center gap-2 [&_select]:min-h-[38px] [&_select]:h-9.5 [&_select]:rounded-full [&_select]:border-[1.5px] [&_select]:border-ink-line-2 [&_select]:bg-ink-2 [&_select]:px-3 [&_select]:text-xs [&_select]:font-medium [&_select]:text-text-on-dark">
+            <LanguageSelect />
           </div>
-        </Link>
-        <div className="flex items-center gap-1.5 [&_select]:h-8 [&_select]:text-xs">
-          <ThemeCycleButton />
-          <LanguageSelect />
-        </div>
-      </header>
-      {children}
-    </main>
+        </header>
+        <Receipt className="receipt-float paper-surface px-6 py-7 sm:px-7">
+          {children}
+        </Receipt>
+      </main>
+    </div>
   );
 }
 
@@ -273,32 +280,32 @@ export function HomePage() {
   if (needsStoreName) {
     return (
       <Shell>
-        <Card>
-          <form onSubmit={(e) => void submitPendingStore(e)} className="grid gap-4" noValidate>
-            <div>
-              <h1 className="text-lg font-semibold text-slate-900">{t("signup.finishTitle")}</h1>
-              <p className="text-sm text-slate-600">{t("signup.finishSubtitle")}</p>
-            </div>
-            <Field label={t("signup.storeName")} error={storeError}>
-              <Input
-                value={storeName}
-                onChange={(e) => setStoreName(e.target.value)}
-                placeholder={t("signup.storeNamePlaceholder")}
-                autoFocus
-              />
-            </Field>
-            <Button type="submit" disabled={busy}>
-              {busy ? t("signup.submitting") : t("signup.finishSubmit")}
-            </Button>
-          </form>
-        </Card>
+        <form onSubmit={(e) => void submitPendingStore(e)} className="grid gap-4" noValidate>
+          <div>
+            <h1 className="font-display text-2xl font-extrabold tracking-[-0.02em] text-text-on-light">
+              {t("signup.finishTitle")}
+            </h1>
+            <p className="mt-1 text-sm text-muted-on-light">{t("signup.finishSubtitle")}</p>
+          </div>
+          <Field label={t("signup.storeName")} error={storeError}>
+            <Input
+              value={storeName}
+              onChange={(e) => setStoreName(e.target.value)}
+              placeholder={t("signup.storeNamePlaceholder")}
+              autoFocus
+            />
+          </Field>
+          <Button type="submit" disabled={busy}>
+            {busy ? t("signup.submitting") : t("signup.finishSubmit")}
+          </Button>
+        </form>
       </Shell>
     );
   }
 
   return (
     <Shell>
-      <Card className="grid gap-6">
+      <div className="grid gap-5">
         <Tabs
           value={tab}
           onValueChange={(v) => setTab(v as "branch" | "email")}
@@ -311,7 +318,9 @@ export function HomePage() {
           <TabPanel value="branch">
             <form onSubmit={submitBranch} className="grid gap-4" noValidate>
               <div>
-                <h1 className="text-lg font-semibold text-slate-900">{t("home.title")}</h1>
+                <h1 className="font-display text-2xl font-extrabold tracking-[-0.02em] text-text-on-light">
+                  {t("home.title")}
+                </h1>
               </div>
               <Field label={t("home.slug")} hint={t("home.slugHint")} error={slugError}>
                 <Input
@@ -331,8 +340,10 @@ export function HomePage() {
           <TabPanel value="email">
             <form onSubmit={(e) => void submitEmail(e)} className="grid gap-4" noValidate>
               <div>
-                <h1 className="text-lg font-semibold text-slate-900">{t("home.emailTitle")}</h1>
-                <p className="text-sm text-slate-600">{t("home.emailSubtitle")}</p>
+                <h1 className="font-display text-2xl font-extrabold tracking-[-0.02em] text-text-on-light">
+                  {t("home.emailTitle")}
+                </h1>
+                <p className="mt-1 text-sm text-muted-on-light">{t("home.emailSubtitle")}</p>
               </div>
               {emailFormError ? <Alert>{emailFormError}</Alert> : null}
               <Field label={t("home.email")} error={vm(emailErrors["email"])}>
@@ -371,10 +382,12 @@ export function HomePage() {
           </TabPanel>
         </Tabs>
 
-        <div className="grid gap-3 border-t border-slate-200 pt-4">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2 text-sm text-slate-700">
-              <Warehouse size={16} className="text-slate-500 shrink-0" aria-hidden />
+        <ReceiptDash className="my-1" />
+
+        <div className="grid gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-sm text-text-on-light">
+              <Warehouse size={16} className="shrink-0 text-muted-on-light" aria-hidden />
               <span>{t("home.warehousePrompt")}</span>
             </div>
             <Link to="/warehouse">
@@ -383,9 +396,9 @@ export function HomePage() {
               </Button>
             </Link>
           </div>
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2 text-sm text-slate-700">
-              <Store size={16} className="text-slate-500 shrink-0" aria-hidden />
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-sm text-text-on-light">
+              <Store size={16} className="shrink-0 text-muted-on-light" aria-hidden />
               <span>{t("home.soloPrompt")}</span>
             </div>
             <Link to="/signup">
@@ -395,7 +408,7 @@ export function HomePage() {
             </Link>
           </div>
         </div>
-      </Card>
+      </div>
 
       <ForgotPasswordDialog open={forgotOpen} onOpenChange={setForgotOpen} initialEmail={email} />
     </Shell>
@@ -458,62 +471,64 @@ export function WarehousePortalLoginPage() {
 
   return (
     <Shell portal="warehouse">
-      <Card>
-        <form onSubmit={(e) => void submit(e)} className="grid gap-4" noValidate>
-          <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-amber-50 text-amber-800">
-              <Warehouse size={20} aria-hidden />
-            </div>
-            <div>
-              <h1 className="text-lg font-semibold text-slate-900">{t("warehouse.title")}</h1>
-              <p className="text-sm text-slate-600">{t("warehouse.subtitle")}</p>
-            </div>
+      <form onSubmit={(e) => void submit(e)} className="grid gap-4" noValidate>
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-sw-pastry text-sw-pastry-fg">
+            <Warehouse size={20} aria-hidden />
           </div>
-
-          {formError ? <Alert>{formError}</Alert> : null}
-
-          <Field label={t("warehouse.slug")} hint={t("warehouse.slugHint")} error={vm(errors["slug"])}>
-            <Input
-              value={slug}
-              onChange={(e) => setSlug(e.target.value)}
-              autoCapitalize="none"
-              autoFocus={!slug}
-              data-testid="wh-login-slug"
-            />
-          </Field>
-
-          <Field label={t("warehouse.identifier")} error={vm(errors["identifier"])}>
-            <Input
-              value={identifier}
-              onChange={(e) => setIdentifier(e.target.value)}
-              autoComplete="username"
-              autoCapitalize="none"
-              autoFocus={Boolean(slug)}
-              data-testid="wh-login-identifier"
-            />
-          </Field>
-
-          <Field label={t("warehouse.password")} error={vm(errors["password"])}>
-            <Input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
-              data-testid="wh-login-password"
-            />
-          </Field>
-
-          <Button type="submit" disabled={busy} data-testid="wh-login-submit">
-            {busy ? t("login.signingIn") : t("warehouse.submit")}
-          </Button>
-
-          <div className="pt-1 text-center">
-            <Link to="/login" className="text-sm text-slate-600 hover:text-slate-900">
-              {t("warehouse.posLink")}
-            </Link>
+          <div>
+            <h1 className="font-display text-2xl font-extrabold tracking-[-0.02em] text-text-on-light">
+              {t("warehouse.title")}
+            </h1>
+            <p className="mt-0.5 text-sm text-muted-on-light">{t("warehouse.subtitle")}</p>
           </div>
-        </form>
-      </Card>
+        </div>
+
+        {formError ? <Alert>{formError}</Alert> : null}
+
+        <Field label={t("warehouse.slug")} hint={t("warehouse.slugHint")} error={vm(errors["slug"])}>
+          <Input
+            value={slug}
+            onChange={(e) => setSlug(e.target.value)}
+            autoCapitalize="none"
+            autoFocus={!slug}
+            data-testid="wh-login-slug"
+          />
+        </Field>
+
+        <Field label={t("warehouse.identifier")} error={vm(errors["identifier"])}>
+          <Input
+            value={identifier}
+            onChange={(e) => setIdentifier(e.target.value)}
+            autoComplete="username"
+            autoCapitalize="none"
+            autoFocus={Boolean(slug)}
+            data-testid="wh-login-identifier"
+          />
+        </Field>
+
+        <Field label={t("warehouse.password")} error={vm(errors["password"])}>
+          <Input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="current-password"
+            data-testid="wh-login-password"
+          />
+        </Field>
+
+        <Button type="submit" disabled={busy} data-testid="wh-login-submit">
+          {busy ? t("login.signingIn") : t("warehouse.submit")}
+        </Button>
+
+        <ReceiptDash className="my-1" />
+
+        <div className="text-center">
+          <Link to="/login" className="text-sm font-medium text-muted-on-light hover:text-text-on-light">
+            {t("warehouse.posLink")}
+          </Link>
+        </div>
+      </form>
     </Shell>
   );
 }
@@ -567,57 +582,58 @@ export function SoloSignUpPage() {
 
   return (
     <Shell>
-      <Card>
-        <form onSubmit={(e) => void submit(e)} className="grid gap-4" noValidate>
-          <div>
-            <h1 className="text-lg font-semibold text-slate-900">{t("signup.title")}</h1>
-            <p className="text-sm text-slate-600">{t("signup.subtitle")}</p>
-          </div>
-          {formError ? <Alert>{formError}</Alert> : null}
-          {checkEmailNotice ? (
-            <Alert tone="good">{t("signup.checkEmail")}</Alert>
-          ) : (
-            <>
-              <Field label={t("signup.storeName")} error={vm(errors["storeName"])}>
-                <Input
-                  value={storeName}
-                  onChange={(e) => setStoreName(e.target.value)}
-                  placeholder={t("signup.storeNamePlaceholder")}
-                  autoFocus
-                  data-testid="signup-store-name"
-                />
-              </Field>
-              <Field label={t("signup.email")} error={vm(errors["email"])}>
-                <Input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  autoComplete="email"
-                  autoCapitalize="none"
-                  data-testid="signup-email"
-                />
-              </Field>
-              <Field label={t("signup.password")} hint={t("signup.passwordHint")} error={vm(errors["password"])}>
-                <Input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  autoComplete="new-password"
-                  data-testid="signup-password"
-                />
-              </Field>
-              <Button type="submit" disabled={busy} data-testid="signup-submit">
-                {busy ? t("signup.submitting") : t("signup.submit")}
-              </Button>
-            </>
-          )}
-          <div className="pt-2 text-center">
-            <Link to="/login" className="text-sm text-slate-600 hover:text-slate-900">
-              {t("signup.haveAccount")}
-            </Link>
-          </div>
-        </form>
-      </Card>
+      <form onSubmit={(e) => void submit(e)} className="grid gap-4" noValidate>
+        <div>
+          <h1 className="font-display text-2xl font-extrabold tracking-[-0.02em] text-text-on-light">
+            {t("signup.title")}
+          </h1>
+          <p className="mt-1 text-sm text-muted-on-light">{t("signup.subtitle")}</p>
+        </div>
+        {formError ? <Alert>{formError}</Alert> : null}
+        {checkEmailNotice ? (
+          <Alert tone="good">{t("signup.checkEmail")}</Alert>
+        ) : (
+          <>
+            <Field label={t("signup.storeName")} error={vm(errors["storeName"])}>
+              <Input
+                value={storeName}
+                onChange={(e) => setStoreName(e.target.value)}
+                placeholder={t("signup.storeNamePlaceholder")}
+                autoFocus
+                data-testid="signup-store-name"
+              />
+            </Field>
+            <Field label={t("signup.email")} error={vm(errors["email"])}>
+              <Input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+                autoCapitalize="none"
+                data-testid="signup-email"
+              />
+            </Field>
+            <Field label={t("signup.password")} hint={t("signup.passwordHint")} error={vm(errors["password"])}>
+              <Input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="new-password"
+                data-testid="signup-password"
+              />
+            </Field>
+            <Button type="submit" disabled={busy} data-testid="signup-submit">
+              {busy ? t("signup.submitting") : t("signup.submit")}
+            </Button>
+          </>
+        )}
+        <ReceiptDash className="my-1" />
+        <div className="text-center">
+          <Link to="/login" className="text-sm font-medium text-muted-on-light hover:text-text-on-light">
+            {t("signup.haveAccount")}
+          </Link>
+        </div>
+      </form>
     </Shell>
   );
 }
@@ -664,43 +680,43 @@ export function LoginPage() {
 
   return (
     <Shell>
-      <Card>
-        <form onSubmit={(e) => void submit(e)} className="grid gap-4" noValidate>
-          <div>
-            <h1 className="text-lg font-semibold text-slate-900">{t("login.title")}</h1>
-            <p className="text-sm text-slate-600">{t("login.business", { slug })}</p>
-          </div>
-          {formError ? <Alert>{formError}</Alert> : null}
-          <Field label={t("login.identifier")} hint={t("login.identifierHint")} error={vm(errors["identifier"])}>
-            <Input
-              value={identifier}
-              onChange={(e) => setIdentifier(e.target.value)}
-              autoComplete="username"
-              autoCapitalize="none"
-              autoFocus
-            />
-          </Field>
-          <Field label={t("login.password")} error={vm(errors["password"])}>
-            <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
-          </Field>
-          <Button type="submit" disabled={busy}>
-            {busy ? t("login.signingIn") : t("login.submit")}
+      <form onSubmit={(e) => void submit(e)} className="grid gap-4" noValidate>
+        <div>
+          <h1 className="font-display text-2xl font-extrabold tracking-[-0.02em] text-text-on-light">
+            {t("login.title")}
+          </h1>
+          <p className="mt-1 font-mono text-xs font-semibold text-muted-on-light">{t("login.business", { slug })}</p>
+        </div>
+        {formError ? <Alert>{formError}</Alert> : null}
+        <Field label={t("login.identifier")} hint={t("login.identifierHint")} error={vm(errors["identifier"])}>
+          <Input
+            value={identifier}
+            onChange={(e) => setIdentifier(e.target.value)}
+            autoComplete="username"
+            autoCapitalize="none"
+            autoFocus
+          />
+        </Field>
+        <Field label={t("login.password")} error={vm(errors["password"])}>
+          <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
+        </Field>
+        <Button type="submit" disabled={busy}>
+          {busy ? t("login.signingIn") : t("login.submit")}
+        </Button>
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setForgotOpen(true)}
+            data-testid="login-forgot-btn"
+          >
+            {t("login.forgotLink")}
           </Button>
-          <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setForgotOpen(true)}
-              data-testid="login-forgot-btn"
-            >
-              {t("login.forgotLink")}
-            </Button>
-            <Link to="/login" className="text-sm text-slate-600 hover:text-slate-900">
-              {t("login.otherBusiness")}
-            </Link>
-          </div>
-        </form>
-      </Card>
+          <Link to="/login" className="text-sm font-medium text-muted-on-light hover:text-text-on-light">
+            {t("login.otherBusiness")}
+          </Link>
+        </div>
+      </form>
 
       <ForgotPasswordDialog
         open={forgotOpen}
@@ -756,47 +772,48 @@ export function ResetPasswordPage() {
 
   return (
     <Shell>
-      <Card>
-        <form onSubmit={(e) => void submit(e)} className="grid gap-4" noValidate>
-          <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-brand-50 text-brand-600">
-              <KeyRound size={20} aria-hidden />
-            </div>
-            <div>
-              <h1 className="text-lg font-semibold text-slate-900">{t("reset.title")}</h1>
-              <p className="text-sm text-slate-600">{t("reset.subtitle")}</p>
-            </div>
+      <form onSubmit={(e) => void submit(e)} className="grid gap-4" noValidate>
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-ink text-lime">
+            <KeyRound size={20} aria-hidden />
           </div>
-          {formError ? <Alert>{formError}</Alert> : null}
-          <Field label={t("reset.newPassword")} error={vm(errors["password"])}>
-            <Input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="new-password"
-              autoFocus
-              data-testid="reset-new-password"
-            />
-          </Field>
-          <Field label={t("reset.confirmPassword")} error={vm(errors["confirmPassword"])}>
-            <Input
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              autoComplete="new-password"
-              data-testid="reset-confirm-password"
-            />
-          </Field>
-          <Button type="submit" disabled={busy} data-testid="reset-submit">
-            {busy ? t("reset.saving") : t("reset.submit")}
-          </Button>
-          <div className="pt-1 text-center">
-            <Link to="/login" className="text-sm text-slate-600 hover:text-slate-900">
-              {t("reset.backToSignIn")}
-            </Link>
+          <div>
+            <h1 className="font-display text-2xl font-extrabold tracking-[-0.02em] text-text-on-light">
+              {t("reset.title")}
+            </h1>
+            <p className="mt-0.5 text-sm text-muted-on-light">{t("reset.subtitle")}</p>
           </div>
-        </form>
-      </Card>
+        </div>
+        {formError ? <Alert>{formError}</Alert> : null}
+        <Field label={t("reset.newPassword")} error={vm(errors["password"])}>
+          <Input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="new-password"
+            autoFocus
+            data-testid="reset-new-password"
+          />
+        </Field>
+        <Field label={t("reset.confirmPassword")} error={vm(errors["confirmPassword"])}>
+          <Input
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            autoComplete="new-password"
+            data-testid="reset-confirm-password"
+          />
+        </Field>
+        <Button type="submit" disabled={busy} data-testid="reset-submit">
+          {busy ? t("reset.saving") : t("reset.submit")}
+        </Button>
+        <ReceiptDash className="my-1" />
+        <div className="text-center">
+          <Link to="/login" className="text-sm font-medium text-muted-on-light hover:text-text-on-light">
+            {t("reset.backToSignIn")}
+          </Link>
+        </div>
+      </form>
     </Shell>
   );
 }

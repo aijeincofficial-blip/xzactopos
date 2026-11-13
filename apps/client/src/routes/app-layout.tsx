@@ -284,23 +284,28 @@ export function AppLayout() {
   const displayName = access.full_name || access.username;
 
   const identity = (
-    <div className="grid gap-1 border-b border-slate-100 px-4 py-3.5">
+    <div className="grid gap-1.5 border-b-[1.5px] border-ink-line px-4 py-4">
       <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2.5 truncate">
-          <img
-            src="/logo_squircle.png"
-            alt="XZACTO"
-            width={28}
-            height={28}
-            className="h-7 w-7 shrink-0 rounded-lg border border-slate-200/80 object-cover shadow-2xs"
-          />
-          <span className="text-sm font-semibold tracking-tight text-slate-900">XZACTO</span>
-        </div>
-        <Badge tone={isWarehousePortal ? "warn" : "neutral"}>
+        <img
+          src="/brand/xzacto-logo-on-dark.svg"
+          alt="xzacto"
+          width={108}
+          height={28}
+          className="h-7 w-auto"
+        />
+        <span
+          className={
+            isWarehousePortal
+              ? "rounded-full bg-sw-pastry px-2.5 py-0.5 font-mono text-[10px] font-semibold tracking-[0.06em] text-sw-pastry-fg uppercase"
+              : "rounded-full bg-lime px-2.5 py-0.5 font-mono text-[10px] font-semibold tracking-[0.06em] text-ink uppercase"
+          }
+        >
           {isWarehousePortal ? t("admin:portal.warehouseBadge") : t("admin:portal.posBadge")}
-        </Badge>
+        </span>
       </div>
-      <div className="truncate pt-0.5 text-xs font-medium text-slate-500">{access.tenant.name}</div>
+      <div className="truncate font-mono text-[11px] font-medium text-muted-on-dark">
+        {access.tenant.name}
+      </div>
     </div>
   );
 
@@ -310,8 +315,8 @@ export function AppLayout() {
         const items = visible.filter((n) => n.group === g);
         if (items.length === 0) return null;
         return (
-          <div key={g} className="grid gap-0.5">
-            <div className="px-2.5 pb-1 text-xs font-semibold tracking-wider text-slate-400 uppercase">
+          <div key={g} className="grid gap-1">
+            <div className="px-3 pb-1 font-mono text-[10px] font-semibold tracking-[0.08em] text-muted-on-dark uppercase">
               {t(`admin:nav.group.${g}`)}
             </div>
             {items.map((n) => {
@@ -322,14 +327,15 @@ export function AppLayout() {
                   key={n.to}
                   to={n.to}
                   activeOptions={{ exact: n.to === "/app" }}
-                  className="flex items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-sm text-slate-600 transition-colors hover:bg-slate-100/80 hover:text-slate-900"
+                  className="flex min-h-[42px] items-center justify-between gap-2 rounded-[14px] px-3 py-2 text-sm font-medium text-muted-on-dark transition-colors hover:bg-ink-2 hover:text-lime"
                   activeProps={{
-                    className: "bg-brand-50 font-semibold text-brand-text hover:bg-brand-50 hover:text-brand-text",
+                    className:
+                      "bg-lime font-semibold text-ink hover:bg-lime-hover hover:text-ink",
                     "aria-current": "page",
                   }}
                 >
                   <span className="flex items-center gap-2.5 truncate">
-                    <Icon size={17} className="shrink-0 opacity-85" aria-hidden />
+                    <Icon size={17} className="shrink-0" aria-hidden />
                     <span className="truncate">{t(`admin:nav.${n.key}`)}</span>
                   </span>
                   {showReceiveBadge ? <Badge tone="warn">{incomingCount}</Badge> : null}
@@ -343,18 +349,18 @@ export function AppLayout() {
   );
 
   const sidebarFooter = (
-    <div className="grid gap-2.5 border-t border-slate-100 bg-slate-50/50 p-3">
+    <div className="grid gap-3 border-t-[1.5px] border-ink-line bg-ink-2 p-3.5">
       <div className="flex items-center gap-2.5 px-1">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-xs font-semibold text-brand-text">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] bg-lime font-display text-xs font-extrabold text-ink">
           {userInitials(displayName)}
         </div>
         <div className="min-w-0 flex-1">
-          <div className="truncate text-xs font-semibold text-slate-900">{displayName}</div>
-          <div className="truncate text-xs text-slate-500">{t(`admin:roles.${access.role}`)}</div>
+          <div className="truncate text-xs font-semibold text-text-on-dark">{displayName}</div>
+          <div className="truncate font-mono text-[11px] text-muted-on-dark">{t(`admin:roles.${access.role}`)}</div>
         </div>
       </div>
       <div className="flex items-center justify-between gap-2">
-        <div className="flex-1 [&_select]:h-8 [&_select]:w-full [&_select]:text-xs">
+        <div className="flex-1 [&_select]:min-h-[36px] [&_select]:h-9 [&_select]:w-full [&_select]:rounded-full [&_select]:border-ink-line-2 [&_select]:bg-ink [&_select]:px-3 [&_select]:text-xs [&_select]:text-text-on-dark">
           <LanguageSelect onChoose={(l) => void chooseLocale(l)} />
         </div>
         <Button
@@ -362,9 +368,9 @@ export function AppLayout() {
           size="sm"
           onClick={() => void leave()}
           title={t("common:actions.signOut")}
-          className="shrink-0"
+          className="shrink-0 border-ink-line-2 bg-transparent text-text-on-dark hover:border-lime hover:text-lime"
         >
-          <LogOut size={14} className="text-slate-500" aria-hidden />
+          <LogOut size={14} aria-hidden />
           <span>{t("common:actions.signOut")}</span>
         </Button>
       </div>
@@ -372,11 +378,11 @@ export function AppLayout() {
   );
 
   return (
-    <div className={hideDockedSidebar ? "min-h-screen" : "min-h-screen md:grid md:grid-cols-[15.5rem_1fr]"}>
+    <div className={hideDockedSidebar ? "min-h-screen" : "min-h-screen md:grid md:grid-cols-[16rem_1fr]"}>
       {showNav ? (
         <>
           {!hideDockedSidebar ? (
-            <aside className="sticky top-0 hidden h-screen grid-rows-[auto_1fr_auto] border-r border-slate-200/90 bg-white md:grid">
+            <aside className="sticky top-0 hidden h-screen grid-rows-[auto_1fr_auto] border-r-[1.5px] border-ink-line bg-ink text-text-on-dark md:grid">
               {identity}
               {sidebar}
               {sidebarFooter}
@@ -386,15 +392,15 @@ export function AppLayout() {
             <div className={hideDockedSidebar ? "fixed inset-0 z-50" : "fixed inset-0 z-50 md:hidden"}>
               <button
                 aria-label={t("common:actions.close")}
-                className="absolute inset-0 bg-slate-950/45 backdrop-blur-[1px]"
+                className="absolute inset-0 bg-ink/75"
                 onClick={() => setMenuOpen(false)}
               />
-              <aside className="absolute inset-y-0 left-0 grid w-68 grid-rows-[auto_1fr_auto] bg-white shadow-xl">
+              <aside className="receipt-float absolute inset-y-0 left-0 grid w-72 grid-rows-[auto_1fr_auto] border-r-[1.5px] border-ink-line bg-ink text-text-on-dark">
                 <div className="flex items-center justify-between pr-2">
                   <div className="min-w-0 flex-1">{identity}</div>
                   <button
                     aria-label={t("common:actions.close")}
-                    className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+                    className="rounded-full p-2 text-muted-on-dark hover:bg-ink-2 hover:text-lime"
                     onClick={() => setMenuOpen(false)}
                   >
                     <X size={18} />
@@ -409,46 +415,56 @@ export function AppLayout() {
       ) : null}
 
       <div className={isSellRoute ? "flex min-h-screen min-w-0 flex-col lg:h-screen lg:overflow-hidden" : "min-w-0"}>
-        <header className="sticky top-0 z-30 flex h-13 items-center gap-2 border-b border-slate-200/80 bg-white/95 px-4 backdrop-blur">
+        <header
+          className={
+            hideDockedSidebar
+              ? "sticky top-0 z-30 flex min-h-14 items-center gap-2 border-b-[1.5px] border-ink-line bg-ink px-4 text-text-on-dark"
+              : "sticky top-0 z-30 flex min-h-14 items-center gap-2 border-b-[1.5px] border-slate-200 bg-white px-4"
+          }
+        >
           {showNav ? (
             <Button
               variant="ghost"
               size="sm"
-              className={hideDockedSidebar ? "px-2" : "px-2 md:hidden"}
+              className={
+                hideDockedSidebar
+                  ? "px-2.5 text-text-on-dark hover:bg-ink-2 hover:text-lime"
+                  : "px-2.5 md:hidden"
+              }
               aria-label={t("admin:nav.menu")}
               data-testid="nav-drawer-btn"
               onClick={() => setMenuOpen(true)}
             >
-              <Menu size={18} className="text-slate-600" aria-hidden />
+              <Menu size={18} aria-hidden />
             </Button>
           ) : null}
 
           {hideDockedSidebar ? (
-            <div className="mr-auto flex min-w-0 items-center gap-2">
+            <div className="mr-auto flex min-w-0 items-center gap-2.5">
               <img
-                src="/logo_squircle.png"
-                alt="XZACTO POS"
-                width={26}
-                height={26}
-                className="h-6.5 w-6.5 shrink-0 rounded-lg border border-slate-200 object-cover"
+                src="/brand/xzacto-mark.svg"
+                alt="xzacto"
+                width={28}
+                height={28}
+                className="h-7 w-7 shrink-0"
               />
-              <span className="hidden text-sm font-semibold tracking-tight text-slate-900 sm:inline">
+              <span className="hidden font-display text-sm font-extrabold tracking-tight text-text-on-dark sm:inline">
                 {access.tenant.name}
               </span>
               {showNav ? (
-                <nav aria-label="POS quick links" className="ml-2 hidden items-center gap-0.5 lg:flex">
+                <nav aria-label="POS quick links" className="ml-2 hidden items-center gap-1 lg:flex">
                   <Link
                     to="/app/sell"
-                    className="rounded-lg px-2.5 py-1.5 text-xs text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
-                    activeProps={{ className: "bg-brand-50 font-semibold text-brand-text" }}
+                    className="rounded-full px-3 py-1.5 text-xs font-medium text-muted-on-dark transition-colors hover:bg-ink-2 hover:text-lime"
+                    activeProps={{ className: "bg-lime font-semibold text-ink hover:bg-lime-hover hover:text-ink" }}
                   >
                     {t("admin:nav.sell")}
                   </Link>
                   <Link
                     to="/app/inventory"
                     data-testid="kiosk-inventory-link"
-                    className="rounded-lg px-2.5 py-1.5 text-xs text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
-                    activeProps={{ className: "bg-brand-50 font-semibold text-brand-text" }}
+                    className="rounded-full px-3 py-1.5 text-xs font-medium text-muted-on-dark transition-colors hover:bg-ink-2 hover:text-lime"
+                    activeProps={{ className: "bg-lime font-semibold text-ink hover:bg-lime-hover hover:text-ink" }}
                   >
                     {t("admin:nav.inventory")}
                   </Link>
@@ -456,8 +472,8 @@ export function AppLayout() {
                     <Link
                       to="/app/receive-stock"
                       data-testid="kiosk-receive-stock-link"
-                      className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
-                      activeProps={{ className: "bg-brand-50 font-semibold text-brand-text" }}
+                      className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium text-muted-on-dark transition-colors hover:bg-ink-2 hover:text-lime"
+                      activeProps={{ className: "bg-lime font-semibold text-ink hover:bg-lime-hover hover:text-ink" }}
                     >
                       <span>{t("admin:nav.receiveStock")}</span>
                       {incomingCount > 0 ? <Badge tone="warn">{incomingCount}</Badge> : null}
@@ -465,23 +481,23 @@ export function AppLayout() {
                   ) : null}
                   <Link
                     to="/app/sales"
-                    className="rounded-lg px-2.5 py-1.5 text-xs text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
-                    activeProps={{ className: "bg-brand-50 font-semibold text-brand-text" }}
+                    className="rounded-full px-3 py-1.5 text-xs font-medium text-muted-on-dark transition-colors hover:bg-ink-2 hover:text-lime"
+                    activeProps={{ className: "bg-lime font-semibold text-ink hover:bg-lime-hover hover:text-ink" }}
                   >
                     {t("admin:nav.sales")}
                   </Link>
                   <Link
                     to="/app/utang"
-                    className="rounded-lg px-2.5 py-1.5 text-xs text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
-                    activeProps={{ className: "bg-brand-50 font-semibold text-brand-text" }}
+                    className="rounded-full px-3 py-1.5 text-xs font-medium text-muted-on-dark transition-colors hover:bg-ink-2 hover:text-lime"
+                    activeProps={{ className: "bg-lime font-semibold text-ink hover:bg-lime-hover hover:text-ink" }}
                   >
                     {t("admin:nav.utang")}
                   </Link>
                   {can("shift.manage") ? (
                     <Link
                       to="/app/day-close"
-                      className="rounded-lg px-2.5 py-1.5 text-xs text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
-                      activeProps={{ className: "bg-brand-50 font-semibold text-brand-text" }}
+                      className="rounded-full px-3 py-1.5 text-xs font-medium text-muted-on-dark transition-colors hover:bg-ink-2 hover:text-lime"
+                      activeProps={{ className: "bg-lime font-semibold text-ink hover:bg-lime-hover hover:text-ink" }}
                     >
                       {t("admin:nav.dayClose")}
                     </Link>
@@ -491,16 +507,18 @@ export function AppLayout() {
             </div>
           ) : (
             <div className="mr-auto flex min-w-0 items-center gap-2">
-              <span className="truncate text-sm font-semibold text-slate-900 md:hidden">{access.tenant.name}</span>
+              <span className="truncate font-display text-sm font-extrabold text-slate-900 md:hidden">
+                {access.tenant.name}
+              </span>
               {/* Active Location Context Pill */}
               {isWarehousePortal && warehouses.length >= 1 ? (
-                <div className="flex items-center gap-2 rounded-lg border border-slate-200/80 bg-slate-50 px-2.5 py-1 text-xs">
-                  <Warehouse size={14} className="shrink-0 text-amber-600" aria-hidden />
+                <div className="flex items-center gap-2 rounded-full border-[1.5px] border-slate-200 bg-slate-50 px-3 py-1 text-xs">
+                  <Warehouse size={14} className="shrink-0 text-amber-700" aria-hidden />
                   {warehouses.length > 1 ? (
                     <select
                       value={activeWarehouseId ?? ""}
                       onChange={(e) => setActiveWarehouseId(e.target.value)}
-                      className="cursor-pointer bg-transparent font-semibold text-slate-800 focus:outline-none"
+                      className="cursor-pointer bg-transparent font-mono font-semibold text-slate-900 focus:outline-none"
                       aria-label="Active warehouse"
                       data-testid="active-warehouse-select"
                     >
@@ -511,19 +529,19 @@ export function AppLayout() {
                       ))}
                     </select>
                   ) : (
-                    <span className="font-semibold text-slate-800">
+                    <span className="font-mono font-semibold text-slate-900">
                       {warehouses[0]!.code} · {warehouses[0]!.name}
                     </span>
                   )}
                 </div>
               ) : !isWarehousePortal && stores.length >= 1 ? (
-                <div className="hidden items-center gap-2 rounded-lg border border-slate-200/80 bg-slate-50 px-2.5 py-1 text-xs sm:flex">
-                  <Store size={14} className="shrink-0 text-brand-600" aria-hidden />
+                <div className="hidden items-center gap-2 rounded-full border-[1.5px] border-slate-200 bg-slate-50 px-3 py-1 text-xs sm:flex">
+                  <Store size={14} className="shrink-0 text-slate-900" aria-hidden />
                   {stores.length > 1 ? (
                     <select
                       value={activeStoreId ?? ""}
                       onChange={(e) => setActiveStoreId(e.target.value)}
-                      className="cursor-pointer bg-transparent font-semibold text-slate-800 focus:outline-none"
+                      className="cursor-pointer bg-transparent font-mono font-semibold text-slate-900 focus:outline-none"
                       aria-label="Active store"
                     >
                       {stores.map((s) => (
@@ -533,7 +551,7 @@ export function AppLayout() {
                       ))}
                     </select>
                   ) : (
-                    <span className="font-semibold text-slate-800">
+                    <span className="font-mono font-semibold text-slate-900">
                       {stores[0]!.code} · {stores[0]!.name}
                     </span>
                   )}
@@ -544,12 +562,12 @@ export function AppLayout() {
 
           {/* Store Selector when in Kiosk Mode with multiple stores */}
           {hideDockedSidebar && stores.length > 1 ? (
-            <div className="hidden items-center gap-1.5 rounded-lg border border-slate-200/80 bg-slate-50 px-2.5 py-1 text-xs sm:flex">
-              <Store size={13} className="text-brand-600" aria-hidden />
+            <div className="hidden items-center gap-1.5 rounded-full border-[1.5px] border-ink-line-2 bg-ink-2 px-3 py-1 text-xs sm:flex">
+              <Store size={13} className="text-lime" aria-hidden />
               <select
                 value={activeStoreId ?? ""}
                 onChange={(e) => setActiveStoreId(e.target.value)}
-                className="cursor-pointer bg-transparent font-semibold text-slate-800 focus:outline-none"
+                className="cursor-pointer bg-ink-2 font-mono font-semibold text-text-on-dark focus:outline-none"
                 aria-label="Active store"
               >
                 {stores.map((s) => (
@@ -576,17 +594,18 @@ export function AppLayout() {
                 data-testid="switch-pos-portal"
                 onClick={() => switchPortal("pos")}
               >
-                <ShoppingCart size={14} className="text-brand-600" aria-hidden />
+                <ShoppingCart size={14} aria-hidden />
                 <span className="hidden sm:inline">{t("admin:portal.switchToPos")}</span>
               </Button>
             ) : (
               <Button
                 variant="outline"
                 size="sm"
+                className={hideDockedSidebar ? "border-ink-line-2 bg-ink-2 text-text-on-dark hover:border-lime hover:text-lime" : ""}
                 data-testid="switch-warehouse-portal"
                 onClick={() => switchPortal("warehouse")}
               >
-                <Warehouse size={14} className="text-amber-600" aria-hidden />
+                <Warehouse size={14} className={hideDockedSidebar ? "text-lime" : "text-amber-700"} aria-hidden />
                 <span className="hidden sm:inline">{t("admin:portal.switchToWarehouse")}</span>
               </Button>
             )
@@ -597,7 +616,7 @@ export function AppLayout() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="px-2"
+                className={hideDockedSidebar ? "px-2 text-muted-on-dark hover:bg-ink-2 hover:text-lime" : "px-2"}
                 data-testid="fullscreen-kiosk-btn"
                 onClick={() => void toggleFullscreenKiosk()}
                 aria-label={isFullscreen ? t("admin:sell.exitFullscreen") : t("admin:sell.enterFullscreen")}
@@ -608,7 +627,11 @@ export function AppLayout() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="hidden px-2 md:inline-flex"
+                className={
+                  hideDockedSidebar
+                    ? "hidden px-2 text-muted-on-dark hover:bg-ink-2 hover:text-lime md:inline-flex"
+                    : "hidden px-2 md:inline-flex"
+                }
                 data-testid="kiosk-mode-toggle"
                 onClick={toggleKioskMode}
                 aria-label={hideDockedSidebar ? t("admin:sell.dockSidebar") : t("admin:sell.kioskMode")}
@@ -622,7 +645,7 @@ export function AppLayout() {
           <Button
             variant="ghost"
             size="sm"
-            className="px-2"
+            className={hideDockedSidebar ? "px-2 text-muted-on-dark hover:bg-ink-2 hover:text-lime" : "px-2"}
             data-testid="theme-toggle"
             aria-label={`${t("common:theme.label")}: ${t(`common:theme.${theme}`)}`}
             title={`${t("common:theme.label")}: ${t(`common:theme.${theme}`)}`}
@@ -642,7 +665,7 @@ export function AppLayout() {
           className={
             isSellRoute
               ? "grid min-h-0 flex-1 lg:overflow-hidden"
-              : "mx-auto grid w-full max-w-6xl gap-6 px-4 py-6 sm:px-6"
+              : "mx-auto grid w-full max-w-6xl gap-6 px-4 pt-6 pb-24 sm:px-6 md:pb-8"
           }
         >
           {!isOnline ? (
@@ -650,22 +673,56 @@ export function AppLayout() {
               role="status"
               aria-live="polite"
               data-testid="offline-banner"
-              className="m-4 flex items-start gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 shadow-2xs"
+              className="m-4 flex items-start gap-3 rounded-[20px] border-[1.5px] border-ink bg-ink p-4 text-sm text-text-on-dark"
             >
-              <WifiOff className="mt-0.5 size-5 shrink-0 text-amber-600" aria-hidden />
+              <WifiOff className="mt-0.5 size-5 shrink-0 text-lime" aria-hidden />
               <div>
-                <p className="font-semibold">{t("common:offline.bannerTitle")}</p>
-                <p className="mt-1 text-xs text-amber-800">{t("common:offline.bannerDescription")}</p>
+                <p className="font-semibold text-lime">{t("common:offline.bannerTitle")}</p>
+                <p className="mt-1 text-xs text-muted-on-dark">{t("common:offline.bannerDescription")}</p>
               </div>
             </div>
           ) : null}
           {access.tenant.status !== "active" ? (
-            <p role="alert" className="m-4 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            <p role="alert" className="m-4 rounded-[16px] border-[1.5px] border-sw-pastry-fg/20 bg-sw-pastry px-4 py-3 text-sm font-medium text-sw-pastry-fg">
               {t("admin:suspended")}
             </p>
           ) : null}
           <Outlet />
         </main>
+
+        {showNav && !isSellRoute ? (
+          <nav
+            aria-label={t("admin:nav.label")}
+            className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-around gap-1 border-t-[1.5px] border-ink-line bg-ink px-2 py-2 text-text-on-dark md:hidden"
+          >
+            {visible.slice(0, 4).map((n) => {
+              const Icon = n.icon;
+              return (
+                <Link
+                  key={n.to}
+                  to={n.to}
+                  activeOptions={{ exact: n.to === "/app" }}
+                  className="flex min-h-[44px] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-[14px] px-1.5 py-1 text-[11px] font-medium text-muted-on-dark transition-colors hover:text-lime"
+                  activeProps={{
+                    className: "bg-lime font-semibold text-ink hover:text-ink",
+                    "aria-current": "page",
+                  }}
+                >
+                  <Icon size={17} strokeWidth={1.75} aria-hidden />
+                  <span className="max-w-full truncate">{t(`admin:nav.${n.key}`)}</span>
+                </Link>
+              );
+            })}
+            <button
+              type="button"
+              onClick={() => setMenuOpen(true)}
+              className="flex min-h-[44px] min-w-0 flex-1 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-[14px] px-1.5 py-1 text-[11px] font-medium text-muted-on-dark transition-colors hover:text-lime"
+            >
+              <Menu size={17} strokeWidth={1.75} aria-hidden />
+              <span className="max-w-full truncate">{t("admin:nav.menu")}</span>
+            </button>
+          </nav>
+        ) : null}
       </div>
     </div>
   );
@@ -709,13 +766,15 @@ export function DashboardPage() {
           {allowedPortals.includes("pos") && can("sale.create") ? (
             <Card className="grid content-between gap-5" data-testid="portal-card-pos">
               <div className="flex items-start gap-3.5">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[16px] bg-ink text-lime">
                   <ShoppingCart size={20} aria-hidden />
                 </div>
                 <div className="grid gap-1">
                   <div className="flex items-center gap-2">
-                    <h2 className="text-base font-semibold text-slate-900">{t("portal.posPortalTitle")}</h2>
-                    <Badge tone="neutral">{t("portal.posBadge")}</Badge>
+                    <h2 className="font-display text-lg font-extrabold tracking-[-0.02em] text-slate-900">
+                      {t("portal.posPortalTitle")}
+                    </h2>
+                    <Badge tone="good">{t("portal.posBadge")}</Badge>
                   </div>
                   <p className="text-sm text-slate-500">{t("portal.posPortalDesc")}</p>
                 </div>
@@ -756,12 +815,14 @@ export function DashboardPage() {
           {allowedPortals.includes("warehouse") ? (
             <Card className="grid content-between gap-5" data-testid="portal-card-warehouse">
               <div className="flex items-start gap-3.5">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[16px] bg-sw-pastry text-sw-pastry-fg">
                   <Warehouse size={20} aria-hidden />
                 </div>
                 <div className="grid gap-1">
                   <div className="flex items-center gap-2">
-                    <h2 className="text-base font-semibold text-slate-900">{t("portal.warehousePortalTitle")}</h2>
+                    <h2 className="font-display text-lg font-extrabold tracking-[-0.02em] text-slate-900">
+                      {t("portal.warehousePortalTitle")}
+                    </h2>
                     <Badge tone="warn">{t("portal.warehouseBadge")}</Badge>
                   </div>
                   <p className="text-sm text-slate-500">{t("portal.warehousePortalDesc")}</p>
@@ -793,7 +854,9 @@ export function DashboardPage() {
       ) : null}
 
       <section className="grid gap-3">
-        <h2 className="text-sm font-semibold tracking-wider text-slate-500 uppercase">{t("dashboard.yourLocations")}</h2>
+        <h2 className="font-mono text-xs font-semibold tracking-[0.08em] text-slate-500 uppercase">
+          {t("dashboard.yourLocations")}
+        </h2>
         {access.locations.length === 0 ? (
           <Card>
             <p className="text-sm text-slate-500">{t("dashboard.noLocations")}</p>
@@ -803,10 +866,10 @@ export function DashboardPage() {
             {access.locations.map((loc) => {
               const isWh = loc.type === "warehouse";
               return (
-                <Card key={loc.id} data-testid={`loc-${loc.code}`} className="flex items-start gap-3 p-4 sm:p-4">
+                <Card key={loc.id} data-testid={`loc-${loc.code}`} className="flex items-start gap-3 p-4 sm:p-5">
                   <div
-                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
-                      isWh ? "bg-amber-50 text-amber-600" : "bg-brand-50 text-brand-600"
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] ${
+                      isWh ? "bg-sw-pastry text-sw-pastry-fg" : "bg-ink text-lime"
                     }`}
                   >
                     {isWh ? <Warehouse size={17} aria-hidden /> : <Store size={17} aria-hidden />}

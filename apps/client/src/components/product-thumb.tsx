@@ -56,11 +56,11 @@ export function ProductThumb({
     <div
       data-testid="product-thumb"
       className={cn(
-        "relative flex shrink-0 items-center justify-center overflow-hidden font-semibold select-none",
+        "relative flex shrink-0 items-center justify-center overflow-hidden font-display font-extrabold select-none",
         SIZE_CLASSES[size],
         active
-          ? "bg-brand-50 text-brand-text ring-1 ring-brand-200"
-          : "bg-gradient-to-br from-slate-100 to-brand-50/70 text-slate-600 ring-1 ring-slate-200/70",
+          ? "bg-lime text-ink border-[1.5px] border-ink"
+          : "bg-sw-noncoffee text-sw-noncoffee-fg border-[1.5px] border-sand-line",
         className,
       )}
     >

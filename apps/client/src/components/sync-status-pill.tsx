@@ -93,15 +93,15 @@ export function SyncStatusPill({
     void runFlush(false);
   }, [isOnline, pendingCount]);
 
-  if (isOnline && outboxOps.length === 0 && !open) {
-    return null;
-  }
+  const showSyncedOnly = isOnline && outboxOps.length === 0 && !syncing && failedCount === 0;
 
-  const toneClass = !isOnline
-    ? "border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100"
-    : failedCount > 0
-      ? "border-red-300 bg-red-50 text-red-900 hover:bg-red-100"
-      : "border-brand-200 bg-brand-50 text-brand-text hover:bg-brand-100/70";
+  const toneClass = showSyncedOnly
+    ? "border-ok-dot/25 bg-ok-bg text-ok-fg"
+    : !isOnline
+      ? "border-ink-line bg-ink text-text-on-dark"
+      : failedCount > 0
+        ? "border-sw-meal-fg/25 bg-sw-meal text-sw-meal-fg"
+        : "border-ink-line bg-ink text-text-on-dark";
 
   return (
     <>
@@ -109,10 +109,16 @@ export function SyncStatusPill({
         type="button"
         data-testid="global-sync-pill"
         onClick={() => setOpen(true)}
-        className={`inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-full border px-2.5 text-xs font-semibold transition-colors ${toneClass}`}
+        className={`inline-flex min-h-[36px] cursor-pointer items-center gap-2 rounded-full border-[1.5px] px-3 font-mono text-xs font-semibold transition-colors ${toneClass}`}
       >
-        {!isOnline ? (
+        {showSyncedOnly ? (
+          <>
+            <span className="h-2 w-2 shrink-0 rounded-full bg-ok-dot" aria-hidden />
+            <span>{t("common:sync.synced")}</span>
+          </>
+        ) : !isOnline ? (
           <span data-testid="offline-badge" className="inline-flex items-center gap-1.5">
+            <span className="h-2 w-2 shrink-0 rounded-full bg-lime" aria-hidden />
             <WifiOff size={13} aria-hidden />
             <span>
               {outboxOps.length > 0
@@ -127,12 +133,13 @@ export function SyncStatusPill({
           </>
         ) : syncing ? (
           <>
-            <RefreshCw size={13} className="animate-spin" aria-hidden />
+            <RefreshCw size={13} className="animate-spin text-lime" aria-hidden />
             <span>{t("common:offline.syncingPill", { count: pendingCount })}</span>
           </>
         ) : (
           <>
-            <CloudUpload size={13} aria-hidden />
+            <span className="h-2 w-2 shrink-0 rounded-full bg-lime" aria-hidden />
+            <CloudUpload size={13} className="text-lime" aria-hidden />
             <span>{t("common:offline.syncPendingPill", { count: pendingCount })}</span>
           </>
         )}
