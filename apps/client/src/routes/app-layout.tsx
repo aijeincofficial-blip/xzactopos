@@ -441,7 +441,7 @@ export function AppLayout() {
           ) : null}
 
           {hideDockedSidebar ? (
-            <div className="mr-auto flex min-w-0 items-center gap-2.5">
+            <div className="flex min-w-0 flex-1 items-center gap-2.5 overflow-hidden">
               <img
                 src="/brand/xzacto-mark.svg"
                 alt="xzacto"
@@ -449,11 +449,14 @@ export function AppLayout() {
                 height={28}
                 className="h-7 w-7 shrink-0"
               />
-              <span className="hidden max-w-[125px] truncate font-display text-sm font-extrabold tracking-tight text-text-on-dark sm:inline xl:max-w-[175px]">
+              <span className="hidden max-w-[140px] shrink-0 truncate font-display text-sm font-extrabold tracking-tight text-text-on-dark sm:inline lg:hidden 2xl:inline">
                 {access.tenant.name}
               </span>
               {showNav ? (
-                <nav aria-label="POS quick links" className="ml-2 hidden items-center gap-0.5 lg:flex">
+                <nav
+                  aria-label="POS quick links"
+                  className="ml-1 hidden min-w-0 flex-1 items-center gap-0.5 overflow-x-auto [scrollbar-width:none] lg:flex"
+                >
                   <Link
                     to="/app/sell"
                     className="shrink-0 whitespace-nowrap rounded-full px-2.5 py-1.5 text-xs font-medium transition-colors [&:not([aria-current='page'])]:text-muted-on-dark [&:not([aria-current='page'])]:hover:bg-ink-2 [&:not([aria-current='page'])]:hover:text-lime"
@@ -587,7 +590,7 @@ export function AppLayout() {
 
           {/* Store Selector when in Kiosk Mode with multiple stores */}
           {hideDockedSidebar && stores.length > 1 ? (
-            <div className="hidden items-center gap-1.5 rounded-full border-[1.5px] border-ink-line-2 bg-ink-2 px-3 py-1 text-xs sm:flex">
+            <div className="hidden shrink-0 items-center gap-1.5 rounded-full border-[1.5px] border-ink-line-2 bg-ink-2 px-3 py-1 text-xs sm:flex">
               <Store size={13} className="text-lime" aria-hidden />
               <select
                 value={activeStoreId ?? ""}
