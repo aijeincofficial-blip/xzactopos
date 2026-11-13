@@ -779,15 +779,18 @@ export function InventoryPage() {
                   { id: "expiring", label: `${t("admin:inventory.filterExpiring")} (${kpis.expiringCount})` },
                 ] as const
               ).map((f) => (
-                <Button
+                <button
                   key={f.id}
-                  variant="outline"
-                  size="sm"
-                  className={stockFilter === f.id ? "border-brand-600 bg-brand-50 text-brand-text" : ""}
+                  type="button"
                   onClick={() => setStockFilter(f.id)}
+                  className={`inline-flex min-h-[34px] cursor-pointer items-center rounded-full border-[1.5px] px-3.5 py-1 text-xs font-semibold transition-colors ${
+                    stockFilter === f.id
+                      ? "border-ink bg-ink text-text-on-dark"
+                      : "border-sand-line bg-paper text-text-on-light hover:border-ink"
+                  }`}
                 >
                   {f.label}
-                </Button>
+                </button>
               ))}
             </div>
 
@@ -854,11 +857,17 @@ export function InventoryPage() {
                           {!r.tracked ? (
                             <Badge tone="neutral">{t("admin:inventory.statusUntracked")}</Badge>
                           ) : st === "out" ? (
-                            <Badge tone="danger">{t("admin:inventory.statusOut")}</Badge>
+                            <span className="inline-flex items-center rounded-full bg-ink px-2.5 py-0.5 font-mono text-[11px] font-semibold text-text-on-dark">
+                              {t("admin:inventory.statusOut")}
+                            </span>
                           ) : st === "low" ? (
-                            <Badge tone="warn">{t("admin:inventory.statusLow")}</Badge>
+                            <span className="inline-flex items-center rounded-full bg-sw-meal px-2.5 py-0.5 font-mono text-[11px] font-semibold text-sw-meal-fg">
+                              {t("admin:inventory.statusLow")}
+                            </span>
                           ) : (
-                            <Badge tone="good">{t("admin:inventory.statusInStock")}</Badge>
+                            <span className="inline-flex items-center rounded-full bg-ok-bg px-2.5 py-0.5 font-mono text-[11px] font-semibold text-ok-fg">
+                              {t("admin:inventory.statusInStock")}
+                            </span>
                           )}
                         </Td>
                         <Td numeric className="text-slate-600">
@@ -959,15 +968,18 @@ export function InventoryPage() {
                     { id: "adjustments", label: t("admin:inventory.movFilterAdjustments") },
                   ] as const
                 ).map((f) => (
-                  <Button
+                  <button
                     key={f.id}
-                    variant="outline"
-                    size="sm"
-                    className={movFilter === f.id ? "border-brand-600 bg-brand-50 text-brand-text" : ""}
+                    type="button"
                     onClick={() => setMovFilter(f.id)}
+                    className={`inline-flex min-h-[34px] cursor-pointer items-center rounded-full border-[1.5px] px-3.5 py-1 text-xs font-semibold transition-colors ${
+                      movFilter === f.id
+                        ? "border-ink bg-ink text-text-on-dark"
+                        : "border-sand-line bg-paper text-text-on-light hover:border-ink"
+                    }`}
                   >
                     {f.label}
-                  </Button>
+                  </button>
                 ))}
               </div>
               <div className="w-full sm:w-64">
@@ -1013,11 +1025,11 @@ export function InventoryPage() {
                     const sign = m.qtyDelta > 0 ? "+" : "";
                     return (
                       <tr key={m.id}>
-                        <Td className="text-xs text-slate-600 tabular-nums">
+                        <Td className="font-mono text-xs text-muted-on-light tabular-nums">
                           {new Date(m.occurredAt).toLocaleString(i18n.language)}
                         </Td>
-                        <Td className="font-semibold text-slate-900">{m.productName}</Td>
-                        <Td className="font-mono text-xs text-slate-600">{m.sku}</Td>
+                        <Td className="font-semibold text-text-on-light">{m.productName}</Td>
+                        <Td className="font-mono text-xs text-muted-on-light">{m.sku}</Td>
                         <Td>
                           <Badge tone={movementTone(m.type, m.qtyDelta)}>{typeLabel}</Badge>
                         </Td>
@@ -1025,10 +1037,10 @@ export function InventoryPage() {
                           numeric
                           className={
                             m.qtyDelta > 0
-                              ? "font-semibold text-emerald-700"
+                              ? "font-mono font-bold text-ok-fg tabular-nums"
                               : m.qtyDelta < 0
-                                ? "font-semibold text-slate-800"
-                                : "text-slate-500"
+                                ? "font-mono font-bold text-sw-meal-fg tabular-nums"
+                                : "font-mono text-muted-on-light tabular-nums"
                           }
                         >
                           {sign}

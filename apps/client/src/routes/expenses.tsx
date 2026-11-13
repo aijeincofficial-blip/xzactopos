@@ -246,7 +246,7 @@ export function ExpensesPage() {
       </div>
 
       {showAdd ? (
-        <Card className="grid gap-4 border-brand-200/80" data-testid="add-expense-card">
+        <Card className="grid gap-4 border-ink" data-testid="add-expense-card">
           <h3 className="text-sm font-semibold text-slate-900">{t("expenses.recordNew")}</h3>
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label={t("expenses.amount")}>

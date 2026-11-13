@@ -518,9 +518,19 @@ function StockPanel({
       <div className="flex items-center justify-between">
         <h3 className="font-medium">{t("products.stock")}</h3>
         {expiryStatus === "expired" ? (
-          <Badge tone="warn">⚠️ {t("products.expired")}</Badge>
+          <Badge tone="danger">
+            <span className="inline-flex items-center gap-1">
+              <AlertCircle size={12} aria-hidden />
+              <span>{t("products.expired")}</span>
+            </span>
+          </Badge>
         ) : expiryStatus === "expiring_soon" ? (
-          <Badge tone="warn">⏳ {t("products.expiringSoon")}</Badge>
+          <Badge tone="warn">
+            <span className="inline-flex items-center gap-1">
+              <Clock size={12} aria-hidden />
+              <span>{t("products.expiringSoon")}</span>
+            </span>
+          </Badge>
         ) : null}
       </div>
 
@@ -994,8 +1004,8 @@ function ImportDialog({
 
         {parsed ? (
           <div className="grid gap-2 text-xs">
-            <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-2.5 font-medium text-emerald-800">
-              <span>✓ {t("products.importPreview", { valid: parsed.valid.length })}</span>
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-[14px] border border-ok-dot/40 bg-ok-bg p-2.5 font-medium text-ok-fg">
+              <span>{t("products.importPreview", { valid: parsed.valid.length })}</span>
               {parsed.valid.length > 0 ? (
                 <span className="text-emerald-700">
                   {t("products.importPreviewBreakdown", { created: createCount, updated: updateCount })}

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { formatMoney, money } from "@pos/core";
+import { Banknote, Coins } from "lucide-react";
 import { Button, Dialog, Input } from "./ui.tsx";
 import {
   PHP_DENOMINATIONS,
@@ -86,8 +87,9 @@ export function DenominationCounterDialog({
 
         {/* Banknotes Section */}
         <div className="grid gap-2">
-          <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-            💵 {t("dayClose.bills")}
+          <h4 className="flex items-center gap-1.5 font-mono text-xs font-semibold uppercase tracking-wider text-muted-on-light">
+            <Banknote size={14} aria-hidden />
+            <span>{t("dayClose.bills")}</span>
           </h4>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {bills.map((d) => {
@@ -122,8 +124,9 @@ export function DenominationCounterDialog({
 
         {/* Coins Section */}
         <div className="grid gap-2">
-          <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-            🪙 {t("dayClose.coins")}
+          <h4 className="flex items-center gap-1.5 font-mono text-xs font-semibold uppercase tracking-wider text-muted-on-light">
+            <Coins size={14} aria-hidden />
+            <span>{t("dayClose.coins")}</span>
           </h4>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {coins.map((d) => {

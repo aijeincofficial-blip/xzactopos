@@ -2,6 +2,7 @@ import { useMemo, useState, useEffect, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { AlertTriangle, Check, Sparkles, Zap } from "lucide-react";
 import { fetchTenantSettings, updateTenantSettings } from "../lib/settings-api.ts";
 import { fieldErrors, tenantSettingsSchema } from "../lib/schemas.ts";
 import { accessQuery, useSession } from "../lib/session.tsx";
@@ -681,30 +682,39 @@ export function SettingsPage() {
                     : "good"
                 }
               >
-                {storageQuery.data.status === "critical"
-                  ? `⚠️ ${t("settings.statusCritical")}`
-                  : storageQuery.data.status === "warning"
-                  ? `⚠️ ${t("settings.statusWarning")}`
-                  : `✓ ${t("settings.statusHealthy")}`}
+                <span className="inline-flex items-center gap-1">
+                  {storageQuery.data.status === "critical" || storageQuery.data.status === "warning" ? (
+                    <AlertTriangle size={12} aria-hidden />
+                  ) : (
+                    <Check size={12} aria-hidden />
+                  )}
+                  <span>
+                    {storageQuery.data.status === "critical"
+                      ? t("settings.statusCritical")
+                      : storageQuery.data.status === "warning"
+                      ? t("settings.statusWarning")
+                      : t("settings.statusHealthy")}
+                  </span>
+                </span>
               </Badge>
             </div>
 
             {/* Storage Progress Bar */}
             <div className="grid gap-1.5">
-              <div className="flex justify-between text-xs font-medium text-slate-600">
+              <div className="flex justify-between text-xs font-medium text-muted-on-light">
                 <span>
                   {storageQuery.data.used_mb} MB {t("settings.usedOf")} {storageQuery.data.limit_mb} MB
                 </span>
-                <span>{storageQuery.data.percent_used}%</span>
+                <span className="font-mono">{storageQuery.data.percent_used}%</span>
               </div>
-              <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-100">
+              <div className="h-2.5 w-full overflow-hidden rounded-full bg-sand">
                 <div
                   className={`h-full transition-all ${
                     storageQuery.data.status === "critical"
-                      ? "bg-rose-500"
+                      ? "bg-sw-meal-fg"
                       : storageQuery.data.status === "warning"
-                      ? "bg-amber-500"
-                      : "bg-emerald-500"
+                      ? "bg-sw-pastry-fg"
+                      : "bg-ok-dot"
                   }`}
                   style={{ width: `${Math.min(storageQuery.data.percent_used, 100)}%` }}
                 />
@@ -712,7 +722,7 @@ export function SettingsPage() {
             </div>
 
             {/* Actions & Health Ping */}
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-sand-line pt-3">
               <div className="flex items-center gap-2">
                 <Button
                   type="button"
@@ -721,11 +731,13 @@ export function SettingsPage() {
                   onClick={() => pingMutation.mutate()}
                   disabled={pingMutation.isPending}
                 >
-                  {pingMutation.isPending ? t("settings.loading") : `⚡ ${t("settings.testPing")}`}
+                  <Zap size={13} aria-hidden />
+                  <span>{pingMutation.isPending ? t("settings.loading") : t("settings.testPing")}</span>
                 </Button>
                 {pingResult ? (
-                  <span className="text-xs text-emerald-600 font-medium">
-                    ✓ {pingResult.status} ({new Date(pingResult.timestamp).toLocaleTimeString()})
+                  <span className="inline-flex items-center gap-1 font-mono text-xs font-medium text-ok-fg">
+                    <Check size={12} aria-hidden />
+                    <span>{pingResult.status} ({new Date(pingResult.timestamp).toLocaleTimeString()})</span>
                   </span>
                 ) : null}
               </div>
@@ -738,11 +750,13 @@ export function SettingsPage() {
                   onClick={() => archiveMutation.mutate()}
                   disabled={archiveMutation.isPending}
                 >
-                  {archiveMutation.isPending ? t("settings.saving") : `🧹 ${t("settings.runMaintenance")}`}
+                  <Sparkles size={13} aria-hidden />
+                  <span>{archiveMutation.isPending ? t("settings.saving") : t("settings.runMaintenance")}</span>
                 </Button>
                 {archiveMessage ? (
-                  <span className="text-xs text-emerald-600 font-medium">
-                    ✓ {archiveMessage}
+                  <span className="inline-flex items-center gap-1 text-xs font-medium text-ok-fg">
+                    <Check size={12} aria-hidden />
+                    <span>{archiveMessage}</span>
                   </span>
                 ) : null}
               </div>

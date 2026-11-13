@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { AlertTriangle, Boxes, CheckCircle2 } from "lucide-react";
 import { Badge, Button, Card, Dialog, EmptyState, ErrorState, Field, Input, PageHeader, Select, Table, Tabs, TabPanel, useToast } from "../components/ui.tsx";
 import { BarcodeLabelsDialog, formatBinBarcodeItem } from "../components/barcode-labels-dialog.tsx";
 import { useSession } from "../lib/session.tsx";
@@ -316,8 +317,8 @@ export function BinsPage() {
       {/* When Bins Not Enabled on this Warehouse */}
       {!isBinsEnabled ? (
         <Card className="grid gap-3 p-6 text-center">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-2xl">
-            📦
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-sw-pastry text-sw-pastry-fg">
+            <Boxes size={22} aria-hidden />
           </div>
           <h2 className="text-lg font-semibold">{t("bins.enableTitle", "Enable Warehouse Bins")}</h2>
           <p className="mx-auto max-w-md text-sm text-slate-500">
@@ -353,24 +354,30 @@ export function BinsPage() {
                 {/* Invariant & Metrics Bar */}
           <div className="grid gap-3 sm:grid-cols-4">
             <Card className="p-4">
-              <div className="text-xs text-slate-500 uppercase tracking-wider">{t("bins.totalBins", "Total Bins")}</div>
-              <div className="mt-1 text-2xl font-semibold text-slate-900 tabular-nums">{allBins.length}</div>
+              <div className="font-mono text-[11px] font-semibold tracking-wider text-muted-on-light uppercase">{t("bins.totalBins", "Total Bins")}</div>
+              <div className="font-display mt-1 text-2xl font-extrabold text-text-on-light tabular-nums">{allBins.length}</div>
             </Card>
             <Card className="p-4">
-              <div className="text-xs text-slate-500 uppercase tracking-wider">{t("bins.occupiedBins", "Occupied Bins")}</div>
-              <div className="mt-1 text-2xl font-semibold text-slate-900 tabular-nums">{totalOccupied}</div>
+              <div className="font-mono text-[11px] font-semibold tracking-wider text-muted-on-light uppercase">{t("bins.occupiedBins", "Occupied Bins")}</div>
+              <div className="font-display mt-1 text-2xl font-extrabold text-text-on-light tabular-nums">{totalOccupied}</div>
             </Card>
             <Card className="p-4">
-              <div className="text-xs text-slate-500 uppercase tracking-wider">{t("bins.totalUnits", "Total Units")}</div>
-              <div className="mt-1 text-2xl font-semibold text-slate-900 tabular-nums">{totalUnits.toLocaleString()}</div>
+              <div className="font-mono text-[11px] font-semibold tracking-wider text-muted-on-light uppercase">{t("bins.totalUnits", "Total Units")}</div>
+              <div className="font-display mt-1 text-2xl font-extrabold text-text-on-light tabular-nums">{totalUnits.toLocaleString()}</div>
             </Card>
             <Card className="p-4">
-              <div className="text-xs text-slate-500 uppercase tracking-wider">{t("bins.ledgerStatus", "Ledger Invariant")}</div>
-              <div className="mt-1">
+              <div className="font-mono text-[11px] font-semibold tracking-wider text-muted-on-light uppercase">{t("bins.ledgerStatus", "Ledger Invariant")}</div>
+              <div className="mt-1.5">
                 {isInvariantBalanced ? (
-                  <Badge tone="good">✓ {t("bins.balanced", "100% Balanced")}</Badge>
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-ok-bg px-3 py-1 font-mono text-xs font-semibold text-ok-fg">
+                    <CheckCircle2 size={13} aria-hidden />
+                    <span>{t("bins.balanced", "100% Balanced")}</span>
+                  </span>
                 ) : (
-                  <Badge tone="warn">⚠️ {t("bins.discrepancy", "Discrepancy Detected")}</Badge>
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-sw-meal px-3 py-1 font-mono text-xs font-semibold text-sw-meal-fg">
+                    <AlertTriangle size={13} aria-hidden />
+                    <span>{t("bins.discrepancy", "Discrepancy Detected")}</span>
+                  </span>
                 )}
               </div>
             </Card>

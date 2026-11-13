@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { formatMoney, money } from "@pos/core";
+import { Printer } from "lucide-react";
 import { Button, Dialog } from "./ui.tsx";
 
 export interface ReceiptItem {
@@ -207,7 +208,8 @@ export function ReceiptModal({
             {t("common:actions.close")}
           </Button>
           <Button data-testid="print-receipt-btn" onClick={() => window.print()}>
-            🖨️ {t("sell.printReceipt") || "Print Receipt"}
+            <Printer size={15} aria-hidden />
+            <span>{t("sell.printReceipt") || "Print Receipt"}</span>
           </Button>
         </div>
       </div>

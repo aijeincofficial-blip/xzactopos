@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { formatMoney, money } from "@pos/core";
 import { Banknote, CreditCard, HandCoins, Rocket, Smartphone, TrendingDown } from "lucide-react";
-import { Badge, Button, Card, EmptyState, ErrorState, PageHeader, Skeleton } from "../components/ui.tsx";
+import { Button, Card, EmptyState, ErrorState, PageHeader, Skeleton } from "../components/ui.tsx";
 import { useSession } from "../lib/session.tsx";
 import { tenantMode } from "../lib/mode.ts";
 import { dayInTimezone, getDaySummary } from "../lib/today.ts";
@@ -46,7 +46,7 @@ export function TodayPage() {
           can("tenant.modules") && mode === "solo" ? (
             <Link to="/app/upgrade">
               <Button variant="outline" size="sm">
-                <Rocket size={14} className="text-brand-600" aria-hidden />
+                <Rocket size={14} className="text-ink" aria-hidden />
                 <span>{t("upgrade.soloBannerAction")}</span>
               </Button>
             </Link>
@@ -56,30 +56,38 @@ export function TodayPage() {
 
       {/* Primary Hero KPIs */}
       <div className="grid gap-4 sm:grid-cols-3">
-        <Card data-testid="today-net" className="grid gap-1.5 border-brand-200/70 bg-brand-50/35 p-5">
+        <Card data-testid="today-net" className="grid gap-1.5 border-ink bg-ink p-5 text-text-on-dark">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-xs font-semibold tracking-wider text-slate-500 uppercase">{t("today.sales")}</span>
+            <span className="font-mono text-[11px] font-semibold tracking-wider text-muted-on-dark uppercase">
+              {t("today.sales")}
+            </span>
             <span data-testid="today-txns">
-              <Badge tone="neutral">
+              <span className="inline-flex items-center rounded-full border border-ink-line-2 bg-ink-2 px-2.5 py-0.5 font-mono text-[11px] font-semibold text-lime">
                 {s.totals.txns} {t("today.transactions")}
-              </Badge>
+              </span>
             </span>
           </div>
-          <div className="text-3xl font-semibold tracking-tight text-slate-900 tabular-nums">{fmt(s.totals.net)}</div>
+          <div className="font-display text-3xl font-extrabold tracking-tight text-lime tabular-nums">
+            {fmt(s.totals.net)}
+          </div>
         </Card>
 
         <Card data-testid="today-cash-after-expenses" className="grid gap-1.5 p-5">
-          <span className="text-xs font-semibold tracking-wider text-slate-500 uppercase">
+          <span className="font-mono text-[11px] font-semibold tracking-wider text-muted-on-light uppercase">
             {t("today.cashAfterExpenses")}
           </span>
-          <div className="text-2xl font-semibold tracking-tight text-emerald-700 tabular-nums">{fmt(cashLeft)}</div>
+          <div className="font-display text-2xl font-extrabold tracking-tight text-ok-fg tabular-nums">
+            {fmt(cashLeft)}
+          </div>
         </Card>
 
         <Card data-testid="today-owed" className="grid gap-1.5 p-5">
-          <span className="text-xs font-semibold tracking-wider text-slate-500 uppercase">{t("today.owed")}</span>
+          <span className="font-mono text-[11px] font-semibold tracking-wider text-muted-on-light uppercase">
+            {t("today.owed")}
+          </span>
           <div
-            className={`text-2xl font-semibold tracking-tight tabular-nums ${
-              s.utang.owed > 0 ? "text-amber-700" : "text-slate-900"
+            className={`font-display text-2xl font-extrabold tracking-tight tabular-nums ${
+              s.utang.owed > 0 ? "text-sw-pastry-fg" : "text-text-on-light"
             }`}
           >
             {fmt(s.utang.owed)}
@@ -90,55 +98,61 @@ export function TodayPage() {
       {/* Grouped Tender Breakdown & Top Items */}
       <div className="grid gap-4 lg:grid-cols-2">
         <Card className="grid content-start gap-3">
-          <h2 className="text-xs font-semibold tracking-wider text-slate-500 uppercase">{t("sell.payment")}</h2>
-          <div className="divide-y divide-slate-100 text-sm">
+          <h2 className="font-mono text-[11px] font-semibold tracking-wider text-muted-on-light uppercase">
+            {t("sell.payment")}
+          </h2>
+          <div className="divide-y-[1.5px] divide-dashed divide-dash text-sm">
             <div data-testid="today-cash" className="flex items-center justify-between py-2.5 first:pt-0">
-              <span className="flex items-center gap-2.5 text-slate-600">
-                <Banknote size={16} className="text-emerald-600" aria-hidden />
+              <span className="flex items-center gap-2.5 text-muted-on-light">
+                <Banknote size={16} className="text-ok-fg" aria-hidden />
                 <span>{t("today.cash")}</span>
               </span>
-              <span className="font-semibold text-slate-900 tabular-nums">{fmt(s.totals.cash)}</span>
+              <span className="font-mono font-semibold text-text-on-light tabular-nums">{fmt(s.totals.cash)}</span>
             </div>
             <div data-testid="today-ewallet" className="flex items-center justify-between py-2.5">
-              <span className="flex items-center gap-2.5 text-slate-600">
-                <Smartphone size={16} className="text-brand-600" aria-hidden />
+              <span className="flex items-center gap-2.5 text-muted-on-light">
+                <Smartphone size={16} className="text-ink" aria-hidden />
                 <span>{t("today.ewallet")}</span>
               </span>
-              <span className="font-semibold text-slate-900 tabular-nums">{fmt(s.totals.ewallet)}</span>
+              <span className="font-mono font-semibold text-text-on-light tabular-nums">{fmt(s.totals.ewallet)}</span>
             </div>
             <div data-testid="today-card" className="flex items-center justify-between py-2.5">
-              <span className="flex items-center gap-2.5 text-slate-600">
-                <CreditCard size={16} className="text-slate-500" aria-hidden />
+              <span className="flex items-center gap-2.5 text-muted-on-light">
+                <CreditCard size={16} className="text-muted-on-light" aria-hidden />
                 <span>{t("today.card")}</span>
               </span>
-              <span className="font-semibold text-slate-900 tabular-nums">{fmt(s.totals.card ?? 0)}</span>
+              <span className="font-mono font-semibold text-text-on-light tabular-nums">
+                {fmt(s.totals.card ?? 0)}
+              </span>
             </div>
             <div data-testid="today-expenses" className="flex items-center justify-between py-2.5 last:pb-0">
-              <span className="flex items-center gap-2.5 text-slate-600">
-                <TrendingDown size={16} className="text-red-500" aria-hidden />
+              <span className="flex items-center gap-2.5 text-muted-on-light">
+                <TrendingDown size={16} className="text-sw-meal-fg" aria-hidden />
                 <span>{t("today.expenses")}</span>
               </span>
-              <span className="font-semibold text-red-700 tabular-nums">{fmt(s.expenses.total)}</span>
+              <span className="font-mono font-semibold text-sw-meal-fg tabular-nums">{fmt(s.expenses.total)}</span>
             </div>
           </div>
         </Card>
 
         <Card className="grid content-start gap-3">
-          <h2 className="text-xs font-semibold tracking-wider text-slate-500 uppercase">{t("today.topItems")}</h2>
+          <h2 className="font-mono text-[11px] font-semibold tracking-wider text-muted-on-light uppercase">
+            {t("today.topItems")}
+          </h2>
           {s.top_items.length === 0 ? (
             <EmptyState title={t("today.noSales")} />
           ) : (
-            <ul className="divide-y divide-slate-100 text-sm">
+            <ul className="divide-y-[1.5px] divide-dashed divide-dash text-sm">
               {s.top_items.slice(0, 5).map((i, idx) => (
                 <li key={i.variant_id} className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
                   <div className="flex min-w-0 items-center gap-2.5">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-slate-100 text-xs font-semibold text-slate-500">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-ink font-mono text-[11px] font-bold text-lime">
                       {idx + 1}
                     </span>
-                    <span className="truncate font-medium text-slate-900">{i.name}</span>
-                    <span className="shrink-0 text-xs text-slate-400 tabular-nums">×{i.qty}</span>
+                    <span className="truncate font-semibold text-text-on-light">{i.name}</span>
+                    <span className="shrink-0 font-mono text-xs text-muted-on-light tabular-nums">×{i.qty}</span>
                   </div>
-                  <span className="font-semibold text-slate-900 tabular-nums">{fmt(i.revenue)}</span>
+                  <span className="font-mono font-bold text-text-on-light tabular-nums">{fmt(i.revenue)}</span>
                 </li>
               ))}
             </ul>
@@ -147,13 +161,13 @@ export function TodayPage() {
       </div>
 
       {can("tenant.modules") && mode === "solo" ? (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200/80 bg-white px-4 py-3 text-xs text-slate-600">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-[20px] border-[1.5px] border-sand-line bg-paper px-4 py-3 text-xs text-muted-on-light">
           <div className="flex items-center gap-2">
-            <HandCoins size={15} className="text-brand-600" aria-hidden />
-            <span className="font-semibold text-slate-800">{t("upgrade.soloBannerTitle")}</span>
-            <span className="hidden text-slate-500 sm:inline">— {t("upgrade.soloBannerText")}</span>
+            <HandCoins size={15} className="text-ink" aria-hidden />
+            <span className="font-semibold text-text-on-light">{t("upgrade.soloBannerTitle")}</span>
+            <span className="hidden text-muted-on-light sm:inline">— {t("upgrade.soloBannerText")}</span>
           </div>
-          <Link to="/app/upgrade" className="font-semibold text-brand-text hover:underline">
+          <Link to="/app/upgrade" className="font-semibold text-ink underline decoration-lime decoration-2 underline-offset-2 hover:opacity-80">
             {t("upgrade.soloBannerAction")} →
           </Link>
         </div>

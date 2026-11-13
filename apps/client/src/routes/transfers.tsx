@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Download } from "lucide-react";
+import { AlertTriangle, Check, Download, Printer } from "lucide-react";
 import { Alert, Badge, Button, Card, Dialog, ErrorState, Field, Input, PageHeader, Select, Table, useToast } from "../components/ui.tsx";
 import { downloadCsv, exportTransfersCsv } from "../lib/csv-helper.ts";
 import { useSession } from "../lib/session.tsx";
@@ -442,7 +442,7 @@ export function TransfersPage() {
             <option value="all">{t("admin:transfers.allLocations")}</option>
             {activeLocations.map((loc) => (
               <option key={loc.id} value={loc.id}>
-                {loc.type === "warehouse" ? "🏢" : "🏪"} {loc.code} · {loc.name}
+                {loc.code} · {loc.name}
               </option>
             ))}
           </select>
@@ -613,7 +613,7 @@ export function TransfersPage() {
                 <option value="">{t("admin:transfers.selectOrigin")}</option>
                 {activeLocations.map((loc) => (
                   <option key={loc.id} value={loc.id}>
-                    {loc.type === "warehouse" ? "🏢" : "🏪"} {loc.code} · {loc.name}
+                    {loc.code} · {loc.name}
                   </option>
                 ))}
               </Select>
@@ -633,7 +633,7 @@ export function TransfersPage() {
                   .filter((loc) => loc.id !== fromLocId)
                   .map((loc) => (
                     <option key={loc.id} value={loc.id}>
-                      {loc.type === "warehouse" ? "🏢" : "🏪"} {loc.code} · {loc.name}
+                      {loc.code} · {loc.name}
                     </option>
                   ))}
               </Select>
@@ -758,7 +758,10 @@ export function TransfersPage() {
 
           {hasReceiveDiscrepancy && (
             <Alert tone="info">
-              ⚠️ {t("admin:transfers.discrepancyNotice")}
+              <span className="inline-flex items-center gap-1.5">
+                <AlertTriangle size={14} aria-hidden />
+                <span>{t("admin:transfers.discrepancyNotice")}</span>
+              </span>
             </Alert>
           )}
 
@@ -933,7 +936,8 @@ export function TransfersPage() {
               {t("common:actions.close")}
             </Button>
             <Button data-testid="print-manifest-btn" onClick={() => window.print()}>
-              🖨️ {t("admin:transfers.printManifest")}
+              <Printer size={15} aria-hidden />
+              <span>{t("admin:transfers.printManifest")}</span>
             </Button>
           </div>
         </div>
@@ -1098,7 +1102,12 @@ export function TransfersPage() {
                           </td>
                           <td className="no-print p-2 text-center">
                             {isComplete ? (
-                              <Badge tone="good">✓ Picked</Badge>
+                              <Badge tone="good">
+                                <span className="inline-flex items-center gap-1">
+                                  <Check size={12} aria-hidden />
+                                  <span>Picked</span>
+                                </span>
+                              </Badge>
                             ) : isPickingThis ? (
                               <div className="flex flex-col gap-1 items-end">
                                 <Input
@@ -1179,7 +1188,8 @@ export function TransfersPage() {
             </Button>
             {pickListQuery.data ? (
               <Button data-testid="print-picklist-btn" onClick={() => window.print()}>
-                🖨️ {t("admin:transfers.printPickList")}
+                <Printer size={15} aria-hidden />
+                <span>{t("admin:transfers.printPickList")}</span>
               </Button>
             ) : null}
           </div>

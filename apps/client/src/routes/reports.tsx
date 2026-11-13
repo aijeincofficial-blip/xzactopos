@@ -148,10 +148,10 @@ export function ReportsPage() {
     const card = rep.totals.card ?? 0;
     const sum = Math.max(rep.totals.cash + rep.totals.ewallet + card + rep.totals.utang, 1);
     return [
-      { key: "cash", label: t("admin:reports.cash"), amount: rep.totals.cash, pct: Math.round((rep.totals.cash / sum) * 100), barClass: "bg-emerald-600" },
-      { key: "ewallet", label: t("admin:reports.ewallet"), amount: rep.totals.ewallet, pct: Math.round((rep.totals.ewallet / sum) * 100), barClass: "bg-brand-600" },
-      { key: "card", label: t("admin:reports.card"), amount: card, pct: Math.round((card / sum) * 100), barClass: "bg-slate-700" },
-      { key: "utang", label: t("admin:reports.utangCredit"), amount: rep.totals.utang, pct: Math.round((rep.totals.utang / sum) * 100), barClass: "bg-amber-500" },
+      { key: "cash", label: t("admin:reports.cash"), amount: rep.totals.cash, pct: Math.round((rep.totals.cash / sum) * 100), barClass: "bg-ok-dot" },
+      { key: "ewallet", label: t("admin:reports.ewallet"), amount: rep.totals.ewallet, pct: Math.round((rep.totals.ewallet / sum) * 100), barClass: "bg-lime border border-ink/20" },
+      { key: "card", label: t("admin:reports.card"), amount: card, pct: Math.round((card / sum) * 100), barClass: "bg-ink" },
+      { key: "utang", label: t("admin:reports.utangCredit"), amount: rep.totals.utang, pct: Math.round((rep.totals.utang / sum) * 100), barClass: "bg-sw-pastry-fg" },
     ];
   }, [rep, t]);
 
@@ -377,15 +377,17 @@ export function ReportsPage() {
           {/* Daily Trend & Token-Styled Bar Chart */}
           <Card className="grid gap-6" data-testid="daily-trend-card">
             <div className="flex flex-wrap items-baseline justify-between gap-3">
-              <h2 className="text-base font-semibold text-slate-900">{t("admin:reports.dailyTrendTitle")}</h2>
+              <h2 className="font-display text-base font-extrabold text-text-on-light">
+                {t("admin:reports.dailyTrendTitle")}
+              </h2>
               {peakDay && (
-                <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600 tabular-nums">
+                <div className="flex flex-wrap items-center gap-3 font-mono text-xs text-muted-on-light tabular-nums">
                   <span>
-                    {t("admin:reports.dailyAvg")} <strong className="font-semibold text-slate-900">{fmt(dailyAvgNet)}</strong>
+                    {t("admin:reports.dailyAvg")} <strong className="font-bold text-text-on-light">{fmt(dailyAvgNet)}</strong>
                   </span>
                   <span>
                     {t("admin:reports.dailyPeak")} ({peakDay.day.slice(5)}){" "}
-                    <strong className="font-semibold text-brand-700">{fmt(peakDay.net)}</strong>
+                    <strong className="rounded-full bg-lime px-2 py-0.5 font-bold text-ink">{fmt(peakDay.net)}</strong>
                   </span>
                 </div>
               )}
@@ -395,8 +397,8 @@ export function ReportsPage() {
             {rep.days.length === 0 ? (
               <EmptyState title={t("admin:reports.noSalesInRange")} />
             ) : (
-              <div className="relative rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="daily-trend-bars">
-                <div className="flex h-40 items-end gap-2 border-b border-slate-200 pb-2">
+              <div className="relative rounded-[20px] border-[1.5px] border-sand-line bg-sand/70 p-4" data-testid="daily-trend-bars">
+                <div className="flex h-40 items-end gap-2 border-b-[1.5px] border-dashed border-dash pb-2">
                   {rep.days.map((d) => {
                     const pct = d.net > 0 ? Math.max(Math.round((d.net / maxDayNet) * 100), 6) : 2;
                     const isPeak = peakDay?.day === d.day && d.net > 0;
@@ -406,17 +408,17 @@ export function ReportsPage() {
                         data-testid={`daily-trend-bar-${d.day}`}
                         className="group relative flex h-full flex-1 flex-col items-center justify-end"
                       >
-                        <div className="pointer-events-none absolute -top-9 z-10 hidden whitespace-nowrap rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-900 shadow-md group-hover:block tabular-nums">
-                          <span className="font-semibold">{d.day}</span> · {fmt(d.net)} ({d.txns})
+                        <div className="pointer-events-none absolute -top-9 z-10 hidden whitespace-nowrap rounded-full bg-ink px-3 py-1 font-mono text-xs text-text-on-dark group-hover:block tabular-nums">
+                          <span className="font-bold text-lime">{d.day}</span> · {fmt(d.net)} ({d.txns})
                         </div>
                         <div
                           style={{ height: `${pct}%` }}
-                          className={`w-full max-w-10 rounded-t-md transition-colors ${
+                          className={`w-full max-w-10 rounded-t-[8px] transition-colors ${
                             d.net === 0
-                              ? "bg-slate-200"
+                              ? "bg-sand-line/50"
                               : isPeak
-                                ? "bg-brand-600 hover:bg-brand-700"
-                                : "bg-brand-400 hover:bg-brand-600"
+                                ? "border-[1.5px] border-ink bg-lime hover:bg-lime-hover"
+                                : "bg-ink hover:bg-ink-2"
                           }`}
                         />
                       </div>
@@ -425,7 +427,7 @@ export function ReportsPage() {
                 </div>
                 <div className="mt-2 flex items-center gap-2">
                   {rep.days.map((d) => (
-                    <div key={d.day} className="flex-1 text-center font-mono text-xs text-slate-600 truncate">
+                    <div key={d.day} className="flex-1 truncate text-center font-mono text-xs text-muted-on-light">
                       {d.day.slice(5)}
                     </div>
                   ))}

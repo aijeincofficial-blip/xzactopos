@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { formatMoney, money } from "@pos/core";
+import { Download, Printer } from "lucide-react";
 import { Badge, Button, Dialog } from "./ui.tsx";
 import { downloadCsv, exportCustomerLedgerCsv } from "../lib/csv-helper.ts";
 import type { LedgerEntry } from "../lib/utang-api.ts";
@@ -218,7 +219,8 @@ export function CustomerStatementDialog({
         {/* Dialog Actions (Excluded from print) */}
         <div className="flex justify-between items-center border-t border-slate-100 pt-3 no-print">
           <Button variant="outline" onClick={handleExportCsv} data-testid="soa-download-csv">
-            📥 {t("utang.downloadCsv")}
+            <Download size={15} aria-hidden />
+            <span>{t("utang.downloadCsv")}</span>
           </Button>
 
           <div className="flex gap-2">
@@ -226,7 +228,8 @@ export function CustomerStatementDialog({
               {t("common:actions.close")}
             </Button>
             <Button data-testid="soa-print-btn" onClick={() => window.print()}>
-              🖨️ {t("utang.printStatement")}
+              <Printer size={15} aria-hidden />
+              <span>{t("utang.printStatement")}</span>
             </Button>
           </div>
         </div>

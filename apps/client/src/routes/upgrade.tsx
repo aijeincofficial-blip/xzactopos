@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { uuidv7 } from "@pos/core";
+import { Check, ShieldCheck } from "lucide-react";
 import { rpc } from "../lib/api.ts";
 import { fieldErrors, upgradeSchema } from "../lib/schemas.ts";
 import { accessQuery, useSession } from "../lib/session.tsx";
@@ -75,15 +76,15 @@ export function UpgradePage() {
 
   if (step === "done") {
     return (
-      <Card className="grid gap-4 text-center py-8">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-2xl text-emerald-600">
-          ✓
+      <Card className="grid gap-4 border-ink bg-ink py-8 text-center text-text-on-dark">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-lime text-ink">
+          <Check size={28} aria-hidden />
         </div>
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold text-slate-900">{t("upgrade.successTitle")}</h1>
-          <p className="text-sm text-slate-600 max-w-md mx-auto">{t("upgrade.successText")}</p>
+          <h1 className="font-display text-2xl font-extrabold text-text-on-dark">{t("upgrade.successTitle")}</h1>
+          <p className="mx-auto max-w-md text-sm text-muted-on-dark">{t("upgrade.successText")}</p>
         </div>
-        <div className="pt-4 flex justify-center gap-3">
+        <div className="flex justify-center gap-3 pt-4">
           <Button onClick={() => navigate({ to: "/app" })}>{t("upgrade.goToDashboard")}</Button>
           <Button onClick={() => navigate({ to: "/app/users" })} variant="outline">
             {t("nav.users")}
@@ -144,12 +145,12 @@ export function UpgradePage() {
             </div>
           </div>
 
-          <div className="rounded-lg border border-emerald-200 bg-emerald-50/60 p-4">
-            <div className="flex items-start gap-2">
-              <span className="text-emerald-700 font-bold">🛡️</span>
+          <div className="rounded-[18px] border-[1.5px] border-ok-dot/40 bg-ok-bg p-4">
+            <div className="flex items-start gap-2.5">
+              <ShieldCheck size={18} className="mt-0.5 shrink-0 text-ok-fg" aria-hidden />
               <div>
-                <h3 className="font-semibold text-emerald-900">{t("upgrade.dataSafetyTitle")}</h3>
-                <p className="mt-1 text-xs text-emerald-800 leading-relaxed">
+                <h3 className="font-display font-bold text-ok-fg">{t("upgrade.dataSafetyTitle")}</h3>
+                <p className="mt-1 text-xs leading-relaxed text-ok-fg/90">
                   {t("upgrade.dataSafetyNote")}
                 </p>
               </div>

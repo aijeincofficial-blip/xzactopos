@@ -288,7 +288,7 @@ export function DayClosePage() {
                       data-testid="open-denomination-counter"
                       onClick={() => setShowDenomDialog(true)}
                     >
-                      <Calculator size={14} className="text-brand-600" aria-hidden />
+                      <Calculator size={14} className="text-ink" aria-hidden />
                       <span>{t("dayClose.denominationCalculator")}</span>
                     </Button>
                   </div>
@@ -303,17 +303,17 @@ export function DayClosePage() {
 
                 {diff !== null ? (
                   <div
-                    className={`p-2.5 rounded text-sm flex justify-between items-center ${
+                    className={`flex items-center justify-between rounded-[14px] border-[1.5px] p-3 text-sm ${
                       diff === 0
-                        ? "bg-slate-100 text-slate-800"
+                        ? "border-sand-line bg-sand text-text-on-light"
                         : diff > 0
-                        ? "bg-emerald-50 text-emerald-800"
-                        : "bg-red-50 text-red-800"
+                        ? "border-ok-dot/40 bg-ok-bg text-ok-fg"
+                        : "border-sw-meal-fg/30 bg-sw-meal text-sw-meal-fg"
                     }`}
                     data-testid="difference-badge"
                   >
                     <span>{diff >= 0 ? t("dayClose.over") : t("dayClose.short")}:</span>
-                    <strong className="font-mono text-base">{fmt(Math.abs(diff))}</strong>
+                    <strong className="font-mono text-base tabular-nums">{fmt(Math.abs(diff))}</strong>
                   </div>
                 ) : null}
 
@@ -971,7 +971,8 @@ function SupervisorCloseShiftModal({
               data-testid="supervisor-open-denomination-counter"
               onClick={() => setShowDenomDialog(true)}
             >
-              🧮 {t("dayClose.denominationCalculator")}
+              <Calculator size={14} className="text-ink" aria-hidden />
+              <span>{t("dayClose.denominationCalculator")}</span>
             </Button>
           </div>
           <Input

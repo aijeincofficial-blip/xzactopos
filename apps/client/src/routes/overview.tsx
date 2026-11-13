@@ -238,9 +238,9 @@ function ReorderTab({ warehouses }: { warehouses: Array<{ id: string; code: stri
         ) : (
           <Table bare>
             <thead>
-              <tr className="border-b border-slate-200 text-slate-500">
+              <tr className="border-b-[1.5px] border-sand-line bg-sand font-mono text-[11px] font-semibold tracking-wider text-muted-on-light uppercase">
                 {(["warehouse", "product", "onHand", "point", "incoming", "onOrder", "status", "shortfall"] as const).map((c) => (
-                  <th key={c} className="px-3 py-2 font-medium">
+                  <th key={c} className="px-3.5 py-2.5 text-left">
                     {t(`overview.reorder.${c}`)}
                   </th>
                 ))}
@@ -251,13 +251,14 @@ function ReorderTab({ warehouses }: { warehouses: Array<{ id: string; code: stri
               {rows.map((r) => {
                 const status = reorderStatus(r);
                 return (
-                  <tr key={`${r.location_id}:${r.variant_id}`} className="border-b border-slate-100" data-testid={`reorder-${r.location_code}-${r.sku}`}>
-                    <td className="px-3 py-2">{r.location_code}</td>
-                    <td className="px-3 py-2">
-                      {r.product_name} · {r.sku}
+                  <tr key={`${r.location_id}:${r.variant_id}`} className="border-b-[1.5px] border-dashed border-dash last:border-0" data-testid={`reorder-${r.location_code}-${r.sku}`}>
+                    <td className="px-3.5 py-2.5 font-mono text-xs font-semibold text-ink">{r.location_code}</td>
+                    <td className="px-3.5 py-2.5">
+                      <span className="font-semibold text-text-on-light">{r.product_name}</span>{" "}
+                      <span className="font-mono text-xs text-muted-on-light">· {r.sku}</span>
                     </td>
-                    <td className="px-3 py-2">{formatQty(r.qty_on_hand)}</td>
-                    <td className="px-3 py-2">
+                    <td className="px-3.5 py-2.5 font-mono tabular-nums">{formatQty(r.qty_on_hand)}</td>
+                    <td className="px-3.5 py-2.5 font-mono tabular-nums">
                       <div className="flex items-center gap-1.5">
                         <span>{formatQty(r.reorder_point)}</span>
                         {r.is_override ? (
@@ -267,12 +268,12 @@ function ReorderTab({ warehouses }: { warehouses: Array<{ id: string; code: stri
                         ) : null}
                       </div>
                     </td>
-                    <td className="px-3 py-2">{formatQty(r.incoming_qty)}</td>
-                    <td className="px-3 py-2">{formatQty(r.on_order_qty)}</td>
-                    <td className="px-3 py-2">
-                      <Badge tone={status === "covered" ? "good" : status === "order" ? "warn" : "neutral"}>{t(`overview.reorder.statusLabel.${status}`)}</Badge>
+                    <td className="px-3.5 py-2.5 font-mono tabular-nums">{formatQty(r.incoming_qty)}</td>
+                    <td className="px-3.5 py-2.5 font-mono tabular-nums">{formatQty(r.on_order_qty)}</td>
+                    <td className="px-3.5 py-2.5">
+                      <Badge tone={status === "covered" ? "good" : status === "order" ? "danger" : "neutral"}>{t(`overview.reorder.statusLabel.${status}`)}</Badge>
                     </td>
-                    <td className="px-3 py-2">{status === "order" ? formatQty(r.shortfall) : "—"}</td>
+                    <td className="px-3.5 py-2.5 font-mono font-bold tabular-nums">{status === "order" ? formatQty(r.shortfall) : "—"}</td>
                     <td className="px-3 py-2">
                       <div className="flex items-center gap-2">
                         {status !== "covered" && can("purchasing.manage", r.location_id) ? (
