@@ -3,32 +3,26 @@ import { useTranslation } from "react-i18next";
 import { Link } from "@tanstack/react-router";
 import {
   ArrowRight,
-  BarChart3,
-  CheckCircle2,
-  ChevronDown,
+  Check,
   CreditCard,
-  Layers,
-  ShieldCheck,
   ShoppingBag,
-  Smartphone,
-  Sparkles,
-  Store,
-  Truck,
   Warehouse,
   WifiOff,
 } from "lucide-react";
 import { hasSession } from "../lib/session.tsx";
-import { Badge, Button, Card } from "../components/ui.tsx";
+import { cn } from "../lib/utils.ts";
 import { LanguageSelect } from "../components/LanguageSelect.tsx";
-import { ThemeCycleButton } from "./public.tsx";
-
-type ShowcaseTab = "pos" | "warehouse" | "reports";
+import {
+  GHOST_BUTTON_CLASSES,
+  LIME_BUTTON_CLASSES,
+  MoneyText,
+  Receipt,
+  ReceiptDash,
+} from "../ui/index.ts";
 
 export function LandingPage() {
   const { t } = useTranslation("auth");
   const [signedIn, setSignedIn] = useState(false);
-  const [showcase, setShowcase] = useState<ShowcaseTab>("pos");
-  const [openFaq, setOpenFaq] = useState<number>(0);
 
   useEffect(() => {
     let active = true;
@@ -42,557 +36,399 @@ export function LandingPage() {
 
   const posTarget = signedIn ? "/app" : "/login";
   const posLabel = signedIn ? t("landing.goToPos") : t("landing.openPos");
-
-  const stats = [
-    { icon: WifiOff, title: t("landing.stats.offline"), sub: t("landing.stats.offlineSub") },
-    { icon: ShieldCheck, title: t("landing.stats.math"), sub: t("landing.stats.mathSub") },
-    { icon: Warehouse, title: t("landing.stats.warehouses"), sub: t("landing.stats.warehousesSub") },
-    { icon: Smartphone, title: t("landing.stats.platforms"), sub: t("landing.stats.platformsSub") },
-  ];
-
-  const industries = [
-    {
-      icon: Store,
-      badge: t("landing.industries.card1Badge"),
-      title: t("landing.industries.card1Title"),
-      body: t("landing.industries.card1Body"),
-    },
-    {
-      icon: ShoppingBag,
-      badge: t("landing.industries.card2Badge"),
-      title: t("landing.industries.card2Title"),
-      body: t("landing.industries.card2Body"),
-    },
-    {
-      icon: Warehouse,
-      badge: t("landing.industries.card3Badge"),
-      title: t("landing.industries.card3Title"),
-      body: t("landing.industries.card3Body"),
-    },
-  ];
+  const marqueeText = t("landing.marqueeItems");
 
   const features = [
     {
-      icon: CreditCard,
+      num: "01",
+      icon: ShoppingBag,
       title: t("landing.features.posTitle"),
       body: t("landing.features.posBody"),
     },
     {
-      icon: Truck,
+      num: "02",
+      icon: Warehouse,
       title: t("landing.features.warehouseTitle"),
       body: t("landing.features.warehouseBody"),
     },
     {
-      icon: BarChart3,
+      num: "03",
+      icon: CreditCard,
       title: t("landing.features.utangTitle"),
       body: t("landing.features.utangBody"),
     },
     {
-      icon: Layers,
+      num: "04",
+      icon: WifiOff,
       title: t("landing.features.syncTitle"),
       body: t("landing.features.syncBody"),
     },
   ];
 
-  const faqs = [
-    { q: t("landing.faq.q1"), a: t("landing.faq.a1") },
-    { q: t("landing.faq.q2"), a: t("landing.faq.a2") },
-    { q: t("landing.faq.q3"), a: t("landing.faq.a3") },
-    { q: t("landing.faq.q4"), a: t("landing.faq.a4") },
+  const steps = [
+    {
+      num: "01",
+      title: t("landing.howSteps.step1Title"),
+      body: t("landing.howSteps.step1Body"),
+    },
+    {
+      num: "02",
+      title: t("landing.howSteps.step2Title"),
+      body: t("landing.howSteps.step2Body"),
+    },
+    {
+      num: "03",
+      title: t("landing.howSteps.step3Title"),
+      body: t("landing.howSteps.step3Body"),
+    },
+  ];
+
+  const pricingBullets = [
+    t("landing.pricing.bullet1"),
+    t("landing.pricing.bullet2"),
+    t("landing.pricing.bullet3"),
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-      <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/85 backdrop-blur-md">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
-          <div className="flex items-center gap-8">
-            <Link to="/" className="flex items-center gap-2.5 text-slate-900">
-              <img
-                src="/logo_squircle.png"
-                alt="XZACTO POS"
-                width={36}
-                height={36}
-                className="h-9 w-9 rounded-xl border border-slate-200/90 object-cover shadow-xs"
-              />
-              <div className="flex items-center gap-2">
-                <span className="text-lg font-bold tracking-tight text-slate-900">XZACTO</span>
-                <Badge tone="neutral">POS</Badge>
-              </div>
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-ink text-text-on-dark">
+      {/* 1. Navigation */}
+      <header className="border-b-[1.5px] border-ink-line bg-ink">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-8">
+          <Link to="/" className="inline-flex min-h-[44px] shrink-0 items-center">
+            <img
+              src="/brand/xzacto-logo-on-dark.svg"
+              alt="xzacto"
+              width={132}
+              height={36}
+              className="h-8 w-auto sm:h-9"
+            />
+          </Link>
+
+          <nav
+            aria-label="Landing sections"
+            className="hidden items-center gap-7 text-sm font-medium text-muted-on-dark lg:flex"
+          >
+            <a href="#features" className="transition-colors hover:text-lime">
+              {t("landing.nav.features")}
+            </a>
+            <a href="#how" className="transition-colors hover:text-lime">
+              {t("landing.nav.solutions")}
+            </a>
+            <a href="#pricing" className="transition-colors hover:text-lime">
+              {t("landing.nav.pricing")}
+            </a>
+            <Link to="/warehouse" className="transition-colors hover:text-lime">
+              {t("landing.nav.faq")}
             </Link>
+          </nav>
 
-            <nav className="hidden items-center gap-6 text-sm font-medium text-slate-600 md:flex">
-              <a href="#solutions" className="transition hover:text-slate-900">
-                {t("landing.nav.solutions")}
-              </a>
-              <a href="#features" className="transition hover:text-slate-900">
-                {t("landing.nav.features")}
-              </a>
-              <a href="#pricing" className="transition hover:text-slate-900">
-                {t("landing.nav.pricing")}
-              </a>
-              <a href="#faq" className="transition hover:text-slate-900">
-                {t("landing.nav.faq")}
-              </a>
-            </nav>
-          </div>
-
-          <div className="flex items-center gap-2 [&_select]:h-8 [&_select]:text-xs">
-            <ThemeCycleButton />
-            <LanguageSelect />
+          <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
+            <div className="[&_select]:min-h-[44px] [&_select]:rounded-full [&_select]:border-[1.5px] [&_select]:border-ink-line-2 [&_select]:bg-ink-2 [&_select]:px-3.5 [&_select]:py-2 [&_select]:text-sm [&_select]:font-medium [&_select]:text-text-on-dark">
+              <LanguageSelect />
+            </div>
             <Link
-              to="/warehouse"
-              className="hidden rounded-lg px-2.5 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 lg:inline-flex lg:items-center lg:gap-1.5"
-              data-testid="landing-nav-warehouse"
+              to={posTarget}
+              data-testid="landing-nav-pos"
+              className={cn(LIME_BUTTON_CLASSES, "hidden px-5 py-2.5 text-sm whitespace-nowrap sm:inline-flex")}
             >
-              <Warehouse size={15} aria-hidden />
-              {t("landing.warehousePortal")}
-            </Link>
-            <Link to={posTarget} data-testid="landing-nav-pos">
-              <Button size="sm" className="shadow-xs">
-                {posLabel}
-                <ArrowRight size={15} className="ml-1.5" aria-hidden />
-              </Button>
+              <span>{posLabel}</span>
+              <ArrowRight size={16} strokeWidth={2} aria-hidden />
             </Link>
           </div>
         </div>
       </header>
 
-      <section className="relative overflow-hidden border-b border-slate-200/80 bg-gradient-to-b from-brand-50/80 via-white to-slate-50">
-        <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-12 sm:px-6 sm:py-16 lg:grid-cols-[1.08fr_0.92fr] lg:gap-12 lg:py-20">
-          <div className="grid gap-5">
-            <div className="inline-flex w-fit items-center gap-2 rounded-full border border-brand-200 bg-white px-3.5 py-1 text-xs font-semibold text-brand-700 shadow-xs">
-              <Sparkles size={13} aria-hidden />
-              <span>{t("landing.eyebrow")}</span>
+      {/* 2. Asymmetric Hero (--ink + tilted paper receipt) */}
+      <section className="mx-auto max-w-6xl px-4 pt-10 pb-14 sm:px-8 sm:pt-12 sm:pb-16 lg:pt-16 lg:pb-24">
+        <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-12">
+          <div className="min-w-0 space-y-6 lg:col-span-7">
+            <div className="inline-flex max-w-full flex-wrap items-center gap-2.5 font-mono text-xs font-semibold tracking-[0.08em] text-lime uppercase">
+              <span className="h-2 w-2 shrink-0 rounded-full bg-lime" aria-hidden />
+              <span className="min-w-0 break-words">{t("landing.eyebrow")}</span>
             </div>
 
-            <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl sm:leading-[1.08]">
-              {t("landing.heroTitle")}
+            <h1 className="font-display text-[clamp(2.25rem,5.4vw,4.5rem)] leading-[1.02] font-extrabold tracking-[-0.03em] text-text-on-dark">
+              <span className="block">{t("landing.heroLine1")}</span>
+              <span className="block">{t("landing.heroLine2")}</span>
+              <span className="block text-lime">{t("landing.heroLine3")}</span>
             </h1>
 
-            <p className="max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg">
+            <p className="max-w-xl text-base leading-relaxed text-muted-on-dark sm:text-lg">
               {t("landing.heroSubtitle")}
             </p>
 
-            <div className="flex flex-wrap items-center gap-3 pt-1">
-              <Link to={posTarget} data-testid="landing-pos-btn">
-                <Button className="h-12 px-6 text-base font-semibold shadow-sm">
-                  <ShoppingBag size={18} className="mr-2" aria-hidden />
-                  {posLabel}
-                </Button>
+            <div className="flex flex-wrap items-center gap-3 pt-2">
+              <Link
+                to={posTarget}
+                data-testid="landing-pos-btn"
+                className={cn(LIME_BUTTON_CLASSES, "whitespace-nowrap")}
+              >
+                <span>{posLabel}</span>
+                <ArrowRight size={17} strokeWidth={2} aria-hidden />
               </Link>
-              <Link to="/signup" data-testid="landing-signup-btn">
-                <Button variant="outline" className="h-12 bg-white px-5 text-base font-medium">
-                  {t("landing.startSolo")}
-                </Button>
+              <Link
+                to="/signup"
+                data-testid="landing-signup-btn"
+                className={cn(GHOST_BUTTON_CLASSES, "whitespace-nowrap")}
+              >
+                <span>{t("landing.startSolo")}</span>
               </Link>
               <Link
                 to="/warehouse"
-                className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
                 data-testid="landing-warehouse-btn"
+                className="inline-flex min-h-[44px] items-center gap-2 rounded-full px-3 text-sm font-medium text-muted-on-dark underline-offset-4 transition-colors hover:text-lime hover:underline"
               >
-                <Warehouse size={16} aria-hidden />
-                {t("landing.warehousePortal")}
+                <Warehouse size={16} strokeWidth={1.75} aria-hidden />
+                <span>{t("landing.warehousePortal")}</span>
               </Link>
             </div>
-
-            <p className="text-xs font-medium text-slate-500">{t("landing.trustNote")}</p>
           </div>
 
-          <div className="rounded-2xl border border-slate-200/90 bg-white shadow-xl">
-            <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/80 px-4 py-2.5 rounded-t-2xl">
-              <div className="flex items-center gap-1.5">
-                <span className="h-2.5 w-2.5 rounded-full bg-red-400" />
-                <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
-                <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
+          {/* Floating Sample Receipt */}
+          <div className="relative flex min-w-0 items-center justify-center py-8 lg:col-span-5">
+            <div
+              aria-hidden
+              className="pointer-events-none absolute h-[260px] w-[260px] rounded-full border-[1.5px] border-dashed border-ink-line-2 sm:h-[360px] sm:w-[360px]"
+            />
+            <div className="relative w-full max-w-[300px] sm:max-w-[340px]">
+              <div className="sticker-float absolute -top-4 right-1 z-10 rotate-6 rounded-full border-2 border-ink bg-lime px-4 py-1.5 font-mono text-xs font-semibold tracking-[0.04em] text-ink uppercase sm:right-2">
+                {t("landing.receiptSample.paidTag")}
               </div>
-              <span className="rounded-md bg-white px-3 py-0.5 text-[11px] font-medium text-slate-500 ring-1 ring-slate-200/80">
-                pos.xzactopos.app
-              </span>
-              <Badge tone="good">{t("landing.preview.synced")}</Badge>
-            </div>
 
-            <div className="flex gap-1 border-b border-slate-100 bg-slate-50/40 px-3 pt-2.5">
-              {(
-                [
-                  ["pos", t("landing.showcase.tabPos")],
-                  ["warehouse", t("landing.showcase.tabWarehouse")],
-                  ["reports", t("landing.showcase.tabReports")],
-                ] as const
-              ).map(([id, label]) => (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => setShowcase(id)}
-                  className={`rounded-t-lg px-3 py-1.5 text-xs font-semibold transition ${
-                    showcase === id
-                      ? "bg-white text-brand-700 ring-1 ring-b-0 ring-slate-200/80"
-                      : "text-slate-500 hover:text-slate-900"
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
+              <Receipt className="receipt-float -rotate-2 sm:-rotate-3">
+                <div className="flex items-center justify-between gap-2">
+                  <img
+                    src="/brand/xzacto-logo-on-light.svg"
+                    alt="xzacto"
+                    width={96}
+                    height={26}
+                    className="h-6 w-auto"
+                  />
+                  <span className="font-mono text-xs font-semibold text-muted-on-light">
+                    {t("landing.receiptSample.orderNo")}
+                  </span>
+                </div>
+                <p className="mt-2 font-mono text-[11px] tracking-[0.06em] text-muted-on-light uppercase">
+                  {t("landing.receiptSample.storeLabel")}
+                </p>
 
-            <div className="grid gap-4 p-5">
-              {showcase === "pos" ? (
-                <>
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white">
-                        <Store size={15} aria-hidden />
-                      </div>
-                      <span className="text-sm font-semibold text-slate-900">
-                        {t("landing.showcase.posHeader")}
-                      </span>
-                    </div>
-                    <Badge tone="good">{t("landing.preview.shiftOpen")}</Badge>
+                <ReceiptDash />
+
+                <div className="space-y-2.5 text-sm">
+                  <div className="flex items-baseline justify-between gap-4">
+                    <span>{t("landing.receiptSample.item1")}</span>
+                    <MoneyText minor={310000} currency="PHP" className="shrink-0 font-medium" />
                   </div>
-
-                  <div className="grid gap-2 text-sm">
-                    <div className="flex items-center justify-between rounded-xl bg-slate-50 px-3.5 py-2.5">
-                      <div>
-                        <div className="font-medium text-slate-900">{t("landing.preview.item1")}</div>
-                        <div className="text-xs text-slate-500">1 × ₱1,550.00</div>
-                      </div>
-                      <span className="font-semibold tabular-nums text-slate-900">₱1,550.00</span>
-                    </div>
-                    <div className="flex items-center justify-between rounded-xl bg-slate-50 px-3.5 py-2.5">
-                      <div>
-                        <div className="font-medium text-slate-900">{t("landing.preview.item2")}</div>
-                        <div className="text-xs text-slate-500">2 × ₱110.00</div>
-                      </div>
-                      <span className="font-semibold tabular-nums text-slate-900">₱220.00</span>
-                    </div>
+                  <div className="flex items-baseline justify-between gap-4">
+                    <span>{t("landing.receiptSample.item2")}</span>
+                    <MoneyText minor={11000} currency="PHP" className="shrink-0 font-medium" />
                   </div>
-
-                  <div className="flex items-center justify-between border-t border-slate-100 pt-3">
-                    <div>
-                      <div className="text-xs font-medium text-slate-500">{t("landing.preview.totalLabel")}</div>
-                      <div className="text-2xl font-bold tabular-nums text-slate-900">₱1,770.00</div>
-                    </div>
-                    <Badge tone="neutral">{t("landing.preview.splitLabel")}</Badge>
+                  <div className="flex items-baseline justify-between gap-4">
+                    <span>{t("landing.receiptSample.item3")}</span>
+                    <MoneyText minor={43500} currency="PHP" className="shrink-0 font-medium" />
                   </div>
-                </>
-              ) : null}
+                </div>
 
-              {showcase === "warehouse" ? (
-                <>
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500 text-white">
-                        <Truck size={15} aria-hidden />
-                      </div>
-                      <span className="text-sm font-semibold text-slate-900">
-                        {t("landing.showcase.whHeader")}
-                      </span>
-                    </div>
-                    <Badge tone="warn">2 low</Badge>
-                  </div>
+                <ReceiptDash />
 
-                  <div className="grid gap-2.5 text-sm">
-                    <div className="flex items-center justify-between gap-3 rounded-xl border border-amber-200/80 bg-amber-50/70 px-3.5 py-2.5">
-                      <div className="min-w-0">
-                        <div className="truncate font-semibold text-slate-900">
-                          {t("landing.showcase.whRow1Title")}
-                        </div>
-                        <div className="truncate text-xs text-slate-600">{t("landing.showcase.whRow1Sub")}</div>
-                      </div>
-                      <Badge tone="good">{t("landing.showcase.whRow1Stock")}</Badge>
-                    </div>
-                    <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-200/80 bg-slate-50 px-3.5 py-2.5">
-                      <div className="min-w-0">
-                        <div className="truncate font-semibold text-slate-900">
-                          {t("landing.showcase.whRow2Title")}
-                        </div>
-                        <div className="truncate text-xs text-slate-600">{t("landing.showcase.whRow2Sub")}</div>
-                      </div>
-                      <Badge tone="neutral">{t("landing.showcase.whRow2Stock")}</Badge>
-                    </div>
-                  </div>
-                </>
-              ) : null}
+                <div className="flex items-baseline justify-between gap-4 text-xs text-muted-on-light">
+                  <span>{t("landing.receiptSample.vatLabel")}</span>
+                  <MoneyText minor={39054} currency="PHP" className="shrink-0" />
+                </div>
 
-              {showcase === "reports" ? (
-                <>
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600 text-white">
-                        <BarChart3 size={15} aria-hidden />
-                      </div>
-                      <span className="text-sm font-semibold text-slate-900">
-                        {t("landing.showcase.repHeader")}
-                      </span>
-                    </div>
-                    <Badge tone="good">{t("landing.showcase.repStatus")}</Badge>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-2.5">
-                    <div className="rounded-xl bg-slate-50 p-3">
-                      <div className="text-[11px] font-medium text-slate-500">
-                        {t("landing.showcase.repSales")}
-                      </div>
-                      <div className="mt-1 text-base font-bold tabular-nums text-slate-900">₱48,920</div>
-                    </div>
-                    <div className="rounded-xl bg-slate-50 p-3">
-                      <div className="text-[11px] font-medium text-slate-500">
-                        {t("landing.showcase.repCash")}
-                      </div>
-                      <div className="mt-1 text-base font-bold tabular-nums text-slate-900">₱31,450</div>
-                    </div>
-                    <div className="rounded-xl bg-slate-50 p-3">
-                      <div className="text-[11px] font-medium text-slate-500">
-                        {t("landing.showcase.repUtang")}
-                      </div>
-                      <div className="mt-1 text-base font-bold tabular-nums text-emerald-700">₱6,200</div>
-                    </div>
-                  </div>
-                </>
-              ) : null}
-
-              <Link to={posTarget} data-testid="landing-card-pos-btn">
-                <Button className="w-full justify-between">
-                  <span>{posLabel}</span>
-                  <ArrowRight size={16} aria-hidden />
-                </Button>
-              </Link>
+                <div className="mt-3 flex items-baseline justify-between gap-3">
+                  <span className="font-mono text-xs font-semibold tracking-[0.06em] text-muted-on-light uppercase">
+                    {t("landing.receiptSample.totalLabel")}
+                  </span>
+                  <MoneyText minor={364500} currency="PHP" variant="total" className="text-text-on-light" />
+                </div>
+              </Receipt>
             </div>
           </div>
         </div>
       </section>
 
-      <main className="mx-auto grid max-w-6xl gap-16 px-4 py-12 sm:px-6 sm:py-16">
-        <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {stats.map((s) => {
-            const Icon = s.icon;
+      {/* 3. Tilted Full-Width Lime Marquee Band */}
+      <div className="w-full overflow-hidden py-4">
+        <div className="-mx-4 overflow-hidden -rotate-[1.2deg] bg-lime py-3.5 text-ink">
+          <div className="xz-marquee-track font-display text-lg font-extrabold tracking-[-0.01em] whitespace-nowrap sm:text-xl">
+            <div className="flex shrink-0 items-center">
+              <span className="px-4">{marqueeText}</span>
+              <span className="px-1" aria-hidden>✳</span>
+              <span className="px-4">{marqueeText}</span>
+              <span className="px-1" aria-hidden>✳</span>
+            </div>
+            <div className="flex shrink-0 items-center" aria-hidden>
+              <span className="px-4">{marqueeText}</span>
+              <span className="px-1">✳</span>
+              <span className="px-4">{marqueeText}</span>
+              <span className="px-1">✳</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 4. Features 4-Card Grid (--ink) */}
+      <section id="features" className="mx-auto max-w-6xl px-4 py-20 sm:px-8 lg:py-24">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <h2 className="max-w-2xl font-display text-[clamp(2rem,4vw,3rem)] leading-[1.06] font-extrabold tracking-[-0.025em] text-text-on-dark">
+            {t("landing.featuresHeader")}
+          </h2>
+          <p className="max-w-md text-base leading-relaxed text-muted-on-dark">
+            {t("landing.featuresSub")}
+          </p>
+        </div>
+
+        <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {features.map((item) => {
+            const Icon = item.icon;
             return (
-              <div
-                key={s.title}
-                className="flex items-center gap-3.5 rounded-xl border border-slate-200/90 bg-white px-4 py-3.5 shadow-2xs"
+              <article
+                key={item.num}
+                className="flex flex-col gap-4 rounded-[24px] border-[1.5px] border-ink-line bg-ink-2 p-6 transition-colors hover:border-lime"
               >
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
-                  <Icon size={18} aria-hidden />
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-xs font-semibold tracking-[0.08em] text-lime">
+                    {item.num}
+                  </span>
+                  <Icon size={20} strokeWidth={1.75} className="text-lime" aria-hidden />
                 </div>
-                <div className="min-w-0">
-                  <div className="truncate text-sm font-semibold text-slate-900">{s.title}</div>
-                  <div className="truncate text-xs text-slate-500">{s.sub}</div>
-                </div>
-              </div>
+                <h3 className="font-display text-xl leading-snug font-extrabold tracking-[-0.02em] text-text-on-dark">
+                  {item.title}
+                </h3>
+                <p className="text-sm leading-relaxed text-muted-on-dark">{item.body}</p>
+              </article>
             );
           })}
-        </section>
+        </div>
+      </section>
 
-        <section id="solutions" className="grid gap-6 scroll-mt-20">
-          <div className="grid gap-2">
-            <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-              {t("landing.industries.title")}
-            </h2>
-            <p className="max-w-2xl text-sm text-slate-600 sm:text-base">
-              {t("landing.industries.subtitle")}
-            </p>
-          </div>
-          <div className="grid gap-5 md:grid-cols-3">
-            {industries.map((item) => {
-              const Icon = item.icon;
-              return (
-                <Card key={item.title} className="grid content-start gap-3.5 border-slate-200/90 bg-white p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
-                      <Icon size={20} aria-hidden />
-                    </div>
-                    <Badge tone="neutral">{item.badge}</Badge>
-                  </div>
-                  <h3 className="text-lg font-bold text-slate-900">{item.title}</h3>
-                  <p className="text-sm leading-relaxed text-slate-600">{item.body}</p>
-                </Card>
-              );
-            })}
-          </div>
-        </section>
-
-        <section id="features" className="grid gap-6 scroll-mt-20">
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-            {t("landing.featuresTitle")}
+      {/* 5. How It Works (--paper receipt section) */}
+      <section id="how" className="bg-paper py-20 text-text-on-light lg:py-24">
+        <div className="mx-auto max-w-6xl px-4 sm:px-8">
+          <h2 className="max-w-2xl font-display text-[clamp(2rem,4vw,3rem)] leading-[1.06] font-extrabold tracking-[-0.025em] text-text-on-light">
+            {t("landing.howTitle")}
           </h2>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {features.map((f) => {
-              const Icon = f.icon;
-              return (
-                <Card
-                  key={f.title}
-                  className="grid content-start gap-3 border-slate-200/90 bg-white p-5 transition hover:border-brand-200 hover:shadow-md"
-                >
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
-                    <Icon size={20} aria-hidden />
-                  </div>
-                  <h3 className="text-base font-semibold text-slate-900">{f.title}</h3>
-                  <p className="text-sm leading-relaxed text-slate-600">{f.body}</p>
-                </Card>
-              );
-            })}
-          </div>
-        </section>
 
-        <section id="pricing" className="grid gap-6 scroll-mt-20">
-          <div className="grid gap-2">
-            <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-              {t("landing.pricing.title")}
-            </h2>
-            <p className="max-w-2xl text-sm text-slate-600 sm:text-base">
-              {t("landing.pricing.subtitle")}
-            </p>
+          <div className="mt-10">
+            <ReceiptDash className="my-0" />
+            {steps.map((step) => (
+              <div key={step.num}>
+                <div className="grid gap-4 py-8 sm:grid-cols-[88px_1fr] sm:items-baseline">
+                  <span className="font-mono text-sm font-semibold tracking-[0.06em] text-muted-on-light">
+                    {step.num}
+                  </span>
+                  <div className="grid gap-2 md:grid-cols-12 md:gap-8">
+                    <h3 className="font-display text-2xl font-extrabold tracking-[-0.02em] text-text-on-light md:col-span-5">
+                      {step.title}
+                    </h3>
+                    <p className="text-base leading-relaxed text-muted-on-light md:col-span-7">
+                      {step.body}
+                    </p>
+                  </div>
+                </div>
+                <ReceiptDash className="my-0" />
+              </div>
+            ))}
           </div>
-          <div className="grid gap-5 md:grid-cols-2">
-            <Card className="grid content-between gap-6 border-slate-200/90 bg-white p-6 sm:p-7">
-              <div className="grid gap-3.5">
-                <div className="flex items-center justify-between">
-                  <Badge tone="neutral">{t("landing.plans.soloBadge")}</Badge>
+        </div>
+      </section>
+
+      {/* 6. Pricing (One full --lime container + --ink pricing card) */}
+      <section id="pricing" className="bg-ink py-20 lg:py-24">
+        <div className="mx-auto max-w-6xl px-4 sm:px-8">
+          <div className="grid gap-10 rounded-[40px] bg-lime p-7 text-ink sm:p-12 lg:grid-cols-12 lg:items-center">
+            <div className="space-y-5 lg:col-span-6">
+              <p className="font-mono text-xs font-semibold tracking-[0.08em] text-ink uppercase">
+                {t("landing.pricing.eyebrow")}
+              </p>
+              <h2 className="font-display text-[clamp(2rem,3.8vw,3rem)] leading-[1.06] font-extrabold tracking-[-0.025em] text-ink">
+                {t("landing.pricing.title")}
+              </h2>
+              <p className="max-w-lg text-base leading-relaxed text-ink">
+                {t("landing.pricing.subtitle")}
+              </p>
+              <div>
+                <span className="inline-flex min-h-[44px] items-center rounded-full bg-ink px-5 py-2 font-mono text-xs font-semibold tracking-[0.04em] text-lime">
+                  {t("landing.pricing.soloPill")}
+                </span>
+              </div>
+            </div>
+
+            <div className="lg:col-span-6">
+              <div className="rounded-[28px] bg-ink p-7 text-text-on-dark sm:p-8">
+                <p className="font-mono text-xs font-semibold tracking-[0.08em] text-lime uppercase">
+                  {t("landing.pricing.cardBadge")}
+                </p>
+                <h3 className="mt-2 font-display text-2xl font-extrabold tracking-[-0.02em] text-text-on-dark">
+                  {t("landing.pricing.cardTitle")}
+                </h3>
+                <div className="mt-4 flex flex-wrap items-baseline gap-2">
+                  <MoneyText minor={149900} currency="PHP" variant="stat" className="text-lime" />
+                  <span className="font-mono text-sm text-muted-on-dark">
+                    {t("landing.pricing.perMonth")}
+                  </span>
                 </div>
-                <div className="flex items-baseline gap-1.5">
-                  <span className="text-3xl font-extrabold text-slate-900">{t("landing.pricing.soloPrice")}</span>
-                  <span className="text-sm text-slate-500">{t("landing.pricing.soloPeriod")}</span>
-                </div>
-                <h3 className="text-xl font-bold text-slate-900">{t("landing.plans.soloTitle")}</h3>
-                <p className="text-sm leading-relaxed text-slate-600">{t("landing.plans.soloBody")}</p>
-                <ul className="grid gap-2.5 pt-1 text-sm text-slate-700">
-                  {[
-                    t("landing.plans.soloBullet1"),
-                    t("landing.plans.soloBullet2"),
-                    t("landing.plans.soloBullet3"),
-                  ].map((item) => (
-                    <li key={item} className="flex items-start gap-2.5">
-                      <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-emerald-600" aria-hidden />
-                      <span>{item}</span>
+
+                <hr className="my-6 border-0 border-t-[1.5px] border-dashed border-ink-line-2" />
+
+                <ul className="space-y-3 text-sm text-text-on-dark">
+                  {pricingBullets.map((bullet) => (
+                    <li key={bullet} className="flex items-start gap-2.5">
+                      <Check size={17} strokeWidth={2} className="mt-0.5 shrink-0 text-lime" aria-hidden />
+                      <span>{bullet}</span>
                     </li>
                   ))}
                 </ul>
-              </div>
-              <Link to="/signup">
-                <Button variant="outline" className="w-full sm:w-auto">
-                  {t("landing.plans.soloCta")}
-                </Button>
-              </Link>
-            </Card>
 
-            <Card className="grid content-between gap-6 border-brand-300 bg-white p-6 ring-2 ring-brand-100 sm:p-7">
-              <div className="grid gap-3.5">
-                <div className="flex items-center justify-between">
-                  <Badge tone="good">{t("landing.plans.fullBadge")}</Badge>
-                  <Badge tone="neutral">{t("landing.pricing.popular")}</Badge>
-                </div>
-                <div className="flex items-baseline gap-1.5">
-                  <span className="text-3xl font-extrabold text-slate-900">{t("landing.pricing.fullPrice")}</span>
-                  <span className="text-sm text-slate-500">{t("landing.pricing.fullPeriod")}</span>
-                </div>
-                <h3 className="text-xl font-bold text-slate-900">{t("landing.plans.fullTitle")}</h3>
-                <p className="text-sm leading-relaxed text-slate-600">{t("landing.plans.fullBody")}</p>
-                <ul className="grid gap-2.5 pt-1 text-sm text-slate-700">
-                  {[
-                    t("landing.plans.fullBullet1"),
-                    t("landing.plans.fullBullet2"),
-                    t("landing.plans.fullBullet3"),
-                  ].map((item) => (
-                    <li key={item} className="flex items-start gap-2.5">
-                      <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-brand-600" aria-hidden />
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div className="flex flex-wrap gap-3">
-                <Link to={posTarget}>
-                  <Button>{posLabel}</Button>
-                </Link>
-                <Link to="/warehouse">
-                  <Button variant="outline">{t("landing.warehousePortal")}</Button>
-                </Link>
-              </div>
-            </Card>
-          </div>
-        </section>
-
-        <section id="faq" className="grid gap-6 scroll-mt-20">
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-            {t("landing.faq.title")}
-          </h2>
-          <div className="grid gap-3">
-            {faqs.map((item, idx) => {
-              const open = openFaq === idx;
-              return (
-                <div
-                  key={item.q}
-                  className="rounded-xl border border-slate-200/90 bg-white transition hover:border-slate-300"
-                >
-                  <button
-                    type="button"
-                    onClick={() => setOpenFaq(open ? -1 : idx)}
-                    className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left"
+                <div className="mt-7 flex flex-wrap gap-3">
+                  <Link
+                    to={posTarget}
+                    className={cn(LIME_BUTTON_CLASSES, "whitespace-nowrap")}
                   >
-                    <span className="text-sm font-semibold text-slate-900 sm:text-base">{item.q}</span>
-                    <ChevronDown
-                      size={18}
-                      className={`shrink-0 text-slate-500 transition-transform ${open ? "rotate-180" : ""}`}
-                      aria-hidden
-                    />
-                  </button>
-                  {open ? (
-                    <div className="border-t border-slate-100 px-5 py-3.5 text-sm leading-relaxed text-slate-600">
-                      {item.a}
-                    </div>
-                  ) : null}
+                    <span>{posLabel}</span>
+                    <ArrowRight size={17} strokeWidth={2} aria-hidden />
+                  </Link>
+                  <Link
+                    to="/signup"
+                    className={cn(GHOST_BUTTON_CLASSES, "whitespace-nowrap")}
+                  >
+                    <span>{t("landing.startSolo")}</span>
+                  </Link>
                 </div>
-              );
-            })}
+              </div>
+            </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        <section className="rounded-2xl bg-brand-600 px-6 py-8 text-white shadow-lg sm:flex sm:items-center sm:justify-between sm:gap-6 sm:px-9 sm:py-10">
-          <div className="grid gap-1.5">
-            <h2 className="text-xl font-bold tracking-tight text-white sm:text-2xl">
-              {t("landing.ctaBanner.title")}
-            </h2>
-            <p className="text-sm text-brand-100 sm:text-base">
-              {t("landing.ctaBanner.subtitle")}
-            </p>
-          </div>
-          <div className="mt-5 flex flex-wrap gap-3 sm:mt-0 sm:shrink-0">
-            <Link to={posTarget}>
-              <Button className="bg-white text-brand-700 hover:bg-brand-50">
-                {posLabel}
-                <ArrowRight size={16} className="ml-1.5" aria-hidden />
-              </Button>
-            </Link>
-            <Link to="/signup">
-              <Button variant="outline" className="border-brand-300 bg-transparent text-white hover:bg-brand-700">
-                {t("landing.startSolo")}
-              </Button>
-            </Link>
-          </div>
-        </section>
-      </main>
-
-      <footer className="border-t border-slate-200/80 bg-white">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-7 text-sm text-slate-500 sm:px-6">
-          <div className="flex items-center gap-2.5">
+      {/* 7. Footer (--ink) */}
+      <footer className="border-t-[1.5px] border-ink-line bg-ink">
+        <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-10 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+          <div className="space-y-2">
             <img
-              src="/logo_squircle.png"
-              alt="XZACTO POS"
-              width={24}
-              height={24}
-              className="h-6 w-6 rounded-md object-cover"
+              src="/brand/xzacto-logo-on-dark.svg"
+              alt="xzacto"
+              width={116}
+              height={32}
+              className="h-8 w-auto"
             />
-            <span>{t("landing.footerNote")}</span>
+            <p className="text-xs text-muted-on-dark">{t("landing.footerNote")}</p>
           </div>
-          <div className="flex flex-wrap items-center gap-5 font-medium">
-            <Link to={posTarget} className="hover:text-slate-900">
+
+          <div className="flex flex-wrap items-center gap-6 text-sm font-medium text-muted-on-dark">
+            <Link to={posTarget} className="transition-colors hover:text-lime">
               {posLabel}
             </Link>
-            <Link to="/warehouse" className="hover:text-slate-900">
+            <Link to="/warehouse" className="transition-colors hover:text-lime">
               {t("landing.warehousePortal")}
             </Link>
-            <Link to="/signup" className="hover:text-slate-900">
+            <Link to="/signup" className="transition-colors hover:text-lime">
               {t("landing.startSolo")}
             </Link>
+            <span className="font-mono text-xs text-muted-on-dark">
+              {t("landing.footerCopyright")}
+            </span>
           </div>
         </div>
       </footer>
