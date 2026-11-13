@@ -206,6 +206,11 @@
     "printReceipt": "I-print ang Resibo",
     "thankYou": "Salamat sa iyong pagtangkilik!",
     "newSale": "Bagong benta",
+    "chargeLabel": "Singilin",
+    "reviewOrder": "Suriin",
+    "backToCatalog": "Katalogo",
+    "vatIncluded": "VAT (kasama)",
+    "orderHeader": "Ticket ng order",
     "noStore": "Walang tindahang naka-assign sa iyo, kaya hindi ka makakabenta.",
     "problem": {
       "empty": "Magdagdag ng kahit isang item.",

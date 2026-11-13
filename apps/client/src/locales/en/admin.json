@@ -206,6 +206,11 @@
     "printReceipt": "Print Receipt",
     "thankYou": "Thank you for your purchase!",
     "newSale": "New sale",
+    "chargeLabel": "Charge",
+    "reviewOrder": "Review",
+    "backToCatalog": "Catalog",
+    "vatIncluded": "VAT (incl.)",
+    "orderHeader": "Order ticket",
     "noStore": "No store is assigned to you, so you cannot sell.",
     "problem": {
       "empty": "Add at least one item.",

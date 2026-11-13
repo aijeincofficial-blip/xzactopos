@@ -25,7 +25,7 @@ import {
   UserPlus,
   X,
 } from "lucide-react";
-import { Alert, Badge, Button, Card, Dialog, EmptyState, Input, Select, useToast } from "../components/ui.tsx";
+import { Alert, Badge, Button, Dialog, EmptyState, Input, Select, useToast } from "../components/ui.tsx";
 import { useSession } from "../lib/session.tsx";
 import { useActiveLocation } from "../lib/location-context.tsx";
 import { useErrorMessage } from "../lib/i18n-helpers.ts";
@@ -196,6 +196,7 @@ export function SellPage() {
   const [showHoldDialog, setShowHoldDialog] = useState(false);
   const [holdLabel, setHoldLabel] = useState("");
   const [showHeldListDialog, setShowHeldListDialog] = useState(false);
+  const [mobileCartOpen, setMobileCartOpen] = useState(false);
   const toast = useToast();
   const attempt = useRef<{ key: string; id: string; opId: string } | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
@@ -353,6 +354,46 @@ export function SellPage() {
     const usedIds = new Set(allItems.map((s) => s.categoryId).filter(Boolean));
     return (categoriesQuery.data ?? []).filter((c) => usedIds.has(c.id));
   }, [catalog.data, categoriesQuery.data]);
+
+  const categoryCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const item of catalog.data ?? []) {
+      if (!item.categoryId) continue;
+      counts.set(item.categoryId, (counts.get(item.categoryId) ?? 0) + 1);
+    }
+    return counts;
+  }, [catalog.data]);
+
+  const categorySwatchMap = useMemo(() => {
+    const tones = [
+      "bg-sw-coffee text-sw-coffee-fg",
+      "bg-sw-noncoffee text-sw-noncoffee-fg",
+      "bg-sw-pastry text-sw-pastry-fg",
+      "bg-sw-meal text-sw-meal-fg",
+    ] as const;
+    const m = new Map<string, (typeof tones)[number]>();
+    activeCategories.forEach((cat, idx) => {
+      m.set(cat.id, tones[idx % tones.length] ?? tones[0]);
+    });
+    return m;
+  }, [activeCategories]);
+
+  const estimatedVat = useMemo(() => {
+    let vat = 0;
+    for (const l of cart) {
+      if (l.taxRate > 0) {
+        const net = lineTotal(l.qty, l.unitPrice, l.discount ?? 0);
+        vat += Math.round((net * l.taxRate) / (100 + l.taxRate));
+      }
+    }
+    return vat;
+  }, [cart]);
+
+  useEffect(() => {
+    if (done || cart.length === 0) {
+      setMobileCartOpen(false);
+    }
+  }, [done, cart.length]);
 
   const cartQtyByVariant = useMemo(() => {
     const m = new Map<string, number>();
@@ -798,77 +839,91 @@ export function SellPage() {
 
   if (done) {
     return (
-      <div className="h-full overflow-y-auto">
-        <div className="mx-auto grid w-full max-w-4xl content-start gap-6 p-6 md:grid-cols-[1fr_auto]">
-          <Card className="grid gap-6" data-testid="sale-done">
+      <div className="h-full overflow-y-auto bg-ink text-text-on-dark">
+        <div className="mx-auto grid w-full max-w-4xl content-start gap-6 p-4 sm:p-6 md:grid-cols-[1fr_auto]">
+          <div
+            className="grid gap-6 rounded-[28px] border-[1.5px] border-ink-line bg-ink-2 p-6 text-text-on-dark sm:p-7"
+            data-testid="sale-done"
+          >
             <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3.5">
                 <div
-                  className={`flex h-12 w-12 items-center justify-center rounded-xl ${
-                    done.queuedOffline ? "bg-amber-50 text-amber-600" : "bg-emerald-50 text-emerald-600"
+                  className={`flex h-13 w-13 shrink-0 items-center justify-center rounded-full ${
+                    done.queuedOffline
+                      ? "bg-sw-pastry text-sw-pastry-fg"
+                      : "bg-lime text-ink"
                   }`}
                 >
-                  {done.queuedOffline ? <CloudOff size={24} aria-hidden /> : <CheckCircle2 size={24} aria-hidden />}
+                  {done.queuedOffline ? <CloudOff size={24} aria-hidden /> : <CheckCircle2 size={26} aria-hidden />}
                 </div>
                 <div>
-                  <h2 className="text-lg font-semibold text-slate-900">
+                  <h2 className="font-display text-xl font-extrabold tracking-tight text-text-on-dark sm:text-2xl">
                     {done.queuedOffline ? t("sell.doneOffline") : t("sell.done")}
                   </h2>
-                  <div className="font-mono text-xs text-slate-500">
+                  <div className="mt-0.5 font-mono text-xs text-muted-on-dark">
                     {t("sell.receiptNo")}{" "}
-                    <span className="font-semibold text-slate-900">{done.saleNo ?? done.localNo}</span>
+                    <span className="font-semibold text-lime">{done.saleNo ?? done.localNo}</span>
                   </div>
                 </div>
               </div>
-              <Badge tone={done.queuedOffline ? "warn" : "good"}>{store.code}</Badge>
+              <span className="rounded-full border border-ink-line-2 bg-ink px-3 py-1 font-mono text-xs font-semibold text-text-on-dark">
+                {store.code}
+              </span>
             </div>
 
             {done.queuedOffline ? (
               <div
                 data-testid="offline-sale-banner"
-                className="rounded-xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-xs font-medium text-amber-900"
+                className="rounded-[16px] border-[1.5px] border-sw-pastry/50 bg-sw-pastry/15 px-4 py-3 text-xs font-medium text-sw-pastry"
               >
                 {t("sell.offlineSaleNotice")}
               </div>
             ) : null}
 
-            <div className="grid gap-2 rounded-xl border border-slate-200/80 bg-slate-50/70 p-4">
-              <span className="text-xs font-semibold tracking-wider text-slate-500 uppercase">
+            <div className="grid gap-2 rounded-[20px] border-[1.5px] border-ink-line-2 bg-ink p-5">
+              <span className="font-mono text-[11px] font-semibold tracking-wider text-muted-on-dark uppercase">
                 {t("sell.total")}
               </span>
-              <div className="text-3xl font-semibold text-slate-900 tabular-nums">{fmt(done.total)}</div>
+              <div className="font-display text-4xl font-extrabold tracking-tight text-lime tabular-nums">
+                {fmt(done.total)}
+              </div>
               {done.change > 0 ? (
-                <div className="mt-2 flex items-baseline justify-between border-t border-slate-200 pt-2 text-base">
-                  <span className="text-slate-600">{t("sell.change")}</span>
-                  <span className="text-xl font-semibold text-emerald-700 tabular-nums">{fmt(done.change)}</span>
+                <div className="mt-2 flex items-baseline justify-between border-t border-dashed border-ink-line-2 pt-3 text-base">
+                  <span className="text-muted-on-dark">{t("sell.change")}</span>
+                  <span className="font-display text-xl font-extrabold text-lime tabular-nums">{fmt(done.change)}</span>
                 </div>
               ) : null}
               {done.onUtang > 0 ? (
-                <div className="mt-2 flex items-baseline justify-between border-t border-slate-200 pt-2 text-sm text-amber-800">
+                <div className="mt-2 flex items-baseline justify-between border-t border-dashed border-ink-line-2 pt-3 text-sm text-sw-pastry">
                   <span>{t("sell.onUtang")}</span>
-                  <span className="font-semibold tabular-nums">{fmt(done.onUtang)}</span>
+                  <span className="font-mono font-semibold tabular-nums">{fmt(done.onUtang)}</span>
                 </div>
               ) : null}
             </div>
 
-            <div className="no-print flex gap-3">
-              <Button
-                variant="outline"
+            <div className="no-print flex flex-col gap-3 sm:flex-row">
+              <button
+                type="button"
                 data-testid="print-receipt-btn"
                 onClick={() => window.print()}
-                className="h-11 flex-1"
+                className="inline-flex min-h-[48px] flex-1 cursor-pointer items-center justify-center gap-2 rounded-full border-[1.5px] border-ink-line-2 bg-transparent px-5 text-sm font-semibold text-text-on-dark transition-colors hover:border-text-on-dark hover:bg-ink"
               >
-                <Printer size={16} className="text-slate-500" aria-hidden />
+                <Printer size={16} className="text-muted-on-dark" aria-hidden />
                 <span>{t("sell.printReceipt")}</span>
-              </Button>
-              <Button data-testid="new-sale" onClick={() => setDone(null)} className="h-11 flex-1">
+              </button>
+              <button
+                type="button"
+                data-testid="new-sale"
+                onClick={() => setDone(null)}
+                className="inline-flex min-h-[52px] flex-1 cursor-pointer items-center justify-center gap-2 rounded-full bg-lime px-6 font-display text-base font-extrabold text-ink transition-colors hover:bg-lime-hover"
+              >
                 {t("sell.newSale")}
-              </Button>
+              </button>
             </div>
-          </Card>
+          </div>
 
           {done.receiptData ? (
-            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-xs">
+            <div className="receipt paper-surface rounded-t-[20px] border-[1.5px] border-sand-line bg-paper px-5 pt-5 pb-8 text-text-on-light">
               <ReceiptSlipView receipt={done.receiptData} />
             </div>
           ) : null}
@@ -883,16 +938,19 @@ export function SellPage() {
   }, [stockQuery.data, store, outboxOps]);
   const cashTarget = paidNow !== null ? paidNow : remainingDue;
 
+  const chipTone = (categoryId?: string | null) =>
+    (categoryId ? categorySwatchMap.get(categoryId) : undefined) ?? "bg-sw-noncoffee text-sw-noncoffee-fg";
+
   return (
-    <div className="grid h-full min-h-0 lg:grid-cols-[1fr_400px]">
-      {/* LEFT TERMINAL: Calm Search Header + Category Filter Strip + Clean Product Grid */}
-      <section className="flex min-h-0 min-w-0 flex-col bg-slate-50">
-        <div className="border-b border-slate-200/80 bg-white px-4 py-3">
-          <div className="flex items-center gap-2.5">
-            <div className="relative min-w-0 flex-1">
+    <div className="relative grid h-full min-h-0 bg-sand lg:grid-cols-[1fr_420px]">
+      {/* LEFT TERMINAL: Night Market Catalog & Category Pills */}
+      <section className="flex min-h-0 min-w-0 flex-col bg-sand">
+        <div className="border-b-[1.5px] border-sand-line bg-paper px-4 py-3">
+          <div className="flex flex-wrap items-center gap-2.5 sm:flex-nowrap">
+            <div className="relative min-w-0 flex-1 basis-48">
               <Search
                 size={17}
-                className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-slate-400"
+                className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-muted-on-light"
                 aria-hidden
               />
               <Input
@@ -903,7 +961,7 @@ export function SellPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && onSearchEnter()}
-                className="h-10.5 border-slate-200 bg-slate-50/70 pr-24 pl-10 text-sm focus:bg-white"
+                className="h-11 rounded-[14px] border-sand-line bg-sand pr-24 pl-10 text-sm focus:bg-paper"
               />
               <div className="absolute top-1/2 right-2.5 flex -translate-y-1/2 items-center gap-1.5">
                 {search.length > 0 ? (
@@ -915,13 +973,13 @@ export function SellPage() {
                       setSearch("");
                       searchInputRef.current?.focus();
                     }}
-                    className="rounded-md p-1 text-slate-400 hover:bg-slate-200/70 hover:text-slate-800"
+                    className="rounded-full p-1 text-muted-on-light hover:bg-sand hover:text-ink"
                   >
                     <X size={14} aria-hidden />
                   </button>
                 ) : null}
-                <span className="pointer-events-none hidden items-center gap-1 rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-xs text-slate-400 sm:inline-flex">
-                  <ScanBarcode size={13} aria-hidden />
+                <span className="pointer-events-none hidden items-center gap-1 rounded-full border border-sand-line bg-paper px-2 py-0.5 text-[11px] text-muted-on-light sm:inline-flex">
+                  <ScanBarcode size={12} aria-hidden />
                   <kbd className="font-mono">F2</kbd>
                 </span>
               </div>
@@ -941,18 +999,18 @@ export function SellPage() {
                 data-testid="pos-outbox-status"
                 disabled={!online && outboxOps.length === 0}
                 onClick={() => void runOutboxSync(true)}
-                className={`inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border px-2.5 py-2 text-xs font-semibold transition-colors disabled:cursor-default ${
+                className={`inline-flex min-h-[36px] shrink-0 cursor-pointer items-center gap-1.5 rounded-full border-[1.5px] px-3 py-1.5 font-mono text-xs font-semibold transition-colors disabled:cursor-default ${
                   failedOutboxCount > 0
-                    ? "border-red-200 bg-red-50 text-red-800 hover:bg-red-100"
+                    ? "border-sw-meal-fg/30 bg-sw-meal text-sw-meal-fg hover:opacity-90"
                     : !online
-                      ? "border-amber-200 bg-amber-50 text-amber-900"
-                      : "border-brand-200 bg-brand-50 text-brand-700 hover:bg-brand-100"
+                      ? "border-ink bg-ink text-text-on-dark"
+                      : "border-ink bg-lime text-ink hover:bg-lime-hover"
                 }`}
               >
                 {!online ? (
-                  <CloudOff size={14} className="text-amber-600" aria-hidden />
+                  <CloudOff size={14} className="text-lime" aria-hidden />
                 ) : (
-                  <RefreshCw size={14} className={syncingOutbox ? "animate-spin text-brand-600" : "text-brand-600"} aria-hidden />
+                  <RefreshCw size={14} className={syncingOutbox ? "animate-spin" : ""} aria-hidden />
                 )}
                 <span>
                   {failedOutboxCount > 0
@@ -969,43 +1027,43 @@ export function SellPage() {
             ) : null}
 
             <span
-              className="hidden shrink-0 items-center gap-1.5 rounded-lg border border-slate-200/80 bg-slate-50 px-2.5 py-2 text-xs text-slate-500 xl:inline-flex"
+              className="hidden shrink-0 items-center gap-1.5 rounded-full border border-sand-line bg-sand px-3 py-1.5 text-xs text-muted-on-light xl:inline-flex"
               data-testid="pos-shortcuts-hint"
               title={t("sell.shortcutsHint")}
             >
-              <Keyboard size={14} className="text-slate-400" aria-hidden />
-              <span className="font-mono">Alt+1–6 · F4 · F6 · F8 · F9</span>
+              <Keyboard size={14} aria-hidden />
+              <span className="font-mono text-[11px]">Alt+1–6 · F4 · F6 · F8 · F9</span>
             </span>
           </div>
 
-          {/* Category & Favorites Filter Pills */}
+          {/* Category & Quick Keys Filter Pills */}
           <div className="mt-2.5 flex items-center gap-1.5 overflow-x-auto overflow-y-hidden pb-0.5 [scrollbar-width:none]">
             <button
               type="button"
               data-testid="pos-cat-all"
               onClick={() => setActiveFilter("all")}
-              className={`shrink-0 cursor-pointer rounded-lg border px-3 py-1.5 text-xs transition-colors ${
+              className={`inline-flex min-h-[34px] shrink-0 cursor-pointer items-center gap-1.5 rounded-full border-[1.5px] px-3.5 py-1 text-xs font-semibold transition-colors ${
                 activeFilter === "all"
-                  ? "border-brand-200 bg-brand-50 font-semibold text-brand-text"
-                  : "border-slate-200/80 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                  ? "border-ink bg-ink text-text-on-dark"
+                  : "border-sand-line bg-paper text-text-on-light hover:border-ink"
               }`}
             >
-              {t("sell.allItems")} ({(catalog.data ?? []).length})
+              <span>{t("sell.allItems")}</span>
+              <span className="font-mono text-[11px] opacity-70">{(catalog.data ?? []).length}</span>
             </button>
             <button
               type="button"
               data-testid="pos-cat-pinned"
               onClick={() => setActiveFilter("pinned")}
-              className={`inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs transition-colors ${
+              className={`inline-flex min-h-[34px] shrink-0 cursor-pointer items-center gap-1.5 rounded-full border-[1.5px] px-3.5 py-1 text-xs font-semibold transition-colors ${
                 activeFilter === "pinned"
-                  ? "border-brand-200 bg-brand-50 font-semibold text-brand-text"
-                  : "border-slate-200/80 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                  ? "border-ink bg-ink text-text-on-dark"
+                  : "border-sand-line bg-paper text-text-on-light hover:border-ink"
               }`}
             >
-              <Star size={13} className="text-amber-500" aria-hidden />
-              <span>
-                {t("sell.pinnedTab")} ({fastKeyProducts.length})
-              </span>
+              <Star size={12} className={activeFilter === "pinned" ? "text-lime" : "text-sw-pastry-fg"} aria-hidden />
+              <span>{t("sell.pinnedTab")}</span>
+              <span className="font-mono text-[11px] opacity-70">{fastKeyProducts.length}</span>
             </button>
             {activeCategories.map((cat) => (
               <button
@@ -1013,30 +1071,31 @@ export function SellPage() {
                 type="button"
                 data-testid={`pos-cat-${cat.id}`}
                 onClick={() => setActiveFilter(cat.id)}
-                className={`shrink-0 cursor-pointer rounded-lg border px-3 py-1.5 text-xs transition-colors ${
+                className={`inline-flex min-h-[34px] shrink-0 cursor-pointer items-center gap-1.5 rounded-full border-[1.5px] px-3.5 py-1 text-xs font-semibold transition-colors ${
                   activeFilter === cat.id
-                    ? "border-brand-200 bg-brand-50 font-semibold text-brand-text"
-                    : "border-slate-200/80 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                    ? "border-ink bg-ink text-text-on-dark"
+                    : "border-sand-line bg-paper text-text-on-light hover:border-ink"
                 }`}
               >
-                {cat.name}
+                <span>{cat.name}</span>
+                <span className="font-mono text-[11px] opacity-70">{categoryCounts.get(cat.id) ?? 0}</span>
               </button>
             ))}
           </div>
         </div>
 
         {/* Scrollable Product Canvas */}
-        <div className="grid flex-1 content-start gap-3.5 overflow-y-auto p-4">
-          {/* Sleek Compact Fast-Keys Pill Strip (Alt+1..6) */}
+        <div className="grid flex-1 content-start gap-3.5 overflow-y-auto p-3.5 sm:p-4">
+          {/* Compact Fast-Keys Pill Strip (Alt+1..6) */}
           {activeFilter === "all" &&
           search.trim() === "" &&
           (fastKeyProducts.length > 0 || (customPinned !== null && customPinned.length === 0)) ? (
             <div data-testid="fast-keys-bar" className="flex items-center gap-2 overflow-x-auto pb-0.5 [scrollbar-width:none]">
-              <span className="shrink-0 text-xs font-semibold tracking-wider text-slate-400 uppercase">
+              <span className="shrink-0 font-mono text-[11px] font-semibold tracking-wider text-muted-on-light uppercase">
                 {t("sell.fastKeys")}
               </span>
               {fastKeyProducts.length === 0 ? (
-                <span className="text-xs text-slate-400">{t("sell.fastKeysEmpty")}</span>
+                <span className="text-xs text-muted-on-light">{t("sell.fastKeysEmpty")}</span>
               ) : (
                 fastKeyProducts.map((s, idx) => (
                   <button
@@ -1044,15 +1103,15 @@ export function SellPage() {
                     type="button"
                     data-testid={`fast-key-${s.sku}`}
                     onClick={() => add(s)}
-                    className="inline-flex shrink-0 cursor-pointer items-center gap-2 rounded-lg border border-slate-200/90 bg-white px-2.5 py-1.5 text-xs shadow-2xs transition-colors hover:border-brand-400 hover:bg-brand-50/40"
+                    className="inline-flex min-h-[34px] shrink-0 cursor-pointer items-center gap-2 rounded-full border-[1.5px] border-sand-line bg-paper px-3 py-1 text-xs transition-colors hover:border-ink"
                   >
                     {idx < 6 ? (
-                      <kbd className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-slate-500">
+                      <kbd className="rounded-full bg-sand px-2 py-0.5 font-mono text-[11px] font-semibold text-ink">
                         Alt+{idx + 1}
                       </kbd>
                     ) : null}
-                    <span className="max-w-[140px] truncate font-semibold text-slate-800">{s.name}</span>
-                    <span className="text-slate-500 tabular-nums">{fmt(s.price)}</span>
+                    <span className="max-w-[140px] truncate font-semibold text-text-on-light">{s.name}</span>
+                    <span className="font-mono font-semibold text-muted-on-light tabular-nums">{fmt(s.price)}</span>
                   </button>
                 ))
               )}
@@ -1062,7 +1121,7 @@ export function SellPage() {
           {catalog.isPending ? (
             <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
               {Array.from({ length: 10 }).map((_, i) => (
-                <li key={i} className="h-28 animate-pulse rounded-xl border border-slate-200/80 bg-white" />
+                <li key={i} className="h-32 animate-pulse rounded-[20px] border-[1.5px] border-sand-line bg-paper" />
               ))}
             </ul>
           ) : null}
@@ -1090,51 +1149,69 @@ export function SellPage() {
                 return (
                   <li
                     key={s.variantId}
-                    className={`group relative flex flex-col rounded-xl border bg-white transition-all ${
+                    className={`group relative flex flex-col rounded-[20px] border-[1.5px] transition-colors ${
                       inCartQty > 0
-                        ? "border-brand-500 shadow-sm ring-1 ring-brand-500/40"
-                        : "border-slate-200/90 shadow-2xs hover:border-slate-300 hover:shadow-xs"
+                        ? "border-ink bg-paper ring-1 ring-ink"
+                        : "border-sand-line bg-paper hover:border-ink"
                     }`}
                   >
                     <button
                       type="button"
                       data-testid={`product-${s.sku}`}
                       onClick={() => add(s)}
-                      className="flex flex-1 cursor-pointer flex-col justify-between gap-3 p-3.5 text-left focus:outline-none"
+                      className="flex flex-1 cursor-pointer flex-col justify-between gap-2.5 p-3.5 text-left focus:outline-none"
                     >
                       <div className="flex w-full items-start justify-between gap-2 pr-6">
-                        <ProductThumb
-                          photoPath={s.photoPath}
-                          name={s.name}
-                          size="md"
-                          active={inCartQty > 0}
-                        />
+                        <div className="relative">
+                          <ProductThumb
+                            photoPath={s.photoPath}
+                            name={s.name}
+                            size="md"
+                            active={inCartQty > 0}
+                          />
+                          {s.categoryId ? (
+                            <span
+                              className={`-bottom-1 -right-1 absolute h-3.5 w-3.5 rounded-full border-2 border-paper ${chipTone(s.categoryId)}`}
+                              aria-hidden
+                            />
+                          ) : null}
+                        </div>
                         <div className="flex flex-wrap items-center justify-end gap-1">
                           {expStatus === "expired" ? (
                             <Badge tone="danger">{t("sell.expiredBadge")}</Badge>
                           ) : expStatus === "expiring_soon" ? (
                             <Badge tone="warn">{t("sell.expiringSoonBadge")}</Badge>
                           ) : null}
-                          {inCartQty > 0 ? <Badge tone="good">×{inCartQty}</Badge> : null}
+                          {inCartQty > 0 ? (
+                            <span className="rounded-full bg-lime px-2.5 py-0.5 font-mono text-xs font-extrabold text-ink tabular-nums">
+                              ×{inCartQty}
+                            </span>
+                          ) : null}
                         </div>
                       </div>
 
                       <div className="min-w-0">
-                        <div className="line-clamp-2 text-sm leading-snug font-semibold text-slate-900">
+                        <div className="font-display line-clamp-2 text-sm leading-snug font-bold text-text-on-light">
                           {s.name}
                         </div>
-                        <div className="mt-0.5 truncate font-mono text-xs text-slate-400">{s.sku}</div>
+                        <div className="mt-0.5 truncate font-mono text-[11px] text-muted-on-light">{s.sku}</div>
                       </div>
 
                       <div className="flex w-full items-baseline justify-between gap-2 pt-1">
-                        <span className="text-base font-semibold text-slate-900 tabular-nums">{fmt(s.price)}</span>
+                        <span className="font-mono text-base font-bold text-text-on-light tabular-nums">
+                          {fmt(s.price)}
+                        </span>
                         {stockQty !== null ? (
                           isOut ? (
-                            <Badge tone="danger">{t("sell.outOfStock")}</Badge>
+                            <span className="rounded-full bg-ink px-2 py-0.5 font-mono text-[11px] font-semibold text-text-on-dark">
+                              {t("sell.outOfStock")}
+                            </span>
                           ) : isLow ? (
-                            <Badge tone="warn">{t("sell.lowStock", { qty: stockQty })}</Badge>
+                            <span className="rounded-full bg-sw-meal px-2 py-0.5 font-mono text-[11px] font-semibold text-sw-meal-fg">
+                              {t("sell.lowStock", { qty: stockQty })}
+                            </span>
                           ) : (
-                            <span className="text-xs text-slate-400 tabular-nums">
+                            <span className="font-mono text-[11px] text-muted-on-light tabular-nums">
                               {t("sell.stockLeft", { qty: stockQty })}
                             </span>
                           )
@@ -1148,10 +1225,10 @@ export function SellPage() {
                       title={pinned ? t("sell.unpinFromFastKeys") : t("sell.pinToFastKeys")}
                       aria-label={pinned ? t("sell.unpinFromFastKeys") : t("sell.pinToFastKeys")}
                       onClick={() => togglePin(s.sku)}
-                      className={`absolute top-2.5 right-2.5 flex h-6.5 w-6.5 cursor-pointer items-center justify-center rounded-md text-xs transition-all ${
+                      className={`absolute top-2.5 right-2.5 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full text-xs transition-all ${
                         pinned
-                          ? "bg-amber-50 text-amber-500 hover:bg-amber-100"
-                          : "text-slate-300 opacity-0 group-hover:opacity-100 focus:opacity-100 hover:bg-slate-100 hover:text-slate-600"
+                          ? "bg-sw-pastry text-sw-pastry-fg hover:opacity-90"
+                          : "text-muted-on-light/50 opacity-0 group-hover:opacity-100 focus:opacity-100 hover:bg-sand hover:text-ink"
                       }`}
                     >
                       ★
@@ -1162,642 +1239,712 @@ export function SellPage() {
             </ul>
           ) : null}
         </div>
+
+        {/* MOBILE (<1024px) Sticky Bottom Charge Bar */}
+        <div className="flex shrink-0 items-center justify-between gap-3 border-t border-ink-line bg-ink px-4 py-2.5 text-text-on-dark lg:hidden">
+          <div className="min-w-0">
+            <div className="font-mono text-[11px] text-muted-on-dark">
+              {totalOrderUnits > 0 ? t("sell.itemsInOrder", { count: totalOrderUnits }) : t("sell.cart")}
+            </div>
+            <div className="font-display text-lg font-extrabold text-lime tabular-nums">{fmt(total)}</div>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            {heldOrders.length > 0 ? (
+              <button
+                type="button"
+                onClick={() => setShowHeldListDialog(true)}
+                className="min-h-[40px] cursor-pointer rounded-full border border-ink-line-2 bg-ink-2 px-3.5 text-xs font-semibold text-text-on-dark"
+              >
+                {t("sell.heldOrdersBtn", { count: heldOrders.length })}
+              </button>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => setMobileCartOpen(true)}
+              className="inline-flex min-h-[44px] cursor-pointer items-center gap-2 rounded-full bg-lime px-5 font-display text-sm font-extrabold text-ink transition-colors hover:bg-lime-hover"
+            >
+              <span>{t("sell.reviewOrder")}</span>
+              <span className="font-mono text-xs">{fmt(total)}</span>
+            </button>
+          </div>
+        </div>
       </section>
 
-      {/* RIGHT TERMINAL: Clean Focused POS Order Register */}
+      {/* RIGHT TERMINAL: Night Market --ink Panel + Torn-Edge Receipt Ticket */}
       <aside
-        className="flex min-h-0 flex-col border-t border-slate-200/90 bg-white lg:border-t-0 lg:border-l"
+        className={`${
+          mobileCartOpen ? "fixed inset-0 z-40 flex" : "hidden lg:flex"
+        } min-h-0 flex-col border-ink-line bg-ink text-text-on-dark lg:border-l-[1.5px]`}
         data-testid="cart"
       >
-        <div className="grid gap-2.5 border-b border-slate-100 px-4 py-3">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <h2 className="text-sm font-semibold text-slate-900">{t("sell.cart")}</h2>
-              {totalOrderUnits > 0 ? (
-                <Badge tone="neutral">{t("sell.itemsInOrder", { count: totalOrderUnits })}</Badge>
-              ) : null}
-            </div>
-            <div className="flex items-center gap-1.5">
-              {heldOrders.length > 0 ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  data-testid="held-orders-btn"
-                  onClick={() => setShowHeldListDialog(true)}
-                  className="border-brand-200 bg-brand-50/70 text-brand-700 hover:bg-brand-100/80"
-                >
-                  <PauseCircle size={14} className="text-brand-600" aria-hidden />
-                  <span>{t("sell.heldOrdersBtn", { count: heldOrders.length })}</span>
-                </Button>
-              ) : null}
-              {cart.length > 0 ? (
-                <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    data-testid="hold-order-btn"
-                    title="F6"
-                    onClick={openHoldDialog}
-                  >
-                    <PauseCircle size={14} className="text-slate-500" aria-hidden />
-                    <span>{t("sell.holdOrder")}</span>
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={reset} aria-label={t("sell.clear")}>
-                    <Trash2 size={14} className="text-slate-400" aria-hidden />
-                  </Button>
-                </>
-              ) : null}
-            </div>
-          </div>
-
-          <div className="grid gap-1.5">
-            {allCustomerBalances.length >= 4 || customerQuery.trim() !== "" ? (
-              <div className="relative">
-                <Search
-                  size={13}
-                  className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"
-                  aria-hidden
-                />
-                <Input
-                  data-testid="customer-search"
-                  value={customerQuery}
-                  onChange={(e) => setCustomerQuery(e.target.value)}
-                  placeholder={t("sell.customerSearchPlaceholder")}
-                  className="h-7.5 pl-7 pr-7 text-xs"
-                />
-                {customerQuery ? (
-                  <button
-                    type="button"
-                    aria-label={t("sell.cancel")}
-                    onClick={() => setCustomerQuery("")}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer text-slate-400 hover:text-slate-600"
-                  >
-                    <X size={12} />
-                  </button>
-                ) : null}
-              </div>
-            ) : null}
-
-            <div className="flex items-center gap-2">
-              <Select
-                aria-label={t("sell.customer")}
-                data-testid="customer"
-                value={customerId}
-                onChange={(e) => setCustomerId(e.target.value)}
-                className="h-8.5 flex-1 text-xs"
-              >
-                <option value="">{method === "utang" ? t("sell.chooseCustomer") : t("sell.noCustomer")}</option>
-                {filteredCustomerOptions.map((c) => {
-                  const overdue = isOverdue(c.balance, c.dueOn, todayInStoreTz);
-                  return (
-                    <option key={c.customerId} value={c.customerId}>
-                      {c.name}
-                      {c.balance > 0
-                        ? ` · ${fmt(c.balance)}${overdue ? ` (${t("utang.overdue")})` : ""}`
-                        : ""}
-                    </option>
-                  );
-                })}
-              </Select>
-              {!showNew ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  data-testid="new-customer"
-                  onClick={() => setShowNew(true)}
-                  title={t("sell.newCustomer")}
-                >
-                  <UserPlus size={14} className="text-slate-500" aria-hidden />
-                  <span className="sr-only sm:not-sr-only">{t("sell.newCustomer")}</span>
-                </Button>
-              ) : null}
-            </div>
-
-            {customerQuery.trim() !== "" && filteredCustomerOptions.length === 0 ? (
-              <p className="text-[11px] text-slate-500">{t("sell.customerNoMatch")}</p>
-            ) : null}
-
-            {creditStatus.hasBalance ? (
-              <div
-                data-testid={creditStatus.overdue ? "customer-overdue-warning" : "customer-balance-pill"}
-                className={`rounded-lg border px-2.5 py-1.5 text-xs ${
-                  creditStatus.overdue
-                    ? "border-red-200 bg-red-50 text-red-900"
-                    : "border-amber-200 bg-amber-50 text-amber-900"
-                }`}
-              >
-                <div className="font-semibold tabular-nums">
-                  {creditStatus.overdue
-                    ? t("sell.customerOverdueWarning", {
-                        amount: fmt(creditStatus.currentBalance),
-                        due: creditStatus.dueOn ?? "",
-                      })
-                    : t("sell.customerOwesInfo", {
-                        amount: fmt(creditStatus.currentBalance),
-                      })}
-                </div>
-                {onUtang > 0 ? (
-                  <div className="mt-0.5 text-[11px] opacity-90 tabular-nums">
-                    {t("sell.customerProjectedUtang", {
-                      amount: fmt(creditStatus.projectedBalance),
-                    })}
-                  </div>
-                ) : null}
-              </div>
-            ) : null}
-          </div>
-
-          {showNew ? (
-            <div className="grid gap-2 rounded-xl border border-slate-200/80 bg-slate-50 p-3">
-              <Input
-                data-testid="new-customer-name"
-                placeholder={t("sell.customerName")}
-                value={newName}
-                maxLength={80}
-                onChange={(e) => setNewName(e.target.value)}
-                className="h-8.5 text-xs"
-              />
-              <Input
-                placeholder={t("sell.customerPhone")}
-                value={newPhone}
-                maxLength={32}
-                onChange={(e) => setNewPhone(e.target.value)}
-                className="h-8.5 text-xs"
-              />
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  data-testid="save-customer"
-                  disabled={newName.trim() === "" || addCustomer.isPending}
-                  onClick={() => addCustomer.mutate()}
-                >
-                  {t("sell.addCustomer")}
-                </Button>
-                <Button size="sm" variant="ghost" onClick={() => setShowNew(false)}>
-                  {t("sell.cancel")}
-                </Button>
-              </div>
-            </div>
-          ) : null}
-        </div>
-
-        {/* Scrollable Ticket Line Items */}
-        <div className="min-h-[140px] flex-1 overflow-y-auto px-4 py-2.5">
-          {expiredCartCount > 0 ? (
-            <div
-              data-testid="cart-expiry-warning"
-              className="mb-2.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-900"
-            >
-              {t("sell.cartExpiryWarning", { count: expiredCartCount })}
-            </div>
-          ) : null}
-          {cart.length === 0 ? (
-            <div className="flex h-full flex-col items-center justify-center gap-2 py-8 text-center">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-slate-400">
-                <ShoppingBag size={20} aria-hidden />
-              </div>
-              <p className="text-sm font-semibold text-slate-700">{t("sell.emptyCart")}</p>
-              <p className="max-w-[240px] text-xs text-slate-400">{t("sell.emptyCartHint")}</p>
-            </div>
-          ) : (
-            <ul className="divide-y divide-slate-100">
-              {cart.map((l) => {
-                const lineDisc = l.discount ?? 0;
-                const gross = lineGrossTotal(l.qty, l.unitPrice);
-                const net = lineTotal(l.qty, l.unitPrice, lineDisc);
-                const isPriceChanged = l.catalogPrice !== undefined && l.unitPrice !== l.catalogPrice;
-                const isEditing = editingVariantId === l.variantId;
-                return (
-                  <li key={l.variantId} className="grid gap-1.5 py-2.5 first:pt-0 last:pb-0">
-                    <div className="flex items-baseline justify-between gap-2">
-                      <span className="truncate text-sm font-semibold text-slate-900">{l.name}</span>
-                      <span className="flex items-baseline gap-1.5 tabular-nums">
-                        {lineDisc > 0 ? (
-                          <span className="text-xs text-slate-400 line-through">{fmt(gross)}</span>
-                        ) : null}
-                        <span className="text-sm font-semibold text-slate-900">{fmt(net)}</span>
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <button
-                          type="button"
-                          data-testid={`edit-line-${l.variantId}`}
-                          title={t("sell.editLine")}
-                          aria-label={t("sell.editLine")}
-                          onClick={() => openLineEditor(l)}
-                          className={`inline-flex cursor-pointer items-center gap-1 rounded-md border px-1.5 py-0.5 text-xs tabular-nums transition-colors ${
-                            isEditing || isPriceChanged || lineDisc > 0
-                              ? "border-brand-200 bg-brand-50 font-medium text-brand-700"
-                              : "border-transparent text-slate-500 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-700"
-                          }`}
-                        >
-                          <Tag size={11} aria-hidden />
-                          <span>{fmt(l.unitPrice)}</span>
-                          {lineDisc > 0 ? (
-                            <span className="text-emerald-700">(-{fmt(lineDisc)})</span>
-                          ) : null}
-                        </button>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <button
-                          type="button"
-                          aria-label={`Decrease ${l.name}`}
-                          onClick={() => stepCartQty(l.variantId, -1)}
-                          className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                        >
-                          <Minus size={13} aria-hidden />
-                        </button>
-                        <Input
-                          aria-label={t("sell.qty")}
-                          data-testid={`qty-${l.variantId}`}
-                          inputMode="decimal"
-                          value={String(l.qty)}
-                          onChange={(e) => setQty(l.variantId, e.target.value)}
-                          className="h-7 w-14 px-1.5 py-0.5 text-center text-xs tabular-nums"
-                        />
-                        <button
-                          type="button"
-                          aria-label={`Increase ${l.name}`}
-                          onClick={() => stepCartQty(l.variantId, 1)}
-                          className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                        >
-                          <Plus size={13} aria-hidden />
-                        </button>
-                        <button
-                          type="button"
-                          aria-label={t("sell.remove")}
-                          onClick={() => {
-                            clearApproval();
-                            if (editingVariantId === l.variantId) setEditingVariantId(null);
-                            setCart((c) => c.filter((x) => x.variantId !== l.variantId));
-                          }}
-                          className="ml-1 flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-slate-400 hover:bg-red-50 hover:text-red-600"
-                        >
-                          <X size={14} aria-hidden />
-                        </button>
-                      </div>
-                    </div>
-
-                    {isPriceChanged && !isEditing && l.catalogPrice !== undefined ? (
-                      <div className="text-[11px] text-amber-700">
-                        {t("sell.priceOverridden", { catalog: fmt(l.catalogPrice) })}
-                      </div>
-                    ) : null}
-
-                    {isEditing ? (
-                      <div
-                        data-testid={`line-editor-${l.variantId}`}
-                        className="mt-1 grid gap-2 rounded-lg border border-slate-200 bg-slate-50/90 p-2.5 text-xs"
-                      >
-                        <div className="grid grid-cols-2 gap-2">
-                          <label className="grid gap-1 text-slate-600">
-                            <span className="font-medium">{t("sell.unitPrice")}</span>
-                            <Input
-                              data-testid={`line-price-${l.variantId}`}
-                              inputMode="decimal"
-                              value={linePriceText}
-                              onChange={(e) => applyLinePriceText(l.variantId, e.target.value)}
-                              className="h-7.5 bg-white text-right text-xs tabular-nums"
-                            />
-                          </label>
-                          <label className="grid gap-1 text-slate-600">
-                            <span className="font-medium">{t("sell.lineDiscount")}</span>
-                            <Input
-                              data-testid={`line-discount-${l.variantId}`}
-                              inputMode="decimal"
-                              placeholder="0.00"
-                              value={lineDiscText}
-                              onChange={(e) => applyLineDiscText(l.variantId, e.target.value)}
-                              className="h-7.5 bg-white text-right text-xs tabular-nums"
-                            />
-                          </label>
-                        </div>
-                        <div className="flex items-center justify-between gap-2 pt-0.5">
-                          {isPriceChanged || lineDisc > 0 ? (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              data-testid={`reset-line-${l.variantId}`}
-                              onClick={() => resetLinePricing(l)}
-                              className="h-7 px-2 text-xs"
-                            >
-                              {t("sell.resetLinePricing")}
-                            </Button>
-                          ) : (
-                            <span />
-                          )}
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            data-testid={`close-line-${l.variantId}`}
-                            onClick={() => setEditingVariantId(null)}
-                            className="h-7 px-2.5 text-xs"
-                          >
-                            {t("sell.applyLinePricing")}
-                          </Button>
-                        </div>
-                      </div>
-                    ) : null}
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </div>
-
-        {/* Pinned Register Checkout & Tender Pad */}
-        <div className="grid gap-3 border-t border-slate-200/90 bg-slate-50/70 px-4 py-3.5 text-sm">
-          <div className="grid gap-1.5">
-            {lineDiscounts > 0 ? (
-              <div className="flex items-baseline justify-between text-xs text-emerald-700">
-                <span>{t("sell.lineDiscountsTotal")}</span>
-                <span className="font-medium tabular-nums">-{fmt(lineDiscounts)}</span>
-              </div>
-            ) : null}
-            <div className="flex items-baseline justify-between text-xs text-slate-500">
-              <span>{t("sell.subtotal")}</span>
-              <span className="tabular-nums">{fmt(subtotal)}</span>
-            </div>
-            <label className="flex items-center justify-between gap-2 text-xs text-slate-500">
-              <span className="flex items-center gap-1.5">
-                <span>{t("sell.discount")}</span>
-                <kbd className="rounded bg-slate-200/60 px-1 font-mono text-xs text-slate-500">F4</kbd>
-              </span>
-              <Input
-                ref={discountInputRef}
-                className="h-7.5 w-24 bg-white text-right text-xs tabular-nums"
-                data-testid="discount"
-                inputMode="decimal"
-                placeholder="0.00"
-                value={discountText}
-                onChange={(e) => {
-                  clearApproval();
-                  setDiscountText(e.target.value);
-                }}
-              />
-            </label>
-            <div
-              className="flex items-baseline justify-between border-t border-slate-200/80 pt-2 text-lg font-semibold text-slate-900 tabular-nums"
-              data-testid="cart-total"
-            >
-              <span>{t("sell.total")}</span>
-              <span>{fmt(total)}</span>
-            </div>
-          </div>
-
-          <div className="grid gap-2">
-            {splitTenders.length > 0 ? (
-              <div
-                data-testid="split-tenders-list"
-                className="grid gap-1.5 rounded-lg border border-brand-200 bg-white px-3 py-2 text-xs shadow-2xs"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold tracking-wider text-slate-500 uppercase">
-                    {t("sell.splitTendersLabel")}
-                  </span>
-                  <button
-                    type="button"
-                    data-testid="clear-split-tenders"
-                    onClick={() => setSplitTenders([])}
-                    className="cursor-pointer text-xs font-medium text-slate-500 hover:text-slate-800"
-                  >
-                    {t("sell.splitClearAll")}
-                  </button>
-                </div>
-                {splitTenders.map((sp, idx) => (
-                  <div
-                    key={`${sp.method}-${idx}`}
-                    data-testid={`split-line-${idx}`}
-                    className="flex items-center justify-between gap-2 border-t border-slate-100 pt-1.5"
-                  >
-                    <span className="truncate font-medium text-slate-700">
-                      {sp.method === "ewallet" && sp.wallet
-                        ? `${t("sell.ewallet")} (${t(`sell.wallets.${sp.wallet}`)})`
-                        : sp.method === "card"
-                          ? `${t("sell.card")}${sp.reference ? ` · ${sp.reference}` : ""}`
-                          : t(`sell.${sp.method}`)}
+        <div className="flex min-h-0 flex-1 flex-col px-3 pt-3">
+          <div className="receipt paper-surface flex min-h-0 flex-1 flex-col rounded-t-[20px] bg-paper px-4 pt-3.5 pb-6 text-text-on-light">
+            {/* Receipt Ticket Header */}
+            <div className="grid gap-2.5 border-b-[1.5px] border-dashed border-dash pb-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex min-w-0 items-center gap-2">
+                  {mobileCartOpen ? (
+                    <button
+                      type="button"
+                      onClick={() => setMobileCartOpen(false)}
+                      className="inline-flex min-h-[30px] cursor-pointer items-center gap-1 rounded-full border border-sand-line bg-sand px-2.5 text-xs font-semibold text-ink lg:hidden"
+                    >
+                      <X size={13} aria-hidden />
+                      <span>{t("sell.backToCatalog")}</span>
+                    </button>
+                  ) : null}
+                  <h2 className="font-display truncate text-base font-extrabold text-ink">
+                    {t("sell.orderHeader")}
+                  </h2>
+                  {totalOrderUnits > 0 ? (
+                    <span className="rounded-full bg-ink px-2.5 py-0.5 font-mono text-[11px] font-bold text-lime tabular-nums">
+                      {totalOrderUnits}
                     </span>
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-semibold text-slate-900 tabular-nums">{fmt(sp.amount)}</span>
+                  ) : null}
+                </div>
+                <div className="flex shrink-0 items-center gap-1.5">
+                  {heldOrders.length > 0 ? (
+                    <button
+                      type="button"
+                      data-testid="held-orders-btn"
+                      onClick={() => setShowHeldListDialog(true)}
+                      className="inline-flex min-h-[30px] cursor-pointer items-center gap-1 rounded-full bg-lime px-2.5 font-mono text-[11px] font-bold text-ink transition-colors hover:bg-lime-hover"
+                    >
+                      <PauseCircle size={13} aria-hidden />
+                      <span>{t("sell.heldOrdersBtn", { count: heldOrders.length })}</span>
+                    </button>
+                  ) : null}
+                  {cart.length > 0 ? (
+                    <>
                       <button
                         type="button"
-                        aria-label={t("sell.splitRemove")}
-                        data-testid={`remove-split-${idx}`}
-                        onClick={() => removeSplitTender(idx)}
-                        className="cursor-pointer rounded p-0.5 text-slate-400 hover:bg-slate-100 hover:text-red-600"
+                        data-testid="hold-order-btn"
+                        title="F6"
+                        onClick={openHoldDialog}
+                        className="inline-flex min-h-[30px] cursor-pointer items-center gap-1 rounded-full border-[1.5px] border-sand-line bg-paper px-2.5 text-xs font-semibold text-ink transition-colors hover:border-ink"
                       >
-                        <X size={13} aria-hidden />
+                        <PauseCircle size={13} aria-hidden />
+                        <span>{t("sell.holdOrder")}</span>
                       </button>
-                    </div>
-                  </div>
-                ))}
-                <div className="flex items-baseline justify-between border-t border-brand-100 pt-1.5 text-brand-700">
-                  <span className="font-semibold">{t("sell.splitRemaining")}</span>
-                  <span className="text-sm font-semibold tabular-nums" data-testid="split-remaining">
-                    {fmt(remainingDue)}
-                  </span>
+                      <button
+                        type="button"
+                        onClick={reset}
+                        aria-label={t("sell.clear")}
+                        className="inline-flex h-7.5 w-7.5 cursor-pointer items-center justify-center rounded-full text-muted-on-light transition-colors hover:bg-sw-meal hover:text-sw-meal-fg"
+                      >
+                        <Trash2 size={14} aria-hidden />
+                      </button>
+                    </>
+                  ) : null}
                 </div>
               </div>
-            ) : null}
 
-            {splitExceeded ? <Alert>{t("sell.splitExceeded")}</Alert> : null}
-
-            <select
-              ref={payMethodSelectRef}
-              aria-label={t("sell.payment")}
-              data-testid="pay-method"
-              value={method}
-              onChange={(e) => setMethod(e.target.value as PayMethod)}
-              className="sr-only"
-            >
-              <option value="cash">{t("sell.cash")}</option>
-              <option value="ewallet">{t("sell.ewallet")}</option>
-              <option value="card">{t("sell.card")}</option>
-              <option value="utang">{t("sell.utang")}</option>
-            </select>
-
-            {remainingDue > 0 || splitTenders.length === 0 ? (
-              <>
-                <div className="grid grid-cols-4 gap-1.5" role="group" aria-label={t("sell.payment")}>
-                  {(
-                    [
-                      ["cash", t("sell.cash"), Banknote],
-                      ["ewallet", t("sell.ewallet"), Smartphone],
-                      ["card", t("sell.card"), CreditCard],
-                      ["utang", t("sell.utang"), HandCoins],
-                    ] as const
-                  ).map(([val, label, Icon]) => {
-                    const active = method === val;
-                    return (
+              <div className="grid gap-1.5">
+                {allCustomerBalances.length >= 4 || customerQuery.trim() !== "" ? (
+                  <div className="relative">
+                    <Search
+                      size={13}
+                      className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-muted-on-light"
+                      aria-hidden
+                    />
+                    <Input
+                      data-testid="customer-search"
+                      value={customerQuery}
+                      onChange={(e) => setCustomerQuery(e.target.value)}
+                      placeholder={t("sell.customerSearchPlaceholder")}
+                      className="h-8 min-h-[32px] rounded-[12px] bg-sand pr-7 pl-7 text-xs"
+                    />
+                    {customerQuery ? (
                       <button
-                        key={val}
                         type="button"
-                        data-testid={`tender-btn-${val}`}
-                        onClick={() => setMethod(val)}
-                        className={`flex cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border px-2 py-2 text-xs transition-all ${
-                          active
-                            ? "border-brand-500 bg-brand-50 font-semibold text-brand-text shadow-2xs"
-                            : "border-slate-200/90 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                        }`}
+                        aria-label={t("sell.cancel")}
+                        onClick={() => setCustomerQuery("")}
+                        className="absolute top-1/2 right-2 -translate-y-1/2 cursor-pointer text-muted-on-light hover:text-ink"
                       >
-                        <Icon size={15} className={active ? "text-brand-600" : "text-slate-400"} aria-hidden />
-                        <span className="truncate">{label}</span>
+                        <X size={12} />
                       </button>
+                    ) : null}
+                  </div>
+                ) : null}
+
+                <div className="flex items-center gap-2">
+                  <Select
+                    aria-label={t("sell.customer")}
+                    data-testid="customer"
+                    value={customerId}
+                    onChange={(e) => setCustomerId(e.target.value)}
+                    className="h-9 min-h-[36px] flex-1 rounded-[12px] bg-sand text-xs"
+                  >
+                    <option value="">{method === "utang" ? t("sell.chooseCustomer") : t("sell.noCustomer")}</option>
+                    {filteredCustomerOptions.map((c) => {
+                      const overdue = isOverdue(c.balance, c.dueOn, todayInStoreTz);
+                      return (
+                        <option key={c.customerId} value={c.customerId}>
+                          {c.name}
+                          {c.balance > 0
+                            ? ` · ${fmt(c.balance)}${overdue ? ` (${t("utang.overdue")})` : ""}`
+                            : ""}
+                        </option>
+                      );
+                    })}
+                  </Select>
+                  {!showNew ? (
+                    <button
+                      type="button"
+                      data-testid="new-customer"
+                      onClick={() => setShowNew(true)}
+                      title={t("sell.newCustomer")}
+                      className="inline-flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-[12px] border-[1.5px] border-sand-line bg-paper px-2.5 text-xs font-semibold text-ink transition-colors hover:border-ink"
+                    >
+                      <UserPlus size={14} aria-hidden />
+                      <span className="sr-only sm:not-sr-only">{t("sell.newCustomer")}</span>
+                    </button>
+                  ) : null}
+                </div>
+
+                {customerQuery.trim() !== "" && filteredCustomerOptions.length === 0 ? (
+                  <p className="text-[11px] text-muted-on-light">{t("sell.customerNoMatch")}</p>
+                ) : null}
+
+                {creditStatus.hasBalance ? (
+                  <div
+                    data-testid={creditStatus.overdue ? "customer-overdue-warning" : "customer-balance-pill"}
+                    className={`rounded-[12px] border-[1.5px] px-2.5 py-1.5 text-xs ${
+                      creditStatus.overdue
+                        ? "border-sw-meal-fg/30 bg-sw-meal text-sw-meal-fg"
+                        : "border-sw-pastry-fg/30 bg-sw-pastry text-sw-pastry-fg"
+                    }`}
+                  >
+                    <div className="font-semibold tabular-nums">
+                      {creditStatus.overdue
+                        ? t("sell.customerOverdueWarning", {
+                            amount: fmt(creditStatus.currentBalance),
+                            due: creditStatus.dueOn ?? "",
+                          })
+                        : t("sell.customerOwesInfo", {
+                            amount: fmt(creditStatus.currentBalance),
+                          })}
+                    </div>
+                    {onUtang > 0 ? (
+                      <div className="mt-0.5 font-mono text-[11px] opacity-90 tabular-nums">
+                        {t("sell.customerProjectedUtang", {
+                          amount: fmt(creditStatus.projectedBalance),
+                        })}
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
+
+              {showNew ? (
+                <div className="grid gap-2 rounded-[16px] border-[1.5px] border-sand-line bg-sand p-3">
+                  <Input
+                    data-testid="new-customer-name"
+                    placeholder={t("sell.customerName")}
+                    value={newName}
+                    maxLength={80}
+                    onChange={(e) => setNewName(e.target.value)}
+                    className="h-9 min-h-[36px] text-xs"
+                  />
+                  <Input
+                    placeholder={t("sell.customerPhone")}
+                    value={newPhone}
+                    maxLength={32}
+                    onChange={(e) => setNewPhone(e.target.value)}
+                    className="h-9 min-h-[36px] text-xs"
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      data-testid="save-customer"
+                      disabled={newName.trim() === "" || addCustomer.isPending}
+                      onClick={() => addCustomer.mutate()}
+                    >
+                      {t("sell.addCustomer")}
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => setShowNew(false)}>
+                      {t("sell.cancel")}
+                    </Button>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+
+            {/* Scrollable Ticket Line Items */}
+            <div className="min-h-[110px] flex-1 overflow-y-auto py-2.5">
+              {expiredCartCount > 0 ? (
+                <div
+                  data-testid="cart-expiry-warning"
+                  className="mb-2.5 rounded-[12px] border border-sw-pastry-fg/30 bg-sw-pastry px-3 py-2 text-xs font-medium text-sw-pastry-fg"
+                >
+                  {t("sell.cartExpiryWarning", { count: expiredCartCount })}
+                </div>
+              ) : null}
+              {cart.length === 0 ? (
+                <div className="flex h-full flex-col items-center justify-center gap-2 py-6 text-center">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-full bg-sand text-muted-on-light">
+                    <ShoppingBag size={20} aria-hidden />
+                  </div>
+                  <p className="font-display text-sm font-bold text-text-on-light">{t("sell.emptyCart")}</p>
+                  <p className="max-w-[240px] text-xs text-muted-on-light">{t("sell.emptyCartHint")}</p>
+                </div>
+              ) : (
+                <ul className="divide-y-[1.5px] divide-dashed divide-dash">
+                  {cart.map((l) => {
+                    const lineDisc = l.discount ?? 0;
+                    const gross = lineGrossTotal(l.qty, l.unitPrice);
+                    const net = lineTotal(l.qty, l.unitPrice, lineDisc);
+                    const isPriceChanged = l.catalogPrice !== undefined && l.unitPrice !== l.catalogPrice;
+                    const isEditing = editingVariantId === l.variantId;
+                    return (
+                      <li key={l.variantId} className="grid gap-1.5 py-2.5 first:pt-0 last:pb-0">
+                        <div className="flex items-baseline justify-between gap-2">
+                          <span className="truncate text-sm font-semibold text-text-on-light">{l.name}</span>
+                          <span className="flex items-baseline gap-1.5 font-mono tabular-nums">
+                            {lineDisc > 0 ? (
+                              <span className="text-xs text-muted-on-light line-through">{fmt(gross)}</span>
+                            ) : null}
+                            <span className="text-sm font-bold text-text-on-light">{fmt(net)}</span>
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <button
+                              type="button"
+                              data-testid={`edit-line-${l.variantId}`}
+                              title={t("sell.editLine")}
+                              aria-label={t("sell.editLine")}
+                              onClick={() => openLineEditor(l)}
+                              className={`inline-flex cursor-pointer items-center gap-1 rounded-full border px-2 py-0.5 font-mono text-[11px] tabular-nums transition-colors ${
+                                isEditing || isPriceChanged || lineDisc > 0
+                                  ? "border-ink bg-lime/40 font-semibold text-ink"
+                                  : "border-transparent text-muted-on-light hover:border-sand-line hover:bg-sand hover:text-ink"
+                              }`}
+                            >
+                              <Tag size={11} aria-hidden />
+                              <span>{fmt(l.unitPrice)}</span>
+                              {lineDisc > 0 ? (
+                                <span className="text-ok-fg">(-{fmt(lineDisc)})</span>
+                              ) : null}
+                            </button>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              aria-label={`Decrease ${l.name}`}
+                              onClick={() => stepCartQty(l.variantId, -1)}
+                              className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border-[1.5px] border-sand-line bg-sand text-ink transition-colors hover:border-ink"
+                            >
+                              <Minus size={13} aria-hidden />
+                            </button>
+                            <Input
+                              aria-label={t("sell.qty")}
+                              data-testid={`qty-${l.variantId}`}
+                              inputMode="decimal"
+                              value={String(l.qty)}
+                              onChange={(e) => setQty(l.variantId, e.target.value)}
+                              className="h-8 min-h-[32px] w-13 rounded-[10px] px-1 py-0.5 text-center font-mono text-xs font-semibold tabular-nums"
+                            />
+                            <button
+                              type="button"
+                              aria-label={`Increase ${l.name}`}
+                              onClick={() => stepCartQty(l.variantId, 1)}
+                              className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border-[1.5px] border-sand-line bg-sand text-ink transition-colors hover:border-ink"
+                            >
+                              <Plus size={13} aria-hidden />
+                            </button>
+                            <button
+                              type="button"
+                              aria-label={t("sell.remove")}
+                              onClick={() => {
+                                clearApproval();
+                                if (editingVariantId === l.variantId) setEditingVariantId(null);
+                                setCart((c) => c.filter((x) => x.variantId !== l.variantId));
+                              }}
+                              className="ml-0.5 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-muted-on-light transition-colors hover:bg-sw-meal hover:text-sw-meal-fg"
+                            >
+                              <X size={14} aria-hidden />
+                            </button>
+                          </div>
+                        </div>
+
+                        {isPriceChanged && !isEditing && l.catalogPrice !== undefined ? (
+                          <div className="font-mono text-[11px] text-sw-pastry-fg">
+                            {t("sell.priceOverridden", { catalog: fmt(l.catalogPrice) })}
+                          </div>
+                        ) : null}
+
+                        {isEditing ? (
+                          <div
+                            data-testid={`line-editor-${l.variantId}`}
+                            className="mt-1 grid gap-2 rounded-[14px] border-[1.5px] border-sand-line bg-sand p-2.5 text-xs"
+                          >
+                            <div className="grid grid-cols-2 gap-2">
+                              <label className="grid gap-1 text-text-on-light">
+                                <span className="font-medium">{t("sell.unitPrice")}</span>
+                                <Input
+                                  data-testid={`line-price-${l.variantId}`}
+                                  inputMode="decimal"
+                                  value={linePriceText}
+                                  onChange={(e) => applyLinePriceText(l.variantId, e.target.value)}
+                                  className="h-8 min-h-[32px] bg-paper text-right font-mono text-xs tabular-nums"
+                                />
+                              </label>
+                              <label className="grid gap-1 text-text-on-light">
+                                <span className="font-medium">{t("sell.lineDiscount")}</span>
+                                <Input
+                                  data-testid={`line-discount-${l.variantId}`}
+                                  inputMode="decimal"
+                                  placeholder="0.00"
+                                  value={lineDiscText}
+                                  onChange={(e) => applyLineDiscText(l.variantId, e.target.value)}
+                                  className="h-8 min-h-[32px] bg-paper text-right font-mono text-xs tabular-nums"
+                                />
+                              </label>
+                            </div>
+                            <div className="flex items-center justify-between gap-2 pt-0.5">
+                              {isPriceChanged || lineDisc > 0 ? (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  data-testid={`reset-line-${l.variantId}`}
+                                  onClick={() => resetLinePricing(l)}
+                                  className="h-7 px-2 text-xs"
+                                >
+                                  {t("sell.resetLinePricing")}
+                                </Button>
+                              ) : (
+                                <span />
+                              )}
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                data-testid={`close-line-${l.variantId}`}
+                                onClick={() => setEditingVariantId(null)}
+                                className="h-7 px-2.5 text-xs"
+                              >
+                                {t("sell.applyLinePricing")}
+                              </Button>
+                            </div>
+                          </div>
+                        ) : null}
+                      </li>
                     );
                   })}
+                </ul>
+              )}
+            </div>
+
+            {/* Ticket Totals Footer */}
+            <div className="grid gap-1.5 border-t-[1.5px] border-dashed border-dash pt-2.5">
+              {lineDiscounts > 0 ? (
+                <div className="flex items-baseline justify-between text-xs text-ok-fg">
+                  <span>{t("sell.lineDiscountsTotal")}</span>
+                  <span className="font-mono font-semibold tabular-nums">-{fmt(lineDiscounts)}</span>
                 </div>
+              ) : null}
+              <div className="flex items-baseline justify-between text-xs text-muted-on-light">
+                <span>{t("sell.subtotal")}</span>
+                <span className="font-mono tabular-nums">{fmt(subtotal)}</span>
+              </div>
+              <label className="flex items-center justify-between gap-2 text-xs text-muted-on-light">
+                <span className="flex items-center gap-1.5">
+                  <span>{t("sell.discount")}</span>
+                  <kbd className="rounded bg-sand px-1.5 py-0.5 font-mono text-[10px] font-semibold text-ink">F4</kbd>
+                </span>
+                <Input
+                  ref={discountInputRef}
+                  className="h-8 min-h-[32px] w-24 rounded-[10px] bg-sand text-right font-mono text-xs font-semibold tabular-nums"
+                  data-testid="discount"
+                  inputMode="decimal"
+                  placeholder="0.00"
+                  value={discountText}
+                  onChange={(e) => {
+                    clearApproval();
+                    setDiscountText(e.target.value);
+                  }}
+                />
+              </label>
+              {estimatedVat > 0 ? (
+                <div className="flex items-baseline justify-between text-[11px] text-muted-on-light">
+                  <span>{t("sell.vatIncluded")}</span>
+                  <span className="font-mono tabular-nums">{fmt(estimatedVat)}</span>
+                </div>
+              ) : null}
+              <div
+                className="mt-1 flex items-baseline justify-between border-t-[1.5px] border-dashed border-dash pt-2 text-ink tabular-nums"
+                data-testid="cart-total"
+              >
+                <span className="font-display text-lg font-extrabold tracking-tight">{t("sell.total")}</span>
+                <span className="font-display text-2xl font-extrabold tracking-tight">{fmt(total)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
 
-                {method !== "utang" ? (
-                  <div className="grid grid-cols-2 gap-2">
-                    <label className="grid gap-1 text-xs text-slate-500">
-                      <span>{t("sell.paidNow")}</span>
-                      <Input
-                        className="h-8 bg-white text-right text-xs tabular-nums"
-                        data-testid="paid-now"
-                        inputMode="decimal"
-                        placeholder={fmt(remainingDue)}
-                        value={paidText}
-                        onChange={(e) => setPaidText(e.target.value)}
-                      />
-                    </label>
-
-                    {method === "cash" ? (
-                      <label className="grid gap-1 text-xs text-slate-500">
-                        <span className="flex items-center justify-between">
-                          <span>{t("sell.tendered")}</span>
-                          <kbd className="rounded bg-slate-200/60 px-1 font-mono text-xs text-slate-500">F8</kbd>
-                        </span>
-                        <Input
-                          ref={tenderedInputRef}
-                          className="h-8 bg-white text-right text-xs tabular-nums"
-                          data-testid="tendered"
-                          inputMode="decimal"
-                          placeholder={fmt(cashTarget)}
-                          value={tenderedText}
-                          onChange={(e) => setTenderedText(e.target.value)}
-                        />
-                      </label>
-                    ) : (
-                      <div />
-                    )}
-                  </div>
-                ) : null}
-
-                {method !== "utang" && paidNow !== null && paidNow > 0 && paidNow < remainingDue ? (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    data-testid="add-split-tender"
-                    onClick={addSplitTender}
-                    className="h-8 w-full justify-center border-brand-200 bg-brand-50/70 text-xs font-semibold text-brand-700 hover:bg-brand-100/70"
-                  >
-                    {t("sell.splitAddTender", {
-                      method:
-                        method === "ewallet"
-                          ? t(`sell.wallets.${wallet}`)
-                          : t(`sell.${method}`),
-                      amount: fmt(paidNow),
-                    })}
-                  </Button>
-                ) : null}
-              </>
-            ) : null}
-
-            {method === "cash" && cashTarget > 0 ? (
-              <div className="flex flex-wrap gap-1.5" data-testid="quick-cash-presets">
+        {/* Lower Dark --ink Payment Pad & Full-Width Lime Charge Button */}
+        <div className="grid shrink-0 gap-2.5 bg-ink px-4 pt-2 pb-4 text-sm text-text-on-dark">
+          {splitTenders.length > 0 ? (
+            <div
+              data-testid="split-tenders-list"
+              className="grid gap-1.5 rounded-[16px] border-[1.5px] border-ink-line-2 bg-ink-2 px-3 py-2 text-xs text-text-on-dark"
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-mono text-[11px] font-semibold tracking-wider text-muted-on-dark uppercase">
+                  {t("sell.splitTendersLabel")}
+                </span>
                 <button
                   type="button"
-                  onClick={() => setTenderedText(formatMajorInput(cashTarget))}
-                  className="cursor-pointer rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-100 tabular-nums"
+                  data-testid="clear-split-tenders"
+                  onClick={() => setSplitTenders([])}
+                  className="cursor-pointer text-xs font-medium text-muted-on-dark hover:text-lime"
                 >
-                  {t("sell.exactCash")}
+                  {t("sell.splitClearAll")}
                 </button>
-                {CASH_BILLS_MAJOR.filter((b) => b * 100 >= cashTarget)
-                  .slice(0, 4)
-                  .map((bill) => (
-                    <button
-                      key={bill}
-                      type="button"
-                      onClick={() => setTenderedText(String(bill))}
-                      className="cursor-pointer rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-100 tabular-nums"
-                    >
-                      {fmt(bill * 100)}
-                    </button>
-                  ))}
               </div>
-            ) : null}
-
-            {change > 0 ? (
-              <div className="flex items-baseline justify-between rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-900">
-                <span className="text-xs font-semibold tracking-wider uppercase">{t("sell.change")}</span>
-                <span className="text-base font-semibold tabular-nums" data-testid="change">
-                  {fmt(change)}
-                </span>
-              </div>
-            ) : null}
-
-            {onUtang > 0 ? (
-              <div className="flex items-baseline justify-between rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-amber-900">
-                <span className="text-xs font-semibold tracking-wider uppercase">{t("sell.onUtang")}</span>
-                <span className="text-sm font-semibold tabular-nums" data-testid="on-utang">
-                  {fmt(onUtang)}
-                </span>
-              </div>
-            ) : null}
-
-            {method === "ewallet" ? (
-              <div className="grid grid-cols-2 gap-2">
-                <Select
-                  aria-label={t("sell.wallet")}
-                  data-testid="pay-wallet"
-                  value={wallet}
-                  onChange={(e) => setWallet(e.target.value as Wallet)}
-                  className="h-8 bg-white text-xs"
+              {splitTenders.map((sp, idx) => (
+                <div
+                  key={`${sp.method}-${idx}`}
+                  data-testid={`split-line-${idx}`}
+                  className="flex items-center justify-between gap-2 border-t border-ink-line-2 pt-1.5"
                 >
-                  {WALLETS.map((w) => (
-                    <option key={w} value={w}>
-                      {t(`sell.wallets.${w}`)}
-                    </option>
-                  ))}
-                </Select>
-                <Input
-                  placeholder={t("sell.reference")}
-                  value={reference}
-                  maxLength={64}
-                  onChange={(e) => setReference(e.target.value)}
-                  className="h-8 bg-white text-xs"
-                />
+                  <span className="truncate font-medium text-text-on-dark">
+                    {sp.method === "ewallet" && sp.wallet
+                      ? `${t("sell.ewallet")} (${t(`sell.wallets.${sp.wallet}`)})`
+                      : sp.method === "card"
+                        ? `${t("sell.card")}${sp.reference ? ` · ${sp.reference}` : ""}`
+                        : t(`sell.${sp.method}`)}
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-mono font-semibold text-lime tabular-nums">{fmt(sp.amount)}</span>
+                    <button
+                      type="button"
+                      aria-label={t("sell.splitRemove")}
+                      data-testid={`remove-split-${idx}`}
+                      onClick={() => removeSplitTender(idx)}
+                      className="cursor-pointer rounded-full p-0.5 text-muted-on-dark hover:bg-ink hover:text-sw-meal"
+                    >
+                      <X size={13} aria-hidden />
+                    </button>
+                  </div>
+                </div>
+              ))}
+              <div className="flex items-baseline justify-between border-t border-ink-line-2 pt-1.5 text-lime">
+                <span className="font-semibold">{t("sell.splitRemaining")}</span>
+                <span className="font-mono text-sm font-bold tabular-nums" data-testid="split-remaining">
+                  {fmt(remainingDue)}
+                </span>
               </div>
-            ) : null}
+            </div>
+          ) : null}
 
-            {method === "card" ? (
-              <Input
-                data-testid="pay-card-ref"
-                placeholder={t("sell.cardRefPlaceholder")}
+          {splitExceeded ? (
+            <div className="rounded-[12px] border border-sw-meal-fg/40 bg-sw-meal px-3 py-2 text-xs font-medium text-sw-meal-fg">
+              {t("sell.splitExceeded")}
+            </div>
+          ) : null}
+
+          <select
+            ref={payMethodSelectRef}
+            aria-label={t("sell.payment")}
+            data-testid="pay-method"
+            value={method}
+            onChange={(e) => setMethod(e.target.value as PayMethod)}
+            className="sr-only"
+          >
+            <option value="cash">{t("sell.cash")}</option>
+            <option value="ewallet">{t("sell.ewallet")}</option>
+            <option value="card">{t("sell.card")}</option>
+            <option value="utang">{t("sell.utang")}</option>
+          </select>
+
+          {remainingDue > 0 || splitTenders.length === 0 ? (
+            <>
+              <div className="grid grid-cols-4 gap-1.5" role="group" aria-label={t("sell.payment")}>
+                {(
+                  [
+                    ["cash", t("sell.cash"), Banknote],
+                    ["ewallet", t("sell.ewallet"), Smartphone],
+                    ["card", t("sell.card"), CreditCard],
+                    ["utang", t("sell.utang"), HandCoins],
+                  ] as const
+                ).map(([val, label, Icon]) => {
+                  const active = method === val;
+                  return (
+                    <button
+                      key={val}
+                      type="button"
+                      data-testid={`tender-btn-${val}`}
+                      onClick={() => setMethod(val)}
+                      className={`flex min-h-[52px] cursor-pointer flex-col items-center justify-center gap-1 rounded-[14px] border-[1.5px] px-1.5 py-2 text-[11px] font-semibold transition-colors ${
+                        active
+                          ? "border-lime bg-ink-2 text-lime"
+                          : "border-ink-line-2 bg-ink-2/50 text-muted-on-dark hover:border-text-on-dark hover:text-text-on-dark"
+                      }`}
+                    >
+                      <Icon size={15} className={active ? "text-lime" : "text-muted-on-dark"} aria-hidden />
+                      <span className="w-full truncate text-center">{label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {method !== "utang" ? (
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="grid gap-1 text-[11px] text-muted-on-dark">
+                    <span>{t("sell.paidNow")}</span>
+                    <input
+                      className="h-9 rounded-[12px] border-[1.5px] border-ink-line-2 bg-ink-2 px-3 text-right font-mono text-xs text-text-on-dark placeholder:text-muted-on-dark focus:border-lime focus:outline-none tabular-nums"
+                      data-testid="paid-now"
+                      inputMode="decimal"
+                      placeholder={fmt(remainingDue)}
+                      value={paidText}
+                      onChange={(e) => setPaidText(e.target.value)}
+                    />
+                  </label>
+
+                  {method === "cash" ? (
+                    <label className="grid gap-1 text-[11px] text-muted-on-dark">
+                      <span className="flex items-center justify-between">
+                        <span>{t("sell.tendered")}</span>
+                        <kbd className="rounded bg-ink-2 px-1 font-mono text-[10px] text-lime">F8</kbd>
+                      </span>
+                      <input
+                        ref={tenderedInputRef}
+                        className="h-9 rounded-[12px] border-[1.5px] border-ink-line-2 bg-ink-2 px-3 text-right font-mono text-xs text-text-on-dark placeholder:text-muted-on-dark focus:border-lime focus:outline-none tabular-nums"
+                        data-testid="tendered"
+                        inputMode="decimal"
+                        placeholder={fmt(cashTarget)}
+                        value={tenderedText}
+                        onChange={(e) => setTenderedText(e.target.value)}
+                      />
+                    </label>
+                  ) : (
+                    <div />
+                  )}
+                </div>
+              ) : null}
+
+              {method !== "utang" && paidNow !== null && paidNow > 0 && paidNow < remainingDue ? (
+                <button
+                  type="button"
+                  data-testid="add-split-tender"
+                  onClick={addSplitTender}
+                  className="min-h-[34px] w-full cursor-pointer rounded-full border-[1.5px] border-lime bg-ink-2 px-3 text-xs font-semibold text-lime transition-colors hover:bg-ink"
+                >
+                  {t("sell.splitAddTender", {
+                    method:
+                      method === "ewallet"
+                        ? t(`sell.wallets.${wallet}`)
+                        : t(`sell.${method}`),
+                    amount: fmt(paidNow),
+                  })}
+                </button>
+              ) : null}
+            </>
+          ) : null}
+
+          {method === "cash" && cashTarget > 0 ? (
+            <div className="flex flex-wrap gap-1.5" data-testid="quick-cash-presets">
+              <button
+                type="button"
+                onClick={() => setTenderedText(formatMajorInput(cashTarget))}
+                className="cursor-pointer rounded-full border border-ink-line-2 bg-ink-2 px-3 py-1 font-mono text-xs font-semibold text-text-on-dark transition-colors hover:border-lime hover:text-lime tabular-nums"
+              >
+                {t("sell.exactCash")}
+              </button>
+              {CASH_BILLS_MAJOR.filter((b) => b * 100 >= cashTarget)
+                .slice(0, 4)
+                .map((bill) => (
+                  <button
+                    key={bill}
+                    type="button"
+                    onClick={() => setTenderedText(String(bill))}
+                    className="cursor-pointer rounded-full border border-ink-line-2 bg-ink-2 px-3 py-1 font-mono text-xs font-semibold text-text-on-dark transition-colors hover:border-lime hover:text-lime tabular-nums"
+                  >
+                    {fmt(bill * 100)}
+                  </button>
+                ))}
+            </div>
+          ) : null}
+
+          {change > 0 ? (
+            <div className="flex items-baseline justify-between rounded-[14px] border border-lime/40 bg-ink-2 px-3.5 py-2 text-lime">
+              <span className="font-mono text-xs font-semibold tracking-wider uppercase">{t("sell.change")}</span>
+              <span className="font-display text-lg font-extrabold tabular-nums" data-testid="change">
+                {fmt(change)}
+              </span>
+            </div>
+          ) : null}
+
+          {onUtang > 0 ? (
+            <div className="flex items-baseline justify-between rounded-[14px] border border-sw-pastry/50 bg-sw-pastry/15 px-3.5 py-2 text-sw-pastry">
+              <span className="font-mono text-xs font-semibold tracking-wider uppercase">{t("sell.onUtang")}</span>
+              <span className="font-mono text-sm font-bold tabular-nums" data-testid="on-utang">
+                {fmt(onUtang)}
+              </span>
+            </div>
+          ) : null}
+
+          {method === "ewallet" ? (
+            <div className="grid grid-cols-2 gap-2">
+              <select
+                aria-label={t("sell.wallet")}
+                data-testid="pay-wallet"
+                value={wallet}
+                onChange={(e) => setWallet(e.target.value as Wallet)}
+                className="h-9 rounded-[12px] border-[1.5px] border-ink-line-2 bg-ink-2 px-2.5 text-xs text-text-on-dark focus:border-lime focus:outline-none"
+              >
+                {WALLETS.map((w) => (
+                  <option key={w} value={w}>
+                    {t(`sell.wallets.${w}`)}
+                  </option>
+                ))}
+              </select>
+              <input
+                placeholder={t("sell.reference")}
                 value={reference}
                 maxLength={64}
                 onChange={(e) => setReference(e.target.value)}
-                className="h-8 bg-white text-xs"
+                className="h-9 rounded-[12px] border-[1.5px] border-ink-line-2 bg-ink-2 px-3 text-xs text-text-on-dark placeholder:text-muted-on-dark focus:border-lime focus:outline-none"
               />
-            ) : null}
-          </div>
+            </div>
+          ) : null}
 
-          {problem ? <Alert>{problem}</Alert> : null}
+          {method === "card" ? (
+            <input
+              data-testid="pay-card-ref"
+              placeholder={t("sell.cardRefPlaceholder")}
+              value={reference}
+              maxLength={64}
+              onChange={(e) => setReference(e.target.value)}
+              className="h-9 rounded-[12px] border-[1.5px] border-ink-line-2 bg-ink-2 px-3 text-xs text-text-on-dark placeholder:text-muted-on-dark focus:border-lime focus:outline-none"
+            />
+          ) : null}
 
-          <Button
+          {problem ? (
+            <div className="rounded-[14px] border border-sw-meal-fg/40 bg-sw-meal px-3 py-2 text-xs font-medium text-sw-meal-fg">
+              {problem}
+            </div>
+          ) : null}
+
+          <button
+            type="button"
             data-testid="charge"
             disabled={cart.length === 0 || charge.isPending}
             onClick={handleCharge}
-            className="h-11.5 w-full justify-between text-base"
+            aria-label={charge.isPending ? t("sell.charging") : t("sell.charge", { total: fmt(total) })}
+            className="flex min-h-[60px] w-full cursor-pointer items-center justify-between gap-3 rounded-full bg-lime px-6 font-display text-lg font-extrabold text-ink transition-colors hover:bg-lime-hover disabled:cursor-not-allowed disabled:opacity-45"
           >
-            <span className="tabular-nums">
-              {charge.isPending ? t("sell.charging") : t("sell.charge", { total: fmt(total) })}
+            <span>{charge.isPending ? t("sell.charging") : t("sell.chargeLabel")}</span>
+            <span className="flex items-center gap-2 tabular-nums">
+              <span className="font-mono text-base font-bold">{fmt(total)}</span>
+              <kbd className="rounded-full bg-ink/10 px-2 py-0.5 font-mono text-[11px] font-bold text-ink">
+                F9
+              </kbd>
             </span>
-            <kbd className="rounded bg-white/15 px-2 py-0.5 font-mono text-xs text-white">F9</kbd>
-          </Button>
+          </button>
         </div>
       </aside>
 
@@ -1828,9 +1975,9 @@ export function SellPage() {
             confirmHoldOrder();
           }}
         >
-          <p className="-mt-2 text-xs text-slate-500">{t("sell.holdOrderDesc")}</p>
+          <p className="-mt-2 text-xs text-muted-on-light">{t("sell.holdOrderDesc")}</p>
           <label className="grid gap-1.5 text-sm">
-            <span className="font-medium text-slate-700">{t("sell.holdOrderLabel")}</span>
+            <span className="font-medium text-text-on-light">{t("sell.holdOrderLabel")}</span>
             <Input
               autoFocus
               data-testid="hold-order-label"
@@ -1859,12 +2006,12 @@ export function SellPage() {
       >
         <div data-testid="held-orders-dialog" className="grid gap-3">
           {cart.length > 0 && heldOrders.length > 0 ? (
-            <div className="rounded-lg border border-brand-200 bg-brand-50/70 px-3 py-2 text-xs text-brand-700">
+            <div className="rounded-[14px] border-[1.5px] border-lime/50 bg-lime/20 px-3 py-2 text-xs font-medium text-ink">
               {t("sell.heldOrderSwapHint")}
             </div>
           ) : null}
           {heldOrders.length === 0 ? (
-            <p className="py-6 text-center text-sm text-slate-500">{t("sell.heldOrdersEmpty")}</p>
+            <p className="py-6 text-center text-sm text-muted-on-light">{t("sell.heldOrdersEmpty")}</p>
           ) : (
             <ul className="grid max-h-[380px] gap-2.5 overflow-y-auto pr-0.5">
               {heldOrders.map((h) => {
@@ -1881,20 +2028,26 @@ export function SellPage() {
                   <li
                     key={h.id}
                     data-testid={`held-order-${h.id}`}
-                    className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50/60 p-3"
+                    className="flex items-center justify-between gap-3 rounded-[18px] border-[1.5px] border-sand-line bg-sand p-3"
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="truncate text-sm font-semibold text-slate-900">{titleText}</span>
-                        <span className="shrink-0 font-mono text-xs text-slate-400">{timeStr}</span>
+                        <span className="truncate font-display text-sm font-bold text-text-on-light">
+                          {titleText}
+                        </span>
+                        <span className="shrink-0 font-mono text-xs text-muted-on-light">{timeStr}</span>
                       </div>
-                      <div className="mt-0.5 truncate text-xs text-slate-500">
+                      <div className="mt-0.5 truncate text-xs text-muted-on-light">
                         {h.lines.map((l) => `${l.qty}× ${l.name}`).join(", ")}
                       </div>
                       <div className="mt-1 flex items-center gap-2 text-xs">
-                        <span className="font-semibold text-slate-900 tabular-nums">{fmt(heldTotal)}</span>
-                        <span className="text-slate-400">·</span>
-                        <span className="text-slate-500">{t("sell.itemsInOrder", { count: heldUnits })}</span>
+                        <span className="font-mono font-bold text-text-on-light tabular-nums">
+                          {fmt(heldTotal)}
+                        </span>
+                        <span className="text-muted-on-light">·</span>
+                        <span className="text-muted-on-light">
+                          {t("sell.itemsInOrder", { count: heldUnits })}
+                        </span>
                       </div>
                     </div>
                     <div className="flex shrink-0 items-center gap-1.5">
@@ -1913,7 +2066,7 @@ export function SellPage() {
                         data-testid={`discard-held-${h.id}`}
                         onClick={() => handleDiscardHeld(h.id)}
                       >
-                        <Trash2 size={14} className="text-slate-400 hover:text-red-600" aria-hidden />
+                        <Trash2 size={14} className="text-muted-on-light hover:text-sw-meal-fg" aria-hidden />
                       </Button>
                     </div>
                   </li>

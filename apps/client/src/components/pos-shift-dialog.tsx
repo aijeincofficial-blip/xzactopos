@@ -217,10 +217,10 @@ export function PosShiftControl({
   });
 
   const chipStyle = !openShift
-    ? "border-amber-200 bg-amber-50 text-amber-900 hover:bg-amber-100"
+    ? "border-sw-pastry-fg/30 bg-sw-pastry text-sw-pastry-fg hover:opacity-90"
     : isAtOtherStore
-      ? "border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100"
-      : "border-emerald-200 bg-emerald-50 text-emerald-900 hover:bg-emerald-100";
+      ? "border-sw-pastry-fg/40 bg-sw-pastry text-sw-pastry-fg hover:opacity-90"
+      : "border-ok-dot/40 bg-ok-bg text-ok-fg hover:opacity-90";
 
   return (
     <>
@@ -231,11 +231,11 @@ export function PosShiftControl({
           setFormError(null);
           setOpen(true);
         }}
-        className={`inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border px-2.5 py-2 text-xs font-semibold transition-colors ${chipStyle}`}
+        className={`inline-flex min-h-[36px] shrink-0 cursor-pointer items-center gap-1.5 rounded-full border-[1.5px] px-3 py-1.5 text-xs font-semibold transition-colors ${chipStyle}`}
       >
         <Clock
           size={14}
-          className={!openShift || isAtOtherStore ? "text-amber-600" : "text-emerald-600"}
+          className={!openShift || isAtOtherStore ? "text-sw-pastry-fg" : "text-ok-fg"}
           aria-hidden
         />
         <span>
