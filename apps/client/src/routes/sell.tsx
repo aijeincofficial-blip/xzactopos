@@ -406,6 +406,10 @@ export function SellPage() {
     [cart],
   );
 
+  const stockMap = useMemo(() => {
+    if (!stockQuery.data || !store) return undefined;
+    return applyOptimisticStockDeltas(stockQuery.data, store.id, outboxOps);
+  }, [stockQuery.data, store, outboxOps]);
   const expiryMap = expiryQuery.data;
   const reorderMap = reorderQuery.data;
   const expiredCartCount = useMemo(() => {
@@ -932,10 +936,6 @@ export function SellPage() {
     );
   }
 
-  const stockMap = useMemo(() => {
-    if (!stockQuery.data || !store) return undefined;
-    return applyOptimisticStockDeltas(stockQuery.data, store.id, outboxOps);
-  }, [stockQuery.data, store, outboxOps]);
   const cashTarget = paidNow !== null ? paidNow : remainingDue;
 
   const chipTone = (categoryId?: string | null) =>
