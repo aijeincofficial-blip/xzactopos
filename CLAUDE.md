@@ -21,6 +21,18 @@ Work one phase at a time, one task card at a time. Task cards live in docs/tasks
 - Transactions are append-only and conflict-free. Master data is last-write-wins by server `updated_at`.
 - Never add Realtime subscriptions to POS screens. Poll at 120 s idle with backoff.
 
+## UI and design
+- Visual spec: docs/design.md. Tokens: docs/tokens.json. Logos: public/brand/ (mobile: assets/brand/).
+  For any UI task, read docs/design.md first: only the sections the task card names, plus §8 (do NOT) and §13 (self-check).
+- Never hard-code colors, fonts, sizes or radii. The theme (CSS vars / Tailwind / RN) is generated from tokens.json.
+- Build screens only from the shared components in src/ui/. Add a missing piece there, never inline styles.
+- No default component-library look (plain shadcn/Bootstrap/MUI), no gradients, no emoji icons. Lime is the only accent.
+- Prices and totals render through `MoneyText` / `formatMoney(minor, currency, locale)`. Never format money by hand.
+- Every screen shows `SyncChip`. Selling never blocks on being offline.
+- Responsive and mobile parity: check 360px, 768px and 1280px. Same tokens, components and i18n keys on web and mobile.
+- Layouts must survive Tagalog strings 30–50% longer than English: no fixed text widths.
+- UI tasks change UI only: keep existing logic, data flow and RPC calls untouched.
+
 ## Free-tier discipline (Supabase)
 - Business logic in Postgres RPC, not Edge Functions, unless the service role is required.
 - Select explicit columns, paginate, delta-sync. Reports read rollup tables, not raw rows.
@@ -29,5 +41,6 @@ Work one phase at a time, one task card at a time. Task cards live in docs/tasks
 ## Workflow
 - Migrations and pgTAP tests before UI. Every new table: RLS policies + a test.
 - Run `pnpm check` (lint, types, tests, pgTAP) before declaring a task done.
+  UI tasks also pass the docs/design.md self-check, in en and fil.
 - Commit per task, update docs/handoff.md, then /clear before the next unrelated task.
-- Sonnet by default. Opus only for RLS, sync engine, ledger and stock math.
+- Sonnet by default (including all UI work). Opus only for RLS, sync engine, ledger and stock math.

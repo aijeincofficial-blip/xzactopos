@@ -48,6 +48,7 @@ const LocationsPage = lazyRouteComponent(() => import("./routes/locations.tsx"),
 const UsersPage = lazyRouteComponent(() => import("./routes/users.tsx"), "UsersPage");
 const ModulesPage = lazyRouteComponent(() => import("./routes/modules.tsx"), "ModulesPage");
 const PlatformPage = lazyRouteComponent(() => import("./routes/platform.tsx"), "PlatformPage");
+const DevUiPage = lazyRouteComponent(() => import("./routes/dev-ui.tsx"), "DevUiPage");
 
 export interface RouterContext {
   queryClient: QueryClient;
@@ -213,6 +214,7 @@ const platform = createRoute({
   component: PlatformPage,
 });
 const forbidden = createRoute({ getParentRoute: () => app, path: "/forbidden", component: ForbiddenPage });
+const devUi = createRoute({ getParentRoute: () => root, path: "/dev/ui", component: DevUiPage });
 
 const routeTree = root.addChildren([
   home,
@@ -221,6 +223,7 @@ const routeTree = root.addChildren([
   resetPassword,
   warehouseLogin,
   login,
+  ...(import.meta.env.DEV ? [devUi] : []),
   app.addChildren([dashboard, setup, sell, receiveStock, sales, inventory, products, utang, services, expenses, dayClose, upgrade, settings, transfers, bins, purchasing, counts, overview, reports, audit, locations, users, modules, platform, forbidden]),
 ]);
 

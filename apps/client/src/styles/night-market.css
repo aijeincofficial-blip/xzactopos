@@ -1,0 +1,74 @@
+/* Receipt-paper-at-a-night-market signature rules (docs/design.md §5) */
+.receipt {
+  background: var(--paper);
+  color: var(--text-on-light);
+  position: relative;
+}
+
+.receipt::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -9px;
+  height: 10px;
+  pointer-events: none;
+  background:
+    linear-gradient(135deg, var(--paper) 50%, transparent 50%) 0 0 / 14px 14px,
+    linear-gradient(-135deg, var(--paper) 50%, transparent 50%) 0 0 / 14px 14px;
+}
+
+.receipt-pullup {
+  background: var(--paper);
+  color: var(--text-on-light);
+  position: relative;
+}
+
+.receipt-pullup::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -9px;
+  height: 10px;
+  pointer-events: none;
+  background:
+    linear-gradient(315deg, var(--paper) 50%, transparent 50%) 0 0 / 14px 14px,
+    linear-gradient(45deg, var(--paper) 50%, transparent 50%) 0 0 / 14px 14px;
+}
+
+.receipt hr,
+.dash {
+  border: 0;
+  border-top: var(--nm-border-w) dashed var(--dash);
+}
+
+@keyframes xz-marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.xz-marquee-track {
+  display: flex;
+  width: max-content;
+  animation: xz-marquee 26s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .xz-marquee-track {
+    animation: none;
+  }
+}
+
+/* Elevation ONLY for floating elements (design.md §4) */
+.receipt-float {
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+}
+
+.sticker-float {
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+}
