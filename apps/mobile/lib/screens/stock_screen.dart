@@ -32,16 +32,39 @@ class StockScreen extends StatefulWidget {
   State<StockScreen> createState() => _StockScreenState();
 }
 
+enum _StoreStockFilter { all, low, out, negative, expiring }
+
 class _StockScreenState extends State<StockScreen> {
   String _query = '';
-  bool _lowOnly = false;
-  bool _expiringOnly = false;
+  _StoreStockFilter _filter = _StoreStockFilter.all;
 
   Widget? _stockSubtitle(AppLocalizations t, ColorScheme scheme, StockRow r, DateTime today) {
     final left = r.expiresOn == null ? null : r.daysLeft(today);
     final soon = isExpiringRow(r, today);
-    if (!r.low && left == null) return null;
+    final isNeg = r.counted && r.qty! < 0;
+    final isOut = r.counted && r.qty! == 0;
+    if (!r.low && !isNeg && !isOut && left == null) return null;
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      if (isNeg || isOut)
+        Padding(
+          padding: EdgeInsets.only(bottom: r.low || left != null ? 2 : 0),
+          child: Container(
+            key: Key(isNeg ? 'negative-stock-badge-${r.product.id}' : 'out-stock-badge-${r.product.id}'),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: scheme.errorContainer,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              isNeg ? t.whStockBadgeNegative : t.whStockBadgeOut,
+              style: TextStyle(
+                color: scheme.onErrorContainer,
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ),
       if (r.low) ...[
         Row(
           mainAxisSize: MainAxisSize.min,
@@ -119,9 +142,13 @@ class _StockScreenState extends State<StockScreen> {
           final today = DateTime.now();
           final lowCount = all.where((r) => r.low).length;
           final expiringCount = all.where((r) => isExpiringRow(r, today)).length;
-          final rows = _lowOnly
-              ? all.where((r) => r.low).toList()
-              : (_expiringOnly ? all.where((r) => isExpiringRow(r, today)).toList() : all);
+          final rows = switch (_filter) {
+            _StoreStockFilter.all => all,
+            _StoreStockFilter.low => all.where((r) => r.low).toList(),
+            _StoreStockFilter.out => all.where((r) => r.counted && r.qty! == 0).toList(),
+            _StoreStockFilter.negative => all.where((r) => r.counted && r.qty! < 0).toList(),
+            _StoreStockFilter.expiring => all.where((r) => isExpiringRow(r, today)).toList(),
+          };
           return Column(children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(Gap.l, Gap.s, Gap.l, Gap.s),
@@ -135,41 +162,46 @@ class _StockScreenState extends State<StockScreen> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: Gap.l),
+              padding: const EdgeInsets.fromLTRB(Gap.l, 0, Gap.l, Gap.s),
               child: Align(
                 alignment: Alignment.centerLeft,
-                child: Wrap(spacing: 8, runSpacing: 4, children: [
-                  ChoiceChip(
+                child: Wrap(spacing: Gap.xs, runSpacing: Gap.xs, children: [
+                  AppPillChip(
                     key: const Key('filter-all'),
-                    label: Text(t.stockAll),
-                    selected: !_lowOnly && !_expiringOnly,
-                    onSelected: (_) => setState(() {
-                      _lowOnly = false;
-                      _expiringOnly = false;
-                    }),
+                    label: t.stockAll,
+                    height: 32,
+                    selected: _filter == _StoreStockFilter.all,
+                    onTap: () => setState(() => _filter = _StoreStockFilter.all),
                   ),
-                  ChoiceChip(
+                  AppPillChip(
                     key: const Key('filter-low'),
-                    avatar: lowCount > 0 ? const Icon(Icons.warning_amber_rounded, size: 16) : null,
-                    label: Text(t.stockLowCount(lowCount)),
-                    selected: _lowOnly,
-                    onSelected: (_) => setState(() {
-                      _lowOnly = true;
-                      _expiringOnly = false;
-                    }),
+                    label: t.stockLowCount(lowCount),
+                    height: 32,
+                    selected: _filter == _StoreStockFilter.low,
+                    onTap: () => setState(() => _filter = _StoreStockFilter.low),
                   ),
-                  if (expiringCount > 0 || _expiringOnly) ...[
-                    ChoiceChip(
+                  AppPillChip(
+                    key: const Key('filter-out'),
+                    label: t.whStockFilterOut,
+                    height: 32,
+                    selected: _filter == _StoreStockFilter.out,
+                    onTap: () => setState(() => _filter = _StoreStockFilter.out),
+                  ),
+                  AppPillChip(
+                    key: const Key('filter-negative'),
+                    label: t.whStockFilterNegative,
+                    height: 32,
+                    selected: _filter == _StoreStockFilter.negative,
+                    onTap: () => setState(() => _filter = _StoreStockFilter.negative),
+                  ),
+                  if (expiringCount > 0 || _filter == _StoreStockFilter.expiring)
+                    AppPillChip(
                       key: const Key('filter-expiring'),
-                      avatar: expiringCount > 0 ? const Icon(Icons.event_busy_rounded, size: 16) : null,
-                      label: Text(t.stockExpiringFilter(expiringCount)),
-                      selected: _expiringOnly,
-                      onSelected: (_) => setState(() {
-                        _expiringOnly = true;
-                        _lowOnly = false;
-                      }),
+                      label: t.stockExpiringFilter(expiringCount),
+                      height: 32,
+                      selected: _filter == _StoreStockFilter.expiring,
+                      onTap: () => setState(() => _filter = _StoreStockFilter.expiring),
                     ),
-                  ],
                 ]),
               ),
             ),
@@ -179,9 +211,12 @@ class _StockScreenState extends State<StockScreen> {
                       child: Padding(
                         padding: const EdgeInsets.all(32),
                         child: Text(
-                          _lowOnly
-                              ? t.stockNoneLow
-                              : (_expiringOnly ? t.stockNoneExpiring : (all.isEmpty ? t.noProductsHere : t.noMatches)),
+                          switch (_filter) {
+                            _StoreStockFilter.low => t.stockNoneLow,
+                            _StoreStockFilter.expiring => t.stockNoneExpiring,
+                            _StoreStockFilter.out || _StoreStockFilter.negative => t.whStockNoFiltered,
+                            _StoreStockFilter.all => all.isEmpty ? t.noProductsHere : t.noMatches,
+                          },
                           textAlign: TextAlign.center,
                         ),
                       ),

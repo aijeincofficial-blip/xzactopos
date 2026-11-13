@@ -6,6 +6,7 @@ import 'package:xzactopos_mobile/app.dart';
 import 'package:xzactopos_mobile/data/db.dart';
 import 'package:xzactopos_mobile/data/drift_store.dart';
 import 'package:xzactopos_mobile/data/local_store.dart';
+import 'package:xzactopos_mobile/data/sales_models.dart';
 
 import 'drift_store_test.dart' show pullPage, serverPrice, serverProduct, serverVariant;
 import 'products_test.dart' show leave, openHome;
@@ -146,5 +147,41 @@ void main() {
     expect(((await store.nextOps()).single.payload['variant'] as Map)['reorder_point'], 6.0);
     expect((await store.watchProducts().first).single.reorderPoint, 6);
     await store.close();
+  });
+
+  testWidgets('out of stock and below zero filters and badges work', (tester) async {
+    final store = await openStock(tester);
+    await store.receiveStock(variantId: _v1, qty: 2, opId: 'rec1');
+    await store.adjustStock(variantId: _v1, counted: 0, reason: 'count', opId: 'adj0');
+    await store.receiveStock(variantId: _v2, qty: 1, opId: 'rec2');
+    await store.commitSale(
+      SaleDraft(
+        id: 'sale-neg',
+        soldAt: DateTime.utc(2026, 11, 8, 2),
+        lines: const [SaleLine(variantId: _v2, name: 'Asukal 1/4', qty: 3, unitPrice: 1500, unitCost: 0)],
+        payments: const [PaymentDraft('cash', 4500)],
+      ),
+      opId: 'sneg',
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('out-stock-badge-$_p1')), findsOneWidget);
+    expect(find.byKey(const Key('negative-stock-badge-$_p2')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('filter-out')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('stock-$_p1')), findsOneWidget);
+    expect(find.byKey(const Key('stock-$_p2')), findsNothing);
+
+    await tester.tap(find.byKey(const Key('filter-negative')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('stock-$_p2')), findsOneWidget);
+    expect(find.byKey(const Key('stock-$_p1')), findsNothing);
+
+    await tester.tap(find.byKey(const Key('filter-all')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('stock-$_p1')), findsOneWidget);
+    expect(find.byKey(const Key('stock-$_p2')), findsOneWidget);
+    await leave(tester);
   });
 }
