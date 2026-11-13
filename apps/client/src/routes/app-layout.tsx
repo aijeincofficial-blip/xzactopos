@@ -281,6 +281,7 @@ export function AppLayout() {
     return permOk && (!n.fullOnly || mode === "full") && (!("soloOnly" in n && n.soloOnly) || mode === "solo");
   });
   const showNav = access.tenant.setup_completed;
+  const showDockedSidebar = showNav && !hideDockedSidebar;
   const displayName = access.full_name || access.username;
 
   const identity = (
@@ -327,7 +328,7 @@ export function AppLayout() {
                   key={n.to}
                   to={n.to}
                   activeOptions={{ exact: n.to === "/app" }}
-                  className="flex min-h-[42px] items-center justify-between gap-2 rounded-[14px] px-3 py-2 text-sm font-medium text-muted-on-dark transition-colors hover:bg-ink-2 hover:text-lime"
+                  className="flex min-h-[42px] items-center justify-between gap-2 rounded-[14px] px-3 py-2 text-sm font-medium transition-colors [&:not([aria-current='page'])]:text-muted-on-dark [&:not([aria-current='page'])]:hover:bg-ink-2 [&:not([aria-current='page'])]:hover:text-lime"
                   activeProps={{
                     className:
                       "bg-lime font-semibold text-ink hover:bg-lime-hover hover:text-ink",
@@ -378,7 +379,7 @@ export function AppLayout() {
   );
 
   return (
-    <div className={hideDockedSidebar ? "min-h-screen" : "min-h-screen md:grid md:grid-cols-[16rem_1fr]"}>
+    <div className={showDockedSidebar ? "min-h-screen md:grid md:grid-cols-[16rem_1fr]" : "min-h-screen"}>
       {showNav ? (
         <>
           {!hideDockedSidebar ? (
@@ -448,23 +449,29 @@ export function AppLayout() {
                 height={28}
                 className="h-7 w-7 shrink-0"
               />
-              <span className="hidden font-display text-sm font-extrabold tracking-tight text-text-on-dark sm:inline">
+              <span className="hidden max-w-[125px] truncate font-display text-sm font-extrabold tracking-tight text-text-on-dark sm:inline xl:max-w-[175px]">
                 {access.tenant.name}
               </span>
               {showNav ? (
-                <nav aria-label="POS quick links" className="ml-2 hidden items-center gap-1 lg:flex">
+                <nav aria-label="POS quick links" className="ml-2 hidden items-center gap-0.5 lg:flex">
                   <Link
                     to="/app/sell"
-                    className="rounded-full px-3 py-1.5 text-xs font-medium text-muted-on-dark transition-colors hover:bg-ink-2 hover:text-lime"
-                    activeProps={{ className: "bg-lime font-semibold text-ink hover:bg-lime-hover hover:text-ink" }}
+                    className="shrink-0 whitespace-nowrap rounded-full px-2.5 py-1.5 text-xs font-medium transition-colors [&:not([aria-current='page'])]:text-muted-on-dark [&:not([aria-current='page'])]:hover:bg-ink-2 [&:not([aria-current='page'])]:hover:text-lime"
+                    activeProps={{
+                      className: "bg-lime font-semibold text-ink hover:bg-lime-hover hover:text-ink",
+                      "aria-current": "page",
+                    }}
                   >
                     {t("admin:nav.sell")}
                   </Link>
                   <Link
                     to="/app/inventory"
                     data-testid="kiosk-inventory-link"
-                    className="rounded-full px-3 py-1.5 text-xs font-medium text-muted-on-dark transition-colors hover:bg-ink-2 hover:text-lime"
-                    activeProps={{ className: "bg-lime font-semibold text-ink hover:bg-lime-hover hover:text-ink" }}
+                    className="shrink-0 whitespace-nowrap rounded-full px-2.5 py-1.5 text-xs font-medium transition-colors [&:not([aria-current='page'])]:text-muted-on-dark [&:not([aria-current='page'])]:hover:bg-ink-2 [&:not([aria-current='page'])]:hover:text-lime"
+                    activeProps={{
+                      className: "bg-lime font-semibold text-ink hover:bg-lime-hover hover:text-ink",
+                      "aria-current": "page",
+                    }}
                   >
                     {t("admin:nav.inventory")}
                   </Link>
@@ -472,8 +479,11 @@ export function AppLayout() {
                     <Link
                       to="/app/receive-stock"
                       data-testid="kiosk-receive-stock-link"
-                      className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium text-muted-on-dark transition-colors hover:bg-ink-2 hover:text-lime"
-                      activeProps={{ className: "bg-lime font-semibold text-ink hover:bg-lime-hover hover:text-ink" }}
+                      className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1.5 text-xs font-medium transition-colors [&:not([aria-current='page'])]:text-muted-on-dark [&:not([aria-current='page'])]:hover:bg-ink-2 [&:not([aria-current='page'])]:hover:text-lime"
+                      activeProps={{
+                        className: "bg-lime font-semibold text-ink hover:bg-lime-hover hover:text-ink",
+                        "aria-current": "page",
+                      }}
                     >
                       <span>{t("admin:nav.receiveStock")}</span>
                       {incomingCount > 0 ? <Badge tone="warn">{incomingCount}</Badge> : null}
@@ -481,23 +491,32 @@ export function AppLayout() {
                   ) : null}
                   <Link
                     to="/app/sales"
-                    className="rounded-full px-3 py-1.5 text-xs font-medium text-muted-on-dark transition-colors hover:bg-ink-2 hover:text-lime"
-                    activeProps={{ className: "bg-lime font-semibold text-ink hover:bg-lime-hover hover:text-ink" }}
+                    className="shrink-0 whitespace-nowrap rounded-full px-2.5 py-1.5 text-xs font-medium transition-colors [&:not([aria-current='page'])]:text-muted-on-dark [&:not([aria-current='page'])]:hover:bg-ink-2 [&:not([aria-current='page'])]:hover:text-lime"
+                    activeProps={{
+                      className: "bg-lime font-semibold text-ink hover:bg-lime-hover hover:text-ink",
+                      "aria-current": "page",
+                    }}
                   >
                     {t("admin:nav.sales")}
                   </Link>
                   <Link
                     to="/app/utang"
-                    className="rounded-full px-3 py-1.5 text-xs font-medium text-muted-on-dark transition-colors hover:bg-ink-2 hover:text-lime"
-                    activeProps={{ className: "bg-lime font-semibold text-ink hover:bg-lime-hover hover:text-ink" }}
+                    className="shrink-0 whitespace-nowrap rounded-full px-2.5 py-1.5 text-xs font-medium transition-colors [&:not([aria-current='page'])]:text-muted-on-dark [&:not([aria-current='page'])]:hover:bg-ink-2 [&:not([aria-current='page'])]:hover:text-lime"
+                    activeProps={{
+                      className: "bg-lime font-semibold text-ink hover:bg-lime-hover hover:text-ink",
+                      "aria-current": "page",
+                    }}
                   >
                     {t("admin:nav.utang")}
                   </Link>
                   {can("shift.manage") ? (
                     <Link
                       to="/app/day-close"
-                      className="rounded-full px-3 py-1.5 text-xs font-medium text-muted-on-dark transition-colors hover:bg-ink-2 hover:text-lime"
-                      activeProps={{ className: "bg-lime font-semibold text-ink hover:bg-lime-hover hover:text-ink" }}
+                      className="shrink-0 whitespace-nowrap rounded-full px-2.5 py-1.5 text-xs font-medium transition-colors [&:not([aria-current='page'])]:text-muted-on-dark [&:not([aria-current='page'])]:hover:bg-ink-2 [&:not([aria-current='page'])]:hover:text-lime"
+                      activeProps={{
+                        className: "bg-lime font-semibold text-ink hover:bg-lime-hover hover:text-ink",
+                        "aria-current": "page",
+                      }}
                     >
                       {t("admin:nav.dayClose")}
                     </Link>
@@ -507,7 +526,13 @@ export function AppLayout() {
             </div>
           ) : (
             <div className="mr-auto flex min-w-0 items-center gap-2">
-              <span className="truncate font-display text-sm font-extrabold text-slate-900 md:hidden">
+              <span
+                className={
+                  showDockedSidebar
+                    ? "truncate font-display text-sm font-extrabold text-slate-900 md:hidden"
+                    : "truncate font-display text-sm font-extrabold text-slate-900"
+                }
+              >
                 {access.tenant.name}
               </span>
               {/* Active Location Context Pill */}
@@ -702,7 +727,7 @@ export function AppLayout() {
                   key={n.to}
                   to={n.to}
                   activeOptions={{ exact: n.to === "/app" }}
-                  className="flex min-h-[44px] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-[14px] px-1.5 py-1 text-[11px] font-medium text-muted-on-dark transition-colors hover:text-lime"
+                  className="flex min-h-[44px] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-[14px] px-1.5 py-1 text-[11px] font-medium transition-colors [&:not([aria-current='page'])]:text-muted-on-dark [&:not([aria-current='page'])]:hover:text-lime"
                   activeProps={{
                     className: "bg-lime font-semibold text-ink hover:text-ink",
                     "aria-current": "page",
