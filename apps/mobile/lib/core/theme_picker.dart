@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
+import 'design_tokens.g.dart';
 import 'theme.dart';
 import 'ui.dart';
 
-/// Opens the modal bottom sheet for choosing theme colors and mode.
+/// Opens the Night Market look picker: palette variant + brightness (system/light/dark).
 void showThemeSheet(BuildContext context) {
   showModalBottomSheet<void>(
     context: context,
@@ -13,20 +14,18 @@ void showThemeSheet(BuildContext context) {
   );
 }
 
-/// App-bar or card button that opens the colours / brightness chooser.
+/// Palette icon button for app bars and auth header.
 class ThemeButton extends StatelessWidget {
   const ThemeButton({super.key});
 
   @override
   Widget build(BuildContext context) {
     if (ThemeScope.maybeOf(context) == null) return const SizedBox.shrink();
+    final t = AppLocalizations.of(context);
     return IconButton(
       key: const Key('theme-button'),
-      tooltip: AppLocalizations.of(context).themeTitle,
       icon: const Icon(Icons.palette_outlined),
-      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-      padding: const EdgeInsets.all(4),
-      visualDensity: VisualDensity.compact,
+      tooltip: t.themeTitle,
       onPressed: () => showThemeSheet(context),
     );
   }
@@ -42,72 +41,141 @@ class _ThemeSheet extends StatefulWidget {
 class _ThemeSheetState extends State<_ThemeSheet> {
   @override
   Widget build(BuildContext context) {
-    final scope = ThemeScope.maybeOf(context)!;
     final t = AppLocalizations.of(context);
-    final palettes = {
-      AppPalette.freshTide: t.paletteFreshTide,
+    final scope = ThemeScope.maybeOf(context)!;
+    final paletteNames = {
       AppPalette.goldenIndigo: t.paletteGoldenIndigo,
+      AppPalette.freshTide: t.paletteFreshTide,
     };
-    final modes = {
-      ThemeMode.system: t.themeSystem,
-      ThemeMode.light: t.themeLight,
-      ThemeMode.dark: t.themeDark,
+    final paletteSwatches = {
+      AppPalette.goldenIndigo: (DesignTokens.ink, DesignTokens.lime, DesignTokens.sand),
+      AppPalette.freshTide: (DesignTokens.okFg, DesignTokens.okBg, DesignTokens.swCoffee),
     };
+
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(Gap.l, 0, Gap.l, Gap.l),
-        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(t.themeTitle, style: Theme.of(context).textTheme.titleLarge),
-          const SizedBox(height: Gap.m),
-          Text(t.themeColors, style: Theme.of(context).textTheme.labelLarge),
-          const SizedBox(height: Gap.s),
-          for (final e in palettes.entries)
-            _Choice(
-              key: Key('palette-${e.key.name}'),
-              label: e.value,
-              selected: scope.palette == e.key,
-              swatch: buildTheme(e.key, Brightness.light).colorScheme,
-              onTap: () {
-                scope.setPalette(e.key);
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(t.themeTitle, style: NightMarketText.display(context, size: 20)),
+            const SizedBox(height: Gap.m),
+            Text(t.themeColors.toUpperCase(), style: NightMarketText.eyebrow(context)),
+            const SizedBox(height: Gap.s),
+            for (final p in AppPalette.values) ...[
+              _PaletteChoice(
+                label: paletteNames[p]!,
+                swatches: paletteSwatches[p]!,
+                selected: scope.palette == p,
+                onTap: () {
+                  scope.setPalette(p);
+                  setState(() {});
+                },
+              ),
+              const SizedBox(height: Gap.s),
+            ],
+            const SizedBox(height: Gap.m),
+            Text(t.themeMode.toUpperCase(), style: NightMarketText.eyebrow(context)),
+            const SizedBox(height: Gap.s),
+            SegmentedPillBar<ThemeMode>(
+              selected: scope.mode,
+              onChanged: (m) {
+                scope.setMode(m);
                 setState(() {});
               },
+              items: [
+                SegmentedPillItem(
+                  value: ThemeMode.system,
+                  label: t.themeSystem,
+                  icon: Icons.brightness_auto_rounded,
+                ),
+                SegmentedPillItem(
+                  value: ThemeMode.light,
+                  label: t.themeLight,
+                  icon: Icons.light_mode_rounded,
+                ),
+                SegmentedPillItem(
+                  value: ThemeMode.dark,
+                  label: t.themeDark,
+                  icon: Icons.dark_mode_rounded,
+                ),
+              ],
             ),
-          const SizedBox(height: Gap.m),
-          Text(t.themeMode, style: Theme.of(context).textTheme.labelLarge),
-          const SizedBox(height: Gap.s),
-          SegmentedPillBar<ThemeMode>(
-            key: const Key('theme-mode'),
-            items: [for (final e in modes.entries) SegmentedPillItem(value: e.key, label: e.value)],
-            selected: scope.mode,
-            onChanged: (m) {
-              scope.setMode(m);
-              setState(() {});
-            },
-          ),
-        ]),
+          ],
+        ),
       ),
     );
   }
 }
 
-class _Choice extends StatelessWidget {
-  const _Choice({super.key, required this.label, required this.selected, required this.swatch, required this.onTap});
+class _PaletteChoice extends StatelessWidget {
+  const _PaletteChoice({
+    required this.label,
+    required this.swatches,
+    required this.selected,
+    required this.onTap,
+  });
+
   final String label;
+  final (Color, Color, Color) swatches;
   final bool selected;
-  final ColorScheme swatch;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
+    final scheme = Theme.of(context).colorScheme;
+    final (c1, c2, c3) = swatches;
+    return AppCard(
       onTap: onTap,
-      leading: Row(mainAxisSize: MainAxisSize.min, children: [
-        for (final c in [swatch.primary, swatch.secondary, swatch.tertiary])
-          Container(width: 18, height: 18, margin: const EdgeInsets.only(right: 3), decoration: BoxDecoration(color: c, shape: BoxShape.circle)),
-      ]),
-      title: Text(label),
-      trailing: selected ? Icon(Icons.check_circle, color: Theme.of(context).colorScheme.primary) : const Icon(Icons.circle_outlined),
+      padding: const EdgeInsets.symmetric(horizontal: Gap.l, vertical: Gap.m),
+      radius: Gap.radiusM,
+      color: selected ? (scheme.isDark ? scheme.nmInkLine : scheme.nmOkBg.withValues(alpha: 0.4)) : scheme.surface,
+      borderColor: selected ? (scheme.isDark ? scheme.nmLime : scheme.nmInk) : scheme.outlineVariant,
+      borderWidth: selected ? 2.0 : Gap.border,
+      child: Row(
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _SwatchDot(c1),
+              const SizedBox(width: 4),
+              _SwatchDot(c2),
+              const SizedBox(width: 4),
+              _SwatchDot(c3),
+            ],
+          ),
+          const SizedBox(width: Gap.m),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(fontSize: 15, fontWeight: selected ? FontWeight.w700 : FontWeight.w600),
+            ),
+          ),
+          if (selected)
+            Icon(
+              Icons.check_circle_rounded,
+              color: scheme.isDark ? scheme.nmLime : scheme.nmInk,
+              size: 20,
+            ),
+        ],
+      ),
     );
   }
+}
+
+class _SwatchDot extends StatelessWidget {
+  const _SwatchDot(this.color);
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: 16,
+        height: 16,
+        decoration: BoxDecoration(
+          color: color,
+          shape: BoxShape.circle,
+          border: Border.all(color: Theme.of(context).colorScheme.outlineVariant, width: 1.0),
+        ),
+      );
 }

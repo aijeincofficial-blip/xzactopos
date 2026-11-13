@@ -519,12 +519,12 @@ class _TransferCreateScreenState extends State<TransferCreateScreen> {
                             ),
                           ),
                           icon: _submitting
-                              ? const SizedBox(
+                              ? SizedBox(
                                   width: 18,
                                   height: 18,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
-                                    color: Colors.white,
+                                    color: scheme.onPrimary,
                                   ),
                                 )
                               : const Icon(Icons.local_shipping_rounded),

@@ -4,6 +4,7 @@ import 'package:flutter/services.dart' show HapticFeedback;
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../l10n/app_localizations.dart';
+import 'design_tokens.g.dart';
 
 /// What the camera screen shows after a code was read, and whether to close it.
 class ScanFeedback {
@@ -110,7 +111,6 @@ class _CameraScanScreenState extends State<CameraScanScreen> {
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
-    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
         title: Text(t.scanTitle),
@@ -138,7 +138,10 @@ class _CameraScanScreenState extends State<CameraScanScreen> {
           bottom: 0,
           child: SafeArea(
             child: Container(
-              color: Colors.black54,
+              decoration: const BoxDecoration(
+                color: DesignTokens.ink,
+                border: Border(top: BorderSide(color: DesignTokens.inkLine2, width: DesignTokens.borderWidth)),
+              ),
               padding: const EdgeInsets.all(16),
               child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                 Text(
@@ -146,7 +149,9 @@ class _CameraScanScreenState extends State<CameraScanScreen> {
                   key: const Key('scan-message'),
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                      color: (_feedback?.ok ?? true) ? Colors.white : scheme.errorContainer, fontSize: 18, fontWeight: FontWeight.w600),
+                      color: (_feedback?.ok ?? true) ? DesignTokens.textOnDark : DesignTokens.swMeal,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600),
                 ),
                 if (_feedback?.subtext != null) ...[
                   const SizedBox(height: 4),
@@ -154,12 +159,22 @@ class _CameraScanScreenState extends State<CameraScanScreen> {
                     _feedback!.subtext!,
                     key: const Key('scan-subtext'),
                     textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.white70, fontSize: 14),
+                    style: const TextStyle(color: DesignTokens.mutedOnDark, fontSize: 14),
                   ),
                 ],
                 if (widget.onCode != null) ...[
                   const SizedBox(height: 12),
-                  FilledButton(key: const Key('scan-done'), onPressed: () => Navigator.of(context).pop(), child: Text(t.scanDone)),
+                  FilledButton(
+                    key: const Key('scan-done'),
+                    style: FilledButton.styleFrom(
+                      elevation: 0,
+                      backgroundColor: DesignTokens.lime,
+                      foregroundColor: DesignTokens.ink,
+                      shape: const StadiumBorder(),
+                    ),
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: Text(t.scanDone),
+                  ),
                 ],
               ]),
             ),
@@ -184,14 +199,14 @@ class _ViewfinderReticle extends StatelessWidget {
             width: boxWidth,
             height: boxHeight,
             decoration: BoxDecoration(
-              border: Border.all(color: Colors.white70, width: 2),
-              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: DesignTokens.textOnDark.withValues(alpha: 0.78), width: 2),
+              borderRadius: BorderRadius.circular(DesignTokens.radiusInput),
             ),
             child: Center(
               child: Container(
-                height: 1.5,
+                height: 2,
                 margin: const EdgeInsets.symmetric(horizontal: 16),
-                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
+                color: DesignTokens.lime,
               ),
             ),
           ),

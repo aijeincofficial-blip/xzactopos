@@ -236,7 +236,7 @@ class _StockScreenState extends State<StockScreen> {
                           child: ListTile(
                             contentPadding: EdgeInsets.zero,
                             dense: true,
-                            leading: ProductThumb(productId: r.product.id, path: r.product.photoPath, size: 38),
+                            leading: ProductThumb(productId: r.product.id, name: r.product.name, path: r.product.photoPath, size: 38),
                             title: Text(r.product.name, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
                             subtitle: _stockSubtitle(t, scheme, r, today),
                             trailing: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -247,13 +247,18 @@ class _StockScreenState extends State<StockScreen> {
                                 ),
                               Text(
                                 r.counted ? fmtQty(r.qty!) : t.stockNotCounted,
-                                style: TextStyle(
-                                  fontSize: r.counted ? 18 : 13.5,
-                                  fontWeight: r.counted ? FontWeight.w700 : FontWeight.w500,
-                                  color: r.low || (r.counted && r.qty! <= 0)
-                                      ? scheme.error
-                                      : (r.counted ? scheme.onSurface : scheme.outline),
-                                ),
+                                style: r.counted
+                                    ? NightMarketText.mono(
+                                        context,
+                                        size: 17,
+                                        weight: FontWeight.w600,
+                                        color: r.low || r.qty! <= 0 ? scheme.error : scheme.onSurface,
+                                      )
+                                    : TextStyle(
+                                        fontSize: 13.5,
+                                        fontWeight: FontWeight.w500,
+                                        color: scheme.outline,
+                                      ),
                               ),
                             ]),
                           ),

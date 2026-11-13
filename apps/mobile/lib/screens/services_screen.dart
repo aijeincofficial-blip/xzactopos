@@ -80,11 +80,11 @@ class ServicesScreen extends StatelessWidget {
               return SummaryCard(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(t.servicesFeesToday.toUpperCase(),
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: scheme.outline, letterSpacing: 0.8)),
+                      style: NightMarketText.eyebrow(context)),
                   const SizedBox(height: Gap.s),
                   Text(money(d.fees),
                       key: const Key('services-fees'),
-                      style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w900, letterSpacing: -1.2)),
+                      style: NightMarketText.mono(context, size: 32, weight: FontWeight.w600, letterSpacing: -1.0)),
                 ]),
               );
             },

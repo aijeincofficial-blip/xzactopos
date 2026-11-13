@@ -161,9 +161,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
                       child: ListTile(
                         contentPadding: EdgeInsets.zero,
                         dense: true,
-                        leading: ProductThumb(productId: p.id, path: p.photoPath, size: 38),
+                        leading: ProductThumb(productId: p.id, name: p.name, path: p.photoPath, size: 38),
                         title: Text(p.name, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
-                        subtitle: p.barcode == null ? null : Text(p.barcode!, style: TextStyle(color: scheme.outline, fontSize: 12.5)),
+                        subtitle: p.barcode == null ? null : Text(p.barcode!, style: NightMarketText.mono(context, size: 12, weight: FontWeight.w500, color: scheme.outline)),
                         trailing: Row(mainAxisSize: MainAxisSize.min, children: [
                           if (p.pending)
                             Padding(
@@ -172,7 +172,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                             ),
                           Text(
                             p.price == null ? '—' : Money(p.price!, p.currency).format(locale),
-                            style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w700, letterSpacing: -0.3),
+                            style: NightMarketText.mono(context, size: 15.5, weight: FontWeight.w600),
                           ),
                         ]),
                       ),

@@ -264,10 +264,7 @@ class _TodayScreenState extends State<TodayScreen> {
                               Text(
                                 money((snap.data ?? const ServiceTotals()).fees),
                                 key: const Key('today-service-fees'),
-                                style: const TextStyle(
-                                  fontSize: 15.5,
-                                  fontWeight: FontWeight.w700,
-                                ),
+                                style: NightMarketText.mono(context, size: 15.5, weight: FontWeight.w600),
                               ),
                               const SizedBox(width: 4),
                               Icon(Icons.chevron_right_rounded, size: 18, color: scheme.outline),
@@ -306,12 +303,8 @@ class _TodayScreenState extends State<TodayScreen> {
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
                                             Text(
-                                              t.expensesTitle,
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                color: scheme.outline,
-                                                fontWeight: FontWeight.w600,
-                                              ),
+                                              t.expensesTitle.toUpperCase(),
+                                              style: NightMarketText.eyebrow(context, size: 11),
                                             ),
                                             const SizedBox(height: 4),
                                             Text(
@@ -319,10 +312,7 @@ class _TodayScreenState extends State<TodayScreen> {
                                                 (snap.data ?? const ExpenseTotals()).total,
                                               ),
                                               key: const Key('today-expenses'),
-                                              style: const TextStyle(
-                                                fontSize: 17,
-                                                fontWeight: FontWeight.w700,
-                                              ),
+                                              style: NightMarketText.mono(context, size: 17, weight: FontWeight.w600),
                                             ),
                                           ],
                                         ),
@@ -375,12 +365,7 @@ class _TodayScreenState extends State<TodayScreen> {
                             children: [
                               Text(
                                 t.receiptTitle.toUpperCase(),
-                                style: TextStyle(
-                                  fontSize: 11.5,
-                                  fontWeight: FontWeight.w600,
-                                  color: scheme.outline,
-                                  letterSpacing: 0.6,
-                                ),
+                                style: NightMarketText.eyebrow(context),
                               ),
                               const SizedBox(width: 8),
                               Container(
@@ -392,11 +377,7 @@ class _TodayScreenState extends State<TodayScreen> {
                                 ),
                                 child: Text(
                                   '${filtered.length} · ${money(periodTotal)}',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    color: scheme.onSurface,
-                                  ),
+                                  style: NightMarketText.mono(context, size: 11, weight: FontWeight.w600),
                                 ),
                               ),
                             ],
@@ -587,11 +568,12 @@ class _TodayScreenState extends State<TodayScreen> {
                             ),
                             title: Text(
                               money(s.total),
-                              style: TextStyle(
-                                fontSize: 15.5,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: -0.3,
+                              style: NightMarketText.mono(
+                                context,
+                                size: 15.5,
+                                weight: FontWeight.w600,
                                 color: s.voided ? scheme.outline : scheme.onSurface,
+                              ).copyWith(
                                 decoration: s.voided ? TextDecoration.lineThrough : null,
                               ),
                             ),
@@ -667,9 +649,10 @@ class _Stat extends StatelessWidget {
         Text(
           value,
           key: Key(keyName),
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w800,
+          style: NightMarketText.mono(
+            context,
+            size: 14,
+            weight: FontWeight.w600,
             letterSpacing: -0.3,
           ),
         ),

@@ -1,9 +1,9 @@
-import 'dart:ui' as ui;
-
 import 'package:flutter/material.dart';
 
 import '../backend.dart';
+import '../core/design_tokens.g.dart';
 import '../core/theme.dart';
+import '../core/ui.dart';
 import '../data/sales_models.dart';
 import '../l10n/app_localizations.dart';
 import '../sync/store_session.dart';
@@ -34,9 +34,8 @@ class _TabSpec {
   final Widget Function() page;
 }
 
-/// The signed-in app: a floating glass bottom bar (Today, Stock, POS in the middle, Utang, More).
+/// The signed-in app: a Night Market ink bottom bar (Today, Stock, POS in the middle, Utang, More).
 /// POS (the Sell screen) opens first and back from another tab returns to it.
-/// Reports moved into More (owner only) to keep the bar at five items.
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key, required this.backend, required this.storeName});
   final Backend backend;
@@ -74,7 +73,13 @@ class _HomeShellState extends State<HomeShell> {
     final index = _index.clamp(0, tabs.length - 1);
 
     Widget badged(Widget icon, int count, {Key? labelKey}) => count > 0
-        ? Badge(label: Text('$count', key: labelKey), offset: const Offset(6, -4), child: icon)
+        ? Badge(
+            backgroundColor: DesignTokens.swMeal,
+            textColor: DesignTokens.swMealFg,
+            label: Text('$count', key: labelKey),
+            offset: const Offset(6, -4),
+            child: icon,
+          )
         : icon;
 
     Widget iconFor(_TabSpec s, Color color) {
@@ -127,7 +132,7 @@ class _HomeShellState extends State<HomeShell> {
   }
 }
 
-/// Secondary store operations in a soft glass 2-column grid harmonized with Cobalt Royal + Cool Slate.
+/// Secondary store operations in a tactile 2-column Night Market grid (`--paper`/`--ink2` + `1.5px` strokes).
 class MoreScreen extends StatelessWidget {
   const MoreScreen({super.key, required this.backend, required this.storeName});
   final Backend backend;
@@ -138,70 +143,106 @@ class MoreScreen extends StatelessWidget {
     final t = AppLocalizations.of(context);
     final scope = CatalogScope.of(context);
     final scheme = Theme.of(context).colorScheme;
-    final dark = scheme.brightness == Brightness.dark;
 
     void open(Widget screen) =>
         Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => scope.wrap(screen)));
 
     final tiles = <Widget>[
-      _GlassTile(
+      _MoreTile(
         key: const Key('tile-products'),
         featured: true,
         label: t.products,
-        glyph: const _Glyph(Icons.inventory_2_rounded, [Color(0xFF2563EB), Color(0xFF38BDF8)]),
+        glyph: const _MoreSwatchGlyph(
+          icon: Icons.inventory_2_rounded,
+          bg: DesignTokens.ink,
+          fg: DesignTokens.lime,
+        ),
         onTap: () => open(const ProductsScreen()),
       ),
-      _GlassTile(
+      _MoreTile(
         key: const Key('tile-restock'),
         label: t.restockTitle,
-        glyph: const _Glyph(Icons.playlist_add_check_rounded, [Color(0xFF059669), Color(0xFF10B981)], boxed: true),
+        glyph: const _MoreSwatchGlyph(
+          icon: Icons.playlist_add_check_rounded,
+          bg: DesignTokens.okBg,
+          fg: DesignTokens.okFg,
+        ),
         onTap: () => open(const RestockScreen()),
       ),
       if (scope.canManageStock)
-        _GlassTile(
+        _MoreTile(
           key: const Key('tile-reports'),
           label: t.reportsTitle,
-          glyph: const _Glyph(Icons.bar_chart_rounded, [Color(0xFF1D4ED8), Color(0xFF60A5FA)]),
+          glyph: const _MoreSwatchGlyph(
+            icon: Icons.bar_chart_rounded,
+            bg: DesignTokens.swNoncoffee,
+            fg: DesignTokens.swNoncoffeeFg,
+          ),
           onTap: () => open(ReportsScreen(backend: backend)),
         ),
       if (scope.canManageStock)
-        _GlassTile(
+        _MoreTile(
           key: const Key('more-expenses'),
           label: t.expensesTitle,
-          glyph: const _Glyph(Icons.receipt_long_rounded, [Color(0xFFD97706), Color(0xFFF59E0B)]),
+          glyph: const _MoreSwatchGlyph(
+            icon: Icons.receipt_long_rounded,
+            bg: DesignTokens.swPastry,
+            fg: DesignTokens.swPastryFg,
+          ),
           onTap: () => open(ExpensesScreen(backend: backend)),
         ),
-      _GlassTile(
+      _MoreTile(
         key: const Key('more-shift'),
         label: t.shiftTitle,
-        glyph: const _Glyph(Icons.schedule_rounded, [Color(0xFF4F46E5), Color(0xFF818CF8)]),
+        glyph: const _MoreSwatchGlyph(
+          icon: Icons.schedule_rounded,
+          bg: DesignTokens.swCoffee,
+          fg: DesignTokens.swCoffeeFg,
+        ),
         onTap: () => open(ShiftScreen(backend: backend, storeName: storeName)),
       ),
       if (scope.isAdminOrSuperadmin)
-        _GlassTile(
+        _MoreTile(
           key: const Key('more-staff'),
           label: t.staffTitle,
-          glyph: const _Glyph(Icons.groups_rounded, [Color(0xFF0D9488), Color(0xFF2DD4BF)]),
+          glyph: const _MoreSwatchGlyph(
+            icon: Icons.groups_rounded,
+            bg: DesignTokens.okBg,
+            fg: DesignTokens.okFg,
+          ),
           onTap: () => open(StaffScreen(backend: backend)),
         ),
-      _GlassTile(
+      _MoreTile(
         key: const Key('more-services'),
         label: t.servicesTitle,
-        glyph: const _Glyph(Icons.phone_iphone_rounded, [Color(0xFF0D9488), Color(0xFF34D399)], coin: true),
+        glyph: const _MoreSwatchGlyph(
+          icon: Icons.phone_iphone_rounded,
+          bg: DesignTokens.lime,
+          fg: DesignTokens.ink,
+          coin: true,
+        ),
         onTap: () => open(ServicesScreen(backend: backend)),
       ),
       if (scope.canManageStock)
-        _GlassTile(
+        _MoreTile(
           key: const Key('more-close-day'),
           label: t.dayCloseTitle,
-          glyph: const _Glyph(Icons.power_settings_new_rounded, [Color(0xFFEA580C), Color(0xFFF97316)], round: true),
+          glyph: const _MoreSwatchGlyph(
+            icon: Icons.power_settings_new_rounded,
+            bg: DesignTokens.swMeal,
+            fg: DesignTokens.swMealFg,
+          ),
           onTap: () => open(DayCloseScreen(backend: backend)),
         ),
       if (scope.canManageStock)
-        _GlassTile(
+        _MoreTile(
           key: const Key('tile-transfers'),
           label: t.transfersTitle,
-          glyph: const _Glyph(Icons.local_shipping_rounded, [Color(0xFF2563EB), Color(0xFF6366F1)]),
+          glyph: const _MoreSwatchGlyph(
+            icon: Icons.local_shipping_rounded,
+            bg: DesignTokens.swCoffee,
+            fg: DesignTokens.swCoffeeFg,
+          ),
           onTap: () async {
             final locId = await scope.store.activeStoreNow();
             if (locId != null && context.mounted) {
@@ -210,89 +251,86 @@ class MoreScreen extends StatelessWidget {
           },
         ),
       if (scope.canManageStock)
-        _GlassTile(
+        _MoreTile(
           key: const Key('tile-data'),
           label: t.dataTitle,
-          glyph: const _Glyph(Icons.cloud_sync_rounded, [Color(0xFF0284C7), Color(0xFF38BDF8)]),
+          glyph: const _MoreSwatchGlyph(
+            icon: Icons.cloud_sync_rounded,
+            bg: DesignTokens.swNoncoffee,
+            fg: DesignTokens.swNoncoffeeFg,
+          ),
           onTap: () => open(const DataScreen()),
         ),
-      _GlassTile(
+      _MoreTile(
         key: const Key('tile-settings'),
         label: t.settingsTitle,
-        glyph: const _Glyph(Icons.settings_rounded, [Color(0xFF334155), Color(0xFF64748B)]),
+        glyph: _MoreSwatchGlyph(
+          icon: Icons.settings_rounded,
+          bg: scheme.chipFill,
+          fg: scheme.onSurface,
+        ),
         onTap: () => open(SettingsScreen(backend: backend, storeName: storeName)),
       ),
     ];
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: dark
-              ? [const Color(0xFF111C33), Theme.of(context).scaffoldBackgroundColor]
-              : [const Color(0xFFF8FAFC), Theme.of(context).scaffoldBackgroundColor],
-        ),
-      ),
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        body: SafeArea(
-          bottom: false,
-          child: ListView(
-            padding: EdgeInsets.fromLTRB(Gap.l, Gap.m, Gap.l, 128 + MediaQuery.paddingOf(context).bottom),
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      storeName.isEmpty ? t.more : storeName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: -0.4,
-                        color: scheme.onSurface,
+    return Scaffold(
+      body: SafeArea(
+        bottom: false,
+        child: ListView(
+          padding: EdgeInsets.fromLTRB(Gap.l, Gap.m, Gap.l, 128 + MediaQuery.paddingOf(context).bottom),
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        storeName.isEmpty ? t.more : storeName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: NightMarketText.display(context, size: 24),
                       ),
-                    ),
+                    ],
                   ),
-                  const StoreChip(),
-                  const SyncBadge(),
-                  IconButton(
-                    key: const Key('more-settings-gear'),
-                    tooltip: t.settingsTitle,
-                    icon: Icon(Icons.settings_outlined, size: 24, color: scheme.onSurface),
-                    onPressed: () => open(SettingsScreen(backend: backend, storeName: storeName)),
-                  ),
-                ],
-              ),
-              const SizedBox(height: Gap.m),
-              GridView.count(
-                crossAxisCount: 2,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: 1.48,
-                children: tiles,
-              ),
-            ],
-          ),
+                ),
+                const StoreChip(),
+                const SyncBadge(),
+                IconButton(
+                  key: const Key('more-settings-gear'),
+                  tooltip: t.settingsTitle,
+                  icon: Icon(Icons.settings_outlined, size: 23, color: scheme.onSurface),
+                  onPressed: () => open(SettingsScreen(backend: backend, storeName: storeName)),
+                ),
+              ],
+            ),
+            const SizedBox(height: Gap.m),
+            GridView.count(
+              crossAxisCount: 2,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              childAspectRatio: 1.48,
+              children: tiles,
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-/// Soft sculptural glass tile: gradient glyph centered above crisp label.
-class _GlassTile extends StatelessWidget {
-  const _GlassTile({
+/// Crisp Night Market operation tile with `1.5px` stroke, zero blur or gradients.
+class _MoreTile extends StatelessWidget {
+  const _MoreTile({
     super.key,
     required this.label,
     required this.glyph,
     required this.onTap,
     this.featured = false,
   });
+
   final String label;
   final Widget glyph;
   final VoidCallback onTap;
@@ -301,139 +339,92 @@ class _GlassTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final dark = scheme.brightness == Brightness.dark;
-    final r = BorderRadius.circular(20);
+    final dark = scheme.isDark;
+    final bg = featured
+        ? (dark ? scheme.nmInkLine : scheme.nmOkBg.withValues(alpha: 0.48))
+        : scheme.surface;
+    final border = featured
+        ? (dark ? scheme.nmLime.withValues(alpha: 0.6) : scheme.nmInk.withValues(alpha: 0.45))
+        : scheme.outlineVariant;
 
-    final List<Color> bg = switch ((dark, featured)) {
-      (false, false) => const [Colors.white, Color(0xFFF8FAFC)],
-      (false, true) => const [Color(0xFFEFF6FF), Color(0xFFDBEAFE)],
-      (true, false) => [const Color(0xFF162032).withValues(alpha: 0.92), const Color(0xFF111827).withValues(alpha: 0.92)],
-      (true, true) => [const Color(0xFF1E3A8A).withValues(alpha: 0.72), const Color(0xFF172554).withValues(alpha: 0.72)],
-    };
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: r,
-        gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: bg),
-        border: Border.all(
-          color: featured
-              ? scheme.primary.withValues(alpha: dark ? 0.35 : 0.25)
-              : (dark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFE2E8F0)),
-          width: 1.0,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: dark ? Colors.black.withValues(alpha: 0.25) : const Color(0x0B0F172A),
-            blurRadius: 14,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Material(
-        type: MaterialType.transparency,
-        borderRadius: r,
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: Gap.m, vertical: Gap.m),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                glyph,
-                const SizedBox(height: Gap.s),
-                Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: scheme.onSurface,
-                  ),
-                ),
-              ],
+    return AppCard(
+      onTap: onTap,
+      color: bg,
+      borderColor: border,
+      borderWidth: Gap.border,
+      radius: Gap.radiusL,
+      padding: const EdgeInsets.symmetric(horizontal: Gap.m, vertical: Gap.m),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          glyph,
+          const SizedBox(height: Gap.s),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: NightMarketFont.sans,
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: scheme.onSurface,
             ),
           ),
-        ),
+        ],
       ),
     );
   }
 }
 
-/// Jewel-like gradient glyph with soft ambient elevation.
-class _Glyph extends StatelessWidget {
-  const _Glyph(this.icon, this.colors, {this.boxed = false, this.round = false, this.coin = false});
+class _MoreSwatchGlyph extends StatelessWidget {
+  const _MoreSwatchGlyph({
+    required this.icon,
+    required this.bg,
+    required this.fg,
+    this.coin = false,
+  });
+
   final IconData icon;
-  final List<Color> colors;
-  final bool boxed;
-  final bool round;
+  final Color bg;
+  final Color fg;
   final bool coin;
 
-  static const double _size = 42;
+  static const double _size = 44;
 
   @override
   Widget build(BuildContext context) {
-    final gradient = LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: colors);
-
-    Widget body;
-    if (boxed || round) {
-      body = Container(
-        width: _size,
-        height: _size,
-        decoration: BoxDecoration(
-          gradient: gradient,
-          shape: round ? BoxShape.circle : BoxShape.rectangle,
-          borderRadius: round ? null : BorderRadius.circular(13),
-          boxShadow: [
-            BoxShadow(color: colors.last.withValues(alpha: 0.28), blurRadius: 10, offset: const Offset(0, 4)),
-          ],
-        ),
-        child: Icon(icon, color: Colors.white, size: _size * 0.56),
-      );
-    } else {
-      body = SizedBox(
-        width: _size + 6,
-        height: _size + 6,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            Transform.translate(
-              offset: const Offset(0, 3),
-              child: ImageFiltered(
-                imageFilter: ui.ImageFilter.blur(sigmaX: 4, sigmaY: 4),
-                child: Icon(icon, size: _size, color: colors.last.withValues(alpha: 0.35)),
-              ),
-            ),
-            ShaderMask(
-              shaderCallback: (b) => gradient.createShader(b),
-              blendMode: BlendMode.srcIn,
-              child: Icon(icon, size: _size, color: Colors.white),
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (!coin) return body;
+    final badge = Container(
+      width: _size,
+      height: _size,
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: fg.withValues(alpha: 0.18), width: 1.2),
+      ),
+      alignment: Alignment.center,
+      child: Icon(icon, color: fg, size: 24),
+    );
+    if (!coin) return badge;
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        body,
+        badge,
         Positioned(
-          right: -2,
-          top: 2,
+          right: -4,
+          top: -4,
           child: Container(
-            width: 16,
-            height: 16,
+            width: 18,
+            height: 18,
             decoration: BoxDecoration(
+              color: DesignTokens.ink,
               shape: BoxShape.circle,
-              gradient: const LinearGradient(colors: [Color(0xFFFCD34D), Color(0xFFF59E0B)]),
-              border: Border.all(color: Colors.white, width: 1.5),
+              border: Border.all(color: DesignTokens.lime, width: 1.5),
             ),
-            child: const Center(
-              child: Text('₱', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Colors.white)),
+            alignment: Alignment.center,
+            child: const Text(
+              '₱',
+              style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: DesignTokens.lime, height: 1),
             ),
           ),
         ),

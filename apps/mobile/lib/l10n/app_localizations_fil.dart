@@ -721,10 +721,10 @@ class AppLocalizationsFil extends AppLocalizations {
   String get themeMode => 'Liwanag';
 
   @override
-  String get paletteFreshTide => 'Fresh Tide (asul at mint)';
+  String get paletteFreshTide => 'Night Market Sage (papel at dahon)';
 
   @override
-  String get paletteGoldenIndigo => 'Golden Indigo (asul at ginto)';
+  String get paletteGoldenIndigo => 'Night Market (buhangin, itim at dayap)';
 
   @override
   String get themeSystem => 'Sundin ang phone';

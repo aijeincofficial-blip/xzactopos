@@ -618,12 +618,12 @@ class _StockTabState extends State<StockTab> {
                                 final pillBg = (isNeg || isOut)
                                     ? scheme.errorContainer
                                     : isLow
-                                        ? Colors.orange.shade100
+                                        ? scheme.tertiaryContainer
                                         : scheme.primaryContainer;
                                 final pillFg = (isNeg || isOut)
                                     ? scheme.onErrorContainer
                                     : isLow
-                                        ? Colors.orange.shade900
+                                        ? scheme.onTertiaryContainer
                                         : scheme.onPrimaryContainer;
 
                                 return Padding(
@@ -638,7 +638,7 @@ class _StockTabState extends State<StockTab> {
                                         color: (isNeg || isOut)
                                             ? scheme.error
                                             : isLow
-                                                ? Colors.orange.shade800
+                                                ? scheme.tertiary
                                                 : scheme.primary,
                                         size: 36,
                                       ),
@@ -680,7 +680,7 @@ class _StockTabState extends State<StockTab> {
                                               child: Text(
                                                 t.whStockBadgeLow(_qty(reorder)),
                                                 key: Key('stock-badge-low-${r.variantId}'),
-                                                style: TextStyle(fontSize: 11, color: Colors.orange.shade800, fontWeight: FontWeight.w700),
+                                                style: TextStyle(fontSize: 11, color: scheme.tertiary, fontWeight: FontWeight.w700),
                                               ),
                                             ),
                                           if (r.pending > 0)
@@ -847,7 +847,7 @@ class _MoreTab extends StatelessWidget {
         _WhActionTile(
           key: const Key('more-transfers'),
           icon: Icons.local_shipping_rounded,
-          color: const Color(0xFF4F46E5),
+          color: Theme.of(context).colorScheme.primary,
           title: t.transfersTitle,
           onTap: () async {
             final wh = await store.activeWarehouse();
@@ -860,7 +860,7 @@ class _MoreTab extends StatelessWidget {
         _WhActionTile(
           key: const Key('more-settings'),
           icon: Icons.settings_rounded,
-          color: const Color(0xFF475569),
+          color: Theme.of(context).colorScheme.outline,
           title: t.settingsTitle,
           onTap: () => Navigator.of(context).push(_scoped(context, SettingsScreen(backend: backend, storeName: storeName))),
         ),

@@ -4,6 +4,8 @@ import 'package:uuid/uuid.dart';
 
 import '../app.dart' show LanguageButton;
 import '../backend.dart';
+import '../core/theme.dart';
+import '../core/ui.dart';
 import '../l10n/app_localizations.dart';
 
 class StoreNameScreen extends StatefulWidget {
@@ -77,36 +79,46 @@ class _StoreNameScreenState extends State<StoreNameScreen> {
       ),
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(Gap.l),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 420),
-            child: Form(
-              key: _form,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(t.nameYourStore,
-                      style: Theme.of(context).textTheme.headlineSmall),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _name,
-                    textCapitalization: TextCapitalization.words,
-                    decoration: InputDecoration(hintText: t.storeNameHint),
-                    validator: (v) =>
-                        (v == null || v.trim().isEmpty) ? t.errRequired : null,
-                  ),
-                  const SizedBox(height: 20),
-                  FilledButton(
-                    onPressed: _busy ? null : _submit,
-                    child: Text(t.startSelling),
-                  ),
-                  if (_error != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: Text(_error!, textAlign: TextAlign.center),
+            child: AppCard(
+              padding: const EdgeInsets.all(Gap.xl),
+              child: Form(
+                key: _form,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      t.nameYourStore,
+                      style: NightMarketText.display(context, size: 24),
                     ),
-                ],
+                    const SizedBox(height: Gap.l),
+                    TextFormField(
+                      controller: _name,
+                      textCapitalization: TextCapitalization.words,
+                      decoration: InputDecoration(hintText: t.storeNameHint),
+                      validator: (v) =>
+                          (v == null || v.trim().isEmpty) ? t.errRequired : null,
+                    ),
+                    const SizedBox(height: Gap.l),
+                    LimeButton(
+                      label: t.startSelling,
+                      height: 52,
+                      onPressed: _busy ? null : _submit,
+                    ),
+                    if (_error != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: Gap.s),
+                        child: Text(
+                          _error!,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ),
           ),

@@ -59,10 +59,18 @@ class AmountPad extends StatelessWidget {
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     borderRadius: radius,
-                    border: Border.all(color: scheme.outlineVariant, width: 1.0),
+                    border: Border.all(color: scheme.outlineVariant, width: Gap.border),
                   ),
                   child: child ??
-                      Text(k, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: scheme.onSurface)),
+                      Text(
+                        k,
+                        style: NightMarketText.mono(
+                          context,
+                          size: 20,
+                          weight: FontWeight.w600,
+                          color: scheme.onSurface,
+                        ),
+                      ),
                 ),
               ),
             ),

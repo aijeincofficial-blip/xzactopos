@@ -3,7 +3,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../app.dart' show LanguageButton;
 import '../backend.dart';
+import '../core/design_tokens.g.dart';
 import '../core/theme.dart';
+import '../core/theme_picker.dart';
 import '../core/ui.dart';
 import '../l10n/app_localizations.dart';
 
@@ -100,7 +102,7 @@ class _AuthScreenState extends State<AuthScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(t.appTitle),
-        actions: const [LanguageButton()],
+        actions: const [ThemeButton(), LanguageButton()],
       ),
       body: Center(
         child: SingleChildScrollView(
@@ -116,16 +118,24 @@ class _AuthScreenState extends State<AuthScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Center(
-                      child: ClipRRect(
+                      child: Container(
                         key: const Key('app-logo'),
-                        borderRadius: BorderRadius.circular(Gap.radiusL),
-                        child: Image.asset(
-                          'assets/brand/logo_squircle.png',
-                          width: 64,
-                          height: 64,
-                          semanticLabel: 'XZACTO POS',
-                          errorBuilder: (_, _, _) =>
-                              CoinBadge(icon: Icons.storefront_rounded, color: scheme.primary, size: 52),
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: scheme.nmInk,
+                          borderRadius: BorderRadius.circular(Gap.radiusL),
+                          border: Border.all(color: scheme.nmLime.withValues(alpha: 0.65), width: Gap.border),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(18),
+                          child: Image.asset(
+                            'assets/brand/logo_squircle.png',
+                            width: 56,
+                            height: 56,
+                            semanticLabel: 'XZACTO POS',
+                            errorBuilder: (_, _, _) =>
+                                const CoinBadge(icon: Icons.storefront_rounded, color: DesignTokens.lime, size: 52),
+                          ),
                         ),
                       ),
                     ),
@@ -133,23 +143,11 @@ class _AuthScreenState extends State<AuthScreen> {
                     Text(
                       'XZACTO',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1.0,
-                        color: scheme.onSurface,
-                      ),
+                      style: NightMarketText.display(context, size: 26, letterSpacing: -0.6),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'POS APP',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 2.0,
-                        color: scheme.primary,
-                      ),
+                    const SizedBox(height: 6),
+                    Center(
+                      child: NightMarketDotTag(label: 'POS APP'),
                     ),
                     const SizedBox(height: Gap.l),
                     TextFormField(
@@ -175,19 +173,10 @@ class _AuthScreenState extends State<AuthScreen> {
                       validator: (v) => (v == null || v.length < 6) ? t.errPasswordShort : null,
                     ),
                     const SizedBox(height: Gap.l),
-                    SizedBox(
-                      height: 50,
-                      child: FilledButton(
-                        style: FilledButton.styleFrom(
-                          backgroundColor: scheme.obsidian,
-                          foregroundColor: Colors.white,
-                          shape: const StadiumBorder(),
-                          elevation: 2,
-                          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                        ),
-                        onPressed: _busy ? null : _submit,
-                        child: Text(_newUser ? t.signUp : t.signIn),
-                      ),
+                    LimeButton(
+                      label: _newUser ? t.signUp : t.signIn,
+                      height: 52,
+                      onPressed: _busy ? null : _submit,
                     ),
                     const SizedBox(height: Gap.s),
                     TextButton(

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
+import 'design_tokens.g.dart';
 import 'theme.dart';
 
-/// Soft sculptural surface card: subtle white-to-cool-slate gradient, fine hairline border,
-/// and diffused ambient shadow. Custom [color] paints flat while keeping the same shape and shadow.
+/// Night Market paper card: flat `--paper` (or `--ink2` in dark mode), zero gradients/blurs,
+/// `1.5px` sand/ink hairline border, optional tap handler.
 class AppCard extends StatelessWidget {
   const AppCard({
     super.key,
@@ -14,7 +15,7 @@ class AppCard extends StatelessWidget {
     this.color,
     this.radius,
     this.borderColor,
-    this.borderWidth = 1.0,
+    this.borderWidth = Gap.border,
   });
 
   final Widget child;
@@ -29,49 +30,35 @@ class AppCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final dark = scheme.brightness == Brightness.dark;
     final r = BorderRadius.circular(radius ?? Gap.radiusL);
+    final bg = color ?? scheme.surface;
+    final stroke = borderColor ?? scheme.outlineVariant;
+    final interactive = onTap != null || onLongPress != null;
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: color,
-        gradient: color != null
-            ? null
-            : LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: dark
-                    ? [scheme.surface.withValues(alpha: 0.96), Color.lerp(scheme.surface, Colors.black, 0.14)!.withValues(alpha: 0.96)]
-                    : [scheme.surface, const Color(0xFFFAFCFF)],
-              ),
+        color: bg,
         borderRadius: r,
-        border: Border.all(
-          color: borderColor ?? (dark ? Colors.white.withValues(alpha: 0.08) : scheme.outlineVariant),
-          width: borderWidth,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: dark ? Colors.black.withValues(alpha: 0.28) : const Color(0x0B0F172A),
-            blurRadius: 14,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        border: Border.all(color: stroke, width: borderWidth),
       ),
       child: Material(
-        type: MaterialType.transparency,
+        color: Colors.transparent,
         borderRadius: r,
         clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap,
-          onLongPress: onLongPress,
-          child: Padding(padding: padding, child: child),
-        ),
+        child: interactive
+            ? InkWell(
+                onTap: onTap,
+                onLongPress: onLongPress,
+                borderRadius: r,
+                child: Padding(padding: padding, child: child),
+              )
+            : Padding(padding: padding, child: child),
       ),
     );
   }
 }
 
-/// Sculptural Hero KPI Card aligned cleanly to the 16px horizontal layout rail.
+/// Top summary card on Today, Utang, Expenses, Services, Day Close, Shift.
 class SummaryCard extends StatelessWidget {
   const SummaryCard({
     super.key,
@@ -87,21 +74,29 @@ class SummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final bg = accent
+        ? (scheme.isDark ? scheme.nmInkLine : scheme.nmOkBg.withValues(alpha: 0.48))
+        : scheme.surface;
+    final border = accent
+        ? (scheme.isDark ? scheme.nmLime.withValues(alpha: 0.55) : scheme.nmOkDot.withValues(alpha: 0.55))
+        : scheme.outlineVariant;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: Gap.l, vertical: Gap.xs),
       child: AppCard(
         onTap: onTap,
+        color: bg,
+        borderColor: border,
+        borderWidth: Gap.border,
         padding: const EdgeInsets.all(Gap.l + 4),
-        radius: 22,
-        borderColor: accent ? scheme.primary.withValues(alpha: 0.35) : null,
+        radius: Gap.radiusL,
         child: child,
       ),
     );
   }
 }
 
-/// Tactile app-icon squircle badge: smooth gradient of [color], crisp white icon,
-/// and a subtle colored ambient shadow underneath.
+/// Tactile flat Night Market squircle icon tile with `1.5px` border. Zero gloss gradients.
 class CoinBadge extends StatelessWidget {
   const CoinBadge({
     super.key,
@@ -118,29 +113,26 @@ class CoinBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hsl = HSLColor.fromColor(color);
-    final light = hsl.withLightness((hsl.lightness + 0.10).clamp(0.0, 0.82)).toColor();
-    final deep = hsl.withLightness((hsl.lightness - 0.05).clamp(0.14, 1.0)).toColor();
+    final scheme = Theme.of(context).colorScheme;
+    final dark = scheme.isDark;
+    final bg = color.withValues(alpha: dark ? 0.18 : 0.12);
+    final border = color.withValues(alpha: dark ? 0.35 : 0.24);
+    final fg = iconColor ?? color;
+
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(size * 0.30),
-        gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [light, deep]),
-        boxShadow: [
-          BoxShadow(
-            color: deep.withValues(alpha: 0.22),
-            blurRadius: size * 0.22,
-            offset: const Offset(0, 3),
-          ),
-        ],
+        color: bg,
+        borderRadius: BorderRadius.circular(size * 0.28),
+        border: Border.all(color: border, width: 1.2),
       ),
-      child: Center(child: Icon(icon, size: size * 0.50, color: iconColor ?? Colors.white)),
+      child: Icon(icon, color: fg, size: size * 0.52),
     );
   }
 }
 
-/// Small rounded squircle badge with an icon.
+/// Square rounded icon badge for compact cards and headers.
 class IconBadge extends StatelessWidget {
   const IconBadge({
     super.key,
@@ -156,12 +148,10 @@ class IconBadge extends StatelessWidget {
   final double size;
 
   @override
-  Widget build(BuildContext context) {
-    return CoinBadge(icon: icon, color: color, iconColor: onColor, size: size);
-  }
+  Widget build(BuildContext context) => CoinBadge(icon: icon, color: color, iconColor: onColor, size: size);
 }
 
-/// Soft Pill Badge for counts, statuses, or micro-tags.
+/// Rounded status pill (Paid, Completed, Pending Sync, Active Shift, Low/Out stock).
 class StatusPill extends StatelessWidget {
   const StatusPill({
     super.key,
@@ -169,37 +159,59 @@ class StatusPill extends StatelessWidget {
     this.textKey,
     this.color,
     this.textColor,
+    this.dotColor,
+    this.borderColor,
   });
 
   final String label;
   final Key? textKey;
   final Color? color;
   final Color? textColor;
+  final Color? dotColor;
+  final Color? borderColor;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final bg = color ?? scheme.primaryContainer;
-    final fg = textColor ?? scheme.onPrimaryContainer;
+    final bg = color ?? (scheme.isDark ? scheme.nmInkLine : scheme.nmOkBg);
+    final fg = textColor ?? (scheme.isDark ? scheme.nmTextOnDarkOrLime : scheme.nmOkFg);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(999),
+        border: borderColor != null ? Border.all(color: borderColor!, width: 1.0) : null,
       ),
-      child: Text(
-        label,
-        key: textKey,
-        style: TextStyle(
-          color: fg,
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 0.2,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (dotColor != null) ...[
+            Container(
+              width: 7,
+              height: 7,
+              decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
+            ),
+            const SizedBox(width: 6),
+          ],
+          Text(
+            label,
+            key: textKey,
+            style: TextStyle(
+              color: fg,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.2,
+            ),
+          ),
+        ],
       ),
     );
   }
+}
+
+extension _StatusColorHelper on ColorScheme {
+  Color get nmTextOnDarkOrLime => nmLime;
 }
 
 /// Item descriptor for [SegmentedPillBar].
@@ -217,16 +229,15 @@ class SegmentedPillItem<T> {
   final Key? key;
 }
 
-/// Recessed Cool-Slate pill switcher with single-line auto-scaling labels so
-/// multi-word segments (e.g. "GCash / Maya", "Cash in drawer", "System PDF")
-/// never wrap onto 2 lines or clip descenders.
+/// Night Market recessed sand/ink track switcher with dark ink / lime active pill
+/// and auto-scaling labels so multi-word segments never clip or wrap onto 2 lines.
 class SegmentedPillBar<T> extends StatelessWidget {
   const SegmentedPillBar({
     super.key,
     required this.items,
     required this.selected,
     required this.onChanged,
-    this.height = 40,
+    this.height = 44,
   });
 
   final List<SegmentedPillItem<T>> items;
@@ -241,18 +252,20 @@ class SegmentedPillBar<T> extends StatelessWidget {
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: scheme.chipFill,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: scheme.outlineVariant),
+        borderRadius: BorderRadius.circular(Gap.radiusM),
+        border: Border.all(color: scheme.outlineVariant, width: Gap.border),
       ),
       child: Row(
         children: [
           for (var i = 0; i < items.length; i++) ...[
             if (i > 0) const SizedBox(width: 4),
-            _SegmentedPillTab<T>(
-              item: items[i],
-              selected: items[i].value == selected,
-              height: height,
-              onTap: () => onChanged(items[i].value),
+            Expanded(
+              child: _SegmentedPillTab<T>(
+                item: items[i],
+                selected: items[i].value == selected,
+                height: height - 8,
+                onTap: () => onChanged(items[i].value),
+              ),
             ),
           ],
         ],
@@ -277,57 +290,48 @@ class _SegmentedPillTab<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final fg = selected ? scheme.primary : scheme.outline;
-    final r = BorderRadius.circular(11);
+    final activeBg = scheme.isDark ? scheme.nmLime : scheme.nmInk;
+    final fg = selected
+        ? (scheme.isDark ? scheme.nmInk : scheme.nmLime)
+        : scheme.outline;
+    final r = BorderRadius.circular(Gap.radiusS);
 
-    return Expanded(
-      child: AnimatedContainer(
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
         key: item.key,
-        duration: const Duration(milliseconds: 160),
-        height: height,
-        decoration: BoxDecoration(
-          color: selected ? scheme.surface : Colors.transparent,
-          borderRadius: r,
-          border: selected ? Border.all(color: scheme.primary.withValues(alpha: 0.45), width: 1.3) : null,
-          boxShadow: selected
-              ? [
-                  BoxShadow(
-                    color: scheme.primary.withValues(alpha: scheme.isDark ? 0.25 : 0.12),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
-        ),
-        child: Material(
-          type: MaterialType.transparency,
-          borderRadius: r,
-          child: InkWell(
+        onTap: onTap,
+        borderRadius: r,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          curve: Curves.easeOutCubic,
+          height: height,
+          decoration: BoxDecoration(
+            color: selected ? activeBg : Colors.transparent,
             borderRadius: r,
-            onTap: onTap,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (item.icon != null) ...[
-                      Icon(item.icon, size: 15, color: fg),
-                      const SizedBox(width: 5),
-                    ],
-                    Text(
-                      item.label,
-                      maxLines: 1,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
-                        color: selected ? (scheme.isDark ? scheme.onSurface : scheme.primary) : scheme.outline,
-                      ),
-                    ),
-                  ],
+          ),
+          alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (item.icon != null) ...[
+                  Icon(item.icon, size: 17, color: fg),
+                  const SizedBox(width: 5),
+                ],
+                Text(
+                  item.label,
+                  maxLines: 1,
+                  style: TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                    color: fg,
+                    letterSpacing: -0.1,
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
         ),
@@ -336,7 +340,7 @@ class _SegmentedPillTab<T> extends StatelessWidget {
   }
 }
 
-/// Tactile state-aware capsule chip for filters, quick presets, and wallet selectors.
+/// Stadium choice pill (e.g. Cash / E-wallet / Card, GCash / Maya).
 class AppPillChip extends StatelessWidget {
   const AppPillChip({
     super.key,
@@ -345,7 +349,7 @@ class AppPillChip extends StatelessWidget {
     required this.onTap,
     this.icon,
     this.accentColor,
-    this.height = 36,
+    this.height = 44,
   });
 
   final String label;
@@ -358,65 +362,60 @@ class AppPillChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final active = accentColor ?? scheme.primary;
+    final dark = scheme.isDark;
     final r = BorderRadius.circular(height / 2);
 
     final bg = selected
-        ? active.withValues(alpha: scheme.isDark ? 0.24 : 0.12)
+        ? (dark ? scheme.nmLime : scheme.nmInk)
         : scheme.surface;
     final border = selected
-        ? active.withValues(alpha: scheme.isDark ? 0.70 : 0.55)
+        ? (dark ? scheme.nmLime : scheme.nmInk)
         : scheme.outlineVariant;
     final fg = selected
-        ? (scheme.isDark ? Colors.white : Color.lerp(active, Colors.black, 0.18)!)
+        ? (dark ? scheme.nmInk : scheme.nmLime)
         : scheme.onSurface;
-    final iconColor = selected ? active : (accentColor ?? scheme.primary);
+    final iconColor = selected
+        ? fg
+        : (accentColor ?? scheme.outline);
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 150),
+      curve: Curves.easeOutCubic,
       height: height,
       decoration: BoxDecoration(
         color: bg,
         borderRadius: r,
-        border: Border.all(color: border, width: selected ? 1.4 : 1.0),
-        boxShadow: [
-          BoxShadow(
-            color: selected
-                ? active.withValues(alpha: 0.14)
-                : (scheme.isDark ? Colors.black.withValues(alpha: 0.20) : const Color(0x080F172A)),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: border, width: selected ? 1.8 : Gap.border),
       ),
       child: Material(
-        type: MaterialType.transparency,
+        color: Colors.transparent,
         borderRadius: r,
         child: InkWell(
-          borderRadius: r,
           onTap: onTap,
+          borderRadius: r,
           child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: icon != null ? 12 : 14),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (icon != null) ...[
-                  Icon(icon, size: 15, color: iconColor),
-                  const SizedBox(width: 6),
-                ],
-                Flexible(
-                  child: Text(
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (icon != null) ...[
+                    Icon(icon, size: 17, color: iconColor),
+                    const SizedBox(width: 6),
+                  ],
+                  Text(
                     label,
                     maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: 13.5,
                       fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
                       color: fg,
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -425,7 +424,299 @@ class AppPillChip extends StatelessWidget {
   }
 }
 
-/// Calm, refined empty state.
+/// Night Market dashed receipt divider (`1.5px` `--dash` ticks).
+class DashedDivider extends StatelessWidget {
+  const DashedDivider({super.key, this.color, this.dashWidth = 5, this.dashGap = 4, this.height = 1.5});
+
+  final Color? color;
+  final double dashWidth;
+  final double dashGap;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = color ?? Theme.of(context).colorScheme.nmDash;
+    return SizedBox(
+      height: height,
+      width: double.infinity,
+      child: CustomPaint(painter: _DashedLinePainter(c, dashWidth, dashGap, height)),
+    );
+  }
+}
+
+class _DashedLinePainter extends CustomPainter {
+  _DashedLinePainter(this.color, this.dashWidth, this.dashGap, this.thickness);
+  final Color color;
+  final double dashWidth;
+  final double dashGap;
+  final double thickness;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = thickness
+      ..strokeCap = StrokeCap.butt;
+    double x = 0;
+    final y = size.height / 2;
+    while (x < size.width) {
+      final end = (x + dashWidth).clamp(0.0, size.width);
+      canvas.drawLine(Offset(x, y), Offset(end, y), paint);
+      x += dashWidth + dashGap;
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DashedLinePainter old) =>
+      old.color != color || old.dashWidth != dashWidth || old.dashGap != dashGap || old.thickness != thickness;
+}
+
+/// Torn-paper thermal receipt zig-zag edge (matches Night Market web `.receipt::after`).
+class ZigzagEdge extends StatelessWidget {
+  const ZigzagEdge({
+    super.key,
+    this.fillColor,
+    this.strokeColor,
+    this.height = 10,
+    this.toothWidth = 14,
+    this.flip = false,
+  });
+
+  final Color? fillColor;
+  final Color? strokeColor;
+  final double height;
+  final double toothWidth;
+  final bool flip;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final fill = fillColor ?? scheme.surface;
+    final stroke = strokeColor ?? scheme.outlineVariant;
+    return SizedBox(
+      height: height,
+      width: double.infinity,
+      child: CustomPaint(
+        painter: _ZigzagPainter(fill: fill, stroke: stroke, toothWidth: toothWidth, flip: flip),
+      ),
+    );
+  }
+}
+
+class _ZigzagPainter extends CustomPainter {
+  const _ZigzagPainter({required this.fill, required this.stroke, required this.toothWidth, required this.flip});
+  final Color fill;
+  final Color stroke;
+  final double toothWidth;
+  final bool flip;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final count = (size.width / toothWidth).ceil().clamp(4, 120);
+    final step = size.width / count;
+    final path = Path();
+    final strokePath = Path();
+
+    if (!flip) {
+      // Flat top edge, pointed teeth pointing down
+      path.moveTo(0, 0);
+      strokePath.moveTo(0, 0);
+      for (var i = 0; i < count; i++) {
+        final mid = i * step + step / 2;
+        final end = (i + 1) * step;
+        path.lineTo(mid, size.height - 1);
+        path.lineTo(end, 0);
+        strokePath.lineTo(mid, size.height - 1);
+        strokePath.lineTo(end, 0);
+      }
+      path.lineTo(size.width, 0);
+      path.close();
+    } else {
+      // Flat bottom edge, pointed teeth pointing up
+      path.moveTo(0, size.height);
+      strokePath.moveTo(0, size.height);
+      for (var i = 0; i < count; i++) {
+        final mid = i * step + step / 2;
+        final end = (i + 1) * step;
+        path.lineTo(mid, 1);
+        path.lineTo(end, size.height);
+        strokePath.lineTo(mid, 1);
+        strokePath.lineTo(end, size.height);
+      }
+      path.lineTo(size.width, size.height);
+      path.close();
+    }
+
+    canvas.drawPath(path, Paint()..color = fill);
+    canvas.drawPath(
+      strokePath,
+      Paint()
+        ..color = stroke
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.2,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _ZigzagPainter old) =>
+      old.fill != fill || old.stroke != stroke || old.toothWidth != toothWidth || old.flip != flip;
+}
+
+/// Night Market thermal-paper slip card with torn zig-zag top and/or bottom edges.
+class NightMarketReceiptCard extends StatelessWidget {
+  const NightMarketReceiptCard({
+    super.key,
+    required this.child,
+    this.padding = const EdgeInsets.fromLTRB(20, 20, 20, 20),
+    this.topZigzag = false,
+    this.bottomZigzag = true,
+  });
+
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+  final bool topZigzag;
+  final bool bottomZigzag;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final bg = scheme.surface;
+    final border = scheme.outlineVariant;
+    final r = Radius.circular(topZigzag ? 0 : Gap.radiusL);
+    final br = Radius.circular(bottomZigzag ? 0 : Gap.radiusL);
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (topZigzag) ZigzagEdge(fillColor: bg, strokeColor: border, flip: true),
+        Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.only(topLeft: r, topRight: r, bottomLeft: br, bottomRight: br),
+            border: Border(
+              left: BorderSide(color: border, width: Gap.border),
+              right: BorderSide(color: border, width: Gap.border),
+              top: topZigzag ? BorderSide.none : BorderSide(color: border, width: Gap.border),
+              bottom: bottomZigzag ? BorderSide.none : BorderSide(color: border, width: Gap.border),
+            ),
+          ),
+          padding: padding,
+          child: child,
+        ),
+        if (bottomZigzag) ZigzagEdge(fillColor: bg, strokeColor: border),
+      ],
+    );
+  }
+}
+
+/// Primary Night Market `#D4F25A` lime pill button with `#0F1A16` ink typography.
+class LimeButton extends StatelessWidget {
+  const LimeButton({
+    super.key,
+    required this.label,
+    required this.onPressed,
+    this.icon,
+    this.height = 52,
+    this.expand = true,
+  });
+
+  final String label;
+  final VoidCallback? onPressed;
+  final IconData? icon;
+  final double height;
+  final bool expand;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final btn = FilledButton(
+      onPressed: onPressed,
+      style: FilledButton.styleFrom(
+        elevation: 0,
+        minimumSize: expand ? Size.fromHeight(height) : Size(0, height),
+        backgroundColor: scheme.nmLime,
+        foregroundColor: scheme.nmInk,
+        disabledBackgroundColor: scheme.nmDisabledBg,
+        disabledForegroundColor: scheme.nmDisabledFg,
+        shape: const StadiumBorder(),
+        side: BorderSide(
+          color: onPressed == null
+              ? scheme.outlineVariant
+              : (scheme.isDark ? scheme.nmLimeHover.withValues(alpha: 0.4) : scheme.nmInk.withValues(alpha: 0.22)),
+          width: Gap.border,
+        ),
+        textStyle: const TextStyle(
+          fontFamily: NightMarketFont.sans,
+          fontSize: 16,
+          fontWeight: FontWeight.w700,
+          letterSpacing: -0.1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 20),
+            const SizedBox(width: 8),
+          ],
+          Flexible(
+            child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
+          ),
+        ],
+      ),
+    );
+    return btn;
+  }
+}
+
+/// Night Market square color swatch tile with 2-letter monogram (`IB`, `AM`, `MC`, `CS`)
+/// derived from the item's category/name, matching docs/design.md §6.
+class CategorySwatchTile extends StatelessWidget {
+  const CategorySwatchTile({
+    super.key,
+    required this.name,
+    this.category,
+    this.size = 44,
+    this.radius = 12,
+  });
+
+  final String name;
+  final String? category;
+  final double size;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context) {
+    final sw = categorySwatchFor(name, category: category);
+    final code = productMonogram(name);
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: sw.background,
+        borderRadius: BorderRadius.circular(radius),
+        border: Border.all(color: sw.foreground.withValues(alpha: 0.18), width: 1),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        code,
+        maxLines: 1,
+        style: TextStyle(
+          fontFamily: NightMarketFont.display,
+          fontSize: size * 0.36,
+          fontWeight: FontWeight.w800,
+          letterSpacing: -0.5,
+          color: sw.foreground,
+          height: 1.0,
+        ),
+      ),
+    );
+  }
+}
+
+/// Empty-state screen placeholder with optional action button.
 class EmptyState extends StatelessWidget {
   const EmptyState({
     super.key,
@@ -447,20 +738,44 @@ class EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            CoinBadge(icon: icon, color: scheme.primary, size: 64),
+            CoinBadge(
+              icon: icon,
+              color: scheme.isDark ? scheme.nmLime : scheme.nmInk,
+              size: 64,
+            ),
             const SizedBox(height: Gap.l),
             Text(
               text,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                     color: scheme.outline,
-                    height: 1.4,
+                    fontWeight: FontWeight.w600,
                   ),
             ),
             if (action != null) ...[const SizedBox(height: Gap.xl), action!],
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Tiny Night Market dot + text pill used in lists/headers.
+class NightMarketDotTag extends StatelessWidget {
+  const NightMarketDotTag({super.key, required this.label, this.dotColor, this.backgroundColor, this.textColor});
+  final String label;
+  final Color? dotColor;
+  final Color? backgroundColor;
+  final Color? textColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return StatusPill(
+      label: label,
+      color: backgroundColor ?? (scheme.isDark ? DesignTokens.inkLine : DesignTokens.okBg),
+      textColor: textColor ?? (scheme.isDark ? DesignTokens.textOnDark : DesignTokens.okFg),
+      dotColor: dotColor ?? (scheme.isDark ? DesignTokens.lime : DesignTokens.okDot),
     );
   }
 }

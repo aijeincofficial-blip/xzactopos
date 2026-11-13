@@ -55,17 +55,12 @@ class ExpensesScreen extends StatelessWidget {
                       children: [
                         Text(
                           t.expensesSpentToday.toUpperCase(),
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w800,
-                            color: scheme.outline,
-                            letterSpacing: 0.8,
-                          ),
+                          style: NightMarketText.eyebrow(context),
                         ),
                         Text(
                           t.expensesCount(d.count),
                           key: const Key('expenses-count'),
-                          style: TextStyle(color: scheme.outline, fontSize: 12),
+                          style: NightMarketText.mono(context, size: 12, weight: FontWeight.w500, color: scheme.outline),
                         ),
                       ],
                     ),
@@ -73,16 +68,12 @@ class ExpensesScreen extends StatelessWidget {
                     Text(
                       money(d.total),
                       key: const Key('expenses-total'),
-                      style: const TextStyle(
-                        fontSize: 34,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: -1.2,
-                      ),
+                      style: NightMarketText.mono(context, size: 32, weight: FontWeight.w600, letterSpacing: -1.0),
                     ),
                     const SizedBox(height: Gap.s),
                     Text(
                       '${t.expensePaidCash}: ${money(d.cash)}  ·  ${t.expensePaidEwallet}: ${money(d.ewallet)}',
-                      style: TextStyle(color: scheme.outline, fontSize: 13),
+                      style: NightMarketText.mono(context, size: 13, weight: FontWeight.w500, color: scheme.outline),
                     ),
                   ],
                 ),

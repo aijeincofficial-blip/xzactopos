@@ -1247,13 +1247,13 @@ abstract class AppLocalizations {
   /// No description provided for @paletteFreshTide.
   ///
   /// In en, this message translates to:
-  /// **'Fresh Tide (blue and mint)'**
+  /// **'Night Market Sage (warm paper and leaf)'**
   String get paletteFreshTide;
 
   /// No description provided for @paletteGoldenIndigo.
   ///
   /// In en, this message translates to:
-  /// **'Golden Indigo (blue and gold)'**
+  /// **'Night Market (sand, ink and lime)'**
   String get paletteGoldenIndigo;
 
   /// No description provided for @themeSystem.

@@ -81,8 +81,12 @@ class _RestockScreenState extends State<RestockScreen> {
                         ]),
                       ),
                       Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                        Text(t.restockBuy(l.suggested), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-                        if (l.estimate > 0) Text(money(l.estimate), style: TextStyle(fontSize: 12, color: scheme.outline)),
+                        Text(t.restockBuy(l.suggested), style: NightMarketText.mono(context, size: 15, weight: FontWeight.w600)),
+                        if (l.estimate > 0)
+                          Text(
+                            money(l.estimate),
+                            style: NightMarketText.mono(context, size: 12, weight: FontWeight.w500, color: scheme.outline),
+                          ),
                       ]),
                       const SizedBox(width: Gap.s),
                     ]),
@@ -90,9 +94,11 @@ class _RestockScreenState extends State<RestockScreen> {
                 },
               ),
             ),
-            Material(
-              elevation: 8,
-              color: scheme.surface,
+            Container(
+              decoration: BoxDecoration(
+                color: scheme.surface,
+                border: Border(top: BorderSide(color: scheme.outlineVariant, width: Gap.border)),
+              ),
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(Gap.xl, Gap.m, Gap.xl, Gap.l),
                 child: SafeArea(
@@ -102,7 +108,8 @@ class _RestockScreenState extends State<RestockScreen> {
                       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         Text(t.restockItems(chosen.length), style: TextStyle(fontSize: 13, color: scheme.outline)),
                         Text(total > 0 ? t.restockEstimate(money(total)) : '—',
-                            key: const Key('restock-total'), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+                            key: const Key('restock-total'),
+                            style: NightMarketText.mono(context, size: 20, weight: FontWeight.w600)),
                       ]),
                     ),
                     FilledButton.icon(

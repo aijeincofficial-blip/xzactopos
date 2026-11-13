@@ -1,16 +1,126 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// The two colour sets the owner can pick from (light and dark exist for both).
+import 'design_tokens.g.dart';
+
+/// Night Market palette variants ("Night Market Classic" default & "Night Market Sage").
+/// Enum identifiers stay stable for persisted user preferences across upgrades.
 enum AppPalette { freshTide, goldenIndigo }
 
-/// Spacing (4, 8, 12, 16, 24, 32) and soft sculptural mobile corner radii.
+/// Spacing, radius, and stroke tokens derived from docs/tokens.json.
 class Gap {
   static const double xs = 4, s = 8, m = 12, l = 16, xl = 24, xxl = 32;
-  static const double radiusS = 14, radiusM = 16, radiusL = 18, radiusXL = 24;
+  static const double radiusS = 10; // control
+  static const double radiusM = 14; // input
+  static const double radiusL = 24; // card
+  static const double radiusXL = 24; // bottom sheet
+  static const double radiusBlock = 40; // hero display block
+  static const double border = DesignTokens.borderWidth; // 1.5px hairline ink/sand stroke
+  static const double touchMin = 44;
+  static const double touchTile = 64;
 }
 
-/// Persisted UI preferences across launches (palette, theme mode, and UI language).
+/// Font families & helpers bundled offline in assets/fonts/.
+abstract final class NightMarketFont {
+  static const String display = 'BricolageGrotesque';
+  static const String sans = 'Inter';
+  static const String mono = 'JetBrainsMono';
+}
+
+abstract final class NightMarketText {
+  static TextStyle display(
+    BuildContext context, {
+    double size = 24,
+    FontWeight weight = FontWeight.w800,
+    Color? color,
+    double? height,
+    double letterSpacing = -0.6,
+  }) =>
+      TextStyle(
+        fontFamily: NightMarketFont.display,
+        fontSize: size,
+        fontWeight: weight,
+        letterSpacing: letterSpacing,
+        height: height,
+        color: color ?? Theme.of(context).colorScheme.onSurface,
+      );
+
+  static TextStyle mono(
+    BuildContext context, {
+    double size = 14,
+    FontWeight weight = FontWeight.w600,
+    Color? color,
+    double? height,
+    double letterSpacing = -0.2,
+  }) =>
+      TextStyle(
+        fontFamily: NightMarketFont.mono,
+        fontSize: size,
+        fontWeight: weight,
+        letterSpacing: letterSpacing,
+        height: height,
+        fontFeatures: const [FontFeature.tabularFigures()],
+        color: color ?? Theme.of(context).colorScheme.onSurface,
+      );
+
+  static TextStyle eyebrow(
+    BuildContext context, {
+    double size = 11.5,
+    Color? color,
+  }) =>
+      TextStyle(
+        fontFamily: NightMarketFont.sans,
+        fontSize: size,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.9,
+        color: color ?? Theme.of(context).colorScheme.outline,
+      );
+}
+
+/// Deterministic Night Market category swatch pairing for tiles/receipt thumbs.
+class CategorySwatch {
+  const CategorySwatch(this.background, this.foreground);
+  final Color background;
+  final Color foreground;
+}
+
+CategorySwatch categorySwatchFor(String name, {String? category}) {
+  final haystack = '${category ?? ''} $name'.toLowerCase();
+  if (RegExp(r'kape|coffee|espresso|latte|mocha|americano|choc|milo').hasMatch(haystack)) {
+    return const CategorySwatch(DesignTokens.swCoffee, DesignTokens.swCoffeeFg);
+  }
+  if (RegExp(r'tea|matcha|milk|juice|soda|coke|sprite|water|tubig|drink|noncoffee|shake').hasMatch(haystack)) {
+    return const CategorySwatch(DesignTokens.swNoncoffee, DesignTokens.swNoncoffeeFg);
+  }
+  if (RegExp(r'bread|pan|pastry|cake|donut|cookie|biscuit|tinapay|cracker').hasMatch(haystack)) {
+    return const CategorySwatch(DesignTokens.swPastry, DesignTokens.swPastryFg);
+  }
+  if (RegExp(r'rice|bigas|noodle|sardinas|ulam|meal|can|oil|mantika|egg|itlog|asukal|sugar').hasMatch(haystack)) {
+    return const CategorySwatch(DesignTokens.swMeal, DesignTokens.swMealFg);
+  }
+  const ring = [
+    CategorySwatch(DesignTokens.swCoffee, DesignTokens.swCoffeeFg),
+    CategorySwatch(DesignTokens.swNoncoffee, DesignTokens.swNoncoffeeFg),
+    CategorySwatch(DesignTokens.swPastry, DesignTokens.swPastryFg),
+    CategorySwatch(DesignTokens.swMeal, DesignTokens.swMealFg),
+  ];
+  final hash = name.codeUnits.fold<int>(0, (acc, c) => (acc * 31 + c) & 0x7fffffff);
+  return ring[hash % ring.length];
+}
+
+String productMonogram(String name) {
+  final words = name.trim().split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
+  if (words.isEmpty) return '--';
+  if (words.length >= 2) {
+    final a = words[0].characters.firstOrNull ?? '';
+    final b = words[1].characters.firstOrNull ?? '';
+    final code = '$a$b'.toUpperCase();
+    if (code.isNotEmpty) return code;
+  }
+  final chars = words.first.characters.take(2).toString().toUpperCase();
+  return chars.isEmpty ? '--' : chars;
+}
+
 class AppPreferences {
   const AppPreferences({
     this.palette = AppPalette.goldenIndigo,
@@ -83,128 +193,186 @@ class _P {
     required this.secondaryContainer,
     required this.onSecondaryContainer,
     required this.tertiary,
+    required this.onTertiary,
+    required this.tertiaryContainer,
+    required this.onTertiaryContainer,
     required this.background,
     required this.surface,
+    required this.surfaceAlt,
     required this.cardBorder,
     required this.text,
     required this.textMuted,
+    required this.error,
+    required this.onError,
+    required this.errorContainer,
+    required this.onErrorContainer,
   });
+
   final Color primary, onPrimary, primaryContainer, onPrimaryContainer;
   final Color secondary, onSecondary, secondaryContainer, onSecondaryContainer;
-  final Color tertiary; // warning (low stock)
-  final Color background, surface, cardBorder, text, textMuted;
+  final Color tertiary, onTertiary, tertiaryContainer, onTertiaryContainer;
+  final Color background, surface, surfaceAlt, cardBorder, text, textMuted;
+  final Color error, onError, errorContainer, onErrorContainer;
 }
 
-// Danger 600 (light) and Danger 400 (dark) matching Web tokens (>= 4.5:1)
-const _errorLight = Color(0xFFDC2626);
-const _errorDark = Color(0xFFF87171);
+const _errorInk = Color(0xFFA91D0F);
 
-// Default Cobalt Royal (#2563EB) + Cool Neutral Slate (#F4F7FB - #0F172A) matching Web UI
-const _goldLight = _P(
-  primary: Color(0xFF2563EB), // Cobalt 600 (5.17:1 on white)
-  onPrimary: Colors.white,
-  primaryContainer: Color(0xFFEFF6FF), // Cobalt 50
-  onPrimaryContainer: Color(0xFF1E40AF), // Cobalt 800
-  secondary: Color(0xFF047857), // Emerald 700 (5.14:1 on white)
-  onSecondary: Colors.white,
-  secondaryContainer: Color(0xFFECFDF5), // Emerald 50
-  onSecondaryContainer: Color(0xFF065F46), // Emerald 800
-  tertiary: Color(0xFFF59E0B), // Amber 500
-  background: Color(0xFFF4F7FB), // Airy Cool Slate-Ice Canvas
-  surface: Colors.white,
-  cardBorder: Color(0xFFE2E8F0), // Cool Slate 200
-  text: Color(0xFF0F172A), // Cool Slate 900
-  textMuted: Color(0xFF475569), // Cool Slate 600 (>= 6.9:1)
+// Night Market Classic (Sand canvas, Ivory paper cards, Forest Ink & Electric Lime)
+const _nmClassicLight = _P(
+  primary: DesignTokens.ink,
+  onPrimary: DesignTokens.lime,
+  primaryContainer: DesignTokens.lime,
+  onPrimaryContainer: DesignTokens.ink,
+  secondary: DesignTokens.okDot,
+  onSecondary: DesignTokens.paper,
+  secondaryContainer: DesignTokens.okBg,
+  onSecondaryContainer: DesignTokens.okFg,
+  tertiary: DesignTokens.swPastryFg,
+  onTertiary: DesignTokens.paper,
+  tertiaryContainer: DesignTokens.swPastry,
+  onTertiaryContainer: DesignTokens.swPastryFg,
+  background: DesignTokens.sand,
+  surface: DesignTokens.paper,
+  surfaceAlt: DesignTokens.sand,
+  cardBorder: DesignTokens.sandLine,
+  text: DesignTokens.textOnLight,
+  textMuted: DesignTokens.mutedOnLight,
+  error: _errorInk,
+  onError: DesignTokens.paper,
+  errorContainer: DesignTokens.swMeal,
+  onErrorContainer: DesignTokens.swMealFg,
 );
 
-const _goldDark = _P(
-  primary: Color(0xFF60A5FA), // Cobalt 400
-  onPrimary: Color(0xFF08142C), // Deep Navy
-  primaryContainer: Color(0xFF172554), // Cobalt 950
-  onPrimaryContainer: Color(0xFFDBEAFE), // Cobalt 100
-  secondary: Color(0xFF34D399), // Emerald 400
-  onSecondary: Color(0xFF022C22), // Emerald 950
-  secondaryContainer: Color(0xFF064E3B), // Emerald 900
-  onSecondaryContainer: Color(0xFFD1FAE5), // Emerald 100
-  tertiary: Color(0xFFFBBF24), // Amber 400
-  background: Color(0xFF0B1120), // Obsidian Slate 950
-  surface: Color(0xFF131C2E), // Deep Frosted Slate Card
-  cardBorder: Color(0xFF1E293B), // Cool Slate 800
-  text: Color(0xFFF8FAFC), // Cool Slate 50
-  textMuted: Color(0xFF94A3B8), // Cool Slate 400 (>= 6.4:1)
+const _nmClassicDark = _P(
+  primary: DesignTokens.lime,
+  onPrimary: DesignTokens.ink,
+  primaryContainer: DesignTokens.inkLine,
+  onPrimaryContainer: DesignTokens.lime,
+  secondary: DesignTokens.okBg,
+  onSecondary: DesignTokens.okFg,
+  secondaryContainer: DesignTokens.okFg,
+  onSecondaryContainer: DesignTokens.okBg,
+  tertiary: DesignTokens.swPastry,
+  onTertiary: DesignTokens.swPastryFg,
+  tertiaryContainer: DesignTokens.swCoffee,
+  onTertiaryContainer: DesignTokens.swCoffeeFg,
+  background: DesignTokens.ink,
+  surface: DesignTokens.ink2,
+  surfaceAlt: DesignTokens.inkLine,
+  cardBorder: DesignTokens.inkLine,
+  text: DesignTokens.textOnDark,
+  textMuted: DesignTokens.mutedOnDark,
+  error: DesignTokens.swMeal,
+  onError: DesignTokens.swMealFg,
+  errorContainer: DesignTokens.swMealFg,
+  onErrorContainer: DesignTokens.swMeal,
 );
 
-// Fresh Tide alternative palette (Ocean Sky + Mint on Cool Neutral Slate surfaces)
-const _freshLight = _P(
-  primary: Color(0xFF0369A1), // Sky 700 (5.9:1 on white)
-  onPrimary: Colors.white,
-  primaryContainer: Color(0xFFF0F9FF), // Sky 50
-  onPrimaryContainer: Color(0xFF075985), // Sky 800
-  secondary: Color(0xFF047857), // Emerald 700
-  onSecondary: Colors.white,
-  secondaryContainer: Color(0xFFECFDF5),
-  onSecondaryContainer: Color(0xFF065F46),
-  tertiary: Color(0xFFF59E0B),
-  background: Color(0xFFF4F7FB),
-  surface: Colors.white,
-  cardBorder: Color(0xFFE2E8F0),
-  text: Color(0xFF0F172A),
-  textMuted: Color(0xFF475569),
+// Night Market Sage (Deep leaf primary on paper / sage leaf on deep charcoal ink)
+const _nmSageLight = _P(
+  primary: DesignTokens.okFg,
+  onPrimary: DesignTokens.lime,
+  primaryContainer: DesignTokens.okBg,
+  onPrimaryContainer: DesignTokens.okFg,
+  secondary: DesignTokens.swCoffee,
+  onSecondary: DesignTokens.swCoffeeFg,
+  secondaryContainer: DesignTokens.swPastry,
+  onSecondaryContainer: DesignTokens.swPastryFg,
+  tertiary: DesignTokens.swMealFg,
+  onTertiary: DesignTokens.paper,
+  tertiaryContainer: DesignTokens.swMeal,
+  onTertiaryContainer: DesignTokens.swMealFg,
+  background: DesignTokens.sand,
+  surface: DesignTokens.paper,
+  surfaceAlt: DesignTokens.sand,
+  cardBorder: DesignTokens.sandLine,
+  text: DesignTokens.textOnLight,
+  textMuted: DesignTokens.mutedOnLight,
+  error: _errorInk,
+  onError: DesignTokens.paper,
+  errorContainer: DesignTokens.swMeal,
+  onErrorContainer: DesignTokens.swMealFg,
 );
 
-const _freshDark = _P(
-  primary: Color(0xFF38BDF8), // Sky 400
-  onPrimary: Color(0xFF082F49),
-  primaryContainer: Color(0xFF0C4A6E),
-  onPrimaryContainer: Color(0xFFE0F2FE),
-  secondary: Color(0xFF34D399),
-  onSecondary: Color(0xFF022C22),
-  secondaryContainer: Color(0xFF064E3B),
-  onSecondaryContainer: Color(0xFFD1FAE5),
-  tertiary: Color(0xFFFBBF24),
-  background: Color(0xFF0B1120),
-  surface: Color(0xFF131C2E),
-  cardBorder: Color(0xFF1E293B),
-  text: Color(0xFFF8FAFC),
-  textMuted: Color(0xFF94A3B8),
+const _nmSageDark = _P(
+  primary: DesignTokens.swNoncoffee,
+  onPrimary: DesignTokens.okFg,
+  primaryContainer: DesignTokens.inkLine2,
+  onPrimaryContainer: DesignTokens.swNoncoffee,
+  secondary: DesignTokens.swPastry,
+  onSecondary: DesignTokens.swPastryFg,
+  secondaryContainer: DesignTokens.swCoffee,
+  onSecondaryContainer: DesignTokens.swCoffeeFg,
+  tertiary: DesignTokens.swCoffeeFg,
+  onTertiary: DesignTokens.swCoffee,
+  tertiaryContainer: DesignTokens.swCoffee,
+  onTertiaryContainer: DesignTokens.swCoffeeFg,
+  background: DesignTokens.ink,
+  surface: DesignTokens.ink2,
+  surfaceAlt: DesignTokens.inkLine,
+  cardBorder: DesignTokens.inkLine,
+  text: DesignTokens.textOnDark,
+  textMuted: DesignTokens.mutedOnDark,
+  error: DesignTokens.swMeal,
+  onError: DesignTokens.swMealFg,
+  errorContainer: DesignTokens.swMealFg,
+  onErrorContainer: DesignTokens.swMeal,
 );
 
-/// Semantic colors derived from the active palette, so screens never hard-code hex values.
 extension AppColors on ColorScheme {
   bool get isDark => brightness == Brightness.dark;
 
-  /// Positive state (online, healthy, paid).
-  Color get success => isDark ? const Color(0xFF34D399) : const Color(0xFF059669);
+  // Night Market token surface shortcuts
+  Color get nmInk => DesignTokens.ink;
+  Color get nmInk2 => DesignTokens.ink2;
+  Color get nmInkLine => DesignTokens.inkLine;
+  Color get nmInkLine2 => DesignTokens.inkLine2;
+  Color get nmPaper => DesignTokens.paper;
+  Color get nmSand => DesignTokens.sand;
+  Color get nmSandLine => DesignTokens.sandLine;
+  Color get nmDash => isDark ? DesignTokens.inkLine2 : DesignTokens.dash;
+  Color get nmLime => DesignTokens.lime;
+  Color get nmLimeHover => DesignTokens.limeHover;
+  Color get nmOkBg => DesignTokens.okBg;
+  Color get nmOkFg => DesignTokens.okFg;
+  Color get nmOkDot => DesignTokens.okDot;
+  Color get nmDisabledBg => isDark ? DesignTokens.disabledBg : DesignTokens.sandLine;
+  Color get nmDisabledFg => isDark ? DesignTokens.disabledFg : DesignTokens.mutedOnLight;
 
-  /// Solid surface of primary brand action buttons (Cobalt Royal matching Web).
-  Color get obsidian => const Color(0xFF2563EB);
+  /// High-contrast leaf green status foreground on the current surface.
+  Color get success => isDark ? DesignTokens.okBg : DesignTokens.okDot;
 
-  /// Text/icons on [obsidian].
-  Color get onObsidian => Colors.white;
+  /// Night Market primary conversion surface: electric lime CTA (`onObsidian` is dark ink).
+  Color get obsidian => DesignTokens.lime;
 
-  /// Crisp white / subtle cobalt accent on primary action buttons.
-  Color get glow => Colors.white;
+  /// Foreground ink/icons on [obsidian] (lime CTA).
+  Color get onObsidian => DesignTokens.ink;
 
-  /// Quiet fill for small chips and stat containers.
-  Color get chipFill => isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9);
+  /// Subtle highlight stroke for Night Market pill controls.
+  Color get glow => DesignTokens.lime;
 
-  /// Accent used for the language/reports badges (follows the palette).
-  Color get accent => tertiary;
+  /// Neutral recessed fill for unselected chips and qty badges.
+  Color get chipFill => isDark ? DesignTokens.inkLine : DesignTokens.sand;
 
-  /// Payment-type colors for reports: cash, e-wallet, utang, expenses.
-  Color get payCash => isDark ? const Color(0xFF34D399) : const Color(0xFF059669);
-  Color get payEwallet => isDark ? const Color(0xFF60A5FA) : const Color(0xFF2563EB);
-  Color get payUtang => isDark ? const Color(0xFFFBBF24) : const Color(0xFFD97706);
-  Color get payExpense => isDark ? const Color(0xFFF87171) : const Color(0xFFDC2626);
+  /// Night Market emphasis accent readable on the current surface.
+  Color get accent => isDark ? DesignTokens.lime : DesignTokens.okDot;
+
+  // Payment method semantic colors harmonized with Night Market swatches
+  Color get payCash => isDark ? DesignTokens.okBg : DesignTokens.okDot;
+  Color get payEwallet => isDark ? DesignTokens.lime : DesignTokens.ink;
+  Color get payUtang => isDark ? DesignTokens.swPastry : DesignTokens.swPastryFg;
+  Color get payExpense => isDark ? DesignTokens.swMeal : _errorInk;
 }
 
 ThemeData buildTheme(AppPalette palette, Brightness brightness) {
   final dark = brightness == Brightness.dark;
   final p = switch (palette) {
-    AppPalette.freshTide => dark ? _freshDark : _freshLight,
-    AppPalette.goldenIndigo => dark ? _goldDark : _goldLight,
+    AppPalette.freshTide => dark ? _nmSageDark : _nmSageLight,
+    AppPalette.goldenIndigo => dark ? _nmClassicDark : _nmClassicLight,
   };
-  final scheme = ColorScheme.fromSeed(seedColor: p.primary, brightness: brightness).copyWith(
+
+  final scheme = ColorScheme(
+    brightness: brightness,
     primary: p.primary,
     onPrimary: p.onPrimary,
     primaryContainer: p.primaryContainer,
@@ -214,155 +382,243 @@ ThemeData buildTheme(AppPalette palette, Brightness brightness) {
     secondaryContainer: p.secondaryContainer,
     onSecondaryContainer: p.onSecondaryContainer,
     tertiary: p.tertiary,
-    onTertiary: const Color(0xFF2B1C00),
-    error: dark ? _errorDark : _errorLight,
-    onError: dark ? const Color(0xFF3B0008) : Colors.white,
+    onTertiary: p.onTertiary,
+    tertiaryContainer: p.tertiaryContainer,
+    onTertiaryContainer: p.onTertiaryContainer,
+    error: p.error,
+    onError: p.onError,
+    errorContainer: p.errorContainer,
+    onErrorContainer: p.onErrorContainer,
     surface: p.surface,
     onSurface: p.text,
+    onSurfaceVariant: p.textMuted,
+    surfaceContainerLowest: p.background,
+    surfaceContainerLow: p.surface,
+    surfaceContainer: p.surfaceAlt,
+    surfaceContainerHigh: dark ? DesignTokens.inkLine : DesignTokens.sand,
+    surfaceContainerHighest: dark ? DesignTokens.inkLine2 : DesignTokens.sandLine,
     outline: p.textMuted,
     outlineVariant: p.cardBorder,
+    shadow: DesignTokens.ink,
+    scrim: DesignTokens.ink,
+    inverseSurface: dark ? DesignTokens.paper : DesignTokens.ink,
+    onInverseSurface: dark ? DesignTokens.textOnLight : DesignTokens.textOnDark,
+    inversePrimary: dark ? DesignTokens.ink : DesignTokens.lime,
   );
 
   final controlShape = RoundedRectangleBorder(borderRadius: BorderRadius.circular(Gap.radiusS));
+  final inputShape = RoundedRectangleBorder(borderRadius: BorderRadius.circular(Gap.radiusM));
   final cardShape = RoundedRectangleBorder(
     borderRadius: BorderRadius.circular(Gap.radiusL),
-    side: BorderSide(color: p.cardBorder, width: 1.0),
+    side: BorderSide(color: p.cardBorder, width: Gap.border),
+  );
+
+  final baseText = Typography.material2021().englishLike.apply(
+        fontFamily: NightMarketFont.sans,
+        bodyColor: p.text,
+        displayColor: p.text,
+      );
+
+  final textTheme = baseText.copyWith(
+    displayLarge: baseText.displayLarge?.copyWith(
+      fontFamily: NightMarketFont.display,
+      fontSize: 40,
+      fontWeight: FontWeight.w800,
+      letterSpacing: -1.2,
+      color: p.text,
+    ),
+    headlineLarge: baseText.headlineLarge?.copyWith(
+      fontFamily: NightMarketFont.display,
+      fontSize: 30,
+      fontWeight: FontWeight.w800,
+      letterSpacing: -0.9,
+      color: p.text,
+    ),
+    headlineMedium: baseText.headlineMedium?.copyWith(
+      fontFamily: NightMarketFont.display,
+      fontSize: 24,
+      fontWeight: FontWeight.w800,
+      letterSpacing: -0.6,
+      color: p.text,
+    ),
+    titleLarge: baseText.titleLarge?.copyWith(
+      fontFamily: NightMarketFont.display,
+      fontSize: 21,
+      fontWeight: FontWeight.w800,
+      letterSpacing: -0.5,
+      color: p.text,
+    ),
+    titleMedium: baseText.titleMedium?.copyWith(
+      fontFamily: NightMarketFont.sans,
+      fontSize: 16,
+      fontWeight: FontWeight.w700,
+      letterSpacing: -0.2,
+      color: p.text,
+    ),
+    bodyLarge: baseText.bodyLarge?.copyWith(fontSize: 16, height: 1.38, color: p.text),
+    bodyMedium: baseText.bodyMedium?.copyWith(fontSize: 14, height: 1.38, color: p.text),
+    bodySmall: baseText.bodySmall?.copyWith(fontSize: 12.5, height: 1.35, color: p.textMuted),
+    labelLarge: baseText.labelLarge?.copyWith(fontSize: 15, fontWeight: FontWeight.w700, letterSpacing: -0.1),
   );
 
   return ThemeData(
     useMaterial3: true,
+    fontFamily: NightMarketFont.sans,
     colorScheme: scheme,
     scaffoldBackgroundColor: p.background,
+    textTheme: textTheme,
     appBarTheme: AppBarTheme(
+      centerTitle: false,
       backgroundColor: p.background,
-      surfaceTintColor: Colors.transparent,
       foregroundColor: p.text,
       elevation: 0,
       scrolledUnderElevation: 0,
-      centerTitle: false,
-      titleTextStyle: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, letterSpacing: -0.4, color: p.text),
-    ),
-    dividerTheme: DividerThemeData(color: p.cardBorder, thickness: 1, space: 1),
-    cardTheme: CardThemeData(color: p.surface, elevation: 0, surfaceTintColor: Colors.transparent, shape: cardShape),
-    filledButtonTheme: FilledButtonThemeData(
-      style: FilledButton.styleFrom(
-        minimumSize: const Size(64, 48),
-        shape: controlShape,
-        elevation: 0,
-        textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+      surfaceTintColor: Colors.transparent,
+      titleTextStyle: TextStyle(
+        fontFamily: NightMarketFont.display,
+        fontSize: 21,
+        fontWeight: FontWeight.w800,
+        letterSpacing: -0.4,
+        color: p.text,
       ),
     ),
-    elevatedButtonTheme: ElevatedButtonThemeData(
-      style: ElevatedButton.styleFrom(
-        minimumSize: const Size(64, 48),
-        shape: controlShape,
+    cardTheme: CardThemeData(
+      elevation: 0,
+      color: p.surface,
+      surfaceTintColor: Colors.transparent,
+      margin: EdgeInsets.zero,
+      shape: cardShape,
+    ),
+    filledButtonTheme: FilledButtonThemeData(
+      style: FilledButton.styleFrom(
         elevation: 0,
-        textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+        minimumSize: const Size(0, 48),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+        backgroundColor: DesignTokens.lime,
+        foregroundColor: DesignTokens.ink,
+        disabledBackgroundColor: dark ? DesignTokens.disabledBg : DesignTokens.sandLine,
+        disabledForegroundColor: dark ? DesignTokens.disabledFg : DesignTokens.mutedOnLight,
+        shape: const StadiumBorder(),
+        side: BorderSide(
+          color: dark ? DesignTokens.inkLine2 : DesignTokens.ink.withValues(alpha: 0.16),
+          width: Gap.border,
+        ),
+        textStyle: const TextStyle(fontFamily: NightMarketFont.sans, fontSize: 15.5, fontWeight: FontWeight.w700),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
-        minimumSize: const Size(64, 48),
-        shape: controlShape,
+        minimumSize: const Size(0, 48),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         foregroundColor: p.text,
         backgroundColor: p.surface,
-        side: BorderSide(color: p.cardBorder, width: 1.0),
-        textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+        side: BorderSide(color: p.cardBorder, width: Gap.border),
+        shape: inputShape,
+        textStyle: const TextStyle(fontFamily: NightMarketFont.sans, fontSize: 15, fontWeight: FontWeight.w600),
       ),
     ),
-    floatingActionButtonTheme: const FloatingActionButtonThemeData(
-      backgroundColor: Color(0xFF2563EB),
-      foregroundColor: Colors.white,
-      shape: StadiumBorder(),
-      elevation: 3,
-      extendedTextStyle: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        minimumSize: const Size(0, 44),
+        foregroundColor: p.primary,
+        shape: controlShape,
+        textStyle: const TextStyle(fontFamily: NightMarketFont.sans, fontSize: 14.5, fontWeight: FontWeight.w600),
+      ),
+    ),
+    floatingActionButtonTheme: FloatingActionButtonThemeData(
+      elevation: 0,
+      highlightElevation: 0,
+      backgroundColor: DesignTokens.lime,
+      foregroundColor: DesignTokens.ink,
+      shape: StadiumBorder(side: BorderSide(color: DesignTokens.ink.withValues(alpha: 0.2), width: Gap.border)),
     ),
     inputDecorationTheme: InputDecorationTheme(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      isDense: true,
       filled: true,
       fillColor: p.surface,
-      hintStyle: TextStyle(color: p.textMuted, fontSize: 14, fontWeight: FontWeight.w400),
-      prefixIconColor: p.textMuted,
-      suffixIconColor: p.textMuted,
+      isDense: true,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+      hintStyle: TextStyle(color: p.textMuted, fontSize: 15),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(Gap.radiusS),
-        borderSide: BorderSide(color: p.cardBorder, width: 1.0),
+        borderRadius: BorderRadius.circular(Gap.radiusM),
+        borderSide: BorderSide(color: p.cardBorder, width: Gap.border),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(Gap.radiusS),
-        borderSide: BorderSide(color: p.cardBorder, width: 1.0),
+        borderRadius: BorderRadius.circular(Gap.radiusM),
+        borderSide: BorderSide(color: p.cardBorder, width: Gap.border),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(Gap.radiusS),
-        borderSide: BorderSide(color: p.primary, width: 1.6),
+        borderRadius: BorderRadius.circular(Gap.radiusM),
+        borderSide: BorderSide(color: dark ? DesignTokens.lime : DesignTokens.ink, width: 2.0),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(Gap.radiusM),
+        borderSide: BorderSide(color: p.error, width: Gap.border),
       ),
     ),
     chipTheme: ChipThemeData(
-      selectedColor: p.primaryContainer,
-      secondarySelectedColor: p.primaryContainer,
-      showCheckmark: false,
-      checkmarkColor: p.primary,
-      labelStyle: TextStyle(color: p.text, fontWeight: FontWeight.w600, fontSize: 13),
-      secondaryLabelStyle: TextStyle(color: p.primary, fontWeight: FontWeight.w700, fontSize: 13),
+      backgroundColor: p.surfaceAlt,
+      selectedColor: DesignTokens.ink,
+      side: BorderSide(color: p.cardBorder, width: Gap.border),
       shape: const StadiumBorder(),
-      side: WidgetStateBorderSide.resolveWith(
-        (s) => BorderSide(
-          color: s.contains(WidgetState.selected) ? p.primary.withValues(alpha: 0.45) : p.cardBorder,
-          width: s.contains(WidgetState.selected) ? 1.4 : 1.0,
-        ),
-      ),
-      backgroundColor: p.surface,
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-    ),
-    segmentedButtonTheme: SegmentedButtonThemeData(
-      style: ButtonStyle(
-        backgroundColor: WidgetStateProperty.resolveWith(
-          (s) => s.contains(WidgetState.selected) ? p.primaryContainer : p.surface,
-        ),
-        foregroundColor: WidgetStateProperty.resolveWith(
-          (s) => s.contains(WidgetState.selected) ? p.primary : p.textMuted,
-        ),
-        textStyle: const WidgetStatePropertyAll(
-          TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600),
-        ),
-        side: WidgetStatePropertyAll(BorderSide(color: p.cardBorder, width: 1.0)),
-        shape: WidgetStatePropertyAll(
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(Gap.radiusS)),
-        ),
-        visualDensity: VisualDensity.compact,
-      ),
+      labelStyle: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: p.text),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
     ),
     navigationBarTheme: NavigationBarThemeData(
-      backgroundColor: p.surface,
+      backgroundColor: DesignTokens.ink,
       surfaceTintColor: Colors.transparent,
-      indicatorColor: p.primaryContainer,
+      indicatorColor: DesignTokens.lime,
       elevation: 0,
-      height: 64,
+      height: 68,
       iconTheme: WidgetStateProperty.resolveWith(
         (s) => IconThemeData(
-          size: 22,
-          color: s.contains(WidgetState.selected) ? p.primary : p.textMuted,
+          size: 24,
+          color: s.contains(WidgetState.selected) ? DesignTokens.ink : DesignTokens.mutedOnDark,
         ),
       ),
       labelTextStyle: WidgetStateProperty.resolveWith(
         (s) => TextStyle(
-          fontSize: 11.5,
-          fontWeight: s.contains(WidgetState.selected) ? FontWeight.w600 : FontWeight.w500,
-          color: s.contains(WidgetState.selected) ? p.primary : p.textMuted,
+          fontFamily: NightMarketFont.sans,
+          fontSize: 12,
+          fontWeight: s.contains(WidgetState.selected) ? FontWeight.w700 : FontWeight.w500,
+          color: s.contains(WidgetState.selected) ? DesignTokens.textOnDark : DesignTokens.mutedOnDark,
         ),
       ),
     ),
-    dialogTheme: DialogThemeData(backgroundColor: p.surface, surfaceTintColor: Colors.transparent, shape: cardShape),
-    bottomSheetTheme: BottomSheetThemeData(
+    listTileTheme: ListTileThemeData(
+      minVerticalPadding: 10,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Gap.radiusM)),
+    ),
+    snackBarTheme: SnackBarThemeData(
+      behavior: SnackBarBehavior.floating,
+      backgroundColor: DesignTokens.ink,
+      contentTextStyle: const TextStyle(fontFamily: NightMarketFont.sans, fontSize: 14, color: DesignTokens.textOnDark),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(Gap.radiusM),
+        side: const BorderSide(color: DesignTokens.inkLine2, width: Gap.border),
+      ),
+    ),
+    dialogTheme: DialogThemeData(
+      elevation: 0,
       backgroundColor: p.surface,
       surfaceTintColor: Colors.transparent,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(Gap.radiusXL))),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(Gap.radiusL),
+        side: BorderSide(color: p.cardBorder, width: Gap.border),
+      ),
     ),
+    bottomSheetTheme: BottomSheetThemeData(
+      elevation: 0,
+      backgroundColor: p.surface,
+      surfaceTintColor: Colors.transparent,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(Gap.radiusXL)),
+      ),
+    ),
+    dividerTheme: DividerThemeData(color: p.cardBorder, thickness: 1, space: 1),
   );
 }
 
-/// Chosen palette and brightness, with a way to change them.
+/// Live theme state supplied by [App] so any screen can open the theme picker without passing callbacks around.
 class ThemeScope extends InheritedWidget {
   const ThemeScope({
     super.key,
@@ -372,6 +628,7 @@ class ThemeScope extends InheritedWidget {
     required this.setMode,
     required super.child,
   });
+
   final AppPalette palette;
   final ThemeMode mode;
   final void Function(AppPalette) setPalette;

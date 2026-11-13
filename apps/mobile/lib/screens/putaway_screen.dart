@@ -621,12 +621,12 @@ class _PutawayItemSheetState extends State<_PutawayItemSheet> {
           FilledButton.icon(
             key: const Key('putaway-confirm-btn'),
             icon: _submitting
-                ? const SizedBox(
+                ? SizedBox(
                     width: 18,
                     height: 18,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: Colors.white,
+                      color: scheme.onPrimary,
                     ),
                   )
                 : const Icon(Icons.check_circle_outline_rounded),

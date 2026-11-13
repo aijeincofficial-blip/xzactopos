@@ -64,13 +64,13 @@ class _UtangScreenState extends State<UtangScreen> {
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(
                   t.utangTotalOwed.toUpperCase(),
-                  style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: scheme.outline, letterSpacing: 0.6),
+                  style: NightMarketText.eyebrow(context),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   money(owed),
                   key: const Key('utang-total'),
-                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, letterSpacing: -0.8, color: scheme.onSurface),
+                  style: NightMarketText.mono(context, size: 28, weight: FontWeight.w600, letterSpacing: -0.8),
                 ),
               ]),
             ),
@@ -149,11 +149,13 @@ class _UtangScreenState extends State<UtangScreen> {
                                 ),
                               Text(
                                 c.balance == 0 ? t.utangSettled : money(c.balance),
-                                style: TextStyle(
-                                  fontSize: 15.5,
-                                  fontWeight: FontWeight.w700,
-                                  color: c.balance > 0 ? scheme.error : scheme.outline,
-                                ),
+                                style: c.balance > 0
+                                    ? NightMarketText.mono(context, size: 15.5, weight: FontWeight.w600, color: scheme.error)
+                                    : TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: scheme.outline,
+                                      ),
                               ),
                             ]),
                           ),

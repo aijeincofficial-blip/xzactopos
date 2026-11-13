@@ -713,10 +713,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get themeMode => 'Brightness';
 
   @override
-  String get paletteFreshTide => 'Fresh Tide (blue and mint)';
+  String get paletteFreshTide => 'Night Market Sage (warm paper and leaf)';
 
   @override
-  String get paletteGoldenIndigo => 'Golden Indigo (blue and gold)';
+  String get paletteGoldenIndigo => 'Night Market (sand, ink and lime)';
 
   @override
   String get themeSystem => 'Same as phone';

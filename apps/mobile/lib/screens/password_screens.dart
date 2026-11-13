@@ -53,7 +53,6 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
     final t = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final dark = scheme.brightness == Brightness.dark;
 
     return Scaffold(
       appBar: AppBar(title: Text(t.newPasswordTitle)),
@@ -108,9 +107,9 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
                         key: const Key('save-password'),
                         style: FilledButton.styleFrom(
                           backgroundColor: scheme.obsidian,
-                          foregroundColor: dark ? scheme.onPrimary : Colors.white,
+                          foregroundColor: scheme.onObsidian,
                           shape: const StadiumBorder(),
-                          elevation: 3,
+                          elevation: 0,
                           textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                         ),
                         onPressed: _busy ? null : _save,

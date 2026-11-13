@@ -444,19 +444,21 @@ class _PickItemSheetState extends State<_PickItemSheet> {
     final trimmed = code.trim().toUpperCase();
     if (trimmed == widget.item.sku.toUpperCase() || trimmed == widget.item.binCode.toUpperCase()) {
       HapticFeedback.mediumImpact();
+      final scheme = Theme.of(context).colorScheme;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Barcode matched!'),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 1),
+        SnackBar(
+          content: const Text('Barcode matched!'),
+          backgroundColor: scheme.nmOkFg,
+          duration: const Duration(seconds: 1),
         ),
       );
     } else {
       HapticFeedback.heavyImpact();
+      final scheme = Theme.of(context).colorScheme;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Scanned "$code" does not match SKU ${widget.item.sku} or Bin ${widget.item.binCode}'),
-          backgroundColor: Colors.red,
+          backgroundColor: scheme.error,
         ),
       );
     }
@@ -647,10 +649,10 @@ class _PickItemSheetState extends State<_PickItemSheet> {
             key: const Key('pick-confirm-btn'),
             onPressed: _submitting ? null : _submit,
             child: _submitting
-                ? const SizedBox(
+                ? SizedBox(
                     width: 20,
                     height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    child: CircularProgressIndicator(strokeWidth: 2, color: scheme.onPrimary),
                   )
                 : Text(t.pickListConfirmPick),
           ),

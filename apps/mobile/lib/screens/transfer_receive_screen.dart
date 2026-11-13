@@ -225,7 +225,7 @@ class _TransferReceiveScreenState extends State<TransferReceiveScreen> {
                 child: FilledButton.icon(
                   key: const Key('confirm-receive-button'),
                   icon: _saving
-                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      ? SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: scheme.onPrimary))
                       : const Icon(Icons.check_circle_rounded),
                   label: Text(t.transferConfirmReceive, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
                   onPressed: _saving ? null : _confirmReceipt,

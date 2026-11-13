@@ -322,10 +322,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
                       child: Text(
                         t.reportsProfit(money(profit)),
                         key: const Key('report-profit'),
-                        style: TextStyle(
+                        style: NightMarketText.mono(
+                          context,
+                          size: 13,
+                          weight: FontWeight.w600,
                           color: scheme.success,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 13,
                         ),
                       ),
                     ),
@@ -338,10 +339,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         ),
                         child: Text(
                           '$profitMargin margin',
-                          style: TextStyle(
+                          style: NightMarketText.mono(
+                            context,
+                            size: 13,
+                            weight: FontWeight.w600,
                             color: scheme.primary,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 13,
                           ),
                         ),
                       ),
@@ -350,11 +352,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
               if (expTotal > 0 && cogs > 0) ...[
                 const SizedBox(height: Gap.m),
                 Text(t.reportsExpenses(money(opExpenses)),
-                    key: const Key('report-expenses'), style: TextStyle(color: scheme.outline, fontSize: 13, fontWeight: FontWeight.w600)),
+                    key: const Key('report-expenses'), style: NightMarketText.mono(context, size: 13, weight: FontWeight.w600, color: scheme.outline)),
                 const SizedBox(height: 2),
                 Text(t.reportsNetProfit(money(profit - opExpenses)),
                     key: const Key('report-net-profit'),
-                    style: TextStyle(color: (profit - opExpenses) < 0 ? scheme.error : scheme.success, fontSize: 15, fontWeight: FontWeight.w800)),
+                    style: NightMarketText.mono(context, size: 15, weight: FontWeight.w600, color: (profit - opExpenses) < 0 ? scheme.error : scheme.success)),
                 if (stockBought > 0) ...[
                   const SizedBox(height: 2),
                   Text(t.reportsStockBought(money(stockBought)),
@@ -363,7 +365,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 ],
               ],
               const SizedBox(height: Gap.l),
-              Divider(height: 1, color: scheme.outlineVariant.withValues(alpha: 0.4)),
+              const DashedDivider(),
               const SizedBox(height: Gap.l),
 
               // 3-Column Payment Breakdown
@@ -497,9 +499,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                               height: 12,
                               width: ((byDay[key(d)] ?? 0) / maxNet * c.maxWidth).clamp(0, c.maxWidth).toDouble(),
                               decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [scheme.primary, scheme.primary.withValues(alpha: 0.70)],
-                                ),
+                                color: scheme.isDark ? scheme.nmLime : scheme.nmInk,
                                 borderRadius: BorderRadius.circular(6),
                               ),
                             ),
@@ -512,7 +512,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         child: Text(
                           money(byDay[key(d)] ?? 0),
                           textAlign: TextAlign.end,
-                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                          style: NightMarketText.mono(context, size: 13, weight: FontWeight.w600),
                         ),
                       ),
                     ],
@@ -542,7 +542,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                           backgroundColor: i == 0
                               ? scheme.primary
                               : scheme.chipFill,
-                          foregroundColor: i == 0 ? Colors.white : scheme.onSurface,
+                          foregroundColor: i == 0 ? scheme.onPrimary : scheme.onSurface,
                           child: Text('${i + 1}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
                         ),
                         title: Text(
@@ -555,7 +555,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         ),
                         trailing: Text(
                           money(top[i]['revenue'] as num),
-                          style: TextStyle(fontWeight: FontWeight.w800, color: scheme.primary, fontSize: 14),
+                          style: NightMarketText.mono(context, size: 14, weight: FontWeight.w600, color: scheme.primary),
                         ),
                       ),
                   ],
@@ -575,11 +575,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
               Text(
                 t.reportsUtangOwed(money(utang['owed'] as num)),
                 key: const Key('report-owed'),
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                style: NightMarketText.display(context, size: 18),
               ),
               if (debtors.isNotEmpty) ...[
                 const SizedBox(height: Gap.s),
-                Divider(height: 1, color: scheme.outlineVariant.withValues(alpha: 0.4)),
+                const DashedDivider(),
                 const SizedBox(height: Gap.s),
                 for (var i = 0; i < debtors.length && i < 5; i++)
                   ListTile(

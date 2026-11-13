@@ -272,7 +272,7 @@ class _ShiftScreenState extends State<ShiftScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 4),
                         child: Row(children: [
                           Expanded(child: Text(label, style: TextStyle(color: scheme.onSurfaceVariant))),
-                          Text(money(amount), key: key, style: const TextStyle(fontWeight: FontWeight.w700)),
+                          Text(money(amount), key: key, style: NightMarketText.mono(context, size: 14, weight: FontWeight.w600)),
                         ]),
                       );
                   return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -284,7 +284,7 @@ class _ShiftScreenState extends State<ShiftScreen> {
                             Expanded(
                               child: Text(
                                 t.shiftOpenSince(DateFormat.jm(locale).format(shift.openedAt)).toUpperCase(),
-                                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: scheme.outline, letterSpacing: 0.8),
+                                style: NightMarketText.eyebrow(context),
                               ),
                             ),
                             if (shift.pending)
@@ -295,7 +295,7 @@ class _ShiftScreenState extends State<ShiftScreen> {
                         Text(t.dayCloseExpected, style: TextStyle(color: scheme.outline, fontSize: 13)),
                         Text(money(x.expected),
                             key: const Key('shift-expected'),
-                            style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w900, letterSpacing: -1.2)),
+                            style: NightMarketText.mono(context, size: 32, weight: FontWeight.w600, letterSpacing: -1.0)),
                       ]),
                     ),
                     Padding(
@@ -307,7 +307,10 @@ class _ShiftScreenState extends State<ShiftScreen> {
                           line(t.shiftUtangTaken, x.utangCash, key: const Key('x-utang')),
                           line(t.shiftPaidOut, x.expensesCash, key: const Key('x-paid-out')),
                           line(t.shiftLoadCash, x.serviceCash, key: const Key('x-service')),
-                          const Divider(height: Gap.xl),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: Gap.m),
+                            child: DashedDivider(),
+                          ),
                           Align(
                             alignment: Alignment.centerLeft,
                             child: Text(t.shiftSalesLine(x.salesCount, money(x.grossSales)),
@@ -1056,7 +1059,7 @@ ${t.shiftCashDropSlipWitness}: _________________
             key: const Key('cash-drop-confirm-btn'),
             onPressed: _submitting ? null : _submit,
             child: _submitting
-                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: scheme.onPrimary))
                 : Text(t.shiftCashDropConfirm),
           ),
         ],

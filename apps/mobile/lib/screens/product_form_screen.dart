@@ -171,15 +171,9 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
           Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(Gap.radiusM),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.06),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+              border: Border.all(color: Theme.of(context).colorScheme.outlineVariant, width: Gap.border),
             ),
-            child: current,
+            child: ClipRRect(borderRadius: BorderRadius.circular(Gap.radiusM - 1), child: current),
           ),
           const SizedBox(width: Gap.m),
           Expanded(
@@ -485,12 +479,15 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
             child: FilledButton(
               key: const Key('save-product'),
               style: FilledButton.styleFrom(
+                elevation: 0,
                 backgroundColor: scheme.obsidian,
-                foregroundColor: dark ? scheme.onPrimary : Colors.white,
+                foregroundColor: scheme.onObsidian,
                 shape: const StadiumBorder(),
-                elevation: 4,
-                shadowColor: Colors.black.withValues(alpha: 0.3),
-                textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, letterSpacing: 0.3),
+                textStyle: const TextStyle(
+                  fontFamily: NightMarketFont.sans,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
               onPressed: _busy ? null : _save,
               child: Text(t.save),

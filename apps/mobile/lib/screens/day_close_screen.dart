@@ -138,11 +138,11 @@ class _DayCloseScreenState extends State<DayCloseScreen> {
                 SummaryCard(
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Text(t.dayCloseExpected.toUpperCase(),
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: scheme.outline, letterSpacing: 0.8)),
+                        style: NightMarketText.eyebrow(context)),
                     const SizedBox(height: Gap.s),
                     Text(money(expected),
                         key: const Key('close-expected'),
-                        style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w900, letterSpacing: -1.2)),
+                        style: NightMarketText.mono(context, size: 32, weight: FontWeight.w600, letterSpacing: -1.0)),
                     const SizedBox(height: Gap.xs),
                     Text(t.dayCloseHelp, style: TextStyle(color: scheme.outline, fontSize: 12)),
                   ]),
@@ -165,7 +165,7 @@ class _DayCloseScreenState extends State<DayCloseScreen> {
                           controller: _counted,
                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
                           onChanged: (_) => setState(() => _error = null),
-                          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
+                          style: NightMarketText.mono(context, size: 22, weight: FontWeight.w600),
                           decoration: InputDecoration(
                             labelText: t.dayCloseCounted,
                             errorText: _error,
@@ -191,7 +191,7 @@ class _DayCloseScreenState extends State<DayCloseScreen> {
                             padding: const EdgeInsets.only(top: Gap.m),
                             child: Text(diffText(diff),
                                 key: const Key('close-diff'),
-                                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: diffColor(diff))),
+                                style: NightMarketText.mono(context, size: 18, weight: FontWeight.w600, color: diffColor(diff))),
                           ),
                         const SizedBox(height: Gap.m),
                         TextField(key: const Key('close-note'), controller: _note, decoration: InputDecoration(labelText: t.dayCloseNote)),

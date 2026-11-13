@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
 import '../backend.dart';
+import '../core/design_tokens.g.dart';
 import '../core/money.dart';
 import '../core/supervisor_pin_dialog.dart';
 import '../core/theme.dart';
@@ -234,28 +235,33 @@ class _PayScreenState extends State<PayScreen> {
         child: DecoratedBox(
           decoration: BoxDecoration(
             color: scheme.surface,
-            border: Border(top: BorderSide(color: scheme.outlineVariant, width: 1.0)),
+            border: Border(top: BorderSide(color: scheme.outlineVariant, width: Gap.border)),
           ),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(0, Gap.xs, 0, Gap.s),
+            padding: const EdgeInsets.fromLTRB(0, 2, 0, Gap.xs),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 // the number pad types the amount received (cash or e-wallet); no phone keyboard needed
                 AmountPad(controller: _received, currency: _ccy, onChanged: () => setState(() {})),
-                const SizedBox(height: 6),
+                const SizedBox(height: 4),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: Gap.l),
                   child: FilledButton.icon(
                     key: const Key('pay-done'),
                     style: FilledButton.styleFrom(
+                      elevation: 0,
                       minimumSize: const Size.fromHeight(48),
                       backgroundColor: scheme.obsidian,
-                      foregroundColor: Colors.white,
-                      disabledBackgroundColor: scheme.chipFill,
-                      disabledForegroundColor: scheme.outline,
+                      foregroundColor: scheme.onObsidian,
+                      disabledBackgroundColor: scheme.nmDisabledBg,
+                      disabledForegroundColor: scheme.nmDisabledFg,
                       shape: const StadiumBorder(),
-                      textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                      textStyle: const TextStyle(
+                        fontFamily: NightMarketFont.sans,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                     icon: const Icon(Icons.check_circle_outline_rounded, size: 20),
                     onPressed: _valid && !_saving ? _finish : null,
@@ -270,18 +276,30 @@ class _PayScreenState extends State<PayScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(Gap.l, Gap.xs, Gap.l, Gap.l),
         children: [
-          // Total Due Hero Card
+          // Dark Night Market Total Due Hero Card
           AppCard(
+            color: scheme.nmInk,
+            borderColor: scheme.nmInkLine2,
+            borderWidth: Gap.border,
             padding: const EdgeInsets.symmetric(horizontal: Gap.l, vertical: 10),
             radius: Gap.radiusL,
             child: Row(
               children: [
-                CoinBadge(
-                  icon: _method == 'cash'
-                      ? Icons.payments_outlined
-                      : (_method == 'card' ? Icons.credit_card_rounded : Icons.phone_android_rounded),
-                  color: scheme.primary,
-                  size: 40,
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: scheme.nmLime,
+                    borderRadius: BorderRadius.circular(11),
+                  ),
+                  alignment: Alignment.center,
+                  child: Icon(
+                    _method == 'cash'
+                        ? Icons.payments_outlined
+                        : (_method == 'card' ? Icons.credit_card_rounded : Icons.phone_android_rounded),
+                    color: scheme.nmInk,
+                    size: 20,
+                  ),
                 ),
                 const SizedBox(width: Gap.m),
                 Expanded(
@@ -290,17 +308,18 @@ class _PayScreenState extends State<PayScreen> {
                     children: [
                       Text(
                         t.payTotal.toUpperCase(),
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: scheme.outline,
-                          letterSpacing: 0.6,
-                        ),
+                        style: NightMarketText.eyebrow(context, size: 11, color: scheme.nmLime.withValues(alpha: 0.9)),
                       ),
                       Text(
                         _money(_total),
                         key: const Key('pay-total'),
-                        style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w700, letterSpacing: -0.8),
+                        style: NightMarketText.mono(
+                          context,
+                          size: 26,
+                          weight: FontWeight.w600,
+                          color: DesignTokens.textOnDark,
+                          letterSpacing: -0.6,
+                        ),
                       ),
                     ],
                   ),
@@ -309,8 +328,9 @@ class _PayScreenState extends State<PayScreen> {
                   label: _method == 'cash'
                       ? t.payCash
                       : (_method == 'card' ? t.payCard : t.payEwallet),
-                  color: scheme.primaryContainer,
-                  textColor: scheme.onPrimaryContainer,
+                  color: scheme.nmInk2,
+                  textColor: scheme.nmLime,
+                  borderColor: scheme.nmLime.withValues(alpha: 0.45),
                 ),
               ],
             ),
@@ -477,7 +497,7 @@ class _PayScreenState extends State<PayScreen> {
               ),
             ),
           ],
-          const SizedBox(height: Gap.s),
+          const SizedBox(height: Gap.xs),
 
           // Amount received: typed with the pad below (no system keyboard)
           TextField(
@@ -486,9 +506,10 @@ class _PayScreenState extends State<PayScreen> {
             keyboardType: TextInputType.none,
             showCursor: true,
             textAlign: TextAlign.end,
-            style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w900, letterSpacing: -0.5),
+            style: NightMarketText.mono(context, size: 22, weight: FontWeight.w600, letterSpacing: -0.4),
             decoration: InputDecoration(
               isDense: true,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               floatingLabelBehavior: FloatingLabelBehavior.always,
               labelText: _method == 'cash'
                   ? t.payReceivedCash
@@ -496,17 +517,17 @@ class _PayScreenState extends State<PayScreen> {
               hintText: Money(_remainingDue, _ccy).toDecimalString(),
               prefixText:
                   '${NumberFormat.simpleCurrency(locale: Localizations.localeOf(context).languageCode, name: _ccy).currencySymbol} ',
-              prefixStyle: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: scheme.onSurface),
+              prefixStyle: NightMarketText.mono(context, size: 18, weight: FontWeight.w600, color: scheme.onSurface),
               errorText: _receivedRaw == -1 ? t.errBadAmount : null,
             ),
             onChanged: (_) => setState(() {}),
           ),
-          const SizedBox(height: Gap.s),
+          const SizedBox(height: 6),
 
           // Quick Bill & Tender Pill Chips
           Wrap(
             spacing: 8,
-            runSpacing: 8,
+            runSpacing: 6,
             children: [
               _PayPill(
                 key: const Key('quick-exact'),
@@ -585,11 +606,12 @@ class _PayScreenState extends State<PayScreen> {
                         Text(
                           _money(_change),
                           key: const Key('pay-change'),
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w900,
+                          style: NightMarketText.mono(
+                            context,
+                            size: 22,
+                            weight: FontWeight.w600,
                             color: scheme.onSecondaryContainer,
-                            letterSpacing: -0.8,
+                            letterSpacing: -0.6,
                           ),
                         ),
                       ],
@@ -603,7 +625,9 @@ class _PayScreenState extends State<PayScreen> {
           if (_utang > 0)
             AppCard(
               key: _utangKey,
-              color: scheme.primaryContainer,
+              color: scheme.isDark ? scheme.nmInkLine : scheme.nmOkBg,
+              borderColor: scheme.isDark ? scheme.nmLime : scheme.nmInk,
+              borderWidth: Gap.border,
               padding: const EdgeInsets.all(Gap.m),
               radius: Gap.radiusM,
               child: Column(
@@ -612,7 +636,12 @@ class _PayScreenState extends State<PayScreen> {
                   Text(
                     t.payOnUtang(_money(_utang)),
                     key: const Key('pay-utang'),
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: scheme.onPrimaryContainer),
+                    style: NightMarketText.display(
+                      context,
+                      size: 16,
+                      weight: FontWeight.w700,
+                      color: scheme.isDark ? scheme.nmLime : scheme.nmOkFg,
+                    ),
                   ),
                   const SizedBox(height: Gap.s),
                   OutlinedButton.icon(
@@ -675,7 +704,7 @@ class _PayScreenState extends State<PayScreen> {
                                     t.supervisorPinRequiredDiscount,
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: scheme.isDark ? Colors.white : scheme.onSurface,
+                                      color: scheme.onSurface,
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
@@ -710,7 +739,7 @@ class _PayScreenState extends State<PayScreen> {
                                     t.supervisorPinApprovedBy(_approvalResult!.approvedBy),
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: scheme.isDark ? Colors.white : scheme.onSurface,
+                                      color: scheme.onSurface,
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
@@ -731,7 +760,7 @@ class _PayScreenState extends State<PayScreen> {
   }
 }
 
-/// Single-line tactile segment inside the payment method switcher.
+/// Night Market tactile segment inside the payment method switcher (`--ink`/`--lime` active).
 class _MethodTab extends StatelessWidget {
   const _MethodTab({
     required this.icon,
@@ -748,7 +777,11 @@ class _MethodTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final fg = selected ? scheme.primary : scheme.outline;
+    final dark = scheme.isDark;
+    final activeBg = dark ? scheme.nmLime : scheme.nmInk;
+    final fg = selected
+        ? (dark ? scheme.nmInk : scheme.nmLime)
+        : scheme.outline;
     final r = BorderRadius.circular(12);
 
     return Expanded(
@@ -756,18 +789,8 @@ class _MethodTab extends StatelessWidget {
         duration: const Duration(milliseconds: 160),
         height: 42,
         decoration: BoxDecoration(
-          color: selected ? scheme.surface : Colors.transparent,
+          color: selected ? activeBg : Colors.transparent,
           borderRadius: r,
-          border: selected ? Border.all(color: scheme.primary.withValues(alpha: 0.45), width: 1.3) : null,
-          boxShadow: selected
-              ? [
-                  BoxShadow(
-                    color: scheme.primary.withValues(alpha: scheme.isDark ? 0.25 : 0.12),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
         ),
         child: Material(
           type: MaterialType.transparency,
@@ -790,7 +813,7 @@ class _MethodTab extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 13.5,
                         fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
-                        color: selected ? (scheme.isDark ? scheme.onSurface : scheme.primary) : scheme.outline,
+                        color: fg,
                       ),
                     ),
                   ],
@@ -804,7 +827,7 @@ class _MethodTab extends StatelessWidget {
   }
 }
 
-/// Sleek pill selector for GCash / Maya / Other wallet sub-choice.
+/// Night Market pill selector for GCash / Maya / Other wallet sub-choice.
 class _WalletPill extends StatelessWidget {
   const _WalletPill({
     super.key,
@@ -820,25 +843,17 @@ class _WalletPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final r = BorderRadius.circular(20);
+    final dark = scheme.isDark;
+    final bg = selected ? (dark ? scheme.nmLime : scheme.nmInk) : scheme.surface;
+    final fg = selected ? (dark ? scheme.nmInk : scheme.nmLime) : scheme.onSurface;
+    final border = selected ? bg : scheme.outlineVariant;
+    final r = BorderRadius.circular(999);
     return AnimatedContainer(
       duration: const Duration(milliseconds: 150),
       decoration: BoxDecoration(
-        color: selected ? scheme.obsidian : scheme.surface,
+        color: bg,
         borderRadius: r,
-        border: Border.all(
-          color: selected ? scheme.obsidian : scheme.outlineVariant,
-          width: 1.0,
-        ),
-        boxShadow: selected
-            ? [
-                BoxShadow(
-                  color: scheme.obsidian.withValues(alpha: 0.24),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ]
-            : null,
+        border: Border.all(color: border, width: Gap.border),
       ),
       child: Material(
         type: MaterialType.transparency,
@@ -853,7 +868,7 @@ class _WalletPill extends StatelessWidget {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
-                color: selected ? Colors.white : scheme.onSurface,
+                color: fg,
               ),
             ),
           ),
@@ -863,7 +878,7 @@ class _WalletPill extends StatelessWidget {
   }
 }
 
-/// Tactile state-aware pill button for Exact, Quick Cash Bills, and All on Utang.
+/// Night Market flat `1.5px`-bordered pill button for Exact, Quick Cash Bills, and All on Utang.
 class _PayPill extends StatelessWidget {
   const _PayPill({
     super.key,
@@ -883,36 +898,29 @@ class _PayPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final active = accentColor ?? scheme.primary;
-    final r = BorderRadius.circular(20);
+    final dark = scheme.isDark;
+    final r = BorderRadius.circular(999);
 
     final bg = selected
-        ? active.withValues(alpha: scheme.isDark ? 0.24 : 0.12)
+        ? (dark ? scheme.nmLime : scheme.nmInk)
         : scheme.surface;
     final border = selected
-        ? active.withValues(alpha: scheme.isDark ? 0.70 : 0.55)
-        : scheme.outlineVariant;
+        ? bg
+        : (accentColor != null ? accentColor!.withValues(alpha: 0.45) : scheme.outlineVariant);
     final fg = selected
-        ? (scheme.isDark ? Colors.white : Color.lerp(active, Colors.black, 0.18)!)
+        ? (dark ? scheme.nmInk : scheme.nmLime)
         : scheme.onSurface;
-    final iconColor = selected ? active : (accentColor ?? scheme.primary);
+    final iconColor = selected
+        ? fg
+        : (accentColor ?? scheme.primary);
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 150),
-      height: 36,
+      height: 38,
       decoration: BoxDecoration(
         color: bg,
         borderRadius: r,
-        border: Border.all(color: border, width: selected ? 1.4 : 1.0),
-        boxShadow: [
-          BoxShadow(
-            color: selected
-                ? active.withValues(alpha: 0.14)
-                : (scheme.isDark ? Colors.black.withValues(alpha: 0.20) : const Color(0x080F172A)),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: border, width: Gap.border),
       ),
       child: Material(
         type: MaterialType.transparency,

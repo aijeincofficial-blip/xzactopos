@@ -1,6 +1,7 @@
-import 'dart:ui' as ui;
-
 import 'package:flutter/material.dart';
+
+import '../core/design_tokens.g.dart';
+import '../core/theme.dart';
 
 /// One entry of [GlassTabBar].
 class GlassTab {
@@ -8,13 +9,12 @@ class GlassTab {
   final String key;
   final String label;
 
-  /// Builds the (outline) icon; [color] is the bar's icon colour.
+  /// Builds the outline icon; [color] is the bar's icon colour.
   final Widget Function(Color color) icon;
 }
 
-/// Signature floating frosted glass bottom bar whose top edge dips into a smooth S-curve wave
-/// cradling the raised circular XZACTO POS crest button, with custom outline glyphs and clean
-/// light & dark mode glass surfaces.
+/// Night Market docked floating bottom bar (`--ink` `#0F1A16` pill track with `1.5px` `--inkLine` border)
+/// cradling the raised XZACTO POS crest button in `--lime` (`#D4F25A`). Zero glass blur or gradients.
 class GlassTabBar extends StatelessWidget {
   const GlassTabBar({
     super.key,
@@ -37,11 +37,11 @@ class GlassTabBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final dark = scheme.brightness == Brightness.dark;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
-    final iconColor = dark ? const Color(0xFFCBD5E1) : const Color(0xFF1E293B);
-    final activeIconColor = scheme.primary;
+    const barBg = DesignTokens.ink;
+    const barBorder = DesignTokens.inkLine2;
+    const inactiveIcon = DesignTokens.mutedOnDark;
+    const activeIcon = DesignTokens.ink;
 
     return SizedBox(
       height: barHeight + button / 2 + bottomMargin + topClearance + bottomInset,
@@ -49,77 +49,49 @@ class GlassTabBar extends StatelessWidget {
         return Stack(
           clipBehavior: Clip.none,
           children: [
-            // Smoothly waved frosted glass bar
             Positioned(
               left: sideMargin,
               right: sideMargin,
               bottom: bottomMargin + bottomInset,
               height: barHeight,
               child: CustomPaint(
-                painter: _BarShadowPainter(dark: dark),
+                foregroundPainter: _BarEdgePainter(borderColor: barBorder),
                 child: ClipPath(
                   clipper: _WaveClipper(),
-                  child: BackdropFilter(
-                    filter: ui.ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-                    child: CustomPaint(
-                      foregroundPainter: _BarEdgePainter(dark: dark),
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: dark
-                                ? [
-                                    const Color(0xFF1E293B).withValues(alpha: 0.94),
-                                    const Color(0xFF0F172A).withValues(alpha: 0.92),
-                                  ]
-                                : [
-                                    Colors.white.withValues(alpha: 0.96),
-                                    const Color(0xFFF1F5F9).withValues(alpha: 0.92),
-                                  ],
+                  child: DecoratedBox(
+                    decoration: const BoxDecoration(color: barBg),
+                    child: Row(
+                      children: [
+                        for (var i = 0; i < tabs.length; i++)
+                          Expanded(
+                            child: i == centerIndex
+                                ? _CenterItem(
+                                    key: Key(tabs[i].key),
+                                    label: tabs[i].label,
+                                    selected: i == index,
+                                    onTap: () => onSelect(i),
+                                  )
+                                : _SideItem(
+                                    key: Key(tabs[i].key),
+                                    tab: tabs[i],
+                                    selected: i == index,
+                                    iconColor: inactiveIcon,
+                                    activeIconColor: activeIcon,
+                                    onTap: () => onSelect(i),
+                                  ),
                           ),
-                        ),
-                        child: Row(
-                          children: [
-                            for (var i = 0; i < tabs.length; i++)
-                              Expanded(
-                                child: i == centerIndex
-                                    ? _CenterItem(
-                                        key: Key(tabs[i].key),
-                                        label: tabs[i].label,
-                                        selected: i == index,
-                                        dark: dark,
-                                        primary: scheme.primary,
-                                        onTap: () => onSelect(i),
-                                      )
-                                    : _SideItem(
-                                        key: Key(tabs[i].key),
-                                        tab: tabs[i],
-                                        selected: i == index,
-                                        dark: dark,
-                                        primary: scheme.primary,
-                                        iconColor: iconColor,
-                                        activeIconColor: activeIconColor,
-                                        onTap: () => onSelect(i),
-                                      ),
-                              ),
-                          ],
-                        ),
-                      ),
+                      ],
                     ),
                   ),
                 ),
               ),
             ),
-            // Raised circular XZACTO POS button nestled cleanly in the wave cradle
             Positioned(
               left: c.maxWidth / 2 - button / 2,
               bottom: bottomMargin + bottomInset + barHeight - button / 2 - 3,
               child: _PosButton(
                 size: button,
                 selected: index == centerIndex,
-                dark: dark,
-                primary: scheme.primary,
                 onTap: () => onSelect(centerIndex),
               ),
             ),
@@ -130,11 +102,11 @@ class GlassTabBar extends StatelessWidget {
   }
 }
 
-/// Continuous flowing wave path cradling the center POS button.
+/// Crisp notched contour cradling the center POS button.
 Path _barPath(Size s) {
-  const r = 26.0;
-  const span = 66.0;
-  const depth = 25.0;
+  const r = 24.0;
+  const span = 64.0;
+  const depth = 24.0;
   final cx = s.width / 2;
 
   return Path()
@@ -159,28 +131,9 @@ class _WaveClipper extends CustomClipper<Path> {
   bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
 }
 
-class _BarShadowPainter extends CustomPainter {
-  _BarShadowPainter({required this.dark});
-  final bool dark;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final path = _barPath(size).shift(const Offset(0, 6));
-    canvas.drawPath(
-      path,
-      Paint()
-        ..color = dark ? Colors.black.withValues(alpha: 0.45) : const Color(0x160F172A)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 14),
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _BarShadowPainter old) => old.dark != dark;
-}
-
 class _BarEdgePainter extends CustomPainter {
-  _BarEdgePainter({required this.dark});
-  final bool dark;
+  _BarEdgePainter({required this.borderColor});
+  final Color borderColor;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -188,13 +141,13 @@ class _BarEdgePainter extends CustomPainter {
       _barPath(size),
       Paint()
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.1
-        ..color = dark ? Colors.white.withValues(alpha: 0.14) : const Color(0xFFE2E8F0),
+        ..strokeWidth = 1.5
+        ..color = borderColor,
     );
   }
 
   @override
-  bool shouldRepaint(covariant _BarEdgePainter old) => old.dark != dark;
+  bool shouldRepaint(covariant _BarEdgePainter old) => old.borderColor != borderColor;
 }
 
 class _SideItem extends StatelessWidget {
@@ -202,8 +155,6 @@ class _SideItem extends StatelessWidget {
     super.key,
     required this.tab,
     required this.selected,
-    required this.dark,
-    required this.primary,
     required this.iconColor,
     required this.activeIconColor,
     required this.onTap,
@@ -211,79 +162,46 @@ class _SideItem extends StatelessWidget {
 
   final GlassTab tab;
   final bool selected;
-  final bool dark;
-  final Color primary;
   final Color iconColor;
   final Color activeIconColor;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final labelColor = selected
-        ? (dark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A))
-        : (dark ? const Color(0xFF94A3B8) : const Color(0xFF64748B));
-
+    final labelColor = selected ? DesignTokens.lime : DesignTokens.mutedOnDark;
     return Semantics(
       selected: selected,
       button: true,
       label: tab.label,
-      child: InkResponse(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: onTap,
-        radius: 32,
         child: SizedBox(
           height: GlassTabBar.barHeight,
-          child: Stack(
-            alignment: Alignment.center,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Positioned(
-                top: 6,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  width: 54,
-                  height: 32,
-                  alignment: Alignment.center,
-                  decoration: selected
-                      ? BoxDecoration(
-                          borderRadius: BorderRadius.circular(16),
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: dark
-                                ? [
-                                    const Color(0xFF1E3A8A).withValues(alpha: 0.85),
-                                    const Color(0xFF172554).withValues(alpha: 0.85),
-                                  ]
-                                : const [
-                                    Color(0xFFEFF6FF),
-                                    Color(0xFFDBEAFE),
-                                  ],
-                          ),
-                          border: Border.all(
-                            color: primary.withValues(alpha: dark ? 0.35 : 0.25),
-                            width: 1.0,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: primary.withValues(alpha: dark ? 0.30 : 0.18),
-                              blurRadius: 10,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        )
-                      : null,
-                  child: tab.icon(selected ? activeIconColor : iconColor),
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOutCubic,
+                padding: EdgeInsets.symmetric(horizontal: selected ? 14 : 8, vertical: selected ? 6 : 4),
+                decoration: BoxDecoration(
+                  color: selected ? DesignTokens.lime : Colors.transparent,
+                  borderRadius: BorderRadius.circular(14),
                 ),
+                child: tab.icon(selected ? activeIconColor : iconColor),
               ),
-              Positioned(
-                bottom: 8,
-                child: Text(
-                  tab.label,
-                  maxLines: 1,
-                  style: TextStyle(
-                    fontSize: 11.5,
-                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                    color: labelColor,
-                  ),
+              const SizedBox(height: 3),
+              Text(
+                tab.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontFamily: NightMarketFont.sans,
+                  fontSize: 11,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  color: labelColor,
+                  letterSpacing: selected ? 0.0 : 0.1,
                 ),
               ),
             ],
@@ -299,23 +217,16 @@ class _CenterItem extends StatelessWidget {
     super.key,
     required this.label,
     required this.selected,
-    required this.dark,
-    required this.primary,
     required this.onTap,
   });
 
   final String label;
   final bool selected;
-  final bool dark;
-  final Color primary;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final labelColor = selected
-        ? (dark ? primary : const Color(0xFF0F172A))
-        : (dark ? const Color(0xFF94A3B8) : const Color(0xFF64748B));
-
+    final labelColor = selected ? DesignTokens.lime : DesignTokens.mutedOnDark;
     return Semantics(
       selected: selected,
       button: true,
@@ -334,6 +245,7 @@ class _CenterItem extends StatelessWidget {
                   label,
                   maxLines: 1,
                   style: TextStyle(
+                    fontFamily: NightMarketFont.sans,
                     fontSize: 11.5,
                     fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
                     color: labelColor,
@@ -348,21 +260,17 @@ class _CenterItem extends StatelessWidget {
   }
 }
 
-/// Floating circular POS button featuring the official XZACTO logo mark,
-/// with a crisp rim and clean elevation.
+/// Tactile circular Night Market POS trigger button in electric `--lime` (`#D4F25A`)
+/// or `--ink2` (`#16241F`) when inactive, cradling the XZACTO logo mark.
 class _PosButton extends StatelessWidget {
   const _PosButton({
     required this.size,
     required this.selected,
-    required this.dark,
-    required this.primary,
     required this.onTap,
   });
 
   final double size;
   final bool selected;
-  final bool dark;
-  final Color primary;
   final VoidCallback onTap;
 
   @override
@@ -379,48 +287,31 @@ class _PosButton extends StatelessWidget {
           height: size,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: selected
-                    ? primary.withValues(alpha: dark ? 0.40 : 0.26)
-                    : (dark ? Colors.black.withValues(alpha: 0.45) : const Color(0xFF0F172A).withValues(alpha: 0.16)),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-              BoxShadow(
-                color: dark ? Colors.black.withValues(alpha: 0.25) : const Color(0xFF0F172A).withValues(alpha: 0.08),
-                blurRadius: 4,
-                offset: const Offset(0, 1),
-              ),
-            ],
+            color: selected ? DesignTokens.lime : DesignTokens.ink2,
             border: Border.all(
-              color: selected
-                  ? (dark ? primary.withValues(alpha: 0.65) : Colors.white)
-                  : (dark ? Colors.white.withValues(alpha: 0.18) : Colors.white),
-              width: 2.4,
-            ),
-            gradient: const RadialGradient(
-              center: Alignment(0, -0.35),
-              radius: 0.88,
-              colors: [
-                Color(0xFF0F2557),
-                Color(0xFF070E22),
-              ],
+              color: selected ? DesignTokens.ink : DesignTokens.lime.withValues(alpha: 0.65),
+              width: selected ? 2.5 : 1.8,
             ),
           ),
           child: Center(
-            child: Image.asset(
-              'assets/brand/logo_mark.png',
-              width: size * 0.64,
-              height: size * 0.64,
-              fit: BoxFit.contain,
-              filterQuality: FilterQuality.high,
-              errorBuilder: (_, _, _) => const Icon(
-                Icons.point_of_sale_rounded,
-                color: Colors.white,
-                size: 26,
-              ),
-            ),
+            child: selected
+                ? const Icon(
+                    Icons.point_of_sale_rounded,
+                    color: DesignTokens.ink,
+                    size: 28,
+                  )
+                : Image.asset(
+                    'assets/brand/logo_mark.png',
+                    width: size * 0.62,
+                    height: size * 0.62,
+                    fit: BoxFit.contain,
+                    filterQuality: FilterQuality.high,
+                    errorBuilder: (_, _, _) => const Icon(
+                      Icons.point_of_sale_rounded,
+                      color: DesignTokens.lime,
+                      size: 26,
+                    ),
+                  ),
           ),
         ),
       ),
@@ -428,7 +319,7 @@ class _PosButton extends StatelessWidget {
   }
 }
 
-// ---------- Outline icons drawn to match the owner's mockup ----------
+// ---------- Night Market crisp stroke glyphs ----------
 
 Paint _line(Color c, double w) => Paint()
   ..color = c
@@ -437,7 +328,7 @@ Paint _line(Color c, double w) => Paint()
   ..strokeCap = StrokeCap.round
   ..strokeJoin = StrokeJoin.round;
 
-/// Calendar with clock hands, plus emerald peso badge (Today).
+/// Calendar with clock hands + Night Market lime peso badge (Today).
 class TodayGlyph extends StatelessWidget {
   const TodayGlyph({super.key, required this.color, this.badge = true});
   final Color color;
@@ -445,7 +336,6 @@ class TodayGlyph extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dark = Theme.of(context).colorScheme.brightness == Brightness.dark;
     return SizedBox(
       width: 28,
       height: 26,
@@ -461,17 +351,17 @@ class TodayGlyph extends StatelessWidget {
                 width: 14,
                 height: 14,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF10B981),
+                  color: DesignTokens.lime,
                   shape: BoxShape.circle,
-                  border: Border.all(color: dark ? const Color(0xFF1E293B) : Colors.white, width: 1.5),
+                  border: Border.all(color: DesignTokens.ink, width: 1.5),
                 ),
                 alignment: Alignment.center,
                 child: const Text(
-                  'P',
+                  '₱',
                   style: TextStyle(
                     fontSize: 8.0,
                     fontWeight: FontWeight.w900,
-                    color: Colors.white,
+                    color: DesignTokens.ink,
                     height: 1,
                   ),
                 ),

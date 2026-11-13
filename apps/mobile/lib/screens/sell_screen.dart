@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../backend.dart';
+import '../core/design_tokens.g.dart';
 import '../core/money.dart';
 import '../core/theme.dart';
 import '../core/ui.dart';
@@ -539,7 +540,7 @@ class _SellScreenState extends State<SellScreen> {
             ).push(MaterialPageRoute<void>(builder: (_) => scope.wrap(TodayScreen(backend: backend)))),
             child: Row(
               children: [
-                Icon(Icons.today_rounded, size: 19, color: scheme.primary),
+                Icon(Icons.today_rounded, size: 18, color: scheme.accent),
                 const SizedBox(width: Gap.s),
                 Expanded(
                   child: Text(
@@ -552,16 +553,27 @@ class _SellScreenState extends State<SellScreen> {
                 Text(
                   _money(d.total),
                   key: const Key('today-strip-total'),
-                  style: TextStyle(fontSize: 15.5, fontWeight: FontWeight.w800, color: scheme.onSurface),
+                  style: NightMarketText.mono(context, size: 15.5, weight: FontWeight.w600),
                 ),
                 const SizedBox(width: 6),
                 Flexible(
-                  child: Text(
-                    t.todayCount(d.count),
-                    key: const Key('today-strip-count'),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 12, color: scheme.outline),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: scheme.isDark ? scheme.nmInkLine : scheme.nmOkBg,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      t.todayCount(d.count),
+                      key: const Key('today-strip-count'),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
+                        color: scheme.isDark ? scheme.nmOkBg : scheme.nmOkFg,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 2),
@@ -669,7 +681,13 @@ class _SellScreenState extends State<SellScreen> {
             return ListTile(
               key: Key('result-${p.id}'),
               contentPadding: const EdgeInsets.symmetric(horizontal: Gap.xs, vertical: 2),
-              leading: ProductThumb(productId: p.id, path: p.photoPath, size: 38),
+              leading: ProductThumb(
+                productId: p.id,
+                path: p.photoPath,
+                name: p.name,
+                category: p.sku,
+                size: 38,
+              ),
               title: Text(p.name, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
               subtitle: (left == null && expiryFlag == null)
                   ? null
@@ -684,7 +702,7 @@ class _SellScreenState extends State<SellScreen> {
                     ),
               trailing: Text(
                 p.price == null ? '—' : _money(p.price!),
-                style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w700),
+                style: NightMarketText.mono(context, size: 15, weight: FontWeight.w600),
               ),
               onTap: () {
                 _add(p);
@@ -783,24 +801,34 @@ class _Tile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final dark = scheme.isDark;
     final inCart = cartQty > 0;
     final qtyText = cartQty == cartQty.roundToDouble() ? '${cartQty.toInt()}' : '$cartQty';
+    final activeBorder = dark ? scheme.nmLime : scheme.nmInk;
+    final activeBg = dark ? scheme.nmInkLine : scheme.nmOkBg.withValues(alpha: 0.48);
+
     return AppCard(
       key: Key('tile-${product.id}'),
       onTap: onTap,
       onLongPress: onLongPress,
       padding: const EdgeInsets.fromLTRB(Gap.s, 10, Gap.s, 8),
       radius: 20,
-      color: inCart ? scheme.primaryContainer.withValues(alpha: scheme.isDark ? 0.50 : 0.72) : null,
-      borderColor: inCart ? scheme.primary : null,
-      borderWidth: inCart ? 1.5 : 1.0,
+      color: inCart ? activeBg : null,
+      borderColor: inCart ? activeBorder : null,
+      borderWidth: inCart ? 2.0 : Gap.border,
       child: Stack(
         children: [
           Positioned.fill(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                ProductThumb(productId: product.id, path: product.photoPath, size: 40),
+                ProductThumb(
+                  productId: product.id,
+                  path: product.photoPath,
+                  name: product.name,
+                  category: product.sku,
+                  size: 40,
+                ),
                 const Spacer(),
                 Text(
                   product.name,
@@ -813,11 +841,11 @@ class _Tile extends StatelessWidget {
                   product.price == null ? '—' : money(product.price!),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 16.5,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.3,
-                    color: inCart ? scheme.primary : scheme.onSurface,
+                  style: NightMarketText.mono(
+                    context,
+                    size: 16,
+                    weight: FontWeight.w600,
+                    color: inCart ? (dark ? scheme.nmLime : scheme.nmInk) : scheme.onSurface,
                   ),
                 ),
                 if (left != null)
@@ -833,17 +861,19 @@ class _Tile extends StatelessWidget {
               top: 0,
               left: 0,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                 decoration: BoxDecoration(
-                  color: scheme.primary,
+                  color: scheme.nmLime,
                   borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: scheme.nmInk, width: 1.2),
                 ),
                 child: Text(
                   '×$qtyText',
-                  style: TextStyle(
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w700,
-                    color: scheme.onPrimary,
+                  style: NightMarketText.mono(
+                    context,
+                    size: 10.5,
+                    weight: FontWeight.w600,
+                    color: scheme.nmInk,
                     height: 1.1,
                   ),
                 ),
@@ -862,7 +892,12 @@ class _Tile extends StatelessWidget {
             Positioned(
               top: 0,
               right: 2,
-              child: Icon(Icons.push_pin_rounded, key: Key('pin-${product.id}'), size: 15, color: scheme.primary),
+              child: Icon(
+                Icons.push_pin_rounded,
+                key: Key('pin-${product.id}'),
+                size: 15,
+                color: dark ? scheme.nmLime : scheme.nmInk,
+              ),
             ),
         ],
       ),
@@ -892,27 +927,36 @@ class _CartPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
     final scheme = Theme.of(context).colorScheme;
+    final hasItems = !cart.isEmpty;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(Gap.l, Gap.xs, Gap.l, Gap.s),
-      child: AppCard(
-        padding: EdgeInsets.zero,
-        radius: 24,
+      child: Container(
+        decoration: BoxDecoration(
+          color: hasItems ? scheme.surface : scheme.nmInk,
+          borderRadius: BorderRadius.circular(Gap.radiusL),
+          border: Border.all(
+            color: hasItems ? scheme.outlineVariant : scheme.nmInkLine2,
+            width: Gap.border,
+          ),
+        ),
+        clipBehavior: Clip.antiAlias,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (!cart.isEmpty && expiredCartCount > 0)
+            if (hasItems && expiredCartCount > 0)
               Container(
                 key: const Key('cart-expired-warning'),
                 width: double.infinity,
                 margin: const EdgeInsets.fromLTRB(Gap.m, 8, Gap.m, 2),
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: scheme.errorContainer.withValues(alpha: scheme.isDark ? 0.45 : 0.7),
-                  borderRadius: BorderRadius.circular(12),
+                  color: scheme.errorContainer,
+                  borderRadius: BorderRadius.circular(Gap.radiusS),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.warning_amber_rounded, size: 15, color: scheme.error),
+                    Icon(Icons.warning_amber_rounded, size: 15, color: scheme.onErrorContainer),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
@@ -929,14 +973,17 @@ class _CartPanel extends StatelessWidget {
                   ],
                 ),
               ),
-            if (!cart.isEmpty) ...[
+            if (hasItems) ...[
               ConstrainedBox(
                 constraints: const BoxConstraints(maxHeight: 176),
                 child: ListView.separated(
                   shrinkWrap: true,
                   padding: const EdgeInsets.only(top: 6, bottom: 2),
                   itemCount: cart.lines.length,
-                  separatorBuilder: (_, _) => Divider(height: 1, color: scheme.outlineVariant.withValues(alpha: 0.55)),
+                  separatorBuilder: (_, _) => const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: Gap.l),
+                    child: DashedDivider(),
+                  ),
                   itemBuilder: (context, i) {
                     final l = cart.lines[i];
                     return Padding(
@@ -986,16 +1033,22 @@ class _CartPanel extends StatelessWidget {
                             borderRadius: BorderRadius.circular(8),
                             onTap: () => onEditQty(i),
                             child: Container(
-                              constraints: const BoxConstraints(minWidth: 30),
+                              constraints: const BoxConstraints(minWidth: 32),
                               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
                               alignment: Alignment.center,
                               decoration: BoxDecoration(
                                 color: scheme.chipFill,
                                 borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: scheme.outlineVariant, width: 1.0),
                               ),
                               child: Text(
                                 l.qty == l.qty.roundToDouble() ? '${l.qty.toInt()}' : '${l.qty}',
-                                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: scheme.onSurface),
+                                style: NightMarketText.mono(
+                                  context,
+                                  size: 14,
+                                  weight: FontWeight.w600,
+                                  color: scheme.onSurface,
+                                ),
                               ),
                             ),
                           ),
@@ -1010,7 +1063,12 @@ class _CartPanel extends StatelessWidget {
                             child: Text(
                               money(l.lineTotal),
                               textAlign: TextAlign.end,
-                              style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700, color: scheme.onSurface),
+                              style: NightMarketText.mono(
+                                context,
+                                size: 14,
+                                weight: FontWeight.w600,
+                                color: scheme.onSurface,
+                              ),
                             ),
                           ),
                         ],
@@ -1019,10 +1077,12 @@ class _CartPanel extends StatelessWidget {
                   },
                 ),
               ),
-              Divider(height: 1, color: scheme.outlineVariant.withValues(alpha: 0.75)),
+              Divider(height: 1.5, thickness: 1.5, color: scheme.outlineVariant),
             ],
-            Padding(
-              padding: EdgeInsets.fromLTRB(Gap.l, cart.isEmpty ? 11 : 10, Gap.m, cart.isEmpty ? 11 : 10),
+            // Dark `--ink` Night Market sticky checkout summary bar
+            Container(
+              color: scheme.nmInk,
+              padding: EdgeInsets.fromLTRB(Gap.l, hasItems ? 10 : 11, Gap.m, hasItems ? 10 : 11),
               child: Row(
                 children: [
                   Expanded(
@@ -1034,18 +1094,18 @@ class _CartPanel extends StatelessWidget {
                             t.sellCartEmpty,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: scheme.outline, fontSize: 12, fontWeight: FontWeight.w500),
+                            style: TextStyle(color: DesignTokens.mutedOnDark, fontSize: 12, fontWeight: FontWeight.w500),
                           )
                         else if (cart.totalDiscount > 0)
                           Text(
                             t.cartLineDiscountShort(money(cart.totalDiscount)),
                             key: const Key('cart-total-discount'),
-                            style: TextStyle(color: scheme.success, fontWeight: FontWeight.w700, fontSize: 12.5),
+                            style: TextStyle(color: scheme.nmLime, fontWeight: FontWeight.w700, fontSize: 12.5),
                           )
                         else
                           Text(
                             t.sellItems(cart.itemCount),
-                            style: TextStyle(color: scheme.outline, fontWeight: FontWeight.w600, fontSize: 12.5),
+                            style: TextStyle(color: DesignTokens.mutedOnDark, fontWeight: FontWeight.w600, fontSize: 12.5),
                           ),
                         const SizedBox(height: 1),
                         Row(
@@ -1059,11 +1119,11 @@ class _CartPanel extends StatelessWidget {
                                 child: Text(
                                   money(cart.subtotal),
                                   key: const Key('cart-total'),
-                                  style: TextStyle(
-                                    fontSize: cart.isEmpty ? 20 : 24,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: -0.6,
-                                    color: scheme.onSurface,
+                                  style: NightMarketText.mono(
+                                    context,
+                                    size: cart.isEmpty ? 20 : 24,
+                                    weight: FontWeight.w600,
+                                    color: hasItems ? scheme.nmLime : DesignTokens.mutedOnDark,
                                   ),
                                 ),
                               ),
@@ -1075,7 +1135,7 @@ class _CartPanel extends StatelessWidget {
                                   t.sellItems(cart.itemCount),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(color: scheme.outline, fontSize: 12, fontWeight: FontWeight.w500),
+                                  style: TextStyle(color: DesignTokens.mutedOnDark, fontSize: 12, fontWeight: FontWeight.w500),
                                 ),
                               ),
                             ],
@@ -1090,46 +1150,39 @@ class _CartPanel extends StatelessWidget {
                       tooltip: t.holdSaleAction,
                       style: IconButton.styleFrom(
                         minimumSize: const Size(44, 48),
-                        backgroundColor: scheme.primaryContainer.withValues(alpha: scheme.isDark ? 0.55 : 0.85),
-                        foregroundColor: scheme.primary,
+                        backgroundColor: scheme.nmInk2,
+                        foregroundColor: scheme.nmLime,
+                        side: BorderSide(color: scheme.nmInkLine2, width: Gap.border),
                       ),
                       onPressed: onHold,
                       icon: const Icon(Icons.pause_rounded, size: 21),
                     ),
                     const SizedBox(width: 8),
                   ],
-                  DecoratedBox(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(28),
-                      boxShadow: onPay == null
-                          ? null
-                          : [
-                              BoxShadow(
-                                color: scheme.obsidian.withValues(alpha: 0.30),
-                                blurRadius: 14,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                    ),
-                    child: FilledButton.icon(
-                      key: const Key('pay-button'),
-                      style: FilledButton.styleFrom(
-                        minimumSize: Size(cart.isEmpty ? 116 : 136, 48),
-                        backgroundColor: scheme.obsidian,
-                        foregroundColor: scheme.onObsidian,
-                        disabledBackgroundColor: scheme.chipFill,
-                        disabledForegroundColor: scheme.outline,
-                        shape: const StadiumBorder(),
-                        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: 0.2),
+                  FilledButton.icon(
+                    key: const Key('pay-button'),
+                    style: FilledButton.styleFrom(
+                      elevation: 0,
+                      minimumSize: Size(cart.isEmpty ? 116 : 136, 48),
+                      backgroundColor: scheme.obsidian,
+                      foregroundColor: scheme.onObsidian,
+                      disabledBackgroundColor: DesignTokens.disabledBg,
+                      disabledForegroundColor: DesignTokens.mutedOnDark,
+                      shape: const StadiumBorder(),
+                      side: BorderSide.none,
+                      textStyle: const TextStyle(
+                        fontFamily: NightMarketFont.sans,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
                       ),
-                      onPressed: onPay,
-                      icon: Icon(
-                        Icons.payments_rounded,
-                        size: 20,
-                        color: onPay == null ? scheme.outline : scheme.onObsidian,
-                      ),
-                      label: Text(t.sellPay),
                     ),
+                    onPressed: onPay,
+                    icon: Icon(
+                      Icons.payments_rounded,
+                      size: 20,
+                      color: onPay == null ? DesignTokens.mutedOnDark : scheme.onObsidian,
+                    ),
+                    label: Text(t.sellPay),
                   ),
                 ],
               ),

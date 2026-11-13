@@ -172,13 +172,7 @@ class _DenominationSheetContentState extends State<_DenominationSheetContent> {
               ),
               decoration: BoxDecoration(
                 color: scheme.surface,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.06),
-                    blurRadius: 8,
-                    offset: const Offset(0, -3),
-                  ),
-                ],
+                border: Border(top: BorderSide(color: scheme.outlineVariant, width: Gap.border)),
               ),
               child: Row(
                 children: [
@@ -194,7 +188,7 @@ class _DenominationSheetContentState extends State<_DenominationSheetContent> {
                         Text(
                           totalFmt,
                           key: const Key('denom-total-text'),
-                          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                          style: NightMarketText.mono(context, size: 22, weight: FontWeight.w600),
                         ),
                       ],
                     ),
