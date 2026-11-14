@@ -51,7 +51,7 @@ void main() {
     await leave(tester);
   });
 
-  testWidgets('opening the reset link asks for a new password (twice, at least 6 characters)', (tester) async {
+  testWidgets('opening the reset link asks for a new password (twice, at least 8 characters)', (tester) async {
     final b = FakeBackend(signedInAtStart: true)
       ..access = {
         'tenant': {'id': 't1', 'name': 'Tindahan', 'base_currency': 'PHP'},
@@ -62,22 +62,22 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Choose a new password'), findsOneWidget);
 
-    await tester.enterText(find.byKey(const Key('new-password')), 'abc');
+    await tester.enterText(find.byKey(const Key('new-password')), '1234567');
     await tester.tap(find.byKey(const Key('save-password')));
     await tester.pumpAndSettle();
-    expect(find.text('At least 6 characters'), findsOneWidget);
+    expect(find.text('At least 8 characters'), findsOneWidget);
 
-    await tester.enterText(find.byKey(const Key('new-password')), 'secret1');
-    await tester.enterText(find.byKey(const Key('new-password-again')), 'secret2');
+    await tester.enterText(find.byKey(const Key('new-password')), 'secret12');
+    await tester.enterText(find.byKey(const Key('new-password-again')), 'secret23');
     await tester.tap(find.byKey(const Key('save-password')));
     await tester.pumpAndSettle();
     expect(find.text('The two passwords are different'), findsOneWidget);
     expect(b.passwordsSet, isEmpty);
 
-    await tester.enterText(find.byKey(const Key('new-password-again')), 'secret1');
+    await tester.enterText(find.byKey(const Key('new-password-again')), 'secret12');
     await tester.tap(find.byKey(const Key('save-password')));
     await tester.pumpAndSettle();
-    expect(b.passwordsSet, ['secret1']);
+    expect(b.passwordsSet, ['secret12']);
     expect(find.byKey(const Key('tile-sell')), findsOneWidget, reason: 'back to the app');
     await leave(tester);
   });
@@ -95,10 +95,10 @@ void main() {
         scrollable: find.byType(Scrollable).first);
     await tester.tap(find.byKey(const Key('settings-change-password')));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byKey(const Key('change-password-field')), '123');
+    await tester.enterText(find.byKey(const Key('change-password-field')), '1234567');
     await tester.tap(find.byKey(const Key('change-password-save')));
     await tester.pumpAndSettle();
-    expect(find.text('At least 6 characters'), findsOneWidget);
+    expect(find.text('At least 8 characters'), findsOneWidget);
     expect(backend.passwordsSet, isEmpty);
 
     await tester.enterText(find.byKey(const Key('change-password-field')), 'newsecret');

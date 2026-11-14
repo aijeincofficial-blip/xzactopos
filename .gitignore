@@ -9,3 +9,4 @@ supabase/.temp/
 apps/mobile/android/key.properties
 *.jks
 *.keystore
+.firebase/

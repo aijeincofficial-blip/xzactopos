@@ -186,11 +186,18 @@ describe("schemas", () => {
 
   it("validates solo sign-up, email sign-in, forgot password, and reset password schemas", () => {
     expect(
-      soloSignUpSchema.safeParse({ storeName: "Aling Nena Store", email: "nena@example.com", password: "secret" }).success,
+      soloSignUpSchema.safeParse({ storeName: "Aling Nena Store", email: "nena@example.com", password: "longenough" })
+        .success,
     ).toBe(true);
-    expect(soloSignUpSchema.safeParse({ storeName: "", email: "nena@example.com", password: "secret" }).success).toBe(false);
-    expect(soloSignUpSchema.safeParse({ storeName: "Store", email: "bad", password: "secret" }).success).toBe(false);
-    expect(soloSignUpSchema.safeParse({ storeName: "Store", email: "nena@example.com", password: "123" }).success).toBe(false);
+    expect(
+      soloSignUpSchema.safeParse({ storeName: "", email: "nena@example.com", password: "longenough" }).success,
+    ).toBe(false);
+    expect(soloSignUpSchema.safeParse({ storeName: "Store", email: "bad", password: "longenough" }).success).toBe(
+      false,
+    );
+    expect(soloSignUpSchema.safeParse({ storeName: "Store", email: "nena@example.com", password: "1234567" }).success).toBe(
+      false,
+    );
 
     expect(emailSignInSchema.safeParse({ email: "owner@shop.ph", password: "pw" }).success).toBe(true);
     expect(emailSignInSchema.safeParse({ email: "not-an-email", password: "pw" }).success).toBe(false);
@@ -198,8 +205,11 @@ describe("schemas", () => {
     expect(forgotPasswordSchema.safeParse({ email: "owner@shop.ph" }).success).toBe(true);
     expect(forgotPasswordSchema.safeParse({ email: "" }).success).toBe(false);
 
-    expect(resetPasswordSchema.safeParse({ password: "secret", confirmPassword: "secret" }).success).toBe(true);
-    const mismatch = resetPasswordSchema.safeParse({ password: "secret", confirmPassword: "other" });
+    expect(resetPasswordSchema.safeParse({ password: "longenough", confirmPassword: "longenough" }).success).toBe(
+      true,
+    );
+    expect(resetPasswordSchema.safeParse({ password: "1234567", confirmPassword: "1234567" }).success).toBe(false);
+    const mismatch = resetPasswordSchema.safeParse({ password: "longenough", confirmPassword: "other" });
     expect(mismatch.success).toBe(false);
     if (!mismatch.success) expect(fieldErrors(mismatch.error)["confirmPassword"]).toBe("validation.password_match");
   });

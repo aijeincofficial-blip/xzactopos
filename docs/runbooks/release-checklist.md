@@ -86,7 +86,7 @@ Apply all `supabase/migrations/` files in strict timestamp order to the target p
 
 - **Postgres**: `17`.
 - **Auth Custom Access Token Hook**: Enable `pg-functions://postgres/public/custom_access_token_hook` in Auth Hooks before issuing user sessions (configured locally in `supabase/config.toml`).
-- **Auth Redirect URLs**: Configure production web `site_url` and `additional_redirect_urls` (including mobile deep link `xzactopos://auth-callback`).
+- **Auth Redirect URLs**: Configure production web `site_url` (`https://xzacto.store`) and `additional_redirect_urls` (`https://xzacto.store/**`, `https://www.xzacto.store/**`, and mobile deep link `xzactopos://auth-callback`). Set hosted Auth **Minimum password length** to **`8`** (aligned with `supabase/config.toml`).
 - **Storage Bucket**: Confirm `product-photos` exists with `public = false`, `file_size_limit = 204800` (200 KiB), and `allowed_mime_types = ['image/jpeg']`.
 
 ## 3. Environment Variables & Secrets per Environment
@@ -99,10 +99,10 @@ Never commit `.env`, `.env.local`, `android/key.properties`, or `service_role` k
 | **Web Client** (`apps/client`) | `VITE_SUPABASE_ANON_KEY` | Build-time Vite env (`supabase.ts`). Public anon key only — never use service role key. |
 | **Edge Functions** (`create_user`, `invite_user`) | `SUPABASE_URL` | Server runtime (`_shared/clients.ts`). |
 | **Edge Functions** (`create_user`, `invite_user`) | `SUPABASE_SERVICE_ROLE_KEY` | Server runtime secret (`_shared/clients.ts`). Must be set via `supabase secrets set`. |
-| **Edge Functions** (`_shared/http.ts`) | `ALLOWED_ORIGINS` | Comma-separated production web origin allowlist for CORS. Required in production to avoid overly broad or mismatched origins (`S10`). |
+| **Edge Functions** (`_shared/http.ts`) | `ALLOWED_ORIGINS` | Comma-separated production web origin allowlist for CORS (`https://xzacto.store,https://www.xzacto.store`, plus `https://xzacto-403cc.web.app` temporarily for pre-cutover testing). Required in production (`S10`). |
 | **Mobile App** (`apps/mobile`) | `SUPABASE_URL` (`--dart-define`) | Build/run-time Dart define (`http://10.0.2.2:54321` on Android emulator). |
 | **Mobile App** (`apps/mobile`) | `SUPABASE_ANON_KEY` (`--dart-define`) | Build/run-time Dart define. |
-| **Mobile Android Release** | `apps/mobile/android/key.properties` | Upload/release keystore properties (`build.gradle.kts` falls back to debug signing if absent). |
+| **Mobile Android Release** | `apps/mobile/android/key.properties` | Upload/release keystore properties (gitignored; configured locally referencing `C:\Users\USER\keystores\xzactopos-release.jks`). |
 | **GitHub Actions** (`.github/workflows/backup.yml`) | `DB_URL` | Repository secret: direct Postgres connection string (`pg_dump`). Workflow skips if unset. |
 | **GitHub Actions** (`.github/workflows/keep-alive.yml`) | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Repository secrets used by authenticated keep-alive workflow (skips if unset). |
 | **Local / Optional Supabase** (`supabase/config.toml`) | `OPENAI_API_KEY`, `S3_HOST`, `S3_REGION`, `S3_ACCESS_KEY`, `S3_SECRET_KEY` | Optional local Studio / S3 storage config; not needed unless using those features. |
@@ -132,9 +132,9 @@ Baseline verified locally after `20261114000300_qa04_keepalive_and_lint_fix.sql`
 
 ## 6. Host Security Headers & Auth Settings
 
-- Configure HTTP security headers (`Content-Security-Policy`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`, HTTPS/HSTS) on the Web static host (`S09`).
-- Decide password policy (`supabase/config.toml` sets `minimum_password_length = 6` — consider raising for hosted production under Auth settings, tracked as `S10`).
-- Confirm Edge Functions are deployed (`create_user`, `invite_user`) with `ALLOWED_ORIGINS` set to the exact production Web origin(s).
+- Web hosting is configured for **Firebase Hosting** (`firebase.json` + `.firebaserc`, project `xzacto-403cc`) with `Strict-Transport-Security`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`, `Content-Security-Policy`, `Cache-Control: no-cache` on shell/`sw.js`, and SPA rewrites (`S09`).
+- Repository password minimum is aligned at `8` characters (`supabase/config.toml`, Web `schemas.ts`, Mobile auth/password screens); confirm hosted Supabase Auth **Minimum password length = `8`** (`S10`).
+- Confirm Edge Functions are deployed (`create_user`, `invite_user`) with `ALLOWED_ORIGINS="https://xzacto.store,https://www.xzacto.store"` (temporarily adding `https://xzacto-403cc.web.app` during pre-cutover testing).
 
 ## 7. Rollback Plan
 

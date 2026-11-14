@@ -86,7 +86,7 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
                         labelText: t.newPassword,
                         prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20),
                       ),
-                      validator: (v) => (v == null || v.length < 6) ? t.errPasswordShort : null,
+                      validator: (v) => (v == null || v.length < 8) ? t.errPasswordShort : null,
                     ),
                     const SizedBox(height: Gap.m),
                     TextFormField(
@@ -165,7 +165,7 @@ Future<void> showChangePasswordDialog(BuildContext context, Backend backend) asy
             key: const Key('change-password-save'),
             style: FilledButton.styleFrom(shape: const StadiumBorder()),
             onPressed: () {
-              if (pw.text.length < 6) {
+              if (pw.text.length < 8) {
                 setState(() => error = t.errPasswordShort);
               } else {
                 Navigator.pop(ctx, true);

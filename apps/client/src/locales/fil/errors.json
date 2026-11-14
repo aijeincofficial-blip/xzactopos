@@ -54,7 +54,6 @@
     "location_code": "Hanggang 20 letra, numero, gitling o underscore.",
     "username": "3-40 character: a-z, 0-9, tuldok, gitling, underscore. Dapat nagsisimula at nagtatapos sa letra o numero.",
     "password": "8 hanggang 72 character.",
-    "password_min6": "Kahit 6 na character.",
     "password_match": "Hindi magkatugma ang mga password.",
     "position_required": "Pumili ng posisyon para sa tindahang ito.",
     "location_required": "Pumili ng lokasyon.",

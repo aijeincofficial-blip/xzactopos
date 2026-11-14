@@ -25,7 +25,7 @@ export const emailSignInSchema = z.object({
 export const soloSignUpSchema = z.object({
   storeName: required.max(120, "validation.max120"),
   email: z.string().trim().email("validation.email"),
-  password: z.string().min(6, "validation.password_min6").max(72, "validation.password"),
+  password: z.string().min(8, "validation.password").max(72, "validation.password"),
 });
 
 export const storeNameOnlySchema = z.object({
@@ -38,7 +38,7 @@ export const forgotPasswordSchema = z.object({
 
 export const resetPasswordSchema = z
   .object({
-    password: z.string().min(6, "validation.password_min6").max(72, "validation.password"),
+    password: z.string().min(8, "validation.password").max(72, "validation.password"),
     confirmPassword: z.string(),
   })
   .refine((v) => v.password === v.confirmPassword, {

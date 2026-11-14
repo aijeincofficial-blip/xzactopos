@@ -185,7 +185,7 @@ abstract class AppLocalizations {
   /// No description provided for @errPasswordShort.
   ///
   /// In en, this message translates to:
-  /// **'At least 6 characters'**
+  /// **'At least 8 characters'**
   String get errPasswordShort;
 
   /// No description provided for @errGeneric.

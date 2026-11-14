@@ -54,7 +54,6 @@
     "location_code": "Up to 20 letters, digits, dash or underscore.",
     "username": "3-40 characters: a-z, 0-9, dot, dash, underscore. Start and end with a letter or digit.",
     "password": "8 to 72 characters.",
-    "password_min6": "At least 6 characters.",
     "password_match": "Passwords do not match.",
     "position_required": "Choose a position for this store.",
     "location_required": "Choose a location.",

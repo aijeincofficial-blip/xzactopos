@@ -53,7 +53,7 @@ class AppLocalizationsFil extends AppLocalizations {
   String get errRequired => 'Pakisulat po ito';
 
   @override
-  String get errPasswordShort => 'Hindi bababa sa 6 na letra';
+  String get errPasswordShort => 'Hindi bababa sa 8 na letra';
 
   @override
   String get errGeneric => 'May nangyaring mali. Subukan ulit.';

@@ -170,7 +170,9 @@ class _AuthScreenState extends State<AuthScreen> {
                         labelText: t.password,
                         prefixIcon: const Icon(Icons.lock_outline_rounded, size: 19),
                       ),
-                      validator: (v) => (v == null || v.length < 6) ? t.errPasswordShort : null,
+                      validator: (v) => _newUser
+                          ? ((v == null || v.length < 8) ? t.errPasswordShort : null)
+                          : ((v == null || v.trim().isEmpty) ? t.errRequired : null),
                     ),
                     const SizedBox(height: Gap.l),
                     LimeButton(

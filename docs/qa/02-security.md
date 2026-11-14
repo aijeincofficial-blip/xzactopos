@@ -156,21 +156,21 @@
   2. `sales` table stores amounts only in `tenants.base_currency` without snapshotting `currency`/`fx_rate` columns per sale (`docs/plan.md` §6 backlog).
 - **How to reproduce:** Issue a credit (`utang`) sale, call `op_return_sale_items` with `refund_method = 'cash'` -> returns cash on an unpaid credit sale.
 - **Fix:** Validate `refund_method` against `payments` settled on the sale (or settle `utang` credit balance first) and add sale currency/FX snapshot columns if multi-currency checkout is enabled.
-- **Status:** `Open`
+- **Status:** `Open` *(Repo hosting config delivered in root `firebase.json` + `.firebaserc` for Firebase Hosting `xzacto-403cc` / `https://skdwxenbvhzpfxtwgepa.supabase.co` with `Strict-Transport-Security`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`, `Content-Security-Policy`, `sw.js`/`index.html` `no-cache`, and SPA rewrites; remains to be deployed and DNS-cutover to `xzacto.store`.)*
 
 #### `S08` · Medium · Incomplete CSV Formula Injection Escaping
 - **Where:** `apps/client/src/lib/csv-helper.ts:29`, `apps/mobile/lib/core/export.dart:12`
 - **What:** Web (`csv-helper.ts`) does not escape formula prefixes on all exported cells consistently across reports, and Mobile (`export.dart`) checks `= + @` (`startsWith`) but omits leading `-`, `\t`, and `\r`, allowing spreadsheet formula injection in exported product names, customer notes, or SKU values opened in Excel/Sheets.
 - **How to reproduce:** Create a customer or product named `-2+3*cmd|' /C calc'!A0` or `=1+1` and export CSV on Mobile/Web; Excel interprets `-2+...` as a formula.
 - **Fix:** Prefix any cell whose first character is `=`, `+`, `-`, `@`, `\t`, or `\r` with a leading single quote (`'`) before CSV quoting in both `csv-helper.ts` and `export.dart`.
-- **Status:** `Open`
+- **Status:** `Open` *(Repo hosting config delivered in root `firebase.json` + `.firebaserc` for Firebase Hosting `xzacto-403cc` / `https://skdwxenbvhzpfxtwgepa.supabase.co` with `Strict-Transport-Security`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`, `Content-Security-Policy`, `sw.js`/`index.html` `no-cache`, and SPA rewrites; remains to be deployed and DNS-cutover to `xzacto.store`.)*
 
 #### `S09` · Medium · Missing HTTP Security Headers & Content-Security-Policy (CSP)
 - **Where:** `apps/client/index.html` and repository root hosting configuration
 - **What:** No hosting headers file (`vercel.json`, `netlify.toml`, `_headers`, `firebase.json`, `nginx.conf`) and no CSP `<meta>` tag exist in `apps/client/index.html`, leaving clickjacking (`X-Frame-Options` / `frame-ancestors`), `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `Permissions-Policy`, and `Content-Security-Policy` unconfigured in-repo.
 - **How to reproduce:** Build `apps/client/dist` or inspect repo root — no response-header config or CSP policy is declared.
 - **Fix:** Add platform hosting header rules (e.g., `vercel.json` / `netlify.toml` / `_headers`) setting `Strict-Transport-Security`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy`, `frame-ancestors 'none'`, and a tight CSP allowing `self`, Supabase HTTPS/WSS origins, and Google Fonts (if used).
-- **Status:** `Open`
+- **Status:** `Open` *(Repo hosting config delivered in root `firebase.json` + `.firebaserc` for Firebase Hosting `xzacto-403cc` / `https://skdwxenbvhzpfxtwgepa.supabase.co` with `Strict-Transport-Security`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`, `Content-Security-Policy`, `sw.js`/`index.html` `no-cache`, and SPA rewrites; remains to be deployed and DNS-cutover to `xzacto.store`.)*
 
 #### `S10` · Medium · Auth Minimum Password Length & Edge CORS / `redirect_to` Hardening
 - **Where:** `supabase/config.toml:183-184`, `supabase/functions/_shared/http.ts`, `supabase/functions/invite_user/index.ts`
@@ -180,7 +180,7 @@
   3. `invite_user` accepts arbitrary `https?://` `redirect_to` strings relying solely on GoTrue's `additional_redirect_urls` allowlist check.
 - **How to reproduce:** Inspect `supabase/config.toml:183` (`minimum_password_length = 6`) and deploy Edge Functions without setting `ALLOWED_ORIGINS` env var.
 - **Fix:** Set `minimum_password_length = 8` in `supabase/config.toml`, enforce fail-closed origin allowlist when running in production in `_shared/http.ts`, and validate `invite_user` `redirect_to` against `ALLOWED_ORIGINS`.
-- **Status:** `Open`
+- **Status:** `Open` *(Password minimum `8` aligned in `supabase/config.toml:183`, Web `apps/client/src/lib/schemas.ts`, and Mobile `auth_screen.dart` / `password_screens.dart` + `en`/`fil` i18n. Remaining at deploy/backlog: set hosted Supabase Auth Minimum password length to `8`, set Edge `ALLOWED_ORIGINS`, and tighten `invite_user` `redirect_to` allowlist checks.)* *(Repo hosting config delivered in root `firebase.json` + `.firebaserc` for Firebase Hosting `xzacto-403cc` / `https://skdwxenbvhzpfxtwgepa.supabase.co` with `Strict-Transport-Security`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`, `Content-Security-Policy`, `sw.js`/`index.html` `no-cache`, and SPA rewrites; remains to be deployed and DNS-cutover to `xzacto.store`.)*
 
 #### `S11` · Medium · Unimplemented Solo-Mode Route Guard & Suspended Read Note (`/app/upgrade`)
 - **Where:** `apps/client/src/router.tsx:229`, `supabase/migrations/20261108000400_product_photos.sql:51-53`
@@ -189,7 +189,7 @@
   2. Note for owner awareness: `product_photos_member_read` checks `is_own_product_photo_path(name)` via `auth_tenant_id()`, which intentionally permits `suspended` tenants to read/export (`20261107000200:83`) while blocking writes via `can_upload_product_photo()`. Verify whether signed-out / suspended product image downloads should also be blocked on suspension.
 - **How to reproduce:** Navigate directly to `/app/upgrade` as an unprivileged/already-pro role or fetch a cached object path as a suspended tenant member.
 - **Fix:** Guard `/app/upgrade` route to `superadmin` (`router.tsx`) and confirm product photo retention/read policy on tenant suspension.
-- **Status:** `Open`
+- **Status:** `Open` *(Repo hosting config delivered in root `firebase.json` + `.firebaserc` for Firebase Hosting `xzacto-403cc` / `https://skdwxenbvhzpfxtwgepa.supabase.co` with `Strict-Transport-Security`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`, `Content-Security-Policy`, `sw.js`/`index.html` `no-cache`, and SPA rewrites; remains to be deployed and DNS-cutover to `xzacto.store`.)*
 
 #### `S12` · Medium · Supabase `db lint` & Splinter Security Advisor Hardening Backlog
 - **Where:** Postgres database (`public` schema functions & tables)
@@ -198,14 +198,14 @@
   - Splinter Security Advisor reports `78 WARN authenticated_security_definer_function_executable`, `3 INFO rls_enabled_no_policy` (intentional server-only tables `processed_ops`, `sale_counters`, `supervisor_approvals`), `97 INFO unindexed_foreign_keys`, and `38 INFO unused_index`.
 - **How to reproduce:** Run `supabase db lint --local -s public` and execute Splinter queries against local Postgres.
 - **Fix:** Refactor `_ret_lines` in `op_return_sale_items` to a PL/pgSQL array/jsonb variable so `db lint` passes cleanly with 0 errors, review read-only `SECURITY DEFINER` RPCs that can be `SECURITY INVOKER` safely, and add covering indexes on hot FK columns.
-- **Status:** `Open` *(Post-QA-02 `supabase db lint --local -s public` exited `0` with `1` pre-existing `_ret_lines` error + `20` pre-existing warning functions. In QA-04 migration `20261114000300_qa04_keepalive_and_lint_fix.sql`, `_ret_lines` was refactored to `jsonb_to_recordset(v_ret_lines)` — `supabase db lint --local -s public` now exits `0` with **`0` errors** across `public`; the remaining `20` pre-existing warning functions & Splinter `SECURITY DEFINER` / unindexed-FK backlog stay open.)*
+- **Status:** `Open` *(Repo hosting config delivered in root `firebase.json` + `.firebaserc` for Firebase Hosting `xzacto-403cc` / `https://skdwxenbvhzpfxtwgepa.supabase.co` with `Strict-Transport-Security`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`, `Content-Security-Policy`, `sw.js`/`index.html` `no-cache`, and SPA rewrites; remains to be deployed and DNS-cutover to `xzacto.store`.)* *(Post-QA-02 `supabase db lint --local -s public` exited `0` with `1` pre-existing `_ret_lines` error + `20` pre-existing warning functions. In QA-04 migration `20261114000300_qa04_keepalive_and_lint_fix.sql`, `_ret_lines` was refactored to `jsonb_to_recordset(v_ret_lines)` — `supabase db lint --local -s public` now exits `0` with **`0` errors** across `public`; the remaining `20` pre-existing warning functions & Splinter `SECURITY DEFINER` / unindexed-FK backlog stay open.)*
 
 #### `S13` · Medium · Incomplete `004_tenant_isolation_matrix` Coverage for Bin/Pick Tables & Cross-Tenant `INSERT`
 - **Where:** `supabase/tests/004_tenant_isolation_matrix.test.sql:200-525`
 - **What:** `004_tenant_isolation_matrix.test.sql` leaves `own_rows = 0` on 5 warehouse bin/pick-list tables (`warehouse_zones`, `bins`, `bin_stock_levels`, `pick_lists`, `pick_list_items`) and tests cross-tenant `INSERT` probes on only 1 table (`products`) rather than all 55 client-accessible/restricted tables. *(Note: QA-02 proof test `055_qa02_security_audit.test.sql` covers all 55 tables across `SELECT`, `INSERT`, `UPDATE`, `DELETE` and `anon` independently.)*
 - **How to reproduce:** Review `004_tenant_isolation_matrix.test.sql` seed inserts (`lines 200-400`).
 - **Fix:** Seed representative rows across the 5 bin/pick-list tables and verify full 55-table CRUD matrix in automated pgTAP tests (`055_qa02_security_audit.test.sql`).
-- **Status:** `Open` *(Cross-tenant 55-table CRUD & `anon` matrix verified independently in `055_qa02_security_audit.test.sql`; seeding the 5 bin/pick tables in `004_tenant_isolation_matrix.test.sql` remains backlog.)*
+- **Status:** `Open` *(Repo hosting config delivered in root `firebase.json` + `.firebaserc` for Firebase Hosting `xzacto-403cc` / `https://skdwxenbvhzpfxtwgepa.supabase.co` with `Strict-Transport-Security`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`, `Content-Security-Policy`, `sw.js`/`index.html` `no-cache`, and SPA rewrites; remains to be deployed and DNS-cutover to `xzacto.store`.)* *(Cross-tenant 55-table CRUD & `anon` matrix verified independently in `055_qa02_security_audit.test.sql`; seeding the 5 bin/pick tables in `004_tenant_isolation_matrix.test.sql` remains backlog.)*
 
 ---
 
@@ -216,7 +216,7 @@
 - **What:** Offline PIN hashes use `20,000` PBKDF2-HMAC-SHA256 iterations and are stored in unencrypted `SharedPreferences` / Drift SQLite / `localStorage` rather than `FlutterSecureStorage` / OS keystore. If a device's local storage is physically extracted (`S05`/`S01` mitigate remote/post-logout access and `v2:` verifier extraction from forging HMACs cleanly), a short 4-digit PIN still has only `10^4` search space offline.
 - **How to reproduce:** Extract cached PIN entries from device storage and run an offline 4-digit dictionary search at `20,000` iterations.
 - **Fix:** Increase `set_my_pin` default PBKDF2 iterations (e.g. `100,000+`, benchmarked on target low-end Android tablets), encourage 6-digit PINs for supervisors/managers, and store offline verifiers in encrypted mobile keystore storage (`flutter_secure_storage`) where available.
-- **Status:** `Open`
+- **Status:** `Open` *(Repo hosting config delivered in root `firebase.json` + `.firebaserc` for Firebase Hosting `xzacto-403cc` / `https://skdwxenbvhzpfxtwgepa.supabase.co` with `Strict-Transport-Security`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`, `Content-Security-Policy`, `sw.js`/`index.html` `no-cache`, and SPA rewrites; remains to be deployed and DNS-cutover to `xzacto.store`.)*
 
 ---
 

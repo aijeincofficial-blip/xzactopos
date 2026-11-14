@@ -53,7 +53,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errRequired => 'Please fill this in';
 
   @override
-  String get errPasswordShort => 'At least 6 characters';
+  String get errPasswordShort => 'At least 8 characters';
 
   @override
   String get errGeneric => 'Something went wrong. Please try again.';

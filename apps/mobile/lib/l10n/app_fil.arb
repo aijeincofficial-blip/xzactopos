@@ -21,7 +21,7 @@
   "homeReady": "Handa na ang tindahan mo. Susunod ang pagbebenta.",
   "signOut": "Mag-sign out",
   "errRequired": "Pakisulat po ito",
-  "errPasswordShort": "Hindi bababa sa 6 na letra",
+  "errPasswordShort": "Hindi bababa sa 8 na letra",
   "errGeneric": "May nangyaring mali. Subukan ulit.",
   "errAlreadyHasStore": "May tindahan na ang account na ito.",
   "errBadLogin": "Mali ang email o password.",

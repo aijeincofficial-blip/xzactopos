@@ -21,7 +21,7 @@
   "homeReady": "Your store is ready. Selling is coming next.",
   "signOut": "Sign out",
   "errRequired": "Please fill this in",
-  "errPasswordShort": "At least 6 characters",
+  "errPasswordShort": "At least 8 characters",
   "errGeneric": "Something went wrong. Please try again.",
   "errAlreadyHasStore": "This account already has a store.",
   "errBadLogin": "Wrong email or password.",
