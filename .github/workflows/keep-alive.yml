@@ -13,12 +13,13 @@ jobs:
     steps:
       - name: Ping Supabase health RPC
         run: |
-          if [ -z "${{ secrets.SUPABASE_URL }}" ]; then
-            echo "SUPABASE_URL secret is not set. Skipping keep-alive ping."
+          if [ -z "${{ secrets.SUPABASE_URL }}" ] || [ -z "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" ]; then
+            echo "SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY secret is not set. Skipping keep-alive ping."
             exit 0
           fi
           RESPONSE=$(curl -s -X POST "${{ secrets.SUPABASE_URL }}/rest/v1/rpc/health_ping" \
-            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "apikey: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
             -H "Content-Type: application/json")
           echo "Response: $RESPONSE"
           if echo "$RESPONSE" | grep -q '"ok":true'; then

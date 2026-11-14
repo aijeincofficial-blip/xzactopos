@@ -41,10 +41,11 @@ ls -lh backups/backup_*.sql.gz
 ## 3. Automated Keep-Alive Ping (Preventing Idle Project Pause)
 Supabase free tier automatically pauses projects after 7 consecutive days of database inactivity.
 - **Automated Workflow**: `.github/workflows/keep-alive.yml` runs every 3 days at 00:00 UTC.
-- **Lightweight Health Endpoint**: Calls the `public.health_ping()` RPC via HTTPS:
+- **Lightweight Health Endpoint**: Calls the `public.health_ping()` RPC via HTTPS using `SUPABASE_SERVICE_ROLE_KEY` (`anon` is revoked; regular authenticated users must pass `assert_active_user()`):
   ```bash
   curl -X POST "https://[PROJECT_REF].supabase.co/rest/v1/rpc/health_ping" \
-    -H "apikey: [ANON_KEY]" \
+    -H "apikey: [SERVICE_ROLE_KEY]" \
+    -H "Authorization: Bearer [SERVICE_ROLE_KEY]" \
     -H "Content-Type: application/json"
   ```
 - **Expected Response**:
@@ -53,7 +54,6 @@ Supabase free tier automatically pauses projects after 7 consecutive days of dat
     "ok": true,
     "status": "healthy",
     "timestamp": "2026-11-08T14:00:00.000000Z",
-    "database": "postgres",
     "version": "1.0.0"
   }
   ```

@@ -3,7 +3,7 @@
 **Date:** 2026-11-14 | **Branch:** `ag/work` (worktree `.claude/worktrees/ag-work`) | **Scope:** Full verification across QA-01 ([01-functional.md](01-functional.md)), QA-02 ([02-security.md](02-security.md)), QA-03 ([03-performance.md](03-performance.md)), and [design.md](../design.md) §13.
 
 > [!IMPORTANT]
-> **All 25 Critical & High findings (`F01`–`F11`, `S01`–`S06`, `P01`–`P08`) are `Fixed` and backed by automated tests.** Every verification gate (`pnpm check`, Web PWA build + secret scan, `7/7` Playwright E2E flows including offline reload, `supabase db advisors`, `supabase db lint`, and `pnpm audit --prod`) passed after the final code and test edits. **Do not deploy** until the human-decision items in §4 (notably `.github/workflows/keep-alive.yml`, Android release keystore, hosting CSP headers, and production `ALLOWED_ORIGINS`) are resolved.
+> **All 25 Critical & High findings (`F01`–`F11`, `S01`–`S06`, `P01`–`P08`) are `Fixed` and backed by automated tests.** Every verification gate (`pnpm check`, Web PWA build + secret scan, `7/7` Playwright E2E flows including offline reload, `supabase db advisors`, `supabase db lint` with **`0` errors**, and `pnpm audit --prod`) passed after the final edits. **Do not deploy** until the human-decision items in §4 (GitHub `SUPABASE_SERVICE_ROLE_KEY` secret for keep-alive, Android release keystore, hosting CSP headers, and production `ALLOWED_ORIGINS`) are resolved.
 
 ---
 
@@ -25,12 +25,12 @@
 | **Lint & Typecheck** | `pnpm lint` & `pnpm typecheck` (`pnpm check`) | Exit `0` across `packages/core`, `packages/sync`, `apps/client` |
 | **JS/TS Unit Tests** | `pnpm test` (`pnpm check`) | `@pos/core`: `4` files / `55` passed; `@pos/client`: `39` files / `260` passed; `@pos/sync`: `0` test files (`--passWithNoTests`, exit `0`) |
 | **Edge Function Tests** | `pnpm test:functions` (`pnpm check`) | `1` file (`_shared/validate.test.ts`), `22` passed |
-| **Postgres pgTAP Suite** | `pnpm test:db` (`pnpm check`) | `Files=56, Tests=4962, 101 wallclock secs — Result: PASS` |
+| **Postgres pgTAP Suite** | `pnpm test:db` (`pnpm check`) | `Files=56, Tests=4964 — Result: PASS` |
 | **Mobile Checks & Tests** | `pnpm check:mobile` (`pnpm check`) | `8/8` service-worker checks passed; `flutter analyze`: `No issues found!`; `flutter test`: `+623: All tests passed!` |
-| **Web Production Build & Secret Scan** | `pnpm --filter @pos/client build` + `dist/` regex scan | `✓ 2580 modules transformed`, `✓ built in 3.29s`, `PWA v2.0.0`, `precache 98 entries (2140.72 KiB)`; zero `service_role` or DB credential matches (only local `anon` JWT `role:"anon"` present) |
-| **Playwright E2E Suite** | `pnpm exec playwright test` (`e2e/qa01-critical-flows.spec.ts`) | **`7 passed (2.8m)`** — Flows 1–7 all green (including offline reload Flow 2 and live poll Flow 6) |
+| **Web Production Build & Secret Scan** | `pnpm --filter @pos/client build` + `dist/` regex scan | `✓ 2580 modules transformed`, `✓ built in 3.18s`, `PWA v2.0.0`, `precache 98 entries (2140.72 KiB)`; zero `service_role` or DB credential matches (only local `anon` JWT `role:"anon"` present) |
+| **Playwright E2E Suite** | `pnpm exec playwright test` (`e2e/qa01-critical-flows.spec.ts`) | **`7/7 passed`** — Flows 1–7 all green (including offline reload Flow 2, partial returns Flow 3, and live poll Flow 6) |
 | **Supabase Advisors (Local)** | `pnpm exec supabase db advisors --local --type all --level warn` / `info` | `0` WARN/ERROR (`No issues found`); `136` INFO (`91` `unindexed_foreign_keys`, `42` `unused_index`, `3` intentional `rls_enabled_no_policy` on internal tables `processed_ops`, `sale_counters`, `supervisor_approvals`) |
-| **Supabase SQL Linter** | `pnpm exec supabase db lint --local -s public` | Exit `0`, `0` new errors (`1` pre-existing static error on runtime temp table `_ret_lines` in `public.op_return_sale_items` + `20` pre-existing warning functions) |
+| **Supabase SQL Linter** | `pnpm exec supabase db lint --local -s public` | Exit `0`, `0` errors across `public` schema (`op_return_sale_items` `_ret_lines` resolved in `20261114000300`; `20` pre-existing warning functions remain) |
 | **Dependency Audit** | `pnpm audit --prod` | Exit `0`: `No known vulnerabilities found` |
 
 ### 1.2 `design.md` §13 Self-Check Breakdown
@@ -107,7 +107,7 @@ Every `Critical` and `High` item across QA-01, QA-02, and QA-03 is `Fixed` and b
 | `P09` | Medium | QA-03 | Sequential CSV bulk import loop & per-variant `post_opening_stock` writes | `apps/client/src/routes/products.tsx:1180-1240`, `lib/stock-api.ts:470-520` |
 | `P10` | Medium | QA-03 | `transfers-api.ts` & `day-close-api.ts` `select('*')` over-fetching; 4 concurrent pollers in `day-close.tsx` | `apps/client/src/lib/transfers-api.ts`, `day-close-api.ts`, `routes/day-close.tsx` |
 | `P12` | Medium | QA-03 | Mobile `PhotoLoader` queries SQLite blobs without an in-memory LRU cache layer | `apps/mobile/lib/sync/photo_loader.dart` |
-| `S12` | Medium | QA-02 | `supabase db lint` pre-existing `_ret_lines` error (`op_return_sale_items`) + 20 warning objects; review read-only `SECURITY DEFINER` RPCs vs `SECURITY INVOKER` | `public` schema functions |
+| `S12` | Medium | QA-02 | `supabase db lint` `0` errors (`_ret_lines` resolved in `20261114000300`), `20` pre-existing warning functions remain; review read-only `SECURITY DEFINER` RPCs vs `SECURITY INVOKER` | `public` schema functions |
 | `S13` | Medium | QA-02 | `004_tenant_isolation_matrix.test.sql` has `own_rows = 0` on 5 warehouse bin/pick tables (all 55 tables are independently covered in `055_qa02_security_audit.test.sql`) | `supabase/tests/004_tenant_isolation_matrix.test.sql:200-525` |
 | `S14` | Low | QA-02 | Increase offline PIN PBKDF2 default iterations (`20,000 -> 100,000+` after low-end tablet benchmark) and migrate Mobile verifier cache to `flutter_secure_storage` | `20261108001200_expense_supervisor_approval.sql:92`, `offline-pin-api.ts`, `pin_auth.dart` |
 | `P13` | Low | QA-03 | Remaining non-hot foreign keys without explicit indexes (`91` flagged in current local `db advisors`) | `public` schema |
@@ -118,10 +118,10 @@ Every `Critical` and `High` item across QA-01, QA-02, and QA-03 is `Fixed` and b
 
 ---
 
-## 4. Risks Needing a Human Decision
+## 4. Risks & Owner Actions Required Before Deploy
 
-1. **Free-Tier Keep-Alive Broken After Security Hardening (`.github/workflows/keep-alive.yml`, `docs/runbooks/backup-and-restore.md` §3):**
-   QA-02 (`20261114000100_qa02_security_fixes.sql`) revoked `anon` execute on `public.health_ping()` and added `perform public.assert_active_user();`. However, `.github/workflows/keep-alive.yml` posts to `/rest/v1/rpc/health_ping` with only `-H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}"` (no user JWT). **Decision needed:** authenticate the keep-alive probe with a dedicated monitoring/service credential or introduce a minimal unprivileged non-tenanted health probe before relying on free-tier auto-pause protection.
+1. **GitHub Actions Keep-Alive Secret (`.github/workflows/keep-alive.yml`):**
+   Migration `20261114000300_qa04_keepalive_and_lint_fix.sql` and `.github/workflows/keep-alive.yml` fixed the QA-02 auth mismatch cleanly: `service_role` can run `health_ping()`, while `anon` remains blocked and `authenticated` callers still enforce `assert_active_user()`. **Owner action needed:** Add **`SUPABASE_SERVICE_ROLE_KEY`** (plus `SUPABASE_URL` & `DB_URL`) to GitHub Repository Secrets before relying on scheduled keep-alive pings on Free Tier.
 2. **Android Release Keystore Not Provisioned (`apps/mobile/android/app/build.gradle.kts`):**
    Release builds fall back to debug signing when `apps/mobile/android/key.properties` is absent. **Decision/Action needed:** Owner must generate the release keystore and keep `key.properties` outside version control before Play Store or device distribution.
 3. **Static Host & CSP / Security Headers (`S09`):**
@@ -132,8 +132,6 @@ Every `Critical` and `High` item across QA-01, QA-02, and QA-03 is `Fixed` and b
    `product_photos_member_read` allows `suspended` tenants to read/export existing photos (matching data export posture) while blocking uploads (`can_upload_product_photo()`). **Decision needed:** Confirm whether product images should stay readable during suspension or also be blocked.
 6. **Refund Tender Rules vs Multi-Currency Roadmap (`S07`):**
    `op_return_sale_items` currently permits cash/e-wallet/card refund methods without checking the original tender mix (e.g., cash refund on an unpaid `utang` sale), and `sales` stores amounts in `base_currency` without FX snapshots. **Decision needed:** Prioritize refund-to-credit rules before expanding `utang` / multi-currency features.
-7. **`db lint` Static Error in `op_return_sale_items` (`S12`):**
-   `supabase db lint` exits `0` overall but flags 1 static SQL error (`42P01`) on dynamic temp table `_ret_lines`. **Decision needed:** Decide whether to refactor `_ret_lines` to a PL/pgSQL variable before enforcing strict zero-issue `db lint` CI gates.
 
 ---
 
@@ -141,7 +139,7 @@ Every `Critical` and `High` item across QA-01, QA-02, and QA-03 is `Fixed` and b
 
 See the full pre-deploy procedure in [docs/runbooks/release-checklist.md](../runbooks/release-checklist.md) and recovery steps in [docs/runbooks/backup-and-restore.md](../runbooks/backup-and-restore.md):
 
-- **Migrations:** All `58` migrations (`20261107000100_core_tenancy.sql` .. `20261114000200_qa03_performance_fixes.sql`) listed in strict timestamp order, plus Postgres `17`, `custom_access_token_hook`, auth redirect URLs, and private `product-photos` storage bucket (`200 KiB`, `image/jpeg`).
-- **Environment & Secrets Matrix:** Build-time Web vars (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`), Edge Function runtime vars (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `ALLOWED_ORIGINS`), Flutter `--dart-define` vars + `android/key.properties`, and CI backup secret (`DB_URL`).
-- **Backups & Advisors:** Weekly GitHub Action backup (`backup.yml`) + manual `scripts/backup-db.mjs`; resolve `keep-alive.yml` auth mismatch before launch; baseline `db advisors --level warn` is `0` issues (`136` INFO total).
+- **Migrations:** All `59` migrations (`20261107000100_core_tenancy.sql` .. `20261114000300_qa04_keepalive_and_lint_fix.sql`) listed in strict timestamp order, plus Postgres `17`, `custom_access_token_hook`, auth redirect URLs, and private `product-photos` storage bucket (`200 KiB`, `image/jpeg`).
+- **Environment & Secrets Matrix:** Build-time Web vars (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`), Edge Function runtime vars (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `ALLOWED_ORIGINS`), Flutter `--dart-define` vars + `android/key.properties`, and CI secrets (`DB_URL`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`).
+- **Backups & Advisors:** Weekly GitHub Action backup (`backup.yml`) + manual `scripts/backup-db.mjs`; baseline `db advisors --level warn` is `0` issues (`136` INFO total) and `db lint -s public` is `0` errors.
 - **Rollback Plan:** Additive forward migrations or `pg_dump` restore from pre-deploy backup (`backup-and-restore.md`), Edge Function revision redeploy, static web artifact revert, and forward-only handling for Mobile SQLite (`schemaVersion = 18`).

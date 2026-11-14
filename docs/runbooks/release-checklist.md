@@ -18,7 +18,7 @@ pnpm audit --prod
 
 Verify the production client bundle (`apps/client/dist/`) contains no `service_role` keys or private secrets before publishing. See [00-summary.md](../qa/00-summary.md) for current QA sign-off status.
 
-## 2. Database Migrations (58 Total, Ordered)
+## 2. Database Migrations (59 Total, Ordered)
 
 Apply all `supabase/migrations/` files in strict timestamp order to the target project (e.g., via `supabase db push` on a linked project):
 
@@ -80,6 +80,7 @@ Apply all `supabase/migrations/` files in strict timestamp order to the target p
 56. `20261113000100_qa01_functional_fixes.sql`
 57. `20261114000100_qa02_security_fixes.sql`
 58. `20261114000200_qa03_performance_fixes.sql`
+59. `20261114000300_qa04_keepalive_and_lint_fix.sql`
 
 ### Target Supabase Platform Configuration
 
@@ -103,7 +104,7 @@ Never commit `.env`, `.env.local`, `android/key.properties`, or `service_role` k
 | **Mobile App** (`apps/mobile`) | `SUPABASE_ANON_KEY` (`--dart-define`) | Build/run-time Dart define. |
 | **Mobile Android Release** | `apps/mobile/android/key.properties` | Upload/release keystore properties (`build.gradle.kts` falls back to debug signing if absent). |
 | **GitHub Actions** (`.github/workflows/backup.yml`) | `DB_URL` | Repository secret: direct Postgres connection string (`pg_dump`). Workflow skips if unset. |
-| **GitHub Actions** (`.github/workflows/keep-alive.yml`) | `SUPABASE_URL`, `SUPABASE_ANON_KEY` | Repository secrets used by keep-alive workflow (see §4 warning below). |
+| **GitHub Actions** (`.github/workflows/keep-alive.yml`) | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Repository secrets used by authenticated keep-alive workflow (skips if unset). |
 | **Local / Optional Supabase** (`supabase/config.toml`) | `OPENAI_API_KEY`, `S3_HOST`, `S3_REGION`, `S3_ACCESS_KEY`, `S3_SECRET_KEY` | Optional local Studio / S3 storage config; not needed unless using those features. |
 
 ## 4. Backups & Keep-Alive Verification
@@ -112,13 +113,13 @@ Never commit `.env`, `.env.local`, `android/key.properties`, or `service_role` k
 - **Scheduled Backup (`.github/workflows/backup.yml`)**: Runs weekly Sunday `02:00 UTC` and on manual `workflow_dispatch`. Executes `pg_dump "$DB_URL" --clean --if-exists --no-owner --no-privileges | gzip` and uploads the `.sql.gz` artifact for `30` days. Configure the `DB_URL` repository secret and test once with `workflow_dispatch`.
 - **Local Backup Helper**: `scripts/backup-db.mjs` produces timestamped local dumps (see [backup-and-restore.md](backup-and-restore.md)).
 
-> [!WARNING]
-> **Known Keep-Alive Breakage Risk (`.github/workflows/keep-alive.yml`)**:
-> `keep-alive.yml` runs every 3 days (`00:00 UTC`) and calls `POST /rest/v1/rpc/health_ping` with only `apikey: $SUPABASE_ANON_KEY`. Migration `20261114000100_qa02_security_fixes.sql` revoked `anon` execute on `public.health_ping()` and added `perform public.assert_active_user();`, so unauthenticated anon pings will fail against hardened databases. Before relying on free-tier auto-pause prevention in production, update `keep-alive.yml` (or add a dedicated non-tenanted health check endpoint / authenticated probe) and test via `workflow_dispatch`.
+> [!NOTE]
+> **Keep-Alive Configuration (`.github/workflows/keep-alive.yml`)**:
+> `keep-alive.yml` runs every 3 days (`00:00 UTC`) and calls `POST /rest/v1/rpc/health_ping` with `apikey` + `Authorization: Bearer` using `SUPABASE_SERVICE_ROLE_KEY` (allowed in migration `20261114000300_qa04_keepalive_and_lint_fix.sql`, while `anon` remains blocked and `authenticated` callers require `assert_active_user()`). Add `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` repository secrets in GitHub Actions and verify via `workflow_dispatch`.
 
 ## 5. Supabase Advisors & `db lint` Posture
 
-Baseline verified locally after `20261114000200_qa03_performance_fixes.sql`:
+Baseline verified locally after `20261114000300_qa04_keepalive_and_lint_fix.sql`:
 
 - **`supabase db advisors --local --type all --level warn`**: `0` warnings and `0` errors (`No issues found`).
 - **`supabase db advisors --local --type all --level info`**: `136` INFO items total:
@@ -126,7 +127,7 @@ Baseline verified locally after `20261114000200_qa03_performance_fixes.sql`:
   - `42` `unused_index` (expected on freshly seeded local DB before production query traffic).
   - `3` `rls_enabled_no_policy` on internal tables `processed_ops`, `sale_counters`, and `supervisor_approvals` — **intentional** (locked down from direct client access; mutated only via `SECURITY DEFINER` RPCs).
 - **Schema Security Invariants**: `0` tables without RLS (`tables_without_rls = 0`); `0` `SECURITY DEFINER` functions missing `SET search_path`.
-- **`supabase db lint --local -s public`**: `1` pre-existing error in `public.op_return_sale_items` (`_ret_lines` runtime temp table flagged statically as SQLSTATE `42P01`, tracked as `S12`) plus pre-existing unused-variable/shadow warnings across RPCs. No new lint errors introduced by QA fixes.
+- **`supabase db lint --local -s public`**: `0` errors across `public` schema (`op_return_sale_items` `_ret_lines` resolved in `20261114000300_qa04_keepalive_and_lint_fix.sql`); `20` pre-existing warning-only functions remain (`S12`).
 - **Hosted Check**: After running `supabase db push`, open **Supabase Dashboard -> Database -> Advisors** to confirm zero Warning/Error security regressions.
 
 ## 6. Host Security Headers & Auth Settings

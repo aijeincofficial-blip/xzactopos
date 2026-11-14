@@ -1,7 +1,7 @@
 -- 032_free_tier_operations.test.sql: pgTAP tests for Card F-11 free-tier operations and maintenance
 
 begin;
-select plan(25);
+select plan(27);
 
 -- ---------------------------------------------------------------------------
 -- Setup Fixtures
@@ -95,6 +95,24 @@ select is(
 select ok(
   (public.health_ping() ? 'timestamp'),
   'health_ping returns timestamp'
+);
+
+reset role;
+
+-- Callable as service_role (used by automated keep-alive CI workflow)
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+set local role service_role;
+
+select is(
+  (public.health_ping() ->> 'ok')::boolean,
+  true,
+  'health_ping returns ok = true as service_role'
+);
+
+select is(
+  (public.health_ping() ? 'database'),
+  false,
+  'health_ping omits internal database name as service_role'
 );
 
 reset role;

@@ -41,7 +41,7 @@ VITE_SUPABASE_ANON_KEY=<local-anon-key>
 pnpm db:start
 ```
 
-This applies all `58` migrations in `supabase/migrations/`, configures `public.custom_access_token_hook`, and exposes API (`:54321`), Postgres (`:54322`), Studio (`:54323`), and Mailpit (`:54324`).
+This applies all `59` migrations in `supabase/migrations/`, configures `public.custom_access_token_hook`, and exposes API (`:54321`), Postgres (`:54322`), Studio (`:54323`), and Mailpit (`:54324`).
 
 *(To stop the stack later, run `pnpm db:stop`.)*
 
@@ -87,9 +87,9 @@ Never commit real secrets. Only variable names are listed below:
 | --- | --- | --- |
 | `VITE_SUPABASE_URL` | `apps/client` (`.env.local` / build env) | Supabase API URL for Web client |
 | `VITE_SUPABASE_ANON_KEY` | `apps/client` (`.env.local` / build env) | Public anon key for Web client |
-| `SUPABASE_URL` | Edge Functions & Flutter `--dart-define` | Supabase API URL |
-| `SUPABASE_ANON_KEY` | Flutter `--dart-define` & keep-alive workflow | Public anon key for Mobile client |
-| `SUPABASE_SERVICE_ROLE_KEY` | Edge Functions (`create_user`, `invite_user`) | Server-only admin key (never ship to clients) |
+| `SUPABASE_URL` | Edge Functions, `.github/workflows/keep-alive.yml` & Flutter `--dart-define` | Supabase API URL |
+| `SUPABASE_ANON_KEY` | Flutter `--dart-define` | Public anon key for Mobile client |
+| `SUPABASE_SERVICE_ROLE_KEY` | Edge Functions (`create_user`, `invite_user`) & `.github/workflows/keep-alive.yml` (CI secret) | Server-only admin key (never ship to clients) |
 | `ALLOWED_ORIGINS` | Edge Functions (`_shared/http.ts`) | Comma-separated CORS origin allowlist |
 | `DB_URL` | `.github/workflows/backup.yml` (CI secret) | Postgres connection URI for `pg_dump` backups |
 | `OPENAI_API_KEY`, `S3_*` | `supabase/config.toml` (optional local) | Optional Studio AI / experimental S3 storage config |
@@ -121,6 +121,6 @@ pnpm audit --prod
 
 - [QA Final Wrap-Up Summary](docs/qa/00-summary.md) — audit scorecard, Critical/High test traceability, Medium/Low backlog, and release risks
 - [Functional QA Report](docs/qa/01-functional.md) | [Security QA Report](docs/qa/02-security.md) | [Performance QA Report](docs/qa/03-performance.md)
-- [Release Checklist](docs/runbooks/release-checklist.md) — ordered 58-migration checklist, env matrix, advisor posture, keep-alive warning, and rollback plan
+- [Release Checklist](docs/runbooks/release-checklist.md) — ordered 59-migration checklist, env matrix, advisor posture, keep-alive setup, and rollback plan
 - [Backup & Disaster Recovery Runbook](docs/runbooks/backup-and-restore.md)
 - [Design Specification](docs/design.md) & [Handoff Notes](docs/handoff.md)

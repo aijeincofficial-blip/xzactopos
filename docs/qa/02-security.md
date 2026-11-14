@@ -198,7 +198,7 @@
   - Splinter Security Advisor reports `78 WARN authenticated_security_definer_function_executable`, `3 INFO rls_enabled_no_policy` (intentional server-only tables `processed_ops`, `sale_counters`, `supervisor_approvals`), `97 INFO unindexed_foreign_keys`, and `38 INFO unused_index`.
 - **How to reproduce:** Run `supabase db lint --local -s public` and execute Splinter queries against local Postgres.
 - **Fix:** Refactor `_ret_lines` in `op_return_sale_items` to a PL/pgSQL array/jsonb variable so `db lint` passes cleanly with 0 errors, review read-only `SECURITY DEFINER` RPCs that can be `SECURITY INVOKER` safely, and add covering indexes on hot FK columns.
-- **Status:** `Open` *(Post-QA-02 `supabase db lint --local -s public` exits `0` with `0` new errors: `1` pre-existing `public.op_return_sale_items` line `194` `_ret_lines` error + `20` pre-existing/harmless warning objects.)*
+- **Status:** `Open` *(Post-QA-02 `supabase db lint --local -s public` exited `0` with `1` pre-existing `_ret_lines` error + `20` pre-existing warning functions. In QA-04 migration `20261114000300_qa04_keepalive_and_lint_fix.sql`, `_ret_lines` was refactored to `jsonb_to_recordset(v_ret_lines)` — `supabase db lint --local -s public` now exits `0` with **`0` errors** across `public`; the remaining `20` pre-existing warning functions & Splinter `SECURITY DEFINER` / unindexed-FK backlog stay open.)*
 
 #### `S13` · Medium · Incomplete `004_tenant_isolation_matrix` Coverage for Bin/Pick Tables & Cross-Tenant `INSERT`
 - **Where:** `supabase/tests/004_tenant_isolation_matrix.test.sql:200-525`
