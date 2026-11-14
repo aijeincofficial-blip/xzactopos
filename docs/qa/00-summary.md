@@ -126,9 +126,9 @@ Every `Critical` and `High` item across QA-01, QA-02, and QA-03 is `Fixed` and b
    Keystore `C:\Users\USER\keystores\xzactopos-release.jks` (`upload`) and gitignored `apps/mobile/android/key.properties` are provisioned locally and verified via APK v2 release signing. **Owner action:** Back up the `.jks` file and `key.properties` credentials securely outside this PC.
 3. **Firebase Hosting, Auth & CORS Cutover (`S09`, `S10`):**
    Root `firebase.json` + `.firebaserc` (`xzacto-403cc` / `https://skdwxenbvhzpfxtwgepa.supabase.co`) and `minimum_password_length = 8` (across `supabase/config.toml`, Web, and Mobile) are configured in-repo. **Deploy-time actions:** Configure Supabase Auth (`Site URL: https://xzacto.store`, Redirect URLs `https://xzacto.store/**`, `https://www.xzacto.store/**`, `xzactopos://auth-callback`, Minimum password length `8`), set Edge `ALLOWED_ORIGINS="https://xzacto.store,https://www.xzacto.store"`, deploy to `xzacto-403cc`, and cut over `xzacto.store` DNS from AWS CloudFront to Firebase Hosting.
-5. **Suspended-Tenant Image Read Policy (`S11`):**
+4. **Suspended-Tenant Image Read Policy (`S11`):**
    `product_photos_member_read` allows `suspended` tenants to read/export existing photos (matching data export posture) while blocking uploads (`can_upload_product_photo()`). **Decision needed:** Confirm whether product images should stay readable during suspension or also be blocked.
-6. **Refund Tender Rules vs Multi-Currency Roadmap (`S07`):**
+5. **Refund Tender Rules vs Multi-Currency Roadmap (`S07`):**
    `op_return_sale_items` currently permits cash/e-wallet/card refund methods without checking the original tender mix (e.g., cash refund on an unpaid `utang` sale), and `sales` stores amounts in `base_currency` without FX snapshots. **Decision needed:** Prioritize refund-to-credit rules before expanding `utang` / multi-currency features.
 
 ---
