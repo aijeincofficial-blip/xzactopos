@@ -2565,6 +2565,14 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
+  String get saleReturnUtangExceeds =>
+      'Hindi maaaring lumampas ang refund sa utang sa natitirang balanseng utang ng bentang ito.';
+
+  @override
+  String get saleReturnPaidExceeds =>
+      'Hindi maaaring lumampas ang cash, e-wallet, o card refund sa aktwal na ibinayad sa bentang ito.';
+
+  @override
   String get holdSaleAction => 'I-hold';
 
   @override

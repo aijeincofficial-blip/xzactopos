@@ -24,7 +24,7 @@
 
 - **Critical:** 2 (`S01`, `S02`) — **2 Fixed**, 0 Open
 - **High:** 4 (`S03`, `S04`, `S05`, `S06`) — **4 Fixed**, 0 Open
-- **Medium:** 7 (`S07`–`S13`) — *Open (owner backlog)*
+- **Medium:** 7 (`S07`–`S13`) — *`S11` Resolved; `S07` return tender guard Fixed (FX snapshot backlog); `S08`–`S10`, `S12`–`S13` open/partially mitigated*
 - **Low:** 1 (`S14`) — *Open (owner backlog)*
 
 ---
@@ -149,14 +149,12 @@
 
 ### Medium (Open Backlog)
 
-#### `S07` · Medium · Partial Return Refund Method & Multi-Currency Sale Snapshot Gaps
-- **Where:** `supabase/migrations/20261111000100_partial_returns.sql:188-194`, `sales` schema
+#### `S07` · Medium · Partial Return Refund Method Fixed (`20261114000400`); Multi-Currency Sale Snapshots Backlog
+- **Where:** `supabase/migrations/20261114000400_s07_return_tender_guard.sql` (`op_return_sale_items`), `apps/client/src/lib/sale-math.ts`, `apps/client/src/routes/sales.tsx`, `apps/mobile/lib/data/{sales_models,drift_sales}.dart`, `apps/mobile/lib/screens/receipt_screen.dart`, `sales` schema
 - **What:**
-  1. `op_return_sale_items` accepts `p_refund_method in ('cash', 'ewallet', 'card')` without verifying the original sale's tender mix (e.g., cash refund on an unpaid `utang` balance).
-  2. `sales` table stores amounts only in `tenants.base_currency` without snapshotting `currency`/`fx_rate` columns per sale (`docs/plan.md` §6 backlog).
-- **How to reproduce:** Issue a credit (`utang`) sale, call `op_return_sale_items` with `refund_method = 'cash'` -> returns cash on an unpaid credit sale.
-- **Fix:** Validate `refund_method` against `payments` settled on the sale (or settle `utang` credit balance first) and add sale currency/FX snapshot columns if multi-currency checkout is enabled.
-- **Status:** `Open`
+  1. **Return tender integrity (`Fixed` in QA-04 `#4`):** Enforced in `op_return_sale_items` (`20261114000400_s07_return_tender_guard.sql`), Web return dialog (`computeReturnTenderAllowance` / `returnTenderErrorKey` in `sale-math.ts` & `sales.tsx`), and Mobile Drift/UI (`sales_models.dart`, `drift_sales.dart`, `receipt_screen.dart`): `utang` refunds cannot exceed remaining original `utang` minus prior `utang` returns (`return_utang_exceeds`), and settled (`cash`, `ewallet`, `card`) refunds cannot exceed remaining settled payments minus prior non-`utang` returns (`return_paid_exceeds`). Runs prior to `consume_supervisor_approval` so rejected attempts do not burn approval tokens.
+  2. **Multi-currency FX snapshots (`Open` post-launch backlog):** `sales` stores amounts in `tenants.base_currency` without per-sale `currency`/`fx_rate` snapshot columns (`docs/plan.md` §6 backlog; deferred post-launch per owner decision `A3`).
+- **Status:** `Partially Fixed (Refund Tender Enforced; FX Snapshots Post-Launch Backlog)` — Proven across `049_partial_returns.test.sql` (`25/25` pgTAP), `apps/client/src/lib/sale-math.test.ts` (`23/23`), and `apps/mobile/test/partial_returns_test.dart`.
 
 #### `S08` · Medium · Incomplete CSV Formula Injection Escaping
 - **Where:** `apps/client/src/lib/csv-helper.ts:29`, `apps/mobile/lib/core/export.dart:12`
@@ -170,7 +168,7 @@
 - **What:** No hosting headers file (`vercel.json`, `netlify.toml`, `_headers`, `firebase.json`, `nginx.conf`) and no CSP `<meta>` tag exist in `apps/client/index.html`, leaving clickjacking (`X-Frame-Options` / `frame-ancestors`), `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `Permissions-Policy`, and `Content-Security-Policy` unconfigured in-repo.
 - **How to reproduce:** Build `apps/client/dist` or inspect repo root — no response-header config or CSP policy is declared.
 - **Fix:** Add platform hosting header rules (e.g., `vercel.json` / `netlify.toml` / `_headers`) setting `Strict-Transport-Security`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy`, `frame-ancestors 'none'`, and a tight CSP allowing `self`, Supabase HTTPS/WSS origins, and Google Fonts (if used).
-- **Status:** `Open` *(Repo hosting config delivered in root `firebase.json` + `.firebaserc` for Firebase Hosting `xzacto-403cc` / `https://skdwxenbvhzpfxtwgepa.supabase.co` with `Strict-Transport-Security`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`, `Content-Security-Policy`, `sw.js`/`index.html` `no-cache`, and SPA rewrites; remains to be deployed and DNS-cutover to `xzacto.store`.)*
+- **Status:** `Open` *(Repo hosting config delivered in root `firebase.json` + `.firebaserc` for Firebase Hosting `xzacto-403cc` / `https://skdwxenbvhzpfxtwgepa.supabase.co` with `Strict-Transport-Security`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`, `Content-Security-Policy`, `no-cache` shell/SW rule order fixed in `2011252`, and SPA rewrites. Initially deployed to `https://xzacto-403cc.web.app`, which stays active temporarily per owner decision `A1` while `xzacto.store` registrar recovery is pending; re-deploy needed to ship `2011252` headers + updated build.)*
 
 #### `S10` · Medium · Auth Minimum Password Length & Edge CORS / `redirect_to` Hardening
 - **Where:** `supabase/config.toml:183-184`, `supabase/functions/_shared/http.ts`, `supabase/functions/invite_user/index.ts`
@@ -182,14 +180,13 @@
 - **Fix:** Set `minimum_password_length = 8` in `supabase/config.toml`, enforce fail-closed origin allowlist when running in production in `_shared/http.ts`, and validate `invite_user` `redirect_to` against `ALLOWED_ORIGINS`.
 - **Status:** `Open` *(Password minimum `8` aligned in `supabase/config.toml:183`, Web `apps/client/src/lib/schemas.ts`, and Mobile `auth_screen.dart` / `password_screens.dart` + `en`/`fil` i18n. Remaining at deploy/backlog: set hosted Supabase Auth Minimum password length to `8`, set Edge `ALLOWED_ORIGINS`, and tighten `invite_user` `redirect_to` allowlist checks.)*
 
-#### `S11` · Medium · Unimplemented Solo-Mode Route Guard & Suspended Read Note (`/app/upgrade`)
-- **Where:** `apps/client/src/router.tsx:229`, `supabase/migrations/20261108000400_product_photos.sql:51-53`
+#### `S11` · Medium · `/app/upgrade` Route Guard & Suspended-Tenant Photo Read Policy
+- **Where:** `apps/client/src/router.tsx:249`, `apps/client/src/routes/upgrade.tsx`, `supabase/migrations/20261108000400_product_photos.sql:51-53`
 - **What:**
-  1. `/app/upgrade` lacks a role/mode route guard (`M06` carried from QA-01).
-  2. Note for owner awareness: `product_photos_member_read` checks `is_own_product_photo_path(name)` via `auth_tenant_id()`, which intentionally permits `suspended` tenants to read/export (`20261107000200:83`) while blocking writes via `can_upload_product_photo()`. Verify whether signed-out / suspended product image downloads should also be blocked on suspension.
-- **How to reproduce:** Navigate directly to `/app/upgrade` as an unprivileged/already-pro role or fetch a cached object path as a suspended tenant member.
-- **Fix:** Guard `/app/upgrade` route to `superadmin` (`router.tsx`) and confirm product photo retention/read policy on tenant suspension.
-- **Status:** `Open`
+  1. `/app/upgrade` is guarded by `beforeLoad: requires("tenant.modules")` (`apps/client/src/router.tsx:249`), restricting access to active `superadmin` users on active tenants, and `UpgradePage` (`upgrade.tsx`) renders `"alreadyFullTitle"` if opened in `full` mode.
+  2. `product_photos_member_read` (`20261108000400_product_photos.sql`) checks `is_own_product_photo_path(name)` via `auth_tenant_id()`, allowing suspended tenants to read/export existing photos while `can_upload_product_photo()` blocks uploads.
+- **Resolution:** Confirmed by owner (`A2`, QA-04 `#4`): keep `product-photos` readable/exportable during suspension while blocking uploads, and retain `requires("tenant.modules")` + `alreadyFullTitle` handling on `/app/upgrade`.
+- **Status:** `Resolved`
 
 #### `S12` · Medium · Supabase `db lint` & Splinter Security Advisor Hardening Backlog
 - **Where:** Postgres database (`public` schema functions & tables)

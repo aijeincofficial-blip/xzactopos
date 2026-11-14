@@ -18,7 +18,7 @@ pnpm audit --prod
 
 Verify the production client bundle (`apps/client/dist/`) contains no `service_role` keys or private secrets before publishing. See [00-summary.md](../qa/00-summary.md) for current QA sign-off status.
 
-## 2. Database Migrations (59 Total, Ordered)
+## 2. Database Migrations (60 Total, Ordered)
 
 Apply all `supabase/migrations/` files in strict timestamp order to the target project (e.g., via `supabase db push` on a linked project):
 
@@ -81,12 +81,13 @@ Apply all `supabase/migrations/` files in strict timestamp order to the target p
 57. `20261114000100_qa02_security_fixes.sql`
 58. `20261114000200_qa03_performance_fixes.sql`
 59. `20261114000300_qa04_keepalive_and_lint_fix.sql`
+60. `20261114000400_s07_return_tender_guard.sql`
 
 ### Target Supabase Platform Configuration
 
 - **Postgres**: `17`.
 - **Auth Custom Access Token Hook**: Enable `pg-functions://postgres/public/custom_access_token_hook` in Auth Hooks before issuing user sessions (configured locally in `supabase/config.toml`).
-- **Auth Redirect URLs**: Configure production web `site_url` (`https://xzacto.store`) and `additional_redirect_urls` (`https://xzacto.store/**`, `https://www.xzacto.store/**`, and mobile deep link `xzactopos://auth-callback`). Set hosted Auth **Minimum password length** to **`8`** (aligned with `supabase/config.toml`).
+- **Auth Redirect URLs**: Configure active production web `site_url` (`https://xzacto-403cc.web.app`) and `additional_redirect_urls` (`https://xzacto-403cc.web.app/**` and mobile deep link `xzactopos://auth-callback`; custom domain `https://xzacto.store/**` paused pending registrar recovery). Set hosted Auth **Minimum password length** to **`8`** (aligned with `supabase/config.toml`).
 - **Storage Bucket**: Confirm `product-photos` exists with `public = false`, `file_size_limit = 204800` (200 KiB), and `allowed_mime_types = ['image/jpeg']`.
 
 ## 3. Environment Variables & Secrets per Environment
@@ -99,7 +100,7 @@ Never commit `.env`, `.env.local`, `android/key.properties`, or `service_role` k
 | **Web Client** (`apps/client`) | `VITE_SUPABASE_ANON_KEY` | Build-time Vite env (`supabase.ts`). Public anon key only — never use service role key. |
 | **Edge Functions** (`create_user`, `invite_user`) | `SUPABASE_URL` | Server runtime (`_shared/clients.ts`). |
 | **Edge Functions** (`create_user`, `invite_user`) | `SUPABASE_SERVICE_ROLE_KEY` | Server runtime secret (`_shared/clients.ts`). Must be set via `supabase secrets set`. |
-| **Edge Functions** (`_shared/http.ts`) | `ALLOWED_ORIGINS` | Comma-separated production web origin allowlist for CORS (`https://xzacto.store,https://www.xzacto.store`, plus `https://xzacto-403cc.web.app` temporarily for pre-cutover testing). Required in production (`S10`). |
+| **Edge Functions** (`_shared/http.ts`) | `ALLOWED_ORIGINS` | Comma-separated production web origin allowlist for CORS (`https://xzacto-403cc.web.app`, adding `https://xzacto.store,https://www.xzacto.store` only once custom domain DNS cuts over). Required in production (`S10`). |
 | **Mobile App** (`apps/mobile`) | `SUPABASE_URL` (`--dart-define`) | Build/run-time Dart define (`http://10.0.2.2:54321` on Android emulator). |
 | **Mobile App** (`apps/mobile`) | `SUPABASE_ANON_KEY` (`--dart-define`) | Build/run-time Dart define. |
 | **Mobile Android Release** | `apps/mobile/android/key.properties` | Upload/release keystore properties (gitignored; configured locally referencing `C:\Users\USER\keystores\xzactopos-release.jks`). |
@@ -119,22 +120,22 @@ Never commit `.env`, `.env.local`, `android/key.properties`, or `service_role` k
 
 ## 5. Supabase Advisors & `db lint` Posture
 
-Baseline verified locally after `20261114000300_qa04_keepalive_and_lint_fix.sql`:
+Baseline verified locally after `20261114000400_s07_return_tender_guard.sql`:
 
 - **`supabase db advisors --local --type all --level warn`**: `0` warnings and `0` errors (`No issues found`).
-- **`supabase db advisors --local --type all --level info`**: `136` INFO items total:
+- **`supabase db advisors --local --type all --level info`** *(baseline at migration #59)*: `136` INFO items total:
   - `91` `unindexed_foreign_keys` (monitor after real traffic in staging/prod; see `P13`).
   - `42` `unused_index` (expected on freshly seeded local DB before production query traffic).
   - `3` `rls_enabled_no_policy` on internal tables `processed_ops`, `sale_counters`, and `supervisor_approvals` — **intentional** (locked down from direct client access; mutated only via `SECURITY DEFINER` RPCs).
 - **Schema Security Invariants**: `0` tables without RLS (`tables_without_rls = 0`); `0` `SECURITY DEFINER` functions missing `SET search_path`.
-- **`supabase db lint --local -s public`**: `0` errors across `public` schema (`op_return_sale_items` `_ret_lines` resolved in `20261114000300_qa04_keepalive_and_lint_fix.sql`); `20` pre-existing warning-only functions remain (`S12`).
-- **Hosted Check**: After running `supabase db push`, open **Supabase Dashboard -> Database -> Advisors** to confirm zero Warning/Error security regressions.
+- **`supabase db lint --local -s public`**: `0` errors across `public` schema (`op_return_sale_items` `_ret_lines` resolved in `20261114000300`, S07 guard added cleanly in `20261114000400`); `20` pre-existing warning-only functions remain (`S12`).
+- **Hosted Check**: After running `supabase db push`, open **Supabase Dashboard -> Database -> Advisors** to confirm zero Warning/Error security regressions (`84` INFO/WARN expected: `1` built-in `rls_auto_enable` + `83` intentional `SECURITY DEFINER` RPCs).
 
 ## 6. Host Security Headers & Auth Settings
 
-- Web hosting is configured for **Firebase Hosting** (`firebase.json` + `.firebaserc`, project `xzacto-403cc`) with `Strict-Transport-Security`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`, `Content-Security-Policy`, `Cache-Control: no-cache` on shell/`sw.js`, and SPA rewrites (`S09`).
+- Web hosting is configured for **Firebase Hosting** (`firebase.json` + `.firebaserc`, project `xzacto-403cc`, active URL `https://xzacto-403cc.web.app`) with `Strict-Transport-Security`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`, `Content-Security-Policy`, `Cache-Control: no-cache` on SPA routes/`sw.js` (rule order fixed in commit `2011252`), and SPA rewrites (`S09`).
 - Repository password minimum is aligned at `8` characters (`supabase/config.toml`, Web `schemas.ts`, Mobile auth/password screens); confirm hosted Supabase Auth **Minimum password length = `8`** (`S10`).
-- Confirm Edge Functions are deployed (`create_user`, `invite_user`) with `ALLOWED_ORIGINS="https://xzacto.store,https://www.xzacto.store"` (temporarily adding `https://xzacto-403cc.web.app` during pre-cutover testing).
+- Confirm Edge Functions are deployed (`create_user`, `invite_user`) with `ALLOWED_ORIGINS="https://xzacto-403cc.web.app"` (until custom domain DNS is recovered and cut over). Note: hosted JWKS uses `ES256`; verify Edge gateway `verify_jwt` behavior or redeploy with `--no-verify-jwt` if gateway rejects valid tokens.
 
 ## 7. Rollback Plan
 

@@ -1,6 +1,6 @@
 -- 049_partial_returns.test.sql: Partial item returns, stock restoration, pro-rata cart discount refund, utang credit, and void guard
 begin;
-select plan(14);
+select plan(25);
 
 create function pg_temp.tid(p text) returns uuid language sql immutable
   as $$ select md5('pr_tenant:' || p)::uuid $$;
@@ -285,6 +285,206 @@ select throws_ok(
   '55000',
   null,
   '14. sale_returns is append-only (rejects delete)'
+);
+
+-- ---------------------------------------------------------------------------
+-- S07 Return tender validation (paid vs utang)
+-- ---------------------------------------------------------------------------
+
+-- 15-17. Unpaid utang sale (pr_sale:2 has 5,000 remaining utang, 0 paid): reject cash, ewallet, card refunds
+select is(
+  jsonb_extract_path_text(
+    public.sync_push(jsonb_build_array(jsonb_build_object(
+      'op_id', md5('pr_op:ret:utang_as_cash')::uuid,
+      'kind', 'return_sale_items',
+      'payload', jsonb_build_object(
+        'sale_id', md5('pr_sale:2')::uuid,
+        'refund_method', 'cash',
+        'items', jsonb_build_array(jsonb_build_object('variant_id', pg_temp.vid('T', 'BREAD'), 'qty', 1))
+      )
+    ))),
+    '0', 'hint'
+  ),
+  'return_paid_exceeds',
+  '15. Returning pure utang sale as cash is rejected with return_paid_exceeds'
+);
+
+select is(
+  jsonb_extract_path_text(
+    public.sync_push(jsonb_build_array(jsonb_build_object(
+      'op_id', md5('pr_op:ret:utang_as_ewallet')::uuid,
+      'kind', 'return_sale_items',
+      'payload', jsonb_build_object(
+        'sale_id', md5('pr_sale:2')::uuid,
+        'refund_method', 'ewallet',
+        'items', jsonb_build_array(jsonb_build_object('variant_id', pg_temp.vid('T', 'BREAD'), 'qty', 1))
+      )
+    ))),
+    '0', 'hint'
+  ),
+  'return_paid_exceeds',
+  '16. Returning pure utang sale as ewallet is rejected with return_paid_exceeds'
+);
+
+select is(
+  jsonb_extract_path_text(
+    public.sync_push(jsonb_build_array(jsonb_build_object(
+      'op_id', md5('pr_op:ret:utang_as_card')::uuid,
+      'kind', 'return_sale_items',
+      'payload', jsonb_build_object(
+        'sale_id', md5('pr_sale:2')::uuid,
+        'refund_method', 'card',
+        'items', jsonb_build_array(jsonb_build_object('variant_id', pg_temp.vid('T', 'BREAD'), 'qty', 1))
+      )
+    ))),
+    '0', 'hint'
+  ),
+  'return_paid_exceeds',
+  '17. Returning pure utang sale as card is rejected with return_paid_exceeds'
+);
+
+-- 18-19. Named-customer pure cash sale rejects utang refund
+select is(
+  jsonb_extract_path_text(
+    public.sync_push(jsonb_build_array(jsonb_build_object(
+      'op_id', md5('pr_op:sale:cash_cust')::uuid,
+      'kind', 'record_sale',
+      'payload', jsonb_build_object(
+        'id', md5('pr_sale:3')::uuid,
+        'local_no', 'S01-RET-003',
+        'location_id', pg_temp.lid('T', 'S1'),
+        'customer_id', md5('pr_cust:rosa')::uuid,
+        'sold_at', now(),
+        'subtotal', 10000,
+        'discount', 0,
+        'total', 10000,
+        'items', jsonb_build_array(
+          jsonb_build_object('variant_id', pg_temp.vid('T', 'BREAD'), 'qty', 2, 'unit_price', 5000, 'line_total', 10000)
+        ),
+        'payments', jsonb_build_array(
+          jsonb_build_object('method', 'cash', 'amount', 10000, 'tendered', 10000)
+        )
+      )
+    ))),
+    '0', 'status'
+  ),
+  'ok',
+  '18. Owner records named-customer pure cash sale (10,000)'
+);
+
+select is(
+  jsonb_extract_path_text(
+    public.sync_push(jsonb_build_array(jsonb_build_object(
+      'op_id', md5('pr_op:ret:cash_as_utang')::uuid,
+      'kind', 'return_sale_items',
+      'payload', jsonb_build_object(
+        'sale_id', md5('pr_sale:3')::uuid,
+        'refund_method', 'utang',
+        'items', jsonb_build_array(jsonb_build_object('variant_id', pg_temp.vid('T', 'BREAD'), 'qty', 1))
+      )
+    ))),
+    '0', 'hint'
+  ),
+  'return_utang_exceeds',
+  '19. Returning pure cash sale as utang (even with customer attached) is rejected with return_utang_exceeds'
+);
+
+-- 20-25. Split-tender sale (5,000 cash + 10,000 utang = 15,000): enforce per-pool remaining allowances
+select is(
+  jsonb_extract_path_text(
+    public.sync_push(jsonb_build_array(jsonb_build_object(
+      'op_id', md5('pr_op:sale:split')::uuid,
+      'kind', 'record_sale',
+      'payload', jsonb_build_object(
+        'id', md5('pr_sale:4')::uuid,
+        'local_no', 'S01-RET-004',
+        'location_id', pg_temp.lid('T', 'S1'),
+        'customer_id', md5('pr_cust:rosa')::uuid,
+        'sold_at', now(),
+        'subtotal', 15000,
+        'discount', 0,
+        'total', 15000,
+        'items', jsonb_build_array(
+          jsonb_build_object('variant_id', pg_temp.vid('T', 'BREAD'), 'qty', 3, 'unit_price', 5000, 'line_total', 15000)
+        ),
+        'payments', jsonb_build_array(
+          jsonb_build_object('method', 'cash', 'amount', 5000, 'tendered', 5000),
+          jsonb_build_object('method', 'utang', 'amount', 10000)
+        )
+      )
+    ))),
+    '0', 'status'
+  ),
+  'ok',
+  '20. Owner records split-tender sale (5,000 cash + 10,000 utang)'
+);
+
+select is(
+  jsonb_extract_path_text(
+    public.sync_push(jsonb_build_array(jsonb_build_object(
+      'op_id', md5('pr_op:ret:split_over_cash')::uuid,
+      'kind', 'return_sale_items',
+      'payload', jsonb_build_object(
+        'sale_id', md5('pr_sale:4')::uuid,
+        'refund_method', 'cash',
+        'items', jsonb_build_array(jsonb_build_object('variant_id', pg_temp.vid('T', 'BREAD'), 'qty', 2))
+      )
+    ))),
+    '0', 'hint'
+  ),
+  'return_paid_exceeds',
+  '21. Split-tender sale rejects cash refund exceeding settled cash portion (10,000 > 5,000)'
+);
+
+select is(
+  (public.sync_push(jsonb_build_array(jsonb_build_object(
+    'op_id', md5('pr_op:ret:split_ok_cash')::uuid,
+    'kind', 'return_sale_items',
+    'payload', jsonb_build_object(
+      'sale_id', md5('pr_sale:4')::uuid,
+      'refund_method', 'cash',
+      'items', jsonb_build_array(jsonb_build_object('variant_id', pg_temp.vid('T', 'BREAD'), 'qty', 1))
+    )
+  ))) -> 0 -> 'result' ->> 'refund_total')::bigint,
+  5000::bigint,
+  '22. Split-tender sale allows cash refund up to settled cash portion (5,000)'
+);
+
+select is(
+  jsonb_extract_path_text(
+    public.sync_push(jsonb_build_array(jsonb_build_object(
+      'op_id', md5('pr_op:ret:split_exhausted_cash')::uuid,
+      'kind', 'return_sale_items',
+      'payload', jsonb_build_object(
+        'sale_id', md5('pr_sale:4')::uuid,
+        'refund_method', 'cash',
+        'items', jsonb_build_array(jsonb_build_object('variant_id', pg_temp.vid('T', 'BREAD'), 'qty', 1))
+      )
+    ))),
+    '0', 'hint'
+  ),
+  'return_paid_exceeds',
+  '23. Second cash return after settled portion exhausted is rejected with return_paid_exceeds'
+);
+
+select is(
+  (public.sync_push(jsonb_build_array(jsonb_build_object(
+    'op_id', md5('pr_op:ret:split_ok_utang')::uuid,
+    'kind', 'return_sale_items',
+    'payload', jsonb_build_object(
+      'sale_id', md5('pr_sale:4')::uuid,
+      'refund_method', 'utang',
+      'items', jsonb_build_array(jsonb_build_object('variant_id', pg_temp.vid('T', 'BREAD'), 'qty', 2))
+    )
+  ))) -> 0 -> 'result' ->> 'refund_total')::bigint,
+  10000::bigint,
+  '24. Split-tender sale allows returning remaining 10,000 to utang'
+);
+
+select is(
+  (select coalesce(sum(amount), 0)::bigint from public.customer_ledger where customer_id = md5('pr_cust:rosa')::uuid),
+  5000::bigint,
+  '25. Aling Rosa net utang balance remains 5,000 after full split-sale utang credit'
 );
 
 select * from finish();

@@ -1093,7 +1093,20 @@ class _ReturnItemsSheetState extends State<_ReturnItemsSheet> {
   void initState() {
     super.initState();
     final d = widget.detail;
-    _refundMethod = (d.utang > 0 && d.customerId != null) ? 'utang' : 'cash';
+    final canUtang = d.customerId != null && d.remainingUtangRefundable > 0;
+    final canPaid = d.remainingPaidRefundable > 0 || !canUtang;
+    String defaultMethod = 'cash';
+    if (canUtang && (!canPaid || (d.payments.isNotEmpty && d.payments.first.method == 'utang'))) {
+      defaultMethod = 'utang';
+    } else if (canPaid) {
+      for (final p in d.payments) {
+        if (p.method != 'utang') {
+          defaultMethod = p.method;
+          break;
+        }
+      }
+    }
+    _refundMethod = defaultMethod;
   }
 
   @override
@@ -1167,9 +1180,16 @@ class _ReturnItemsSheetState extends State<_ReturnItemsSheet> {
       if (mounted) Navigator.of(context).pop(refunded);
     } catch (e) {
       if (mounted) {
+        final t = AppLocalizations.of(context);
+        final raw = e.toString();
+        final friendly = raw.contains('return_utang_exceeds')
+            ? t.saleReturnUtangExceeds
+            : raw.contains('return_paid_exceeds')
+                ? t.saleReturnPaidExceeds
+                : raw;
         setState(() {
           _submitting = false;
-          _errorText = e.toString();
+          _errorText = friendly;
         });
       }
     }
@@ -1197,14 +1217,29 @@ class _ReturnItemsSheetState extends State<_ReturnItemsSheet> {
       items: d.items,
       returnByVariant: _returnQtyByVariant,
     );
+    final allowUtang = d.customerId != null && d.remainingUtangRefundable > 0;
+    final allowPaid = d.remainingPaidRefundable > 0 || !allowUtang;
+    String? tenderError;
+    if (refundPreview > 0) {
+      if (_refundMethod == 'utang' && refundPreview > d.remainingUtangRefundable) {
+        tenderError = t.saleReturnUtangExceeds;
+      } else if (_refundMethod != 'utang' && refundPreview > d.remainingPaidRefundable) {
+        tenderError = t.saleReturnPaidExceeds;
+      }
+    }
+    final displayError = tenderError ?? _errorText;
     final hasSelection =
-        _returnQtyByVariant.values.any((qty) => qty > 0) && !_submitting;
+        _returnQtyByVariant.values.any((qty) => qty > 0) &&
+            tenderError == null &&
+            !_submitting;
 
     final methods = <SegmentedPillItem<String>>[
-      SegmentedPillItem(value: 'cash', label: t.payCash, icon: Icons.payments_outlined),
-      SegmentedPillItem(value: 'ewallet', label: t.payEwallet, icon: Icons.account_balance_wallet_outlined),
-      SegmentedPillItem(value: 'card', label: t.payCard, icon: Icons.credit_card_rounded),
-      if (d.customerId != null)
+      if (allowPaid) ...[
+        SegmentedPillItem(value: 'cash', label: t.payCash, icon: Icons.payments_outlined),
+        SegmentedPillItem(value: 'ewallet', label: t.payEwallet, icon: Icons.account_balance_wallet_outlined),
+        SegmentedPillItem(value: 'card', label: t.payCard, icon: Icons.credit_card_rounded),
+      ],
+      if (allowUtang)
         SegmentedPillItem(value: 'utang', label: t.receiptOnUtang, icon: Icons.menu_book_rounded),
     ];
 
@@ -1364,10 +1399,10 @@ class _ReturnItemsSheetState extends State<_ReturnItemsSheet> {
                 ),
               ),
 
-              if (_errorText != null) ...[
+              if (displayError != null) ...[
                 const SizedBox(height: 12),
                 Text(
-                  _errorText!,
+                  displayError,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: cs.error,
                   ),

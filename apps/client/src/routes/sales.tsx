@@ -11,7 +11,7 @@ import { useErrorMessage } from "../lib/i18n-helpers.ts";
 import { ApiError } from "../lib/api.ts";
 import { supabase } from "../lib/supabase.ts";
 import { downloadCsv, exportSalesCsv } from "../lib/csv-helper.ts";
-import { computePartialReturnRefund } from "../lib/sale-math.ts";
+import { computePartialReturnRefund, computeReturnTenderAllowance, returnTenderErrorKey } from "../lib/sale-math.ts";
 import { fetchRecentSales, fetchSaleDetail, filterSaleRows, returnSaleItems, voidSale } from "../lib/sell-api.ts";
 import { SupervisorPinDialog } from "../components/supervisor-pin-dialog.tsx";
 import { ReceiptModal } from "../components/receipt-slip.tsx";
@@ -169,6 +169,17 @@ export function SalesPage() {
       })
     : 0;
   const needsSupervisorReturn = isCashier && (!canVoidOwn || estimatedRefund > maxVoidAmt);
+  const tenderAllowance = detail.data
+    ? computeReturnTenderAllowance({
+        payments: detail.data.payments,
+        priorReturns: detail.data.returns,
+        hasCustomer: Boolean(detail.data.sale.customer_id),
+      })
+    : null;
+  const tenderErrorKey = tenderAllowance
+    ? returnTenderErrorKey({ refundMethod, refundAmount: estimatedRefund, allowance: tenderAllowance })
+    : null;
+  const tenderErrorMsg = tenderErrorKey ? msg(new ApiError(tenderErrorKey, tenderErrorKey)) : null;
 
   const cancel = useMutation({
     mutationFn: (override?: { approvalId?: string; offlineApproval?: OfflineApprovalPayload }) =>
@@ -281,10 +292,12 @@ export function SalesPage() {
     const d = detail.data;
     if (!d) return;
     setReturnQtys({});
-    const defaultMethod = (d.payments[0]?.method as RefundMethod | undefined) ?? "cash";
-    setRefundMethod(
-      defaultMethod === "utang" && !d.sale.customer_id ? "cash" : defaultMethod,
-    );
+    const allowance = computeReturnTenderAllowance({
+      payments: d.payments,
+      priorReturns: d.returns,
+      hasCustomer: Boolean(d.sale.customer_id),
+    });
+    setRefundMethod(allowance.defaultMethod);
     setReturnReason("");
     setReturnError(null);
     setShowReturnDialog(true);
@@ -571,10 +584,14 @@ export function SalesPage() {
                     onChange={(e) => setRefundMethod(e.target.value as RefundMethod)}
                     data-testid="return-refund-method"
                   >
-                    <option value="cash">{t("sell.cash")}</option>
-                    <option value="ewallet">{t("sell.ewallet")}</option>
-                    <option value="card">{t("sell.card")}</option>
-                    {d.sale.customer_id ? (
+                    {(tenderAllowance?.allowPaid ?? true) ? (
+                      <>
+                        <option value="cash">{t("sell.cash")}</option>
+                        <option value="ewallet">{t("sell.ewallet")}</option>
+                        <option value="card">{t("sell.card")}</option>
+                      </>
+                    ) : null}
+                    {tenderAllowance?.allowUtang ? (
                       <option value="utang">{t("sell.utang")}</option>
                     ) : null}
                   </Select>
@@ -600,7 +617,7 @@ export function SalesPage() {
                 </span>
               </div>
 
-              {returnError ? <Alert>{returnError}</Alert> : null}
+              {tenderErrorMsg || returnError ? <Alert>{tenderErrorMsg ?? returnError}</Alert> : null}
 
               <div className="flex justify-end gap-2 pt-1">
                 <Button
@@ -612,7 +629,7 @@ export function SalesPage() {
                 </Button>
                 <Button
                   type="button"
-                  disabled={totalSelectedToReturn <= 0 || submitReturn.isPending}
+                  disabled={totalSelectedToReturn <= 0 || Boolean(tenderErrorKey) || submitReturn.isPending}
                   onClick={handleConfirmReturn}
                   data-testid="confirm-return-btn"
                 >

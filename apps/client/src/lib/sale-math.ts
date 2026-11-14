@@ -360,3 +360,62 @@ export function computePartialReturnRefund(params: {
   }
   return refundSum;
 }
+
+export type RefundTender = "cash" | "utang" | "ewallet" | "card";
+
+export interface ReturnTenderAllowance {
+  remPaid: number;
+  remUtang: number;
+  allowPaid: boolean;
+  allowUtang: boolean;
+  defaultMethod: RefundTender;
+}
+
+/**
+ * Computes remaining settled (`cash`/`ewallet`/`card`) vs `utang` refund headroom on a sale
+ * matching the server `op_return_sale_items` S07 guard.
+ */
+export function computeReturnTenderAllowance(params: {
+  payments: ReadonlyArray<{ method: string; amount: number }>;
+  priorReturns: ReadonlyArray<{ refund_method: string; refund_total: number }>;
+  hasCustomer: boolean;
+}): ReturnTenderAllowance {
+  const { payments, priorReturns, hasCustomer } = params;
+  const origPaid = payments.filter((p) => p.method !== "utang").reduce((s, p) => s + Number(p.amount), 0);
+  const origUtang = payments.filter((p) => p.method === "utang").reduce((s, p) => s + Number(p.amount), 0);
+  const prevPaidRet = priorReturns.filter((r) => r.refund_method !== "utang").reduce((s, r) => s + Number(r.refund_total), 0);
+  const prevUtangRet = priorReturns.filter((r) => r.refund_method === "utang").reduce((s, r) => s + Number(r.refund_total), 0);
+
+  const remPaid = Math.max(0, origPaid - prevPaidRet);
+  const remUtang = hasCustomer ? Math.max(0, origUtang - prevUtangRet) : 0;
+  const allowUtang = remUtang > 0;
+  const allowPaid = remPaid > 0 || !allowUtang;
+
+  const firstMethod = payments[0]?.method as RefundTender | undefined;
+  let defaultMethod: RefundTender = "cash";
+  if (allowUtang && (!allowPaid || firstMethod === "utang")) {
+    defaultMethod = "utang";
+  } else if (allowPaid) {
+    const firstPaid = payments.find((p) => p.method !== "utang")?.method as RefundTender | undefined;
+    defaultMethod =
+      firstPaid === "cash" || firstPaid === "ewallet" || firstPaid === "card" ? firstPaid : "cash";
+  }
+
+  return { remPaid, remUtang, allowPaid, allowUtang, defaultMethod };
+}
+
+export function returnTenderErrorKey(params: {
+  refundMethod: RefundTender;
+  refundAmount: number;
+  allowance: ReturnTenderAllowance;
+}): "return_utang_exceeds" | "return_paid_exceeds" | null {
+  const { refundMethod, refundAmount, allowance } = params;
+  if (refundAmount <= 0) return null;
+  if (refundMethod === "utang" && refundAmount > allowance.remUtang) {
+    return "return_utang_exceeds";
+  }
+  if (refundMethod !== "utang" && refundAmount > allowance.remPaid) {
+    return "return_paid_exceeds";
+  }
+  return null;
+}

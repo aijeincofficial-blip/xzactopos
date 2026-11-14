@@ -2551,6 +2551,14 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get saleReturnUtangExceeds =>
+      'Utang refund cannot exceed the remaining utang balance on this sale.';
+
+  @override
+  String get saleReturnPaidExceeds =>
+      'Cash, e-wallet, or card refund cannot exceed the settled amount paid on this sale.';
+
+  @override
   String get holdSaleAction => 'Hold';
 
   @override

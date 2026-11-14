@@ -101,6 +101,8 @@
   "insufficient_stock": "There is not enough stock at the sending place for this shipment. Check the quantity or count the stock first.",
   "op_id_reused": "That request was already used for something else.",
   "return_exceeds_sold": "Return quantity cannot exceed the remaining sold quantity.",
+  "return_utang_exceeds": "Utang refund cannot exceed the remaining utang balance on this sale.",
+  "return_paid_exceeds": "Cash, e-wallet, or card refund cannot exceed the settled amount paid on this sale.",
   "has_partial_returns": "This receipt already has partial returns. Return the remaining items instead.",
   "sale_voided": "Cannot return items from a cancelled sale.",
   "device_limit": "You reached the active device limit of your plan. Retire an unused phone first."

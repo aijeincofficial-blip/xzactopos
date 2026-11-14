@@ -295,23 +295,28 @@ mixin DriftSales implements SalesStore {
 
   static String _returnMetaKey(String saleId) => 'sale_returns:$saleId';
 
-  Future<({int refundedTotal, Map<String, double> byVariant})> _readLocalReturns(String saleId) async {
+  Future<({int refundedTotal, int utangRefunded, int paidRefunded, Map<String, double> byVariant})> _readLocalReturns(
+      String saleId) async {
     final raw = await meta(_returnMetaKey(saleId));
     if (raw == null || raw.isEmpty) {
-      return (refundedTotal: 0, byVariant: <String, double>{});
+      return (refundedTotal: 0, utangRefunded: 0, paidRefunded: 0, byVariant: <String, double>{});
     }
     try {
       final decoded = jsonDecode(raw) as Map<String, dynamic>;
       final total = (decoded['refunded_total'] as num?)?.toInt() ?? 0;
+      final utangRefunded = (decoded['utang_refunded'] as num?)?.toInt() ?? 0;
+      final paidRefunded = (decoded['paid_refunded'] as num?)?.toInt() ?? 0;
       final byVarRaw = (decoded['by_variant'] as Map<String, dynamic>?) ?? const {};
       return (
         refundedTotal: total,
+        utangRefunded: utangRefunded,
+        paidRefunded: paidRefunded,
         byVariant: <String, double>{
           for (final e in byVarRaw.entries) e.key: (e.value as num).toDouble(),
         },
       );
     } catch (_) {
-      return (refundedTotal: 0, byVariant: <String, double>{});
+      return (refundedTotal: 0, utangRefunded: 0, paidRefunded: 0, byVariant: <String, double>{});
     }
   }
 
@@ -454,6 +459,21 @@ mixin DriftSales implements SalesStore {
         returnByVariant: reqByVar,
       );
 
+      // S07: Enforce refund tender against remaining unsettled (utang) vs settled (cash/ewallet/card) balance
+      if (refundTotal > 0) {
+        final pays = await (db.select(db.salePayments)..where((p) => p.saleId.equals(saleId))).get();
+        final origUtang = pays.where((p) => p.method == 'utang').fold<int>(0, (a, p) => a + p.amount);
+        final origPaid = pays.where((p) => p.method != 'utang').fold<int>(0, (a, p) => a + p.amount);
+        final remUtang = origUtang - prev.utangRefunded;
+        final remPaid = origPaid - prev.paidRefunded;
+        if (refundMethod == 'utang' && refundTotal > remUtang) {
+          throw StateError('return_utang_exceeds');
+        }
+        if (refundMethod != 'utang' && refundTotal > remPaid) {
+          throw StateError('return_paid_exceeds');
+        }
+      }
+
       final loc = sale.locationId ?? await activeStoreNow();
       final now = _iso(DateTime.now());
       final trimmedReason = (reason != null && reason.trim().isNotEmpty) ? reason.trim() : null;
@@ -494,6 +514,8 @@ mixin DriftSales implements SalesStore {
         _returnMetaKey(saleId),
         jsonEncode({
           'refunded_total': prev.refundedTotal + refundTotal,
+          'utang_refunded': prev.utangRefunded + (refundMethod == 'utang' ? refundTotal : 0),
+          'paid_refunded': prev.paidRefunded + (refundMethod == 'utang' ? 0 : refundTotal),
           'by_variant': updatedByVar,
         }),
       );
@@ -769,6 +791,8 @@ mixin DriftSales implements SalesStore {
       tax: s.tax,
       customerId: s.customerId,
       refundedTotal: ret.refundedTotal,
+      utangRefunded: ret.utangRefunded,
+      paidRefunded: ret.paidRefunded,
       items: itemViews,
       payments: [for (final p in pays) SalePaymentView(p.method, p.amount, p.tendered, p.reference, wallet: p.wallet)],
     );

@@ -1448,6 +1448,8 @@
       }
     }
   },
+  "saleReturnUtangExceeds": "Hindi maaaring lumampas ang refund sa utang sa natitirang balanseng utang ng bentang ito.",
+  "saleReturnPaidExceeds": "Hindi maaaring lumampas ang cash, e-wallet, o card refund sa aktwal na ibinayad sa bentang ito.",
   "holdSaleAction": "I-hold",
   "holdSaleTitle": "I-hold ang bentang ito",
   "holdSaleHint": "Itabi muna ang cart na ito para sa susunod na mamimili. Hindi pa mababawasan ang stock hangga't hindi pa bayad.",

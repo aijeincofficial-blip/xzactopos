@@ -4382,6 +4382,18 @@ abstract class AppLocalizations {
   /// **'{qty} returnable'**
   String saleReturnRemaining(String qty);
 
+  /// No description provided for @saleReturnUtangExceeds.
+  ///
+  /// In en, this message translates to:
+  /// **'Utang refund cannot exceed the remaining utang balance on this sale.'**
+  String get saleReturnUtangExceeds;
+
+  /// No description provided for @saleReturnPaidExceeds.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash, e-wallet, or card refund cannot exceed the settled amount paid on this sale.'**
+  String get saleReturnPaidExceeds;
+
   /// No description provided for @holdSaleAction.
   ///
   /// In en, this message translates to:

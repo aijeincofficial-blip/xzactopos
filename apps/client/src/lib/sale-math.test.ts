@@ -10,7 +10,9 @@ import {
   cartTotalDiscount,
   changeDue,
   computePartialReturnRefund,
+  computeReturnTenderAllowance,
   draftProblem,
+  returnTenderErrorKey,
   lineGrossTotal,
   lineTax,
   lineTotal,
@@ -382,5 +384,58 @@ describe("per-line discounts and price overrides", () => {
       { method: "cash", paidNow: null, tendered: null },
     );
     expect(invalid.payments).toBeNull();
+  });
+});
+
+describe("return tender allowance (S07)", () => {
+  it("disallows settled refunds on pure utang sales and utang refunds on pure cash sales", () => {
+    const pureUtang = computeReturnTenderAllowance({
+      payments: [{ method: "utang", amount: 10000 }],
+      priorReturns: [],
+      hasCustomer: true,
+    });
+    expect(pureUtang).toEqual({
+      remPaid: 0,
+      remUtang: 10000,
+      allowPaid: false,
+      allowUtang: true,
+      defaultMethod: "utang",
+    });
+    expect(returnTenderErrorKey({ refundMethod: "cash", refundAmount: 5000, allowance: pureUtang })).toBe("return_paid_exceeds");
+    expect(returnTenderErrorKey({ refundMethod: "utang", refundAmount: 5000, allowance: pureUtang })).toBeNull();
+
+    const cashWithCust = computeReturnTenderAllowance({
+      payments: [{ method: "cash", amount: 10000 }],
+      priorReturns: [],
+      hasCustomer: true,
+    });
+    expect(cashWithCust).toEqual({
+      remPaid: 10000,
+      remUtang: 0,
+      allowPaid: true,
+      allowUtang: false,
+      defaultMethod: "cash",
+    });
+    expect(returnTenderErrorKey({ refundMethod: "utang", refundAmount: 5000, allowance: cashWithCust })).toBe("return_utang_exceeds");
+  });
+
+  it("tracks remaining settled vs utang headroom across split sales and prior partial returns", () => {
+    const afterCashRet = computeReturnTenderAllowance({
+      payments: [
+        { method: "cash", amount: 5000 },
+        { method: "utang", amount: 10000 },
+      ],
+      priorReturns: [{ refund_method: "cash", refund_total: 5000 }],
+      hasCustomer: true,
+    });
+    expect(afterCashRet).toEqual({
+      remPaid: 0,
+      remUtang: 10000,
+      allowPaid: false,
+      allowUtang: true,
+      defaultMethod: "utang",
+    });
+    expect(returnTenderErrorKey({ refundMethod: "cash", refundAmount: 5000, allowance: afterCashRet })).toBe("return_paid_exceeds");
+    expect(returnTenderErrorKey({ refundMethod: "utang", refundAmount: 10000, allowance: afterCashRet })).toBeNull();
   });
 });

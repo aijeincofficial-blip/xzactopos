@@ -234,6 +234,8 @@ class SaleDetail {
     required this.payments,
     this.customerId,
     this.refundedTotal = 0,
+    this.utangRefunded = 0,
+    this.paidRefunded = 0,
   });
 
   final SaleSummary summary;
@@ -244,6 +246,8 @@ class SaleDetail {
   final List<SalePaymentView> payments;
   final String? customerId;
   final int refundedTotal;
+  final int utangRefunded;
+  final int paidRefunded;
 
   bool get hasPartialReturns =>
       refundedTotal > 0 || items.any((i) => i.returnedQty > 0);
@@ -257,6 +261,18 @@ class SaleDetail {
 
   int get change => payments.fold(0, (a, p) => a + p.change);
   int get utang => payments.where((p) => p.method == 'utang').fold(0, (a, p) => a + p.amount);
+  int get paid => payments.where((p) => p.method != 'utang').fold(0, (a, p) => a + p.amount);
+
+  int get remainingUtangRefundable {
+    if (customerId == null) return 0;
+    final rem = utang - utangRefunded;
+    return rem > 0 ? rem : 0;
+  }
+
+  int get remainingPaidRefundable {
+    final rem = paid - paidRefunded;
+    return rem > 0 ? rem : 0;
+  }
 }
 
 class TodayTotals {

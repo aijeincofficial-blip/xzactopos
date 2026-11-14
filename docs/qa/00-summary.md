@@ -3,7 +3,7 @@
 **Date:** 2026-11-14 | **Branch:** `ag/work` (worktree `.claude/worktrees/ag-work`) | **Scope:** Full verification across QA-01 ([01-functional.md](01-functional.md)), QA-02 ([02-security.md](02-security.md)), QA-03 ([03-performance.md](03-performance.md)), and [design.md](../design.md) §13.
 
 > [!IMPORTANT]
-> **All 25 Critical & High findings (`F01`–`F11`, `S01`–`S06`, `P01`–`P08`) are `Fixed` and backed by automated tests.** Every verification gate (`pnpm check`, Web PWA build + secret scan, `7/7` Playwright E2E flows including offline reload, `supabase db advisors`, `supabase db lint` with **`0` errors**, and `pnpm audit --prod`) passed after the final edits. **Do not deploy** until the remaining policy/deploy items in §4 (GitHub keep-alive & DB backup secrets configured; Android release keystore configured locally; Firebase Hosting config & password minimum 8 ready in-repo; confirm `S11`/`S07` policy items plus deploy-time Auth/`ALLOWED_ORIGINS` & `xzacto.store` DNS cutover) are resolved.
+> **All 25 Critical & High findings (`F01`–`F11`, `S01`–`S06`, `P01`–`P08`) plus pre-launch policy/guard items (`S11`, `S07` return tender validation) are `Fixed`/`Resolved` and backed by automated tests.** Following the `#4` updates (`20261114000400_s07_return_tender_guard.sql`, Web & Mobile return tender guards), `pnpm check` (`lint`, `typecheck`, `@pos/core` `55/55`, `@pos/client` `262/262`, Edge functions `22/22`, `56` pgTAP / `4,975` assertions, `check:mobile` `flutter analyze` `0` issues & `+624` Flutter tests), `supabase db advisors --level warn` (`0` issues), and `supabase db lint -s public` (`0` errors) passed cleanly. Deploy sync (`firebase.json` `no-cache` header fix + migration `#60` push + Auth URLs / `ALLOWED_ORIGINS` = `https://xzacto-403cc.web.app`) is documented in §4.
 
 ---
 
@@ -22,15 +22,15 @@
 | Gate | Command | Observed Result |
 | :--- | :--- | :--- |
 | **Multi-Tenant Seed Idempotency** | `node scripts/qa-seed.mjs` (x2 consecutively) | Exit `0` both runs (`qa-alpha-php` `PHP` + `qa-beta-usd` `USD`) |
-| **Lint & Typecheck** | `pnpm lint` & `pnpm typecheck` (`pnpm check`) | Exit `0` across `packages/core`, `packages/sync`, `apps/client` |
-| **JS/TS Unit Tests** | `pnpm test` (`pnpm check`) | `@pos/core`: `4` files / `55` passed; `@pos/client`: `39` files / `260` passed; `@pos/sync`: `0` test files (`--passWithNoTests`, exit `0`) |
-| **Edge Function Tests** | `pnpm test:functions` (`pnpm check`) | `1` file (`_shared/validate.test.ts`), `22` passed |
-| **Postgres pgTAP Suite** | `pnpm test:db` (`pnpm check`) | `Files=56, Tests=4964 — Result: PASS` |
-| **Mobile Checks & Tests** | `pnpm check:mobile` (`pnpm check`) | `8/8` service-worker checks passed; `flutter analyze`: `No issues found!`; `flutter test`: `+623: All tests passed!` |
-| **Web Production Build & Secret Scan** | `pnpm --filter @pos/client build` + `dist/` regex scan | `✓ 2580 modules transformed`, `✓ built in 2.81s`, `PWA v2.0.0`, `precache 98 entries (2140.64 KiB)`; zero `service_role` or DB credential matches (only local `anon` JWT `role:"anon"` present) |
-| **Playwright E2E Suite** | `pnpm exec playwright test` (`e2e/qa01-critical-flows.spec.ts`) | **`7/7 passed`** — Flows 1–7 all green (including offline reload Flow 2, partial returns Flow 3, and live poll Flow 6) |
-| **Supabase Advisors (Local)** | `pnpm exec supabase db advisors --local --type all --level warn` / `info` | `0` WARN/ERROR (`No issues found`); `136` INFO (`91` `unindexed_foreign_keys`, `42` `unused_index`, `3` intentional `rls_enabled_no_policy` on internal tables `processed_ops`, `sale_counters`, `supervisor_approvals`) |
-| **Supabase SQL Linter** | `pnpm exec supabase db lint --local -s public` | Exit `0`, `0` errors across `public` schema (`op_return_sale_items` `_ret_lines` resolved in `20261114000300`; `20` pre-existing warning functions remain) |
+| **Lint & Typecheck** | `pnpm lint` & `pnpm typecheck` (`pnpm check`) | Exit `0` across `packages/core`, `packages/sync`, `apps/client` (re-run post-`#4`) |
+| **JS/TS Unit Tests** | `pnpm test` (`pnpm check`) | `@pos/core`: `4` files / `55` passed; `@pos/client`: `39` files / `262` passed (`+2` S07 tests); `@pos/sync`: `0` test files (`--passWithNoTests`, exit `0`) (re-run post-`#4`) |
+| **Edge Function Tests** | `pnpm test:functions` (`pnpm check`) | `1` file (`_shared/validate.test.ts`), `22` passed (re-run post-`#4`) |
+| **Postgres pgTAP Suite** | `pnpm test:db` (`pnpm check`) | `Files=56, Tests=4975 — Result: PASS` (`+11` S07 tests in `049_partial_returns.test.sql`, re-run post-`#4`) |
+| **Mobile Checks & Tests** | `pnpm check:mobile` (`pnpm check`) | `8/8` service-worker checks passed; `flutter analyze`: `No issues found!`; `flutter test`: `+624: All tests passed!` (`+1` S07 test, re-run post-`#4`) |
+| **Web Production Build & Secret Scan** | `pnpm --filter @pos/client build` + `dist/` regex scan | QA-04 pre-`#4` run: `✓ 2580 modules transformed`, `✓ built in 2.81s`, `PWA v2.0.0`, `precache 98 entries (2140.64 KiB)`; zero `service_role` or DB credential matches (re-build with prod env before Firebase Hosting deploy) |
+| **Playwright E2E Suite** | `pnpm exec playwright test` (`e2e/qa01-critical-flows.spec.ts`) | QA-04 baseline run: **`7/7 passed`** — Flows 1–7 all green (including offline reload Flow 2, partial returns Flow 3, and live poll Flow 6) |
+| **Supabase Advisors (Local)** | `pnpm exec supabase db advisors --local --type all --level warn` | `0` WARN/ERROR (`No issues found`) (re-run post-`#4` migration `20261114000400`) |
+| **Supabase SQL Linter** | `pnpm exec supabase db lint --local -s public` | Exit `0`, `0` errors across `public` schema (`op_return_sale_items` S07 & S12 clean; `20` pre-existing warning functions remain) (re-run post-`#4`) |
 | **Dependency Audit** | `pnpm audit --prod` | Exit `0`: `No known vulnerabilities found` |
 
 ### 1.2 `design.md` §13 Self-Check Breakdown
@@ -83,11 +83,11 @@ Every `Critical` and `High` item across QA-01, QA-02, and QA-03 is `Fixed` and b
 
 | ID | Severity | Source | Area & Issue | Where |
 | :--- | :--- | :--- | :--- | :--- |
-| `S09` | Medium | QA-02 | Firebase Hosting config (`firebase.json`, `.firebaserc` for `xzacto-403cc`) added with CSP, HSTS, `nosniff`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, `no-cache` shell/SW rules; pending deploy & `xzacto.store` DNS cutover | `firebase.json`, `.firebaserc`, `apps/client/index.html` |
-| `S10` | Medium | QA-02 | Password minimum `8` aligned in `supabase/config.toml`, Web, & Mobile; still configure hosted Auth min length `8`, Edge `ALLOWED_ORIGINS` (`https://xzacto.store`), & `invite_user` `redirect_to` strictness | `supabase/config.toml:183`, `apps/client/src/lib/schemas.ts`, `supabase/functions/_shared/http.ts`, `invite_user/index.ts` |
-| `S11` | Medium | QA-02 | `/app/upgrade` lacks solo-mode/`superadmin` `beforeLoad` route guard (`M06` #4); review `product-photos` read policy on suspended tenants | `apps/client/src/router.tsx:229`, `20261108000400_product_photos.sql` |
+| `S09` | Medium | QA-02 | Firebase Hosting config (`firebase.json`, `.firebaserc` for `xzacto-403cc`) live on `https://xzacto-403cc.web.app` with `no-cache` header ordering fixed in `2011252`; re-deploy pending to publish `2011252` + `#4` Web build; custom domain `xzacto.store` paused until registrar login recovery (`A1`) | `firebase.json`, `.firebaserc`, `apps/client/index.html` |
+| `S10` | Medium | QA-02 | Password minimum `8` aligned in `supabase/config.toml`, Web, & Mobile; still configure hosted Auth min length `8` (plus Site URL / Redirect URLs for `https://xzacto-403cc.web.app`), tighten Edge `ALLOWED_ORIGINS` (`https://xzacto-403cc.web.app`), & harden `invite_user` `redirect_to` strictness | `supabase/config.toml:183`, `apps/client/src/lib/schemas.ts`, `supabase/functions/_shared/http.ts`, `invite_user/index.ts` |
+| `S11` | Medium | QA-02 | **Resolved (`A2`)**: `/app/upgrade` guarded via `requires("tenant.modules")` in `router.tsx:249` + `alreadyFullTitle` status card in `upgrade.tsx`; owner confirmed keeping `product-photos` readable by suspended tenants while blocking uploads | `apps/client/src/router.tsx:249`, `20261108000400_product_photos.sql` |
 | `S08` | Medium | QA-02 | Incomplete CSV formula injection escaping across Web reports & Mobile (`export.dart` omits leading `-`, `\t`, `\r`) | `apps/client/src/lib/csv-helper.ts:29`, `apps/mobile/lib/core/export.dart:12` |
-| `S07` | Medium | QA-02 | `op_return_sale_items` accepts refund tender (`cash`, `ewallet`, `card`) without checking original tender (`utang` sales); `sales` lacks per-sale currency/FX snapshot columns | `supabase/migrations/20261111000100_partial_returns.sql:188-194`, `sales` schema |
+| `S07` | Medium | QA-02 | **Refund tender guard Fixed (`A3`, `20261114000400`)** across Postgres (`op_return_sale_items`), Web (`sale-math.ts`, `sales.tsx`), & Mobile (`sales_models.dart`, `drift_sales.dart`, `receipt_screen.dart`); `sales` per-sale currency/FX snapshot columns remain post-launch backlog | `supabase/migrations/20261114000400_s07_return_tender_guard.sql`, `sales` schema |
 
 ### Priority 2 — UX, Formatting & Multi-Currency Polish
 
@@ -121,15 +121,15 @@ Every `Critical` and `High` item across QA-01, QA-02, and QA-03 is `Fixed` and b
 ## 4. Risks & Owner Actions Required Before Deploy
 
 1. **GitHub Actions Secrets & Keep-Alive Verification (`.github/workflows/keep-alive.yml` & `backup.yml`):**
-   Migration `20261114000300_qa04_keepalive_and_lint_fix.sql` and `.github/workflows/keep-alive.yml` (`d032efb`, supporting both `sb_secret_` and legacy JWT keys) are pushed to `origin/main` (`aijeincofficial-blip/xzactopos`). `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `DB_URL` are configured and `backup.yml` passed green on GitHub; run `keep-alive.yml` once after pushing the `59` migrations to `skdwxenbvhzpfxtwgepa`.
+   Migration `20261114000300_qa04_keepalive_and_lint_fix.sql` and `.github/workflows/keep-alive.yml` (`d032efb`, supporting both `sb_secret_` and legacy JWT keys) are pushed to `origin/main` (`aijeincofficial-blip/xzactopos`). `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `DB_URL` are configured and `backup.yml` passed green on GitHub; run `keep-alive.yml` once migration `#60` (`20261114000400`) is pushed to `skdwxenbvhzpfxtwgepa`.
 2. **Android Release Signing (`apps/mobile/android/app/build.gradle.kts`):**
    Keystore `C:\Users\USER\keystores\xzactopos-release.jks` (`upload`) and gitignored `apps/mobile/android/key.properties` are provisioned locally and verified via APK v2 release signing. **Owner action:** Back up the `.jks` file and `key.properties` credentials securely outside this PC.
-3. **Firebase Hosting, Auth & CORS Cutover (`S09`, `S10`):**
-   Root `firebase.json` + `.firebaserc` (`xzacto-403cc` / `https://skdwxenbvhzpfxtwgepa.supabase.co`) and `minimum_password_length = 8` (across `supabase/config.toml`, Web, and Mobile) are configured in-repo. **Deploy-time actions:** Configure Supabase Auth (`Site URL: https://xzacto.store`, Redirect URLs `https://xzacto.store/**`, `https://www.xzacto.store/**`, `xzactopos://auth-callback`, Minimum password length `8`), set Edge `ALLOWED_ORIGINS="https://xzacto.store,https://www.xzacto.store"`, deploy to `xzacto-403cc`, and cut over `xzacto.store` DNS from AWS CloudFront to Firebase Hosting.
-4. **Suspended-Tenant Image Read Policy (`S11`):**
-   `product_photos_member_read` allows `suspended` tenants to read/export existing photos (matching data export posture) while blocking uploads (`can_upload_product_photo()`). **Decision needed:** Confirm whether product images should stay readable during suspension or also be blocked.
-5. **Refund Tender Rules vs Multi-Currency Roadmap (`S07`):**
-   `op_return_sale_items` currently permits cash/e-wallet/card refund methods without checking the original tender mix (e.g., cash refund on an unpaid `utang` sale), and `sales` stores amounts in `base_currency` without FX snapshots. **Decision needed:** Prioritize refund-to-credit rules before expanding `utang` / multi-currency features.
+3. **Firebase Hosting, Auth & CORS (`S09`, `S10`, `A1`):**
+   `skdwxenbvhzpfxtwgepa` has migrations `1`–`59`, `custom_access_token_hook`, and Edge Functions `create_user` / `invite_user` deployed, and `https://xzacto-403cc.web.app` is live. Per owner decision (`A1`), launch on **`https://xzacto-403cc.web.app` only** for now (`xzacto.store` custom domain cutover paused pending `whois.com` registrar login recovery; `aijelabs.com` stays separate). **Remaining deploy sync:** push migration `#60` (`20261114000400_s07_return_tender_guard.sql`) via `supabase db push --remote`, tighten Edge `ALLOWED_ORIGINS="https://xzacto-403cc.web.app"`, rebuild `@pos/client` with production env & run `firebase deploy --only hosting` (ships `2011252` `no-cache` fix + `S07` Web UI), and configure Supabase Auth (`Site URL: https://xzacto-403cc.web.app`, Redirect URLs `https://xzacto-403cc.web.app/**` + `xzactopos://auth-callback`, Minimum password length `8`).
+4. **Suspended-Tenant Image Read Policy (`S11` — Resolved `A2`):**
+   Confirmed by owner: keep `product_photos_member_read` allowing suspended tenants to read/export existing photos while `can_upload_product_photo()` blocks uploads; `/app/upgrade` is already guarded via `requires("tenant.modules")` (`router.tsx:249`).
+5. **Refund Tender Rules vs Multi-Currency Roadmap (`S07` — Return Guard Fixed `A3`):**
+   Return tender validation (`utang` <= remaining `utang`; `cash`/`ewallet`/`card` <= remaining settled payment) is enforced across Postgres (`20261114000400`), Web (`sale-math.ts`, `sales.tsx`), and Mobile (`drift_sales.dart`, `receipt_screen.dart`). Per-sale `currency`/`fx_rate` snapshot columns remain in post-launch backlog (`docs/plan.md` §6).
 
 ---
 
@@ -137,7 +137,7 @@ Every `Critical` and `High` item across QA-01, QA-02, and QA-03 is `Fixed` and b
 
 See the full pre-deploy procedure in [docs/runbooks/release-checklist.md](../runbooks/release-checklist.md) and recovery steps in [docs/runbooks/backup-and-restore.md](../runbooks/backup-and-restore.md):
 
-- **Migrations:** All `59` migrations (`20261107000100_core_tenancy.sql` .. `20261114000300_qa04_keepalive_and_lint_fix.sql`) listed in strict timestamp order, plus Postgres `17`, `custom_access_token_hook`, auth redirect URLs, and private `product-photos` storage bucket (`200 KiB`, `image/jpeg`).
+- **Migrations:** All `60` migrations (`20261107000100_core_tenancy.sql` .. `20261114000400_s07_return_tender_guard.sql`) listed in strict timestamp order, plus Postgres `17`, `custom_access_token_hook`, auth redirect URLs, and private `product-photos` storage bucket (`200 KiB`, `image/jpeg`).
 - **Environment & Secrets Matrix:** Build-time Web vars (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`), Edge Function runtime vars (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `ALLOWED_ORIGINS`), Flutter `--dart-define` vars + `android/key.properties`, and CI secrets (`DB_URL`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`).
 - **Backups & Advisors:** Weekly GitHub Action backup (`backup.yml`) + manual `scripts/backup-db.mjs`; baseline `db advisors --level warn` is `0` issues (`136` INFO total) and `db lint -s public` is `0` errors.
 - **Rollback Plan:** Additive forward migrations or `pg_dump` restore from pre-deploy backup (`backup-and-restore.md`), Edge Function revision redeploy, static web artifact revert, and forward-only handling for Mobile SQLite (`schemaVersion = 18`).

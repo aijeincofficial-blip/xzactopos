@@ -1448,6 +1448,8 @@
       }
     }
   },
+  "saleReturnUtangExceeds": "Utang refund cannot exceed the remaining utang balance on this sale.",
+  "saleReturnPaidExceeds": "Cash, e-wallet, or card refund cannot exceed the settled amount paid on this sale.",
   "holdSaleAction": "Hold",
   "holdSaleTitle": "Hold this sale",
   "holdSaleHint": "Park this cart to serve the next customer. Stock is not deducted until paid.",

@@ -150,4 +150,114 @@ void main() {
     final customersAfter = await store.watchCustomers().first;
     expect(customersAfter.single.balance, 5000);
   });
+
+  test('S07 rejects settled refunds on pure utang sales, utang refunds on pure cash sales, and enforces split-tender headroom', () async {
+    // 1. Pure utang sale with customer: reject cash, ewallet, card; allow utang
+    await store.commitSale(
+      sale(
+        's-utang-only',
+        [line(_v1, 2, 5000, name: 'Kape')],
+        const [PaymentDraft('utang', 10000)],
+        customerId: _cus,
+      ),
+      opId: 'op-sale-uo',
+    );
+    final uoDetail = (await store.getSale('s-utang-only'))!;
+    expect(uoDetail.remainingPaidRefundable, 0);
+    expect(uoDetail.remainingUtangRefundable, 10000);
+
+    for (final badMethod in ['cash', 'ewallet', 'card']) {
+      await expectLater(
+        store.returnSaleItems(
+          's-utang-only',
+          items: const [SaleReturnLine(variantId: _v1, qty: 1)],
+          refundMethod: badMethod,
+          opId: 'op-ret-uo-bad-$badMethod',
+        ),
+        throwsA(isA<StateError>().having((e) => e.message, 'message', 'return_paid_exceeds')),
+      );
+    }
+
+    // 2. Named-customer pure cash sale: reject utang refund
+    await store.commitSale(
+      sale(
+        's-cash-cust',
+        [line(_v1, 2, 5000, name: 'Kape')],
+        const [PaymentDraft('cash', 10000, tendered: 10000)],
+        customerId: _cus,
+      ),
+      opId: 'op-sale-cc',
+    );
+    final ccDetail = (await store.getSale('s-cash-cust'))!;
+    expect(ccDetail.remainingPaidRefundable, 10000);
+    expect(ccDetail.remainingUtangRefundable, 0);
+
+    await expectLater(
+      store.returnSaleItems(
+        's-cash-cust',
+        items: const [SaleReturnLine(variantId: _v1, qty: 1)],
+        refundMethod: 'utang',
+        opId: 'op-ret-cc-bad',
+      ),
+      throwsA(isA<StateError>().having((e) => e.message, 'message', 'return_utang_exceeds')),
+    );
+
+    // 3. Split-tender sale (5,000 cash + 10,000 utang = 15,000): enforce per-pool remaining allowances
+    await store.commitSale(
+      sale(
+        's-split-1',
+        [line(_v1, 3, 5000, name: 'Kape')],
+        const [
+          PaymentDraft('cash', 5000, tendered: 5000),
+          PaymentDraft('utang', 10000),
+        ],
+        customerId: _cus,
+      ),
+      opId: 'op-sale-split',
+    );
+
+    await expectLater(
+      store.returnSaleItems(
+        's-split-1',
+        items: const [SaleReturnLine(variantId: _v1, qty: 2)],
+        refundMethod: 'cash',
+        opId: 'op-ret-split-over-cash',
+      ),
+      throwsA(isA<StateError>().having((e) => e.message, 'message', 'return_paid_exceeds')),
+    );
+
+    final cashPart = await store.returnSaleItems(
+      's-split-1',
+      items: const [SaleReturnLine(variantId: _v1, qty: 1)],
+      refundMethod: 'cash',
+      opId: 'op-ret-split-ok-cash',
+    );
+    expect(cashPart, 5000);
+
+    final midDetail = (await store.getSale('s-split-1'))!;
+    expect(midDetail.remainingPaidRefundable, 0);
+    expect(midDetail.remainingUtangRefundable, 10000);
+
+    await expectLater(
+      store.returnSaleItems(
+        's-split-1',
+        items: const [SaleReturnLine(variantId: _v1, qty: 1)],
+        refundMethod: 'cash',
+        opId: 'op-ret-split-exhausted-cash',
+      ),
+      throwsA(isA<StateError>().having((e) => e.message, 'message', 'return_paid_exceeds')),
+    );
+
+    final utangPart = await store.returnSaleItems(
+      's-split-1',
+      items: const [SaleReturnLine(variantId: _v1, qty: 2)],
+      refundMethod: 'utang',
+      opId: 'op-ret-split-ok-utang',
+    );
+    expect(utangPart, 10000);
+
+    final endDetail = (await store.getSale('s-split-1'))!;
+    expect(endDetail.remainingPaidRefundable, 0);
+    expect(endDetail.remainingUtangRefundable, 0);
+  });
 }
