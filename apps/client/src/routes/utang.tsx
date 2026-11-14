@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { usePollInterval } from "../lib/polling.ts";
 import { formatMoney, money } from "@pos/core";
 import { Plus, X } from "lucide-react";
 import { Alert, Badge, Button, Card, Dialog, EmptyState, ErrorState, Field, Input, PageHeader, Select, TableSkeleton, useToast } from "../components/ui.tsx";
@@ -26,6 +27,7 @@ export function UtangPage() {
   const msg = useErrorMessage();
   const toast = useToast();
   const { access, can } = useSession();
+  const pollInterval = usePollInterval(120_000);
   const qc = useQueryClient();
   const currency = access.tenant.base_currency;
   const today = dayInTimezone(access.tenant.timezone);
@@ -66,7 +68,7 @@ export function UtangPage() {
   const customersQuery = useQuery({
     queryKey: ["customers-balances"],
     queryFn: () => fetchCustomersWithBalances(),
-    refetchInterval: 60_000,
+    refetchInterval: pollInterval,
   });
 
   const ledgerQuery = useQuery({

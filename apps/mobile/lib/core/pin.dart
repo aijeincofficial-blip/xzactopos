@@ -36,30 +36,67 @@ String hashPinPbkdf2(String pin, String saltB64, [int iterations = 20000]) {
   return 'pbkdf2_sha256\$$iterations\$$saltB64\$${_bytesToBase64(derived)}';
 }
 
-/// Verifies a PIN against a PBKDF2-HMAC-SHA256 hash string.
-bool verifyPinPbkdf2(String pin, String pinHash) {
-  if (pin.isEmpty || pinHash.isEmpty) return false;
+/// Derives and verifies the 32-byte key from a stored `pin_hash` or a `v2:` verifier.
+/// Returns null if the PIN does not match or the format is invalid.
+Uint8List? derivePinKeyAndVerify(String pin, String pinHash) {
+  if (pin.isEmpty || pinHash.isEmpty) return null;
   final parts = pinHash.split('\$');
-  if (parts.length != 4) return false;
+  if (parts.length != 4) return null;
 
   final scheme = parts[0];
   final iterStr = parts[1];
   final saltB64 = parts[2];
-  final expectedHashBase64 = parts[3];
+  final expected = parts[3];
 
-  if (scheme != 'pbkdf2_sha256' || iterStr.isEmpty || saltB64.isEmpty || expectedHashBase64.isEmpty) {
-    return false;
+  if (scheme != 'pbkdf2_sha256' || iterStr.isEmpty || saltB64.isEmpty || expected.isEmpty) {
+    return null;
   }
 
   final iterations = int.tryParse(iterStr);
-  if (iterations == null || iterations <= 0) return false;
+  if (iterations == null || iterations <= 0) return null;
 
   try {
     final salt = _base64ToBytes(saltB64);
     final derived = pbkdf2HmacSha256(pin, salt, iterations);
-    final derivedB64 = _bytesToBase64(derived);
-    return derivedB64 == expectedHashBase64;
+    if (expected.startsWith('v2:')) {
+      final expectedDigest = _base64ToBytes(expected.substring(3));
+      final actualDigest = sha256.convert(derived).bytes;
+      return _constantTimeEquals(actualDigest, expectedDigest) ? derived : null;
+    }
+    final expectedBytes = _base64ToBytes(expected);
+    return _constantTimeEquals(derived, expectedBytes) ? derived : null;
   } catch (_) {
-    return false;
+    return null;
   }
+}
+
+bool _constantTimeEquals(List<int> a, List<int> b) {
+  if (a.length != b.length) return false;
+  var diff = 0;
+  for (var i = 0; i < a.length; i++) {
+    diff |= a[i] ^ b[i];
+  }
+  return diff == 0;
+}
+
+/// Verifies a PIN against a PBKDF2-HMAC-SHA256 hash or `v2:` verifier string.
+bool verifyPinPbkdf2(String pin, String pinHash) =>
+    derivePinKeyAndVerify(pin, pinHash) != null;
+
+/// Derives an offline supervisor approval HMAC-SHA256 proof matching Postgres `consume_supervisor_approval`.
+String? signOfflineApprovalProof({
+  required String pin,
+  required String pinHash,
+  required String tenantId,
+  required String approverId,
+  required String action,
+  required String refId,
+  required String approvedAt,
+}) {
+  final dk = derivePinKeyAndVerify(pin, pinHash);
+  if (dk == null) return null;
+  final msg =
+      '${tenantId.toLowerCase()}|${approverId.toLowerCase()}|$action|${refId.toLowerCase()}|$approvedAt';
+  final digest = Hmac(sha256, dk).convert(utf8.encode(msg));
+  return digest.bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
 }

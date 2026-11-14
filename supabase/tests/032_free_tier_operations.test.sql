@@ -1,7 +1,7 @@
 -- 032_free_tier_operations.test.sql: pgTAP tests for Card F-11 free-tier operations and maintenance
 
 begin;
-select plan(19);
+select plan(25);
 
 -- ---------------------------------------------------------------------------
 -- Setup Fixtures
@@ -103,31 +103,87 @@ reset role;
 -- 2. Database Storage Metrics & Quotas
 -- ---------------------------------------------------------------------------
 
--- Cashier cannot query storage metrics
+-- Cashier and regular store admin cannot query storage metrics
 select pg_temp.login('A', 'juan');
 set local role authenticated;
 
 select throws_matching(
   $$ select public.get_storage_metrics() $$,
-  'only administrators can view storage metrics',
+  'only platform admins or account owners can view storage metrics',
   'cashier cannot view storage metrics'
 );
 
 reset role;
 
--- Superadmin can query storage metrics
+select pg_temp.login('A', 'maria');
+set local role authenticated;
+
+select throws_matching(
+  $$ select public.get_storage_metrics() $$,
+  'only platform admins or account owners can view storage metrics',
+  'branch admin cannot view storage metrics'
+);
+
+reset role;
+
+-- Non-platform superadmin receives strictly tenant-scoped stats (no global DB sizes/tables)
 select pg_temp.login('A', 'owner');
 set local role authenticated;
 
 select is(
   (public.get_storage_metrics() ->> 'ok')::boolean,
   true,
-  'superadmin can view storage metrics'
+  'superadmin can call get_storage_metrics'
+);
+
+select is(
+  public.get_storage_metrics() ->> 'scope',
+  'tenant',
+  'non-platform superadmin gets tenant scope'
+);
+
+select is(
+  (public.get_storage_metrics() -> 'total_bytes'),
+  'null'::jsonb,
+  'non-platform superadmin does not see global total_bytes'
+);
+
+select is(
+  (public.get_storage_metrics() -> 'limit_bytes'),
+  'null'::jsonb,
+  'non-platform superadmin does not see global limit_bytes'
+);
+
+select is(
+  jsonb_array_length(public.get_storage_metrics() -> 'tables'),
+  0,
+  'non-platform superadmin does not see global table breakdown'
+);
+
+select ok(
+  public.get_storage_metrics() -> 'tenant_stats' ? 'products',
+  'tenant_stats includes products count for superadmin'
+);
+
+reset role;
+
+-- Platform admin receives full global storage metrics and top tables
+insert into public.platform_admins (user_id)
+  values (pg_temp.uid('A', 'owner'))
+  on conflict do nothing;
+
+select pg_temp.login('A', 'owner');
+set local role authenticated;
+
+select is(
+  public.get_storage_metrics() ->> 'scope',
+  'global',
+  'platform admin receives global storage scope'
 );
 
 select ok(
   (public.get_storage_metrics() ->> 'total_bytes')::bigint > 0,
-  'total_bytes is positive'
+  'total_bytes is positive for platform admin'
 );
 
 select is(
@@ -149,15 +205,12 @@ select ok(
 
 select ok(
   jsonb_array_length(public.get_storage_metrics() -> 'tables') > 0,
-  'tables list is populated'
-);
-
-select ok(
-  public.get_storage_metrics() -> 'tenant_stats' ? 'products',
-  'tenant_stats includes products count'
+  'tables list is populated for platform admin'
 );
 
 reset role;
+
+delete from public.platform_admins where user_id = pg_temp.uid('A', 'owner');
 
 -- ---------------------------------------------------------------------------
 -- 3. Maintenance: Processed Ops & Approvals Retention Cleanup

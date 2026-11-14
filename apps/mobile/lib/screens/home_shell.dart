@@ -48,8 +48,8 @@ class HomeShell extends StatefulWidget {
 const _posIndex = 2;
 
 class _HomeShellState extends State<HomeShell> {
-  int _index = _posIndex;
-  final Set<int> _built = {_posIndex};
+  int? _index;
+  final Set<int> _built = {};
 
   void _select(int i) => setState(() {
         _index = i;
@@ -61,16 +61,23 @@ class _HomeShellState extends State<HomeShell> {
     final t = AppLocalizations.of(context);
     final scope = CatalogScope.of(context);
     final tabs = <_TabSpec>[
-      _TabSpec('tab-today', t.tabToday, (c) => TodayGlyph(color: c), () => TodayScreen(backend: widget.backend)),
-      _TabSpec('tile-stock', t.stockTitle, (c) => BoxGlyph(color: c), () => const StockScreen()),
-      _TabSpec('tile-sell', t.tabPos, (c) => const SizedBox.shrink(),
-          () => SellScreen(backend: widget.backend, storeName: widget.storeName)),
-      _TabSpec('tile-utang', t.utangTitle, (c) => NotebookGlyph(color: c),
-          () => UtangScreen(storeName: widget.storeName)),
-      _TabSpec('tab-more', t.more, (c) => MoreGlyph(color: c),
-          () => MoreScreen(backend: widget.backend, storeName: widget.storeName)),
+      if (scope.posEnabled) ...[
+        _TabSpec('tab-today', t.tabToday, (c) => TodayGlyph(color: c), () => TodayScreen(backend: widget.backend)),
+        _TabSpec('tile-stock', t.stockTitle, (c) => BoxGlyph(color: c), () => const StockScreen()),
+        _TabSpec('tile-sell', t.tabPos, (c) => const SizedBox.shrink(),
+            () => SellScreen(backend: widget.backend, storeName: widget.storeName)),
+        _TabSpec('tile-utang', t.utangTitle, (c) => NotebookGlyph(color: c),
+            () => UtangScreen(storeName: widget.storeName)),
+        _TabSpec('tab-more', t.more, (c) => MoreGlyph(color: c),
+            () => MoreScreen(backend: widget.backend, storeName: widget.storeName)),
+      ] else ...[
+        _TabSpec('tile-stock', t.stockTitle, (c) => BoxGlyph(color: c), () => const StockScreen()),
+        _TabSpec('tab-more', t.more, (c) => MoreGlyph(color: c),
+            () => MoreScreen(backend: widget.backend, storeName: widget.storeName)),
+      ],
     ];
-    final index = _index.clamp(0, tabs.length - 1);
+    final defaultIndex = scope.posEnabled ? _posIndex : 0;
+    final index = (_index ?? defaultIndex).clamp(0, tabs.length - 1);
 
     Widget badged(Widget icon, int count, {Key? labelKey}) => count > 0
         ? Badge(
@@ -107,26 +114,41 @@ class _HomeShellState extends State<HomeShell> {
     }
 
     return PopScope(
-      canPop: index == _posIndex,
+      canPop: index == defaultIndex,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) _select(_posIndex);
+        if (!didPop) _select(defaultIndex);
       },
       child: Scaffold(
-        extendBody: true,
+        extendBody: scope.posEnabled,
         body: IndexedStack(
           index: index,
           children: [
-            for (var i = 0; i < tabs.length; i++) _built.contains(i) ? tabs[i].page() : const SizedBox.shrink(),
+            for (var i = 0; i < tabs.length; i++)
+              (_built.contains(i) || i == index) ? tabs[i].page() : const SizedBox.shrink(),
           ],
         ),
-        bottomNavigationBar: GlassTabBar(
-          index: index,
-          centerIndex: _posIndex,
-          onSelect: _select,
-          tabs: [
-            for (final s in tabs) GlassTab(key: s.key, label: s.label, icon: (c) => iconFor(s, c)),
-          ],
-        ),
+        bottomNavigationBar: scope.posEnabled
+            ? GlassTabBar(
+                index: index,
+                centerIndex: _posIndex,
+                onSelect: _select,
+                tabs: [
+                  for (final s in tabs) GlassTab(key: s.key, label: s.label, icon: (c) => iconFor(s, c)),
+                ],
+              )
+            : NavigationBar(
+                selectedIndex: index,
+                onDestinationSelected: _select,
+                destinations: [
+                  for (final s in tabs)
+                    NavigationDestination(
+                      key: Key(s.key),
+                      icon: iconFor(s, Theme.of(context).colorScheme.outline),
+                      selectedIcon: iconFor(s, Theme.of(context).colorScheme.primary),
+                      label: s.label,
+                    ),
+                ],
+              ),
       ),
     );
   }
@@ -159,17 +181,18 @@ class MoreScreen extends StatelessWidget {
         ),
         onTap: () => open(const ProductsScreen()),
       ),
-      _MoreTile(
-        key: const Key('tile-restock'),
-        label: t.restockTitle,
-        glyph: const _MoreSwatchGlyph(
-          icon: Icons.playlist_add_check_rounded,
-          bg: DesignTokens.okBg,
-          fg: DesignTokens.okFg,
-        ),
-        onTap: () => open(const RestockScreen()),
-      ),
       if (scope.canManageStock)
+        _MoreTile(
+          key: const Key('tile-restock'),
+          label: t.restockTitle,
+          glyph: const _MoreSwatchGlyph(
+            icon: Icons.playlist_add_check_rounded,
+            bg: DesignTokens.okBg,
+            fg: DesignTokens.okFg,
+          ),
+          onTap: () => open(const RestockScreen()),
+        ),
+      if (scope.canViewReports)
         _MoreTile(
           key: const Key('tile-reports'),
           label: t.reportsTitle,
@@ -180,7 +203,7 @@ class MoreScreen extends StatelessWidget {
           ),
           onTap: () => open(ReportsScreen(backend: backend)),
         ),
-      if (scope.canManageStock)
+      if (scope.canAccessExpenses)
         _MoreTile(
           key: const Key('more-expenses'),
           label: t.expensesTitle,
@@ -191,17 +214,18 @@ class MoreScreen extends StatelessWidget {
           ),
           onTap: () => open(ExpensesScreen(backend: backend)),
         ),
-      _MoreTile(
-        key: const Key('more-shift'),
-        label: t.shiftTitle,
-        glyph: const _MoreSwatchGlyph(
-          icon: Icons.schedule_rounded,
-          bg: DesignTokens.swCoffee,
-          fg: DesignTokens.swCoffeeFg,
+      if (scope.posEnabled)
+        _MoreTile(
+          key: const Key('more-shift'),
+          label: t.shiftTitle,
+          glyph: const _MoreSwatchGlyph(
+            icon: Icons.schedule_rounded,
+            bg: DesignTokens.swCoffee,
+            fg: DesignTokens.swCoffeeFg,
+          ),
+          onTap: () => open(ShiftScreen(backend: backend, storeName: storeName)),
         ),
-        onTap: () => open(ShiftScreen(backend: backend, storeName: storeName)),
-      ),
-      if (scope.isAdminOrSuperadmin)
+      if (scope.canManageStaff)
         _MoreTile(
           key: const Key('more-staff'),
           label: t.staffTitle,
@@ -212,18 +236,19 @@ class MoreScreen extends StatelessWidget {
           ),
           onTap: () => open(StaffScreen(backend: backend)),
         ),
-      _MoreTile(
-        key: const Key('more-services'),
-        label: t.servicesTitle,
-        glyph: const _MoreSwatchGlyph(
-          icon: Icons.phone_iphone_rounded,
-          bg: DesignTokens.lime,
-          fg: DesignTokens.ink,
-          coin: true,
+      if (scope.posEnabled)
+        _MoreTile(
+          key: const Key('more-services'),
+          label: t.servicesTitle,
+          glyph: const _MoreSwatchGlyph(
+            icon: Icons.phone_iphone_rounded,
+            bg: DesignTokens.lime,
+            fg: DesignTokens.ink,
+            coin: true,
+          ),
+          onTap: () => open(ServicesScreen(backend: backend)),
         ),
-        onTap: () => open(ServicesScreen(backend: backend)),
-      ),
-      if (scope.canManageStock)
+      if (scope.canCloseDay)
         _MoreTile(
           key: const Key('more-close-day'),
           label: t.dayCloseTitle,
@@ -429,6 +454,56 @@ class _MoreSwatchGlyph extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Shown to a cashier when the tenant has turned off the POS module.
+class PosDisabledScreen extends StatelessWidget {
+  const PosDisabledScreen({super.key, required this.backend, required this.storeName});
+  final Backend backend;
+  final String storeName;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
+    return Scaffold(
+      appBar: AppBar(title: Text(storeName.isEmpty ? t.appTitle : storeName)),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(Gap.xxl),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 360),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.point_of_sale_outlined, size: 56, color: scheme.outline),
+                const SizedBox(height: Gap.l),
+                Text(
+                  t.posDisabledTitle,
+                  key: const Key('pos-disabled-title'),
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: Gap.s),
+                Text(
+                  t.posDisabledBody,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: scheme.outline),
+                ),
+                const SizedBox(height: Gap.xl),
+                FilledButton.icon(
+                  key: const Key('pos-disabled-signout'),
+                  onPressed: backend.signOut,
+                  icon: const Icon(Icons.logout_rounded),
+                  label: Text(t.signOut),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

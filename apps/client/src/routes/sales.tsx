@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { usePollInterval } from "../lib/polling.ts";
 import { Download, Search, X } from "lucide-react";
 import { formatMoney, money } from "@pos/core";
 import { Alert, Badge, Button, Card, Dialog, EmptyState, ErrorState, Field, Input, PageHeader, Select, useToast } from "../components/ui.tsx";
@@ -26,6 +27,7 @@ export function SalesPage() {
   const msg = useErrorMessage();
   const toast = useToast();
   const { access, can } = useSession();
+  const pollInterval = usePollInterval(120_000);
   const qc = useQueryClient();
   const currency = access.tenant.base_currency;
   const fmt = (n: number) => formatMoney(money(n, currency), i18n.language);
@@ -70,7 +72,7 @@ export function SalesPage() {
         limit: 300,
       }),
     enabled: Boolean(store),
-    refetchInterval: 120_000,
+    refetchInterval: pollInterval,
   });
 
   const dayFormatter = useMemo(

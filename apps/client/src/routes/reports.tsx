@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { usePollInterval } from "../lib/polling.ts";
 import { formatMoney, money } from "@pos/core";
 import { Download } from "lucide-react";
 import {
@@ -44,6 +45,7 @@ export function ReportsPage() {
   const { t, i18n } = useTranslation(["admin", "common"]);
   const { access, can } = useSession();
   const toast = useToast();
+  const pollInterval = usePollInterval(120_000);
   const currency = access.tenant.base_currency ?? "PHP";
 
   const today = useMemo(() => new Date(), []);
@@ -106,7 +108,7 @@ export function ReportsPage() {
         to: toDate,
         locationId: selectedLocationId === "all" ? null : selectedLocationId,
       }),
-    refetchInterval: 60_000,
+    refetchInterval: pollInterval,
   });
 
   const snapshotMutation = useMutation({

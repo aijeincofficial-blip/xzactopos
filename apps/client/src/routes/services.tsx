@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { usePollInterval } from "../lib/polling.ts";
 import { formatMoney, money, uuidv7 } from "@pos/core";
 import { ArrowDownLeft, ArrowLeftRight, ArrowUpRight, Download, Smartphone, X } from "lucide-react";
 import {
@@ -69,6 +70,7 @@ export function ServicesPage() {
   const msg = useErrorMessage();
   const toast = useToast();
   const { access, can } = useSession();
+  const pollInterval = usePollInterval(120_000);
   const qc = useQueryClient();
   const currency = access.tenant.base_currency ?? "PHP";
   const fmt = (n: number) => formatMoney(money(n, currency), i18n.language);
@@ -115,14 +117,14 @@ export function ServicesPage() {
     queryKey: ["wallet-floats", store?.id],
     queryFn: () => fetchStoreWalletFloats(store?.id ?? ""),
     enabled: Boolean(store),
-    refetchInterval: 60_000,
+    refetchInterval: pollInterval,
   });
 
   const txnsQuery = useQuery({
     queryKey: ["service-txns", store?.id],
     queryFn: () => fetchRecentServiceTxns(store?.id ?? "", currency),
     enabled: Boolean(store),
-    refetchInterval: 60_000,
+    refetchInterval: pollInterval,
   });
 
   const refreshAll = () =>

@@ -53,7 +53,11 @@ class BrokenStore extends DriftStore {
   BrokenStore() : super(AppDatabase(NativeDatabase.memory()));
   @override
   Future<bool> ensureTenant(String tenantId,
-          {required String baseCurrency, String? locationId, List<StoreRef>? stores, bool discardUnsent = false}) =>
+          {required String baseCurrency,
+          String? locationId,
+          String? userId,
+          List<StoreRef>? stores,
+          bool discardUnsent = false}) =>
       Future.error(StateError('TypeError: Failed to fetch'));
 }
 

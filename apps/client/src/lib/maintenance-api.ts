@@ -19,11 +19,12 @@ export interface TenantRowStats {
 
 export interface StorageMetrics {
   ok: boolean;
-  total_bytes: number;
-  limit_bytes: number;
-  used_mb: number;
-  limit_mb: number;
-  percent_used: number;
+  scope?: "global" | "tenant";
+  total_bytes: number | null;
+  limit_bytes: number | null;
+  used_mb: number | null;
+  limit_mb: number | null;
+  percent_used: number | null;
   status: "healthy" | "warning" | "critical";
   tables: TableSizeMetric[];
   tenant_stats: TenantRowStats;
@@ -40,7 +41,7 @@ export interface HealthPingResult {
   ok: boolean;
   status: string;
   timestamp: string;
-  database: string;
+  database?: string;
   version: string;
 }
 

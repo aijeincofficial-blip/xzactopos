@@ -69,6 +69,10 @@ Future<StaffBackend> openStaff(WidgetTester tester, {String? role = 'superadmin'
     'user_id': 'u1',
     'tenant': {'id': 't1', 'name': 'Tindahan', 'slug': 'tindahan', 'base_currency': 'PHP'},
     'role': ?role,
+    if (role == 'admin')
+      'locations': [
+        {'id': 's1', 'type': 'store', 'code': 'S1', 'name': 'Main', 'position': 'manager'},
+      ],
   };
   await tester.pumpWidget(App(backend: b, openStore: ({bool safeMode = false}) => store, initialLocale: locale));
   await tester.pumpAndSettle();

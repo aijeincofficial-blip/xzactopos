@@ -9,6 +9,7 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: "autoUpdate",
+      injectRegister: null,
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
         navigateFallback: "/index.html",
@@ -38,10 +39,15 @@ export default defineConfig({
       output: {
         codeSplitting: {
           groups: [
-            { name: "vendor-supabase", test: /node_modules[\\/]@supabase[\\/]/ },
-            { name: "vendor-ui", test: /node_modules[\\/](radix-ui|@radix-ui|lucide-react|class-variance-authority|clsx|tailwind-merge)[\\/]/ },
-            { name: "vendor-react", test: /node_modules[\\/](react|react-dom|scheduler|@tanstack)[\\/]/ },
-            { name: "locales", test: /src[\\/]locales[\\/]/ },
+            { name: "vendor-tslib", test: /[\\/]tslib[\\/]/, priority: 40 },
+            {
+              name: "vendor-react",
+              test: /[\\/]node_modules[\\/](react|react-dom|scheduler|@tanstack|i18next|react-i18next)[\\/]/,
+              priority: 30,
+            },
+            { name: "vendor-supabase", test: /[\\/]node_modules[\\/]@supabase[\\/]/, priority: 20 },
+            { name: "vendor-radix", test: /[\\/]node_modules[\\/](radix-ui|@radix-ui)[\\/]/, priority: 15 },
+            { name: "vendor-ui", test: /[\\/]node_modules[\\/](lucide-react|class-variance-authority|clsx|tailwind-merge)[\\/]/, priority: 10 },
           ],
         },
       },

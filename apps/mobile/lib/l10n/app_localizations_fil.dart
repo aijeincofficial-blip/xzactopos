@@ -2723,4 +2723,38 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get whStockNoFiltered => 'Walang stock na tumugma sa filter.';
+
+  @override
+  String get variantsSection => 'Mga sukat at klase';
+
+  @override
+  String get addVariant => 'Magdagdag ng variant';
+
+  @override
+  String get variantLabel => 'Pangalan ng variant';
+
+  @override
+  String get variantLabelHint => 'hal. Regular, Large';
+
+  @override
+  String get defaultVariant => 'Default';
+
+  @override
+  String get removeVariant => 'Alisin';
+
+  @override
+  String variantsCount(int count) {
+    return '$count na sukat';
+  }
+
+  @override
+  String chooseVariant(String product) {
+    return 'Pumili ng klase para sa $product';
+  }
+
+  @override
+  String get posDisabledTitle => 'Naka-off ang POS';
+
+  @override
+  String get posDisabledBody => 'Hindi naka-on ang POS para sa negosyong ito.';
 }

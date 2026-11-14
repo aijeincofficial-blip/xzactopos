@@ -219,6 +219,19 @@ export interface PosIncomingTransferRow {
   transfer_items: PosIncomingTransferItem[];
 }
 
+export interface TransferDestination {
+  id: string;
+  code: string;
+  name: string;
+  type: "store" | "warehouse";
+  address: string | null;
+}
+
+export async function listTransferDestinations(): Promise<TransferDestination[]> {
+  const rows = await rpc<TransferDestination[]>("list_transfer_destinations");
+  return rows ?? [];
+}
+
 export async function listStoreIncomingTransfers(
   storeId: string,
   includeReceived = true,

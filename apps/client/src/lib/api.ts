@@ -1,16 +1,28 @@
 import { FunctionsHttpError } from "@supabase/supabase-js";
 import type { MyAccessPayload, Position, Role } from "@pos/core";
+import { ACCESS_CACHE_PREFIX, ApiError } from "./errors.ts";
+import { clearAllPosIdbCache } from "./pos-idb-cache.ts";
 import { supabase } from "./supabase.ts";
 
-/** Error with a stable key the UI maps to an i18n message (`errors:<key>`). */
-export class ApiError extends Error {
-  constructor(
-    readonly key: string,
-    message: string,
-    readonly field?: string,
-  ) {
-    super(message);
+export { ACCESS_CACHE_PREFIX, ApiError };
+
+export async function fetchAllPages<T>(
+  pageFn: (
+    from: number,
+    to: number,
+  ) => PromiseLike<{ data: unknown[] | null; error: Parameters<typeof fromRaw>[0] | null }>,
+  pageSize = 1000,
+  maxRows = 200_000,
+): Promise<T[]> {
+  const rows: T[] = [];
+  for (let from = 0; from < maxRows; from += pageSize) {
+    const { data, error } = await pageFn(from, from + pageSize - 1);
+    if (error) throw fromRaw(error);
+    const batch = (data ?? []) as T[];
+    rows.push(...batch);
+    if (batch.length < pageSize) break;
   }
+  return rows;
 }
 
 interface RawError {
@@ -125,7 +137,74 @@ export async function saveMyLocale(userId: string, locale: "en" | "fil") {
   if (error) throw fromRaw(error);
 }
 
-export const signOut = () => supabase.auth.signOut();
+
+const SENSITIVE_LOCAL_PREFIXES = [
+  ACCESS_CACHE_PREFIX,
+  "xzactopos:pos-cache",
+  "xzactopos:pos-outbox",
+  "xzactopos:held-orders:",
+  "pos.offlinePins.",
+  "pos.offlinePinFailures.",
+];
+
+const SENSITIVE_LOCAL_EXACT = new Set([
+  "xzactopos:web-pinned-products",
+  "pos.activeStoreId",
+  "pos.activeWarehouseId",
+  "pos.portal",
+]);
+
+export function clearAllCachedAccess(
+  storage: Storage | null = typeof localStorage !== "undefined" ? localStorage : null,
+): void {
+  if (!storage) return;
+  try {
+    for (let i = storage.length - 1; i >= 0; i--) {
+      const k = storage.key(i);
+      if (k?.startsWith(ACCESS_CACHE_PREFIX)) storage.removeItem(k);
+    }
+  } catch {
+    // ignore storage failures
+  }
+}
+
+export function clearSensitiveSessionStorage(
+  local: Storage | null = typeof localStorage !== "undefined" ? localStorage : null,
+  session: Storage | null = typeof sessionStorage !== "undefined" ? sessionStorage : null,
+): void {
+  if (local) {
+    try {
+      for (let i = local.length - 1; i >= 0; i--) {
+        const k = local.key(i);
+        if (!k) continue;
+        if (
+          SENSITIVE_LOCAL_EXACT.has(k) ||
+          SENSITIVE_LOCAL_PREFIXES.some((prefix) => k.startsWith(prefix))
+        ) {
+          local.removeItem(k);
+        }
+      }
+    } catch {
+      // ignore storage failures
+    }
+  }
+  if (session) {
+    try {
+      for (let i = session.length - 1; i >= 0; i--) {
+        const k = session.key(i);
+        if (k?.startsWith("xzactopos:")) session.removeItem(k);
+      }
+    } catch {
+      // ignore storage failures
+    }
+  }
+  void clearAllPosIdbCache();
+}
+
+export async function signOut() {
+  clearSensitiveSessionStorage();
+  return supabase.auth.signOut();
+}
 
 export interface CreateUserBody {
   username: string;

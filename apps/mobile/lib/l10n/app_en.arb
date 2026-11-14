@@ -1532,5 +1532,29 @@
   "whStockBadgeNegative": "Below zero",
   "whStockScanBarcode": "Scan barcode",
   "whStockClearSearch": "Clear search",
-  "whStockNoFiltered": "No stock items match your filter."
+  "whStockNoFiltered": "No stock items match your filter.",
+  "variantsSection": "Sizes & variants",
+  "addVariant": "Add variant",
+  "variantLabel": "Variant name",
+  "variantLabelHint": "e.g. Regular, Large",
+  "defaultVariant": "Default",
+  "removeVariant": "Remove",
+  "variantsCount": "{count} sizes",
+  "@variantsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "chooseVariant": "Choose variant for {product}",
+  "@chooseVariant": {
+    "placeholders": {
+      "product": {
+        "type": "String"
+      }
+    }
+  },
+  "posDisabledTitle": "POS is turned off",
+  "posDisabledBody": "Point of sale is disabled for this business."
 }

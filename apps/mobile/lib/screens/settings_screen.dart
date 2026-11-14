@@ -335,7 +335,7 @@ class SettingsScreen extends StatelessWidget {
               ),
             ),
 
-            if (CatalogScope.maybeOf(context)?.isAdminOrSuperadmin ?? true) ...[
+            if (CatalogScope.maybeOf(context)?.isSuperadmin ?? true) ...[
               const SizedBox(height: Gap.l),
 
               // Upgrade to Full Mode Card

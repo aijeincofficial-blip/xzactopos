@@ -1048,6 +1048,16 @@ class $VariantsTable extends Variants with TableInfo<$VariantsTable, Variant> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('Default'),
+  );
   static const VerificationMeta _skuMeta = const VerificationMeta('sku');
   @override
   late final GeneratedColumn<String> sku = GeneratedColumn<String>(
@@ -1166,6 +1176,7 @@ class $VariantsTable extends Variants with TableInfo<$VariantsTable, Variant> {
   List<GeneratedColumn> get $columns => [
     id,
     productId,
+    name,
     sku,
     barcode,
     isDefault,
@@ -1201,6 +1212,12 @@ class $VariantsTable extends Variants with TableInfo<$VariantsTable, Variant> {
       );
     } else if (isInserting) {
       context.missing(_productIdMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
     }
     if (data.containsKey('sku')) {
       context.handle(
@@ -1290,6 +1307,10 @@ class $VariantsTable extends Variants with TableInfo<$VariantsTable, Variant> {
         DriftSqlType.string,
         data['${effectivePrefix}product_id'],
       )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
       sku: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}sku'],
@@ -1342,6 +1363,7 @@ class $VariantsTable extends Variants with TableInfo<$VariantsTable, Variant> {
 class Variant extends DataClass implements Insertable<Variant> {
   final String id;
   final String productId;
+  final String name;
   final String sku;
   final String? barcode;
   final bool isDefault;
@@ -1357,6 +1379,7 @@ class Variant extends DataClass implements Insertable<Variant> {
   const Variant({
     required this.id,
     required this.productId,
+    required this.name,
     required this.sku,
     this.barcode,
     required this.isDefault,
@@ -1373,6 +1396,7 @@ class Variant extends DataClass implements Insertable<Variant> {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
     map['product_id'] = Variable<String>(productId);
+    map['name'] = Variable<String>(name);
     map['sku'] = Variable<String>(sku);
     if (!nullToAbsent || barcode != null) {
       map['barcode'] = Variable<String>(barcode);
@@ -1400,6 +1424,7 @@ class Variant extends DataClass implements Insertable<Variant> {
     return VariantsCompanion(
       id: Value(id),
       productId: Value(productId),
+      name: Value(name),
       sku: Value(sku),
       barcode: barcode == null && nullToAbsent
           ? const Value.absent()
@@ -1431,6 +1456,7 @@ class Variant extends DataClass implements Insertable<Variant> {
     return Variant(
       id: serializer.fromJson<String>(json['id']),
       productId: serializer.fromJson<String>(json['productId']),
+      name: serializer.fromJson<String>(json['name']),
       sku: serializer.fromJson<String>(json['sku']),
       barcode: serializer.fromJson<String?>(json['barcode']),
       isDefault: serializer.fromJson<bool>(json['isDefault']),
@@ -1451,6 +1477,7 @@ class Variant extends DataClass implements Insertable<Variant> {
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
       'productId': serializer.toJson<String>(productId),
+      'name': serializer.toJson<String>(name),
       'sku': serializer.toJson<String>(sku),
       'barcode': serializer.toJson<String?>(barcode),
       'isDefault': serializer.toJson<bool>(isDefault),
@@ -1467,6 +1494,7 @@ class Variant extends DataClass implements Insertable<Variant> {
   Variant copyWith({
     String? id,
     String? productId,
+    String? name,
     String? sku,
     Value<String?> barcode = const Value.absent(),
     bool? isDefault,
@@ -1480,6 +1508,7 @@ class Variant extends DataClass implements Insertable<Variant> {
   }) => Variant(
     id: id ?? this.id,
     productId: productId ?? this.productId,
+    name: name ?? this.name,
     sku: sku ?? this.sku,
     barcode: barcode.present ? barcode.value : this.barcode,
     isDefault: isDefault ?? this.isDefault,
@@ -1499,6 +1528,7 @@ class Variant extends DataClass implements Insertable<Variant> {
     return Variant(
       id: data.id.present ? data.id.value : this.id,
       productId: data.productId.present ? data.productId.value : this.productId,
+      name: data.name.present ? data.name.value : this.name,
       sku: data.sku.present ? data.sku.value : this.sku,
       barcode: data.barcode.present ? data.barcode.value : this.barcode,
       isDefault: data.isDefault.present ? data.isDefault.value : this.isDefault,
@@ -1523,6 +1553,7 @@ class Variant extends DataClass implements Insertable<Variant> {
     return (StringBuffer('Variant(')
           ..write('id: $id, ')
           ..write('productId: $productId, ')
+          ..write('name: $name, ')
           ..write('sku: $sku, ')
           ..write('barcode: $barcode, ')
           ..write('isDefault: $isDefault, ')
@@ -1541,6 +1572,7 @@ class Variant extends DataClass implements Insertable<Variant> {
   int get hashCode => Object.hash(
     id,
     productId,
+    name,
     sku,
     barcode,
     isDefault,
@@ -1558,6 +1590,7 @@ class Variant extends DataClass implements Insertable<Variant> {
       (other is Variant &&
           other.id == this.id &&
           other.productId == this.productId &&
+          other.name == this.name &&
           other.sku == this.sku &&
           other.barcode == this.barcode &&
           other.isDefault == this.isDefault &&
@@ -1573,6 +1606,7 @@ class Variant extends DataClass implements Insertable<Variant> {
 class VariantsCompanion extends UpdateCompanion<Variant> {
   final Value<String> id;
   final Value<String> productId;
+  final Value<String> name;
   final Value<String> sku;
   final Value<String?> barcode;
   final Value<bool> isDefault;
@@ -1587,6 +1621,7 @@ class VariantsCompanion extends UpdateCompanion<Variant> {
   const VariantsCompanion({
     this.id = const Value.absent(),
     this.productId = const Value.absent(),
+    this.name = const Value.absent(),
     this.sku = const Value.absent(),
     this.barcode = const Value.absent(),
     this.isDefault = const Value.absent(),
@@ -1602,6 +1637,7 @@ class VariantsCompanion extends UpdateCompanion<Variant> {
   VariantsCompanion.insert({
     required String id,
     required String productId,
+    this.name = const Value.absent(),
     required String sku,
     this.barcode = const Value.absent(),
     this.isDefault = const Value.absent(),
@@ -1619,6 +1655,7 @@ class VariantsCompanion extends UpdateCompanion<Variant> {
   static Insertable<Variant> custom({
     Expression<String>? id,
     Expression<String>? productId,
+    Expression<String>? name,
     Expression<String>? sku,
     Expression<String>? barcode,
     Expression<bool>? isDefault,
@@ -1634,6 +1671,7 @@ class VariantsCompanion extends UpdateCompanion<Variant> {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (productId != null) 'product_id': productId,
+      if (name != null) 'name': name,
       if (sku != null) 'sku': sku,
       if (barcode != null) 'barcode': barcode,
       if (isDefault != null) 'is_default': isDefault,
@@ -1652,6 +1690,7 @@ class VariantsCompanion extends UpdateCompanion<Variant> {
   VariantsCompanion copyWith({
     Value<String>? id,
     Value<String>? productId,
+    Value<String>? name,
     Value<String>? sku,
     Value<String?>? barcode,
     Value<bool>? isDefault,
@@ -1667,6 +1706,7 @@ class VariantsCompanion extends UpdateCompanion<Variant> {
     return VariantsCompanion(
       id: id ?? this.id,
       productId: productId ?? this.productId,
+      name: name ?? this.name,
       sku: sku ?? this.sku,
       barcode: barcode ?? this.barcode,
       isDefault: isDefault ?? this.isDefault,
@@ -1689,6 +1729,9 @@ class VariantsCompanion extends UpdateCompanion<Variant> {
     }
     if (productId.present) {
       map['product_id'] = Variable<String>(productId.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
     }
     if (sku.present) {
       map['sku'] = Variable<String>(sku.value);
@@ -1733,6 +1776,7 @@ class VariantsCompanion extends UpdateCompanion<Variant> {
     return (StringBuffer('VariantsCompanion(')
           ..write('id: $id, ')
           ..write('productId: $productId, ')
+          ..write('name: $name, ')
           ..write('sku: $sku, ')
           ..write('barcode: $barcode, ')
           ..write('isDefault: $isDefault, ')
@@ -19036,6 +19080,7 @@ typedef $$VariantsTableCreateCompanionBuilder =
     VariantsCompanion Function({
       required String id,
       required String productId,
+      Value<String> name,
       required String sku,
       Value<String?> barcode,
       Value<bool> isDefault,
@@ -19052,6 +19097,7 @@ typedef $$VariantsTableUpdateCompanionBuilder =
     VariantsCompanion Function({
       Value<String> id,
       Value<String> productId,
+      Value<String> name,
       Value<String> sku,
       Value<String?> barcode,
       Value<bool> isDefault,
@@ -19081,6 +19127,11 @@ class $$VariantsTableFilterComposer
 
   ColumnFilters<String> get productId => $composableBuilder(
     column: $table.productId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -19154,6 +19205,11 @@ class $$VariantsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get sku => $composableBuilder(
     column: $table.sku,
     builder: (column) => ColumnOrderings(column),
@@ -19219,6 +19275,9 @@ class $$VariantsTableAnnotationComposer
 
   GeneratedColumn<String> get productId =>
       $composableBuilder(column: $table.productId, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
 
   GeneratedColumn<String> get sku =>
       $composableBuilder(column: $table.sku, builder: (column) => column);
@@ -19287,6 +19346,7 @@ class $$VariantsTableTableManager
               ({
                 Value<String> id = const Value.absent(),
                 Value<String> productId = const Value.absent(),
+                Value<String> name = const Value.absent(),
                 Value<String> sku = const Value.absent(),
                 Value<String?> barcode = const Value.absent(),
                 Value<bool> isDefault = const Value.absent(),
@@ -19301,6 +19361,7 @@ class $$VariantsTableTableManager
               }) => VariantsCompanion(
                 id: id,
                 productId: productId,
+                name: name,
                 sku: sku,
                 barcode: barcode,
                 isDefault: isDefault,
@@ -19317,6 +19378,7 @@ class $$VariantsTableTableManager
               ({
                 required String id,
                 required String productId,
+                Value<String> name = const Value.absent(),
                 required String sku,
                 Value<String?> barcode = const Value.absent(),
                 Value<bool> isDefault = const Value.absent(),
@@ -19331,6 +19393,7 @@ class $$VariantsTableTableManager
               }) => VariantsCompanion.insert(
                 id: id,
                 productId: productId,
+                name: name,
                 sku: sku,
                 barcode: barcode,
                 isDefault: isDefault,

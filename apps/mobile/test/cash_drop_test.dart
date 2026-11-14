@@ -34,7 +34,14 @@ class _TestSharer implements TextSharer {
   }
 }
 
-Future<DriftStore> openApp(WidgetTester tester, {String? role, String locale = 'en', FakeBackend? backend, Size? size}) async {
+Future<DriftStore> openApp(
+  WidgetTester tester, {
+  String? role,
+  List<Map<String, dynamic>>? locations,
+  String locale = 'en',
+  FakeBackend? backend,
+  Size? size,
+}) async {
   tester.view.physicalSize = size ?? const Size(1080, 2340);
   tester.view.devicePixelRatio = 2.625;
   addTearDown(tester.view.reset);
@@ -43,6 +50,7 @@ Future<DriftStore> openApp(WidgetTester tester, {String? role, String locale = '
   b.access = {
     'tenant': {'id': 't1', 'name': 'Tindahan', 'base_currency': 'PHP'},
     'role': ?role,
+    'locations': ?locations,
   };
   await tester.pumpWidget(App(backend: b, openStore: ({bool safeMode = false}) => store, initialLocale: locale));
   await tester.pumpAndSettle();
@@ -68,12 +76,35 @@ void main() {
     await initializeDateFormatting('en', null);
   });
 
-  testWidgets('Cashier records cash drop during open shift and shares slip', (tester) async {
+  testWidgets('Cashier does not see cash drop button during open shift', (tester) async {
+    final backend = _CashDropFakeBackend();
+    final store = await openApp(tester, backend: backend, role: 'cashier');
+
+    await store.startShift(
+      id: const Uuid().v7(),
+      cashierId: 'user-cashier-1',
+      openingCash: 500000,
+      opId: const Uuid().v7(),
+    );
+
+    await openShiftScreen(tester);
+    expect(find.byKey(const Key('shift-cash-drop-btn')), findsNothing);
+    await leave(tester);
+  });
+
+  testWidgets('Manager records cash drop during open shift and shares slip', (tester) async {
     final backend = _CashDropFakeBackend();
     final testSharer = _TestSharer();
     textSharer = testSharer;
 
-    final store = await openApp(tester, backend: backend, role: 'cashier');
+    final store = await openApp(
+      tester,
+      backend: backend,
+      role: 'admin',
+      locations: const [
+        {'id': 's1', 'type': 'store', 'code': 'S1', 'name': 'Main', 'position': 'manager'},
+      ],
+    );
 
     // Start an open shift with 5,000.00 cash
     final shiftId = const Uuid().v7();

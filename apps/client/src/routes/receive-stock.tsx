@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { usePollInterval } from "../lib/polling.ts";
 import { ArrowDownToLine, Minus, Plus, ScanBarcode, Warehouse } from "lucide-react";
 import {
   Alert,
@@ -31,6 +32,7 @@ export function ReceiveStockPage() {
   const msg = useErrorMessage();
   const toast = useToast();
   const qc = useQueryClient();
+  const pollInterval = usePollInterval(120_000);
   const { activeStore } = useActiveLocation();
 
   const [tab, setTab] = useState<"incoming" | "history">("incoming");
@@ -45,7 +47,7 @@ export function ReceiveStockPage() {
     queryKey: ["pos-incoming-transfers", activeStore?.id, "all"],
     queryFn: () => listStoreIncomingTransfers(activeStore!.id, true),
     enabled: Boolean(activeStore?.id),
-    refetchInterval: 20_000,
+    refetchInterval: pollInterval,
   });
 
   const shippedRows = useMemo(

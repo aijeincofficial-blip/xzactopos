@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
@@ -65,7 +67,25 @@ class _Picker extends StatefulWidget {
 }
 
 class _PickerState extends State<_Picker> {
+  Timer? _searchDebounce;
   String _q = '';
+  List<CustomerView>? _cachedCustomers;
+  List<({CustomerView customer, String key})> _indexedCustomers = const [];
+
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    super.dispose();
+  }
+
+  List<CustomerView> _filterCustomers(List<CustomerView> all) {
+    if (_q.isEmpty) return all;
+    if (!identical(_cachedCustomers, all)) {
+      _cachedCustomers = all;
+      _indexedCustomers = [for (final c in all) (customer: c, key: searchKey(c.name))];
+    }
+    return [for (final entry in _indexedCustomers) if (entry.key.contains(_q)) entry.customer];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -80,7 +100,13 @@ class _PickerState extends State<_Picker> {
             padding: const EdgeInsets.all(12),
             child: TextField(
               key: const Key('customer-search'),
-              onChanged: (v) => setState(() => _q = searchKey(v)),
+              onChanged: (v) {
+                final normalized = searchKey(v);
+                _searchDebounce?.cancel();
+                _searchDebounce = Timer(const Duration(milliseconds: 150), () {
+                  if (mounted) setState(() => _q = normalized);
+                });
+              },
               decoration: InputDecoration(
                 prefixIcon: const Icon(Icons.search),
                 hintText: t.customerSearch,
@@ -102,18 +128,21 @@ class _PickerState extends State<_Picker> {
               stream: widget.store.watchCustomers(),
               builder: (context, snap) {
                 final all = snap.data ?? const <CustomerView>[];
-                final list = _q.isEmpty ? all : all.where((c) => searchKey(c.name).contains(_q)).toList();
-                return ListView(children: [
-                  for (final c in list)
-                    ListTile(
+                final list = _filterCustomers(all);
+                return ListView.builder(
+                  itemCount: list.length,
+                  itemBuilder: (context, index) {
+                    final c = list[index];
+                    return ListTile(
                       key: Key('customer-${c.id}'),
                       title: Text(c.name, style: const TextStyle(fontSize: 18)),
                       trailing: c.balance == 0
                           ? null
                           : Text(Money(c.balance, widget.store.baseCurrency).format(locale)),
                       onTap: () => Navigator.pop(context, (id: c.id, name: c.name)),
-                    ),
-                ]);
+                    );
+                  },
+                );
               },
             ),
           ),

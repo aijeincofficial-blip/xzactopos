@@ -25,11 +25,21 @@ class DriftStore with DriftSales, DriftWarehouse, DriftShifts implements LocalSt
 
   @override
   Future<bool> ensureTenant(String tenantId,
-      {required String baseCurrency, String? locationId, List<StoreRef>? stores, bool discardUnsent = false}) async {
+      {required String baseCurrency,
+      String? locationId,
+      List<StoreRef>? stores,
+      bool discardUnsent = false,
+      String? userId}) async {
     _base = baseCurrency;
     final allowed = stores ?? [if (locationId != null) StoreRef(id: locationId, name: '')];
     final row = await (db.select(db.meta)..where((m) => m.key.equals('tenant_id'))).getSingleOrNull();
-    if (row?.value == tenantId) {
+    final userRow = await (db.select(db.meta)..where((m) => m.key.equals('user_id'))).getSingleOrNull();
+    final sameTenant = row?.value == tenantId;
+    final sameUser = userId == null || userRow?.value == null || userRow?.value == userId;
+    if (sameTenant && sameUser) {
+      if (userId != null && userRow?.value == null) {
+        await db.into(db.meta).insertOnConflictUpdate(MetaCompanion.insert(key: 'user_id', value: userId));
+      }
       await initStores(allowed, preferred: locationId);
       return false;
     }
@@ -42,9 +52,21 @@ class DriftStore with DriftSales, DriftWarehouse, DriftShifts implements LocalSt
         await db.delete(t).go();
       }
       await db.into(db.meta).insert(MetaCompanion.insert(key: 'tenant_id', value: tenantId));
+      if (userId != null) {
+        await db.into(db.meta).insert(MetaCompanion.insert(key: 'user_id', value: userId));
+      }
     });
     await initStores(allowed, preferred: locationId);
     return row != null;
+  }
+
+  @override
+  Future<void> clearSessionData() async {
+    await db.transaction(() async {
+      for (final t in db.allTables) {
+        await db.delete(t).go();
+      }
+    });
   }
 
   // ---------------------------------------------------------------------------
@@ -52,11 +74,13 @@ class DriftStore with DriftSales, DriftWarehouse, DriftShifts implements LocalSt
   // ---------------------------------------------------------------------------
 
   static const _productSql = '''
-    select p.id, v.id as variant_id, p.name, p.unit, v.sku, v.barcode, pr.price, p.photo_path, p.active,
+    select p.id, v.id as variant_id, p.name, v.name as variant_name, v.is_default,
+           (select count(*) from variants v2 where v2.product_id = p.id and v2.deleted_at is null) as variant_count,
+           p.unit, v.sku, v.barcode, pr.price, p.photo_path, p.active,
            p.track_stock, p.tax_rate, v.cost, v.reorder_point, ${DriftSales.tingiLinkSql},
            exists (select 1 from outbox o where o.entity_id = p.id) as pending
     from products p
-    join variants v on v.product_id = p.id and v.is_default = 1 and v.deleted_at is null
+    join variants v on v.product_id = p.id and v.deleted_at is null
     left join prices pr on pr.variant_id = v.id and pr.currency = ?1 and pr.deleted_at is null
     where p.deleted_at is null
   ''';
@@ -65,6 +89,9 @@ class DriftStore with DriftSales, DriftWarehouse, DriftShifts implements LocalSt
         id: r.read<String>('id'),
         variantId: r.read<String>('variant_id'),
         name: r.read<String>('name'),
+        variantName: r.readNullable<String>('variant_name') ?? 'Default',
+        isDefault: r.read<bool>('is_default'),
+        variantCount: r.read<int>('variant_count'),
         unit: r.read<String>('unit'),
         sku: r.read<String>('sku'),
         barcode: r.readNullable<String>('barcode'),
@@ -96,17 +123,28 @@ class DriftStore with DriftSales, DriftWarehouse, DriftShifts implements LocalSt
     }
     final where = words.isEmpty
         ? ''
-        : ' and ((${wordSql.join(' and ')}) or v.barcode = ?2 or lower(v.sku) = lower(?2))';
+        : ' and ((${wordSql.join(' and ')}) or v.barcode = ?2 or lower(v.sku) = lower(?2) or lower(v.name) like \'%\' || lower(?2) || \'%\')';
     return db
         .customSelect(
           '$_productSql$where '
           "order by case when v.barcode = ?2 then 0 when p.search_name like ?3 || '%' then 1 else 2 end, "
-          'p.search_name, p.id',
+          'p.search_name, p.id, v.is_default desc, v.name',
           variables: vars,
           readsFrom: {db.products, db.variants, db.prices, db.outbox},
         )
         .watch()
         .map((rows) => rows.map(_view).toList());
+  }
+
+  @override
+  Future<List<ProductView>> productVariants(String productId) async {
+    final rows = await db
+        .customSelect(
+          '$_productSql and p.id = ?2 order by v.is_default desc, v.name',
+          variables: [Variable.withString(_base), Variable.withString(productId)],
+        )
+        .get();
+    return rows.map(_view).toList();
   }
 
   @override
@@ -154,9 +192,6 @@ class DriftStore with DriftSales, DriftWarehouse, DriftShifts implements LocalSt
   @override
   Future<void> saveProduct(ProductDraft d, {required String opId}) {
     return db.transaction(() async {
-      final existing = await (db.select(db.variants)..where((v) => v.id.equals(d.variantId))).getSingleOrNull();
-      final sku = (d.sku != null && d.sku!.isNotEmpty) ? d.sku! : (existing?.sku ?? _provisionalSku(d.variantId));
-
       await db.into(db.products).insertOnConflictUpdate(ProductsCompanion(
             id: Value(d.id),
             name: Value(d.name.trim()),
@@ -165,9 +200,60 @@ class DriftStore with DriftSales, DriftWarehouse, DriftShifts implements LocalSt
             trackStock: d.trackStock == null ? const Value.absent() : Value(d.trackStock!),
             deletedAt: const Value(null),
           ));
+
+      final variantList = d.variants;
+      if (variantList != null && variantList.isNotEmpty) {
+        final hasDefault = variantList.any((v) => v.isDefault);
+        for (var idx = 0; idx < variantList.length; idx++) {
+          final v = variantList[idx];
+          final existing = await (db.select(db.variants)..where((x) => x.id.equals(v.id))).getSingleOrNull();
+          final sku = (v.sku != null && v.sku!.isNotEmpty) ? v.sku! : (existing?.sku ?? _provisionalSku(v.id));
+          final vName = v.name.trim().isEmpty ? 'Default' : v.name.trim();
+          final isDef = hasDefault ? v.isDefault : idx == 0;
+          await db.into(db.variants).insertOnConflictUpdate(VariantsCompanion(
+                id: Value(v.id),
+                productId: Value(d.id),
+                name: Value(vName),
+                sku: Value(sku),
+                barcode: Value((v.barcode == null || v.barcode!.trim().isEmpty) ? null : v.barcode!.trim()),
+                isDefault: Value(isDef),
+                cost: v.cost == null ? const Value.absent() : Value(v.cost!),
+                reorderPoint: v.reorderPoint == null ? const Value.absent() : Value(v.reorderPoint!),
+                active: Value(v.active),
+                deletedAt: const Value(null),
+              ));
+          await db.into(db.prices).insertOnConflictUpdate(PricesCompanion(
+                variantId: Value(v.id),
+                currency: Value(_base),
+                price: Value(v.price),
+                deletedAt: const Value(null),
+              ));
+        }
+        await _enqueue(opId, 'upsert_product', d.id, d.toPayload());
+        for (final v in variantList) {
+          if (v.openingQty != null && v.openingQty! > 0) {
+            final oid = openingOpId(v.id);
+            final already = await (db.select(db.localMovements)..where((m) => m.opId.equals(oid))).get();
+            final queued = await (db.select(db.outbox)..where((o) => o.opId.equals(oid))).get();
+            if (already.isEmpty && queued.isEmpty) {
+              final loc = await activeStoreNow();
+              await db.into(db.localMovements).insert(LocalMovementsCompanion.insert(
+                  opId: oid, variantId: v.id, qty: v.openingQty!, counts: const Value(true), locationId: Value(loc)));
+              await _enqueue(oid, 'post_opening_stock', d.id,
+                  {'variant_id': v.id, 'qty': v.openingQty, 'location_id': ?loc});
+            }
+          }
+        }
+        return;
+      }
+
+      final existing = await (db.select(db.variants)..where((v) => v.id.equals(d.variantId))).getSingleOrNull();
+      final sku = (d.sku != null && d.sku!.isNotEmpty) ? d.sku! : (existing?.sku ?? _provisionalSku(d.variantId));
+
       await db.into(db.variants).insertOnConflictUpdate(VariantsCompanion(
             id: Value(d.variantId),
             productId: Value(d.id),
+            name: Value(existing?.name ?? 'Default'),
             sku: Value(sku),
             barcode: Value((d.barcode == null || d.barcode!.trim().isEmpty) ? null : d.barcode!.trim()),
             isDefault: const Value(true),
@@ -217,8 +303,10 @@ class DriftStore with DriftSales, DriftWarehouse, DriftShifts implements LocalSt
   }
 
   /// Shown until the server assigns the real one; same rule as upsert_product (P- + last 12 hex of the variant id).
-  String _provisionalSku(String variantId) =>
-      'P-${variantId.replaceAll('-', '').substring(20).toUpperCase()}';
+  String _provisionalSku(String variantId) {
+    final hex = variantId.replaceAll('-', '').toUpperCase();
+    return 'P-${hex.length > 12 ? hex.substring(hex.length - 12) : hex}';
+  }
 
   @override
   Future<void> enqueue(String opId, String kind, String entityId, Map<String, dynamic> payload) =>
@@ -253,8 +341,15 @@ class DriftStore with DriftSales, DriftWarehouse, DriftShifts implements LocalSt
       final skipVariants = <String>{};
       for (final op in pendingOps) {
         skipProducts.add(op.entityId);
-        final variant = (jsonDecode(op.payload) as Map<String, dynamic>)['variant'];
+        final payload = jsonDecode(op.payload) as Map<String, dynamic>;
+        final variant = payload['variant'];
         if (variant is Map && variant['id'] is String) skipVariants.add(variant['id'] as String);
+        final variantsList = payload['variants'];
+        if (variantsList is List) {
+          for (final item in variantsList) {
+            if (item is Map && item['id'] is String) skipVariants.add(item['id'] as String);
+          }
+        }
       }
       if (skipProducts.isNotEmpty) {
         final local = await (db.select(db.variants)..where((v) => v.productId.isIn(skipProducts))).get();
@@ -264,18 +359,20 @@ class DriftStore with DriftSales, DriftWarehouse, DriftShifts implements LocalSt
       List<Map<String, dynamic>> rowsOf(String table) =>
           (((response[table] as Map?)?['rows'] as List?) ?? const []).cast<Map<String, dynamic>>();
 
-      for (final r in rowsOf('categories')) {
-        await db.into(db.categories).insertOnConflictUpdate(CategoriesCompanion.insert(
-              id: r['id'] as String,
-              parentId: Value(r['parent_id'] as String?),
-              name: r['name'] as String,
-              updatedAt: Value(r['updated_at'] as String?),
-              deletedAt: Value(r['deleted_at'] as String?),
-            ));
-      }
-      for (final r in rowsOf('products')) {
-        if (skipProducts.contains(r['id'])) continue;
-        await db.into(db.products).insertOnConflictUpdate(ProductsCompanion.insert(
+      final categoryRows = [
+        for (final r in rowsOf('categories'))
+          CategoriesCompanion.insert(
+            id: r['id'] as String,
+            parentId: Value(r['parent_id'] as String?),
+            name: r['name'] as String,
+            updatedAt: Value(r['updated_at'] as String?),
+            deletedAt: Value(r['deleted_at'] as String?),
+          ),
+      ];
+      final productRows = [
+        for (final r in rowsOf('products'))
+          if (!skipProducts.contains(r['id']))
+            ProductsCompanion.insert(
               id: r['id'] as String,
               categoryId: Value(r['category_id'] as String?),
               name: r['name'] as String,
@@ -287,44 +384,52 @@ class DriftStore with DriftSales, DriftWarehouse, DriftShifts implements LocalSt
               photoPath: Value(r['photo_path'] as String?),
               updatedAt: Value(r['updated_at'] as String?),
               deletedAt: Value(r['deleted_at'] as String?),
-            ));
-      }
+            ),
+      ];
+      final variantRows = <VariantsCompanion>[];
       for (final r in rowsOf('product_variants')) {
         if (skipVariants.contains(r['id']) || skipProducts.contains(r['product_id'])) continue;
-        await db.into(db.variants).insertOnConflictUpdate(VariantsCompanion.insert(
-              id: r['id'] as String,
-              productId: r['product_id'] as String,
-              sku: r['sku'] as String,
-              barcode: Value(r['barcode'] as String?),
-              isDefault: Value(r['is_default'] as bool? ?? true),
-              cost: Value((r['cost'] as num?)?.toInt() ?? 0),
-              reorderPoint: Value((r['reorder_point'] as num?)?.toDouble() ?? 0),
-              active: Value(r['active'] as bool? ?? true),
-              updatedAt: Value(r['updated_at'] as String?),
-              deletedAt: Value(r['deleted_at'] as String?),
-              breaksIntoVariantId: Value(r['breaks_into_variant_id'] as String?),
-              breaksIntoQty: Value((r['breaks_into_qty'] as num?)?.toInt()),
-            ));
+        final rawVariantName = (r['name'] as String?)?.trim();
+        variantRows.add(VariantsCompanion.insert(
+          id: r['id'] as String,
+          productId: r['product_id'] as String,
+          name: Value(rawVariantName != null && rawVariantName.isNotEmpty ? rawVariantName : 'Default'),
+          sku: r['sku'] as String,
+          barcode: Value(r['barcode'] as String?),
+          isDefault: Value(r['is_default'] as bool? ?? true),
+          cost: Value((r['cost'] as num?)?.toInt() ?? 0),
+          reorderPoint: Value((r['reorder_point'] as num?)?.toDouble() ?? 0),
+          active: Value(r['active'] as bool? ?? true),
+          updatedAt: Value(r['updated_at'] as String?),
+          deletedAt: Value(r['deleted_at'] as String?),
+          breaksIntoVariantId: Value(r['breaks_into_variant_id'] as String?),
+          breaksIntoQty: Value((r['breaks_into_qty'] as num?)?.toInt()),
+        ));
       }
-      for (final r in rowsOf('variant_prices')) {
-        if (skipVariants.contains(r['variant_id'])) continue;
-        await db.into(db.prices).insertOnConflictUpdate(PricesCompanion.insert(
+      final priceRows = [
+        for (final r in rowsOf('variant_prices'))
+          if (!skipVariants.contains(r['variant_id']))
+            PricesCompanion.insert(
               variantId: r['variant_id'] as String,
               currency: (r['currency'] as String).trim(),
               price: (r['price'] as num).toInt(),
               updatedAt: Value(r['updated_at'] as String?),
               deletedAt: Value(r['deleted_at'] as String?),
-            ));
-      }
+            ),
+      ];
+      final cursorRows = [
+        for (final t in _syncTables)
+          if ((response[t] as Map?)?['cursor'] case final Map cursor)
+            SyncCursorsCompanion.insert(tableKey: t, cursorJson: jsonEncode(cursor)),
+      ];
 
-      for (final t in _syncTables) {
-        final cursor = (response[t] as Map?)?['cursor'];
-        if (cursor is Map) {
-          await db
-              .into(db.syncCursors)
-              .insertOnConflictUpdate(SyncCursorsCompanion.insert(tableKey: t, cursorJson: jsonEncode(cursor)));
-        }
-      }
+      await db.batch((b) {
+        if (categoryRows.isNotEmpty) b.insertAllOnConflictUpdate(db.categories, categoryRows);
+        if (productRows.isNotEmpty) b.insertAllOnConflictUpdate(db.products, productRows);
+        if (variantRows.isNotEmpty) b.insertAllOnConflictUpdate(db.variants, variantRows);
+        if (priceRows.isNotEmpty) b.insertAllOnConflictUpdate(db.prices, priceRows);
+        if (cursorRows.isNotEmpty) b.insertAllOnConflictUpdate(db.syncCursors, cursorRows);
+      });
     });
   }
 

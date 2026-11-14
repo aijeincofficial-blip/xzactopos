@@ -554,12 +554,15 @@ class SupabaseBackend implements Backend, DeviceApi, WarehouseApi, CountApi, Shi
 
   // ---- transfers (F-08) ----
 
+  static const _transferColumns =
+      'id, transfer_no, from_location_id, to_location_id, status, notes, shipped_at, received_at, has_discrepancy';
+
   @override
   Future<List<TransferHeader>> fetchIncomingTransfers(String locationId) async {
     final res = await _auth(() => _c
         .from('transfers')
         .select('''
-          *,
+          $_transferColumns,
           from_location:locations!transfers_from_location_fk(id, code, name, type, address),
           to_location:locations!transfers_to_location_fk(id, code, name, type, address),
           transfer_items(
@@ -569,7 +572,8 @@ class SupabaseBackend implements Backend, DeviceApi, WarehouseApi, CountApi, Shi
         ''')
         .eq('to_location_id', locationId)
         .eq('status', 'shipped')
-        .order('created_at', ascending: false));
+        .order('created_at', ascending: false)
+        .limit(50));
     return (res as List<dynamic>)
         .map((r) => TransferHeader.fromJson(r as Map<String, dynamic>))
         .toList();
@@ -580,7 +584,7 @@ class SupabaseBackend implements Backend, DeviceApi, WarehouseApi, CountApi, Shi
     final res = await _auth(() => _c
         .from('transfers')
         .select('''
-          *,
+          $_transferColumns,
           from_location:locations!transfers_from_location_fk(id, code, name, type, address),
           to_location:locations!transfers_to_location_fk(id, code, name, type, address),
           transfer_items(
@@ -610,14 +614,10 @@ class SupabaseBackend implements Backend, DeviceApi, WarehouseApi, CountApi, Shi
 
   @override
   Future<List<TransferLocationRef>> fetchTransferDestinations(String currentBranchId) async {
-    final res = await _auth(() => _c
-        .from('locations')
-        .select('id, code, name, type, address')
-        .eq('active', true)
-        .neq('id', currentBranchId)
-        .order('name'));
+    final res = await _auth(() => _c.rpc('list_transfer_destinations'));
     return (res as List<dynamic>)
         .map((r) => TransferLocationRef.fromJson(r as Map<String, dynamic>))
+        .where((loc) => loc.id != currentBranchId)
         .toList();
   }
 

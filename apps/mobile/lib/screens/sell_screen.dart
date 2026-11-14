@@ -159,12 +159,14 @@ class _SellScreenState extends State<SellScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(t.sellUnknownBarcode(code)),
-        action: SnackBarAction(
-          label: t.addProduct,
-          onPressed: () => Navigator.of(
-            context,
-          ).push(MaterialPageRoute<void>(builder: (_) => scope.wrap(ProductFormScreen(barcode: code)))),
-        ),
+        action: scope.canManageCatalog
+            ? SnackBarAction(
+                label: t.addProduct,
+                onPressed: () => Navigator.of(
+                  context,
+                ).push(MaterialPageRoute<void>(builder: (_) => scope.wrap(ProductFormScreen(barcode: code)))),
+              )
+            : null,
       ),
     );
     _searchFocus.requestFocus();
@@ -180,7 +182,7 @@ class _SellScreenState extends State<SellScreen> {
       if (hit.price == null) return ScanFeedback(t.sellNoPrice, ok: false);
       _cart!.add(hit);
       return ScanFeedback(
-        t.scanAdded(hit.name),
+        t.scanAdded(hit.displayName),
         subtext: '${t.sellItems(_cart!.itemCount)} · ${_money(_cart!.subtotal)}',
       );
     });
@@ -193,7 +195,7 @@ class _SellScreenState extends State<SellScreen> {
     final value = await showDialog<double>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(line.product.name),
+        title: Text(line.product.displayName),
         content: TextField(
           key: const Key('qty-field'),
           controller: c,
@@ -231,7 +233,7 @@ class _SellScreenState extends State<SellScreen> {
     final updated = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(line.product.name),
+        title: Text(line.product.displayName),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -597,8 +599,101 @@ class _SellScreenState extends State<SellScreen> {
     });
   }
 
+  String? _priceLabelForGroup(ProductGroup g) {
+    final prices = g.variants.map((v) => v.price).whereType<int>().toList();
+    if (prices.isEmpty) return null;
+    final minP = prices.reduce((a, b) => a < b ? a : b);
+    final maxP = prices.reduce((a, b) => a > b ? a : b);
+    return minP == maxP ? _money(minP) : '${_money(minP)}–${_money(maxP)}';
+  }
+
+  _ExpiryFlag? _groupExpiry(ProductGroup g, Map<String, _ExpiryFlag> byVariant) {
+    _ExpiryFlag? best;
+    for (final v in g.variants) {
+      final f = byVariant[v.variantId];
+      if (f == _ExpiryFlag.expired) return _ExpiryFlag.expired;
+      if (f != null) best = f;
+    }
+    return best;
+  }
+
+  Future<void> _pickVariant(
+    ProductGroup group,
+    Map<String, double> stock,
+    Map<String, _ExpiryFlag> expiryByVariant,
+  ) async {
+    final t = AppLocalizations.of(context);
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          key: const Key('variant-picker-sheet'),
+          padding: const EdgeInsets.fromLTRB(Gap.l, 0, Gap.l, Gap.l),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                t.chooseVariant(group.productName),
+                style: Theme.of(ctx).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: Gap.m),
+              Flexible(
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: group.variants.length,
+                  separatorBuilder: (_, _) => const Divider(height: 1),
+                  itemBuilder: (ctx, i) {
+                    final v = group.variants[i];
+                    final left = v.trackStock ? stock[v.variantId] : null;
+                    final exp = expiryByVariant[v.variantId];
+                    return ListTile(
+                      key: Key('pick-variant-${v.variantId}'),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: Gap.xs, vertical: 2),
+                      title: Text(v.variantName, style: const TextStyle(fontWeight: FontWeight.w600)),
+                      subtitle: (left == null && exp == null && (v.barcode == null || v.barcode!.isEmpty))
+                          ? null
+                          : Wrap(
+                              spacing: 6,
+                              runSpacing: 2,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                if (v.barcode != null && v.barcode!.isNotEmpty)
+                                  Text(
+                                    v.barcode!,
+                                    style: NightMarketText.mono(
+                                      ctx,
+                                      size: 11.5,
+                                      color: Theme.of(ctx).colorScheme.outline,
+                                    ),
+                                  ),
+                                if (left != null) _StockText(left: left, reorderPoint: v.reorderPoint),
+                                if (exp != null) _ExpiryPill(flag: exp),
+                              ],
+                            ),
+                      trailing: Text(
+                        v.price == null ? '—' : _money(v.price!),
+                        style: NightMarketText.mono(ctx, size: 15, weight: FontWeight.w600),
+                      ),
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _add(v);
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _tiles(Map<String, double> stock, Map<String, _ExpiryFlag> expiryByVariant, Cart cart) {
     final t = AppLocalizations.of(context);
+    final canAddProduct = CatalogScope.of(context).canManageCatalog;
     return FutureBuilder<List<ProductView>>(
       future: _quick,
       builder: (context, snap) {
@@ -612,20 +707,23 @@ class _SellScreenState extends State<SellScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(t.noProductsHere, textAlign: TextAlign.center),
-                  const SizedBox(height: Gap.l),
-                  FilledButton.icon(
-                    key: const Key('sell-add-product'),
-                    icon: const Icon(Icons.add_rounded),
-                    label: Text(t.addProduct),
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute<void>(builder: (_) => CatalogScope.of(context).wrap(const ProductFormScreen())),
+                  if (canAddProduct) ...[
+                    const SizedBox(height: Gap.l),
+                    FilledButton.icon(
+                      key: const Key('sell-add-product'),
+                      icon: const Icon(Icons.add_rounded),
+                      label: Text(t.addProduct),
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(builder: (_) => CatalogScope.of(context).wrap(const ProductFormScreen())),
+                      ),
                     ),
-                  ),
+                  ],
                 ],
               ),
             ),
           );
         }
+        final groups = groupProducts(items);
         return ListenableBuilder(
           listenable: cart,
           builder: (context, _) {
@@ -640,17 +738,22 @@ class _SellScreenState extends State<SellScreen> {
                 crossAxisSpacing: 12,
                 mainAxisSpacing: 12,
               ),
-              itemCount: items.length,
+              itemCount: groups.length,
               itemBuilder: (context, i) {
-                final p = items[i];
+                final g = groups[i];
+                final p = g.primary;
+                final isMulti = g.variants.length > 1;
+                final totalCartQty = g.variants.fold<double>(0, (sum, v) => sum + (qtyByVariant[v.variantId] ?? 0));
                 return _Tile(
                   product: p,
-                  left: p.trackStock ? stock[p.variantId] : null,
-                  expiryFlag: expiryByVariant[p.variantId],
+                  left: !isMulti && p.trackStock ? stock[p.variantId] : null,
+                  expiryFlag: _groupExpiry(g, expiryByVariant),
                   money: _money,
-                  pinned: _pinned.contains(p.variantId),
-                  cartQty: qtyByVariant[p.variantId] ?? 0,
-                  onTap: () => _add(p),
+                  priceLabel: isMulti ? _priceLabelForGroup(g) : null,
+                  variantCount: g.variants.length,
+                  pinned: g.variants.any((v) => _pinned.contains(v.variantId)),
+                  cartQty: totalCartQty,
+                  onTap: isMulti ? () => _pickVariant(g, stock, expiryByVariant) : () => _add(p),
                   onLongPress: () => _togglePin(p),
                 );
               },
@@ -670,41 +773,54 @@ class _SellScreenState extends State<SellScreen> {
         final items = snap.data?.where((p) => p.sku != openAmountSku).toList();
         if (items == null) return const Center(child: CircularProgressIndicator());
         if (items.isEmpty) return Center(child: Text(t.noMatches));
+        final groups = groupProducts(items);
         return ListView.separated(
           padding: const EdgeInsets.symmetric(horizontal: Gap.l, vertical: Gap.xs),
-          itemCount: items.length,
+          itemCount: groups.length,
           separatorBuilder: (_, _) => const Divider(height: 1),
           itemBuilder: (context, i) {
-            final p = items[i];
-            final left = p.trackStock ? stock[p.variantId] : null;
-            final expiryFlag = expiryByVariant[p.variantId];
+            final g = groups[i];
+            final p = g.primary;
+            final isMulti = g.variants.length > 1;
+            final left = !isMulti && p.trackStock ? stock[p.variantId] : null;
+            final expiryFlag = _groupExpiry(g, expiryByVariant);
+            final priceText = isMulti ? (_priceLabelForGroup(g) ?? '—') : (p.price == null ? '—' : _money(p.price!));
             return ListTile(
-              key: Key('result-${p.id}'),
+              key: Key('result-${g.productId}'),
               contentPadding: const EdgeInsets.symmetric(horizontal: Gap.xs, vertical: 2),
               leading: ProductThumb(
                 productId: p.id,
                 path: p.photoPath,
-                name: p.name,
+                name: g.productName,
                 category: p.sku,
                 size: 38,
               ),
-              title: Text(p.name, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
-              subtitle: (left == null && expiryFlag == null)
+              title: Text(g.productName, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+              subtitle: (!isMulti && left == null && expiryFlag == null)
                   ? null
                   : Wrap(
                       spacing: 6,
                       runSpacing: 2,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
+                        if (isMulti)
+                          Text(
+                            t.variantsCount(g.variants.length),
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.outline),
+                          ),
                         if (left != null) _StockText(left: left, reorderPoint: p.reorderPoint),
                         if (expiryFlag != null) _ExpiryPill(flag: expiryFlag),
                       ],
                     ),
               trailing: Text(
-                p.price == null ? '—' : _money(p.price!),
+                priceText,
                 style: NightMarketText.mono(context, size: 15, weight: FontWeight.w600),
               ),
               onTap: () {
+                if (isMulti) {
+                  _pickVariant(g, stock, expiryByVariant);
+                  return;
+                }
                 _add(p);
                 _clearSearch();
                 _searchFocus.requestFocus();
@@ -788,11 +904,15 @@ class _Tile extends StatelessWidget {
     this.expiryFlag,
     this.pinned = false,
     this.cartQty = 0,
+    this.priceLabel,
+    this.variantCount = 1,
   });
   final ProductView product;
   final _ExpiryFlag? expiryFlag;
   final bool pinned;
   final double cartQty;
+  final String? priceLabel;
+  final int variantCount;
   final VoidCallback onLongPress;
   final double? left;
   final String Function(int) money;
@@ -800,6 +920,7 @@ class _Tile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     final scheme = Theme.of(context).colorScheme;
     final dark = scheme.isDark;
     final inCart = cartQty > 0;
@@ -838,7 +959,7 @@ class _Tile extends StatelessWidget {
                   style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: scheme.onSurface),
                 ),
                 Text(
-                  product.price == null ? '—' : money(product.price!),
+                  priceLabel ?? (product.price == null ? '—' : money(product.price!)),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: NightMarketText.mono(
@@ -852,6 +973,13 @@ class _Tile extends StatelessWidget {
                   DefaultTextStyle.merge(
                     style: const TextStyle(fontSize: 11),
                     child: _StockText(left: left!, reorderPoint: product.reorderPoint),
+                  )
+                else if (variantCount > 1)
+                  Text(
+                    t.variantsCount(variantCount),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: scheme.outline),
                   ),
               ],
             ),
@@ -1002,7 +1130,7 @@ class _CartPanel extends StatelessWidget {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      l.product.name,
+                                      l.product.displayName,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w600, color: scheme.onSurface),

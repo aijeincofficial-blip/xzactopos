@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  canAccessPosRoute,
+  canAccessReceiveStockRoute,
+  canAccessReportsRoute,
+  canCloseDayForRole,
   portalForPath,
   resolveAllowedPortals,
   resolveEffectivePortal,
@@ -57,5 +61,52 @@ describe("portal separation rules", () => {
     expect(portalForPath("/app/bins")).toBe("warehouse");
     expect(portalForPath("/app/transfers")).toBe("warehouse");
     expect(portalForPath("/app/products")).toBe(null);
+  });
+
+  it("excludes the POS portal when the pos module is disabled (F05)", () => {
+    const whOnlyOwner = {
+      role: "superadmin" as const,
+      modules: { inventory: true, pos: false, warehouse: true },
+      locations: [],
+      tenant: { setup_completed: true },
+    };
+    expect(resolveAllowedPortals(whOnlyOwner, "full")).toEqual(["warehouse"]);
+    expect(resolveEffectivePortal(whOnlyOwner, "full", "/app/sell", "pos")).toBe("warehouse");
+    expect(resolveRoleLandingPath(whOnlyOwner, "full", "pos")).toBe("/app");
+
+    const disabledCashier = {
+      role: "cashier" as const,
+      modules: { inventory: true, pos: false, warehouse: true },
+      locations: [{ id: "s1", type: "store" as const }],
+      tenant: { setup_completed: true },
+    };
+    expect(resolveAllowedPortals(disabledCashier, "full")).toEqual([]);
+    expect(resolveRoleLandingPath(disabledCashier, "full", null)).toBe("/app");
+  });
+
+  it("blocks cashiers from /app/expenses, /app/reports, and Close Day submit while allowing shifts (F06)", () => {
+    const active = { status: "active" as const };
+    const cashier = { role: "cashier" as const, tenant: active, modules: fullModules, locations: [{ id: "s1", type: "store" as const, position: null }] };
+    const sup = { role: "admin" as const, tenant: active, modules: fullModules, locations: [{ id: "s1", type: "store" as const, position: "supervisor" as const }] };
+    const mgr = { role: "admin" as const, tenant: active, modules: fullModules, locations: [{ id: "s1", type: "store" as const, position: "manager" as const }] };
+    const wh = { role: "warehouse" as const, tenant: active, modules: fullModules, locations: [{ id: "w1", type: "warehouse" as const, position: null }] };
+
+    expect(canAccessPosRoute(cashier, "shift.manage", { excludeCashier: true })).toBe(false);
+    expect(canAccessPosRoute(cashier, "shift.manage")).toBe(true);
+    expect(canAccessPosRoute(sup, "shift.manage", { excludeCashier: true })).toBe(true);
+
+    expect(canAccessReportsRoute(cashier)).toBe(false);
+    expect(canAccessReportsRoute(sup)).toBe(true);
+    expect(canAccessReportsRoute(mgr)).toBe(true);
+    expect(canAccessReportsRoute(wh)).toBe(true);
+
+    expect(canCloseDayForRole("cashier")).toBe(false);
+    expect(canCloseDayForRole("warehouse")).toBe(false);
+    expect(canCloseDayForRole("admin")).toBe(true);
+    expect(canCloseDayForRole("superadmin")).toBe(true);
+
+    const noPosMgr = { ...mgr, modules: { inventory: true, pos: false, warehouse: true } };
+    expect(canAccessReceiveStockRoute(noPosMgr)).toBe(true);
+    expect(canAccessReceiveStockRoute(wh)).toBe(false);
   });
 });

@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from "react";
-import { ApiError, rpc } from "./api.ts";
-import { isOnline } from "./network.ts";
+import { isNetworkFailure } from "./errors.ts";
+
+export { isNetworkFailure };
 
 export const POS_OUTBOX_OP_KINDS = [
   "upsert_customer",
@@ -64,25 +65,6 @@ function defaultStorage(): Storage | null {
   } catch {
     return null;
   }
-}
-
-export function isNetworkFailure(err: unknown): boolean {
-  if (!isOnline()) return true;
-  if (err instanceof TypeError) return true;
-  if (err instanceof ApiError) {
-    if (err.key === "temporary") return true;
-    if (
-      err.key === "unknown" &&
-      /failed to fetch|network|offline|load failed|timeout|connection|econnrefused|502|503|504/i.test(err.message)
-    ) {
-      return true;
-    }
-    return false;
-  }
-  if (err instanceof Error) {
-    return /failed to fetch|network|offline|load failed|timeout|connection/i.test(err.message);
-  }
-  return false;
 }
 
 // ---------------------------------------------------------------------------
@@ -241,7 +223,11 @@ export function applyOptimisticStockDeltas(
     if (op.kind !== "record_sale" || op.state !== "pending") continue;
     const saleLoc = op.locationId ?? (typeof op.payload.location_id === "string" ? op.payload.location_id : undefined);
     if (saleLoc !== locationId) continue;
-    const lines = Array.isArray(op.payload.lines) ? op.payload.lines : [];
+    const lines = Array.isArray(op.payload.lines)
+      ? op.payload.lines
+      : Array.isArray(op.payload.items)
+        ? op.payload.items
+        : [];
     for (const rawLine of lines) {
       if (!rawLine || typeof rawLine !== "object") continue;
       const line = rawLine as Record<string, unknown>;
@@ -484,6 +470,7 @@ let inFlightFlush: Promise<{ synced: number; remaining: number; failed: number }
 async function defaultPushBatch(
   pOps: Array<{ op_id: string; kind: string; payload: Record<string, unknown> }>,
 ): Promise<SyncPushItemResult[]> {
+  const { rpc } = await import("./api.ts");
   return rpc<SyncPushItemResult[]>("sync_push", { p_ops: pOps });
 }
 

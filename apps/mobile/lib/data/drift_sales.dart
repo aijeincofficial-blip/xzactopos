@@ -826,18 +826,23 @@ mixin DriftSales implements SalesStore {
   /// Quantity and average cost per variant as this device sees them: the server's levels plus this device's movements
   /// the server has not caught up on, replayed in order with the server's average-cost rule (stock in with a cost:
   /// [receiptAvgCost]; pieces from an opened pack: [conversionAvgCost]; everything else moves the quantity only).
-  /// F-01: at store [loc] (every store when null).
-  Future<Map<String, ({double qty, int? avg})>> _effectiveStock(String? loc) async {
+  /// F-01: at store [loc] (every store when null). Optionally filtered to a single [variantId].
+  Future<Map<String, ({double qty, int? avg})>> _effectiveStock(String? loc, {String? variantId}) async {
     final qty = <String, double>{};
     final avg = <String, int?>{};
-    final levels =
-        await (db.select(db.stockLevels)..where((x) => loc == null ? const Constant(true) : x.locationId.equals(loc))).get();
+    final levels = await (db.select(db.stockLevels)
+          ..where((x) =>
+              (loc == null ? const Constant(true) : x.locationId.equals(loc)) &
+              (variantId == null ? const Constant(true) : x.variantId.equals(variantId))))
+        .get();
     for (final l in levels) {
       qty[l.variantId] = (qty[l.variantId] ?? 0) + l.qty;
       if (l.avgCost != null) avg[l.variantId] = l.avgCost;
     }
     final moves = await (db.select(db.localMovements)
-          ..where((x) => loc == null ? const Constant(true) : x.locationId.equals(loc))
+          ..where((x) =>
+              (loc == null ? const Constant(true) : x.locationId.equals(loc)) &
+              (variantId == null ? const Constant(true) : x.variantId.equals(variantId)))
           ..orderBy([(m) => OrderingTerm.asc(m.id)]))
         .get();
     for (final m in moves) {
@@ -854,7 +859,8 @@ mixin DriftSales implements SalesStore {
   }
 
   @override
-  Future<int?> averageCost(String variantId) async => (await _effectiveStock(await activeStoreNow()))[variantId]?.avg;
+  Future<int?> averageCost(String variantId) async =>
+      (await _effectiveStock(await activeStoreNow(), variantId: variantId))[variantId]?.avg;
 
   @override
   Stream<Map<String, double>> watchStock() => db
@@ -1009,7 +1015,9 @@ mixin DriftSales implements SalesStore {
     return db
         .customSelect(
           '''
-          select p.id, v.id as variant_id, p.name, p.unit, v.sku, v.barcode, pr.price, p.photo_path, p.active,
+          select p.id, v.id as variant_id, p.name, v.name as variant_name, v.is_default,
+                 (select count(*) from variants v2 where v2.product_id = p.id and v2.deleted_at is null) as variant_count,
+                 p.unit, v.sku, v.barcode, pr.price, p.photo_path, p.active,
                  p.track_stock, p.tax_rate, v.cost, v.reorder_point, $tingiLinkSql,
                  (select min(e.expires_on) from stock_expiry e
                   where e.variant_id = v.id and ${inActive('e.location_id')}) as expires_on,
@@ -1022,7 +1030,7 @@ mixin DriftSales implements SalesStore {
                   or coalesce((select max(m.counts) from local_movements m
                                where m.variant_id = v.id and ${inActive('m.location_id')}), 0)) as counted
           from products p
-          join variants v on v.product_id = p.id and v.is_default = 1 and v.deleted_at is null
+          join variants v on v.product_id = p.id and v.deleted_at is null
           left join prices pr on pr.variant_id = v.id and pr.currency = ?1 and pr.deleted_at is null
           where p.deleted_at is null and p.track_stock = 1$where
           ''',
@@ -1040,6 +1048,9 @@ mixin DriftSales implements SalesStore {
               id: r.read<String>('id'),
               variantId: r.read<String>('variant_id'),
               name: r.read<String>('name'),
+              variantName: r.readNullable<String>('variant_name') ?? 'Default',
+              isDefault: r.read<bool>('is_default'),
+              variantCount: r.read<int>('variant_count'),
               unit: r.read<String>('unit'),
               sku: r.read<String>('sku'),
               barcode: r.readNullable<String>('barcode'),
@@ -1066,7 +1077,7 @@ mixin DriftSales implements SalesStore {
       int rank(StockRow x) => x.low ? 0 : (x.counted ? 1 : 2);
       list.sort((a, b) {
         final c = rank(a).compareTo(rank(b));
-        return c != 0 ? c : a.product.name.toLowerCase().compareTo(b.product.name.toLowerCase());
+        return c != 0 ? c : a.product.displayName.toLowerCase().compareTo(b.product.displayName.toLowerCase());
       });
       return list;
     });
@@ -1110,11 +1121,13 @@ mixin DriftSales implements SalesStore {
         : 'case when v.id in (${[for (var i = 0; i < pinned.length; i++) '?${i + 4}'].join(',')}) then 1 else 0 end';
     final rows = await db.customSelect(
       '''
-      select p.id, v.id as variant_id, p.name, p.unit, v.sku, v.barcode, pr.price, p.photo_path, p.active,
+      select p.id, v.id as variant_id, p.name, v.name as variant_name, v.is_default,
+             (select count(*) from variants v2 where v2.product_id = p.id and v2.deleted_at is null) as variant_count,
+             p.unit, v.sku, v.barcode, pr.price, p.photo_path, p.active,
              p.track_stock, p.tax_rate, v.cost, v.reorder_point, $tingiLinkSql,
              exists (select 1 from outbox o where o.entity_id = p.id) as pending
       from products p
-      join variants v on v.product_id = p.id and v.is_default = 1 and v.deleted_at is null
+      join variants v on v.product_id = p.id and v.deleted_at is null
       left join prices pr on pr.variant_id = v.id and pr.currency = ?1 and pr.deleted_at is null
       left join (
         select i.variant_id, sum(i.qty) as sold
@@ -1123,7 +1136,7 @@ mixin DriftSales implements SalesStore {
         group by i.variant_id
       ) t on t.variant_id = v.id
       where p.deleted_at is null and p.active = 1 and pr.price is not null and v.sku <> '$openAmountSku'
-      order by $pinnedSql desc, coalesce(t.sold, 0) desc, coalesce(p.updated_at, '9999') desc, p.search_name
+      order by $pinnedSql desc, coalesce(t.sold, 0) desc, coalesce(p.updated_at, '9999') desc, p.search_name, v.is_default desc, v.name
       limit ?3
       ''',
       variables: [
@@ -1139,6 +1152,9 @@ mixin DriftSales implements SalesStore {
           id: r.read<String>('id'),
           variantId: r.read<String>('variant_id'),
           name: r.read<String>('name'),
+          variantName: r.readNullable<String>('variant_name') ?? 'Default',
+          isDefault: r.read<bool>('is_default'),
+          variantCount: r.read<int>('variant_count'),
           unit: r.read<String>('unit'),
           sku: r.read<String>('sku'),
           barcode: r.readNullable<String>('barcode'),
@@ -1631,7 +1647,9 @@ mixin DriftSales implements SalesStore {
   Future<ProductView?> tingiPiece(String packVariantId) async {
     final rows = await db.customSelect(
       '''
-      select p.id, v.id as variant_id, p.name, p.unit, v.sku, v.barcode, pr.price, p.photo_path, p.active,
+      select p.id, v.id as variant_id, p.name, v.name as variant_name, v.is_default,
+             (select count(*) from variants v2 where v2.product_id = p.id and v2.deleted_at is null) as variant_count,
+             p.unit, v.sku, v.barcode, pr.price, p.photo_path, p.active,
              p.track_stock, p.tax_rate, v.cost, v.reorder_point, $tingiLinkSql,
              exists (select 1 from outbox o where o.entity_id = p.id) as pending
       from variants pack
@@ -1648,6 +1666,9 @@ mixin DriftSales implements SalesStore {
       id: r.read<String>('id'),
       variantId: r.read<String>('variant_id'),
       name: r.read<String>('name'),
+      variantName: r.readNullable<String>('variant_name') ?? 'Default',
+      isDefault: r.read<bool>('is_default'),
+      variantCount: r.read<int>('variant_count'),
       unit: r.read<String>('unit'),
       sku: r.read<String>('sku'),
       barcode: r.readNullable<String>('barcode'),
@@ -1694,7 +1715,7 @@ mixin DriftSales implements SalesStore {
 
       // the cost rule (P8-08): the pack's average cost at this store, else its variant cost when > 0; packs x that, exact
       final loc = await activeStoreNow();
-      final packAvg = (await _effectiveStock(loc))[packVariantId]?.avg;
+      final packAvg = (await _effectiveStock(loc, variantId: packVariantId))[packVariantId]?.avg;
       final packCost = packAvg ?? (pack.$1.cost > 0 ? pack.$1.cost : null);
       final total = packCost == null ? null : packs * packCost;
       final pieceCost = conversionAvgCost(oldQty: 0, pieces: pieces, totalCost: total);
@@ -2187,6 +2208,12 @@ mixin DriftSales implements SalesStore {
     return db.transaction(() async {
       final rows = ((response['rows'] as List?) ?? const []).cast<Map<String, dynamic>>();
       final unsent = (await db.select(db.outbox).get()).map((o) => o.entityId).toSet();
+      final unsentSaleNoUpdates = <(String, Value<String?>)>[];
+      final upsertSaleIds = <String>[];
+      final salesRows = <SalesCompanion>[];
+      final itemRows = <SaleItemsCompanion>[];
+      final paymentRows = <SalePaymentsCompanion>[];
+
       for (final r in rows) {
         final id = r['id'] as String;
         // F-02: absent / null from a server before F-02 or for an old row: never erase a number already stored
@@ -2194,63 +2221,73 @@ mixin DriftSales implements SalesStore {
         final deviceId = r['device_id'] is String ? Value(r['device_id'] as String) : const Value<String?>.absent();
         if (unsent.contains(id)) {
           // a local change (e.g. a cancel) is still on its way: keep ours, but take the server's number if we lack it
-          if (saleNo.present) {
-            await (db.update(db.sales)..where((s) => s.id.equals(id) & s.saleNo.isNull()))
-                .write(SalesCompanion(saleNo: saleNo));
-          }
+          if (saleNo.present) unsentSaleNoUpdates.add((id, saleNo));
           continue;
         }
-        await db.into(db.sales).insertOnConflictUpdate(SalesCompanion.insert(
-              id: id,
-              // F-01: the server names the store; an older server does not (then: the user's only store, if one)
-              locationId: Value(r['location_id'] as String? ?? _sole),
-              saleNo: saleNo,
-              deviceId: deviceId,
-              localNo: r['local_no'] as String,
-              status: Value(r['status'] as String),
-              subtotal: (r['subtotal'] as num).toInt(),
-              discount: Value((r['discount'] as num).toInt()),
-              tax: Value((r['tax'] as num).toInt()),
-              total: (r['total'] as num).toInt(),
-              customerId: Value(r['customer_id'] as String?),
-              soldAt: _utc(r['sold_at'] as String),
-              voidedAt: Value(r['voided_at'] == null ? null : _utc(r['voided_at'] as String)),
-              voidReason: Value(r['void_reason'] as String?),
-            ));
-        await (db.delete(db.saleItems)..where((i) => i.saleId.equals(id))).go();
-        await (db.delete(db.salePayments)..where((p) => p.saleId.equals(id))).go();
+        upsertSaleIds.add(id);
+        salesRows.add(SalesCompanion.insert(
+          id: id,
+          // F-01: the server names the store; an older server does not (then: the user's only store, if one)
+          locationId: Value(r['location_id'] as String? ?? _sole),
+          saleNo: saleNo,
+          deviceId: deviceId,
+          localNo: r['local_no'] as String,
+          status: Value(r['status'] as String),
+          subtotal: (r['subtotal'] as num).toInt(),
+          discount: Value((r['discount'] as num).toInt()),
+          tax: Value((r['tax'] as num).toInt()),
+          total: (r['total'] as num).toInt(),
+          customerId: Value(r['customer_id'] as String?),
+          soldAt: _utc(r['sold_at'] as String),
+          voidedAt: Value(r['voided_at'] == null ? null : _utc(r['voided_at'] as String)),
+          voidReason: Value(r['void_reason'] as String?),
+        ));
         for (final i in (r['items'] as List).cast<Map<String, dynamic>>()) {
-          await db.into(db.saleItems).insert(SaleItemsCompanion.insert(
-                saleId: id,
-                variantId: i['variant_id'] as String,
-                name: i['name'] as String,
-                qty: (i['qty'] as num).toDouble(),
-                unitPrice: (i['unit_price'] as num).toInt(),
-                unitCost: Value((i['unit_cost'] as num).toInt()),
-                discount: Value((i['discount'] as num).toInt()),
-                tax: Value((i['tax'] as num).toInt()),
-                lineTotal: (i['line_total'] as num).toInt(),
-                tracked: Value(i['tracked'] as bool? ?? true),
-              ));
+          itemRows.add(SaleItemsCompanion.insert(
+            saleId: id,
+            variantId: i['variant_id'] as String,
+            name: i['name'] as String,
+            qty: (i['qty'] as num).toDouble(),
+            unitPrice: (i['unit_price'] as num).toInt(),
+            unitCost: Value((i['unit_cost'] as num).toInt()),
+            discount: Value((i['discount'] as num).toInt()),
+            tax: Value((i['tax'] as num).toInt()),
+            lineTotal: (i['line_total'] as num).toInt(),
+            tracked: Value(i['tracked'] as bool? ?? true),
+          ));
         }
         for (final p in (r['payments'] as List).cast<Map<String, dynamic>>()) {
-          await db.into(db.salePayments).insert(SalePaymentsCompanion.insert(
-                saleId: id,
-                method: p['method'] as String,
-                amount: (p['amount'] as num).toInt(),
-                tendered: Value((p['tendered'] as num?)?.toInt()),
-                reference: Value(p['reference'] as String?),
-                // absent from a server before P8-15: no wallet named
-                wallet: Value(p['wallet'] as String?),
-              ));
+          paymentRows.add(SalePaymentsCompanion.insert(
+            saleId: id,
+            method: p['method'] as String,
+            amount: (p['amount'] as num).toInt(),
+            tendered: Value((p['tendered'] as num?)?.toInt()),
+            reference: Value(p['reference'] as String?),
+            // absent from a server before P8-15: no wallet named
+            wallet: Value(p['wallet'] as String?),
+          ));
         }
       }
       final cursor = response['cursor'];
-      if (cursor is Map) {
-        await db
-            .into(db.syncCursors)
-            .insertOnConflictUpdate(SyncCursorsCompanion.insert(tableKey: 'sales', cursorJson: jsonEncode(cursor)));
-      }
+      await db.batch((b) {
+        for (final (id, saleNo) in unsentSaleNoUpdates) {
+          b.update(db.sales, SalesCompanion(saleNo: saleNo), where: (s) => s.id.equals(id) & s.saleNo.isNull());
+        }
+        if (salesRows.isNotEmpty) b.insertAllOnConflictUpdate(db.sales, salesRows);
+        for (var i = 0; i < upsertSaleIds.length; i += 200) {
+          final chunk = upsertSaleIds.sublist(i, i + 200 > upsertSaleIds.length ? upsertSaleIds.length : i + 200);
+          b.deleteWhere(db.saleItems, (it) => it.saleId.isIn(chunk));
+          b.deleteWhere(db.salePayments, (pt) => pt.saleId.isIn(chunk));
+        }
+        if (itemRows.isNotEmpty) b.insertAll(db.saleItems, itemRows);
+        if (paymentRows.isNotEmpty) b.insertAll(db.salePayments, paymentRows);
+        if (cursor is Map) {
+          b.insertAllOnConflictUpdate(
+            db.syncCursors,
+            [SyncCursorsCompanion.insert(tableKey: 'sales', cursorJson: jsonEncode(cursor))],
+          );
+        }
+      });
     });
   }
 
@@ -2262,66 +2299,77 @@ mixin DriftSales implements SalesStore {
       List<Map<String, dynamic>> rowsOf(String t) =>
           (((response[t] as Map?)?['rows'] as List?) ?? const []).cast<Map<String, dynamic>>();
 
-      for (final r in rowsOf('stock_levels')) {
-        await db.into(db.stockLevels).insertOnConflictUpdate(StockLevelsCompanion.insert(
-              locationId: r['location_id'] as String,
-              variantId: r['variant_id'] as String,
-              qty: (r['qty_on_hand'] as num).toDouble(),
-              avgCost: Value((r['avg_cost'] as num?)?.toInt()),
-              counted: Value(r['counted'] as bool? ?? false),
-              updatedAt: r['updated_at'] as String,
-            ));
-      }
+      final outboxRows = await db.select(db.outbox).get();
+      final unsent = outboxRows.map((o) => o.entityId).toSet();
+      final expiryOps = [for (final o in outboxRows) if (_carriesExpiry(o)) o];
+
+      final stockLevelRows = [
+        for (final r in rowsOf('stock_levels'))
+          StockLevelsCompanion.insert(
+            locationId: r['location_id'] as String,
+            variantId: r['variant_id'] as String,
+            qty: (r['qty_on_hand'] as num).toDouble(),
+            avgCost: Value((r['avg_cost'] as num?)?.toInt()),
+            counted: Value(r['counted'] as bool? ?? false),
+            updatedAt: r['updated_at'] as String,
+          ),
+      ];
       // customers: keep the local copy while an edit of it is still unsent
-      final unsent = (await db.select(db.outbox).get()).map((o) => o.entityId).toSet();
-      for (final r in rowsOf('customers')) {
-        if (unsent.contains(r['id'])) continue;
-        await db.into(db.customers).insertOnConflictUpdate(CustomersCompanion.insert(
+      final customerRows = [
+        for (final r in rowsOf('customers'))
+          if (!unsent.contains(r['id']))
+            CustomersCompanion.insert(
               id: r['id'] as String,
               name: r['name'] as String,
               phone: Value(r['phone'] as String?),
               updatedAt: Value(r['updated_at'] as String?),
               deletedAt: Value(r['deleted_at'] as String?),
               dueOn: Value(r['due_on'] as String?),
-            ));
-      }
+            ),
+      ];
       // expiry dates: every store the user can see (F-01; reads use the active store); keep the local date of a store
       // while an op carrying one for that variant there (or naming no store) is unsent
-      final expiryOps = [for (final o in await db.select(db.outbox).get()) if (_carriesExpiry(o)) o];
+      final expiryRows = <StockExpiryCompanion>[];
       for (final r in rowsOf('stock_expiry')) {
         final vid = r['variant_id'] as String;
         final loc = r['location_id'] as String? ?? _sole ?? '';
         if (expiryOps.any((o) => o.entityId == vid && (_opLocation(o) == null || _opLocation(o) == loc))) continue;
-        await db.into(db.stockExpiry).insertOnConflictUpdate(StockExpiryCompanion.insert(
-              variantId: vid,
-              locationId: Value(loc),
-              expiresOn: Value(r['expires_on'] as String?),
-              updatedAt: Value(r['updated_at'] as String?),
-            ));
+        expiryRows.add(StockExpiryCompanion.insert(
+          variantId: vid,
+          locationId: Value(loc),
+          expiresOn: Value(r['expires_on'] as String?),
+          updatedAt: Value(r['updated_at'] as String?),
+        ));
       }
-      for (final r in rowsOf('customer_ledger')) {
-        await db.into(db.serverLedger).insertOnConflictUpdate(ServerLedgerCompanion.insert(
-              id: r['id'] as String,
-              customerId: r['customer_id'] as String,
-              kind: r['kind'] as String,
-              amount: (r['amount'] as num).toInt(),
-              saleId: Value(r['sale_id'] as String?),
-              note: Value(r['note'] as String?),
-              occurredAt: r['occurred_at'] as String,
-              createdAt: r['created_at'] as String,
-              // F-01; an older server sends neither: the user's only store, cash (what such a row meant)
-              locationId: Value(r['location_id'] as String? ?? _sole),
-              method: Value(r['method'] as String? ?? 'cash'),
-            ));
-      }
-      for (final t in _posTables) {
-        final cursor = (response[t] as Map?)?['cursor'];
-        if (cursor is Map) {
-          await db
-              .into(db.syncCursors)
-              .insertOnConflictUpdate(SyncCursorsCompanion.insert(tableKey: t, cursorJson: jsonEncode(cursor)));
-        }
-      }
+      final ledgerRows = [
+        for (final r in rowsOf('customer_ledger'))
+          ServerLedgerCompanion.insert(
+            id: r['id'] as String,
+            customerId: r['customer_id'] as String,
+            kind: r['kind'] as String,
+            amount: (r['amount'] as num).toInt(),
+            saleId: Value(r['sale_id'] as String?),
+            note: Value(r['note'] as String?),
+            occurredAt: r['occurred_at'] as String,
+            createdAt: r['created_at'] as String,
+            // F-01; an older server sends neither: the user's only store, cash (what such a row meant)
+            locationId: Value(r['location_id'] as String? ?? _sole),
+            method: Value(r['method'] as String? ?? 'cash'),
+          ),
+      ];
+      final cursorRows = [
+        for (final t in _posTables)
+          if ((response[t] as Map?)?['cursor'] case final Map cursor)
+            SyncCursorsCompanion.insert(tableKey: t, cursorJson: jsonEncode(cursor)),
+      ];
+
+      await db.batch((b) {
+        if (stockLevelRows.isNotEmpty) b.insertAllOnConflictUpdate(db.stockLevels, stockLevelRows);
+        if (customerRows.isNotEmpty) b.insertAllOnConflictUpdate(db.customers, customerRows);
+        if (expiryRows.isNotEmpty) b.insertAllOnConflictUpdate(db.stockExpiry, expiryRows);
+        if (ledgerRows.isNotEmpty) b.insertAllOnConflictUpdate(db.serverLedger, ledgerRows);
+        if (cursorRows.isNotEmpty) b.insertAllOnConflictUpdate(db.syncCursors, cursorRows);
+      });
 
       // When the pull is complete, everything the server did up to (server time - 5 s hold-back) is in the
       // local copy, so effects applied before that moment no longer need to be counted separately.

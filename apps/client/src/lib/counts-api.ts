@@ -1,6 +1,6 @@
 import { supabase } from "./supabase.ts";
-import { fromRaw, rpc } from "./api.ts";
-import { listBinStock, listWarehouseBins } from "./bins-api.ts";
+import { fetchAllPages, fromRaw, rpc } from "./api.ts";
+import { listWarehouseBins } from "./bins-api.ts";
 import type { VariantOption } from "./purchasing-api.ts";
 import type { CountItemPayload, CountStatus, SystemRow } from "./counts-math.ts";
 
@@ -95,19 +95,34 @@ export async function listCountBins(warehouseId: string): Promise<CountBin[]> {
 export async function listSystemStock(warehouse: CountWarehouse): Promise<SystemRow[]> {
   if (warehouse.bins_enabled) {
     const bins = await listWarehouseBins(warehouse.id);
-    const perBin = await Promise.all(bins.map(async (b) => ({ bin: b, stock: await listBinStock(b.id) })));
-    return perBin.flatMap(({ bin, stock }) =>
-      stock.filter((s) => s.qty_on_hand !== 0).map((s) => ({ variantId: s.variant_id, binId: bin.id, qty: Number(s.qty_on_hand) })),
+    if (bins.length === 0) return [];
+    const binIds = bins.map((b) => b.id);
+    const rows = await fetchAllPages<{ bin_id: string; variant_id: string; qty_on_hand: number }>((from, to) =>
+      supabase
+        .from("bin_stock_levels")
+        .select("bin_id, variant_id, qty_on_hand")
+        .in("bin_id", binIds)
+        .neq("qty_on_hand", 0)
+        .order("bin_id")
+        .order("variant_id")
+        .range(from, to),
     );
+    return rows.map((s) => ({
+      variantId: s.variant_id,
+      binId: s.bin_id,
+      qty: Number(s.qty_on_hand),
+    }));
   }
-  const { data, error } = await supabase
-    .from("stock_levels")
-    .select("variant_id, qty_on_hand")
-    .eq("location_id", warehouse.id)
-    .neq("qty_on_hand", 0)
-    .limit(5000);
-  if (error) throw fromRaw(error);
-  return (data ?? []).map((r) => ({ variantId: r.variant_id as string, binId: null, qty: Number(r.qty_on_hand) }));
+  const rows = await fetchAllPages<{ variant_id: string; qty_on_hand: number }>((from, to) =>
+    supabase
+      .from("stock_levels")
+      .select("variant_id, qty_on_hand")
+      .eq("location_id", warehouse.id)
+      .neq("qty_on_hand", 0)
+      .order("variant_id")
+      .range(from, to),
+  );
+  return rows.map((r) => ({ variantId: r.variant_id, binId: null, qty: Number(r.qty_on_hand) }));
 }
 
 export async function startCount(args: { id: string; warehouseId: string; binId: string | null; notes: string }): Promise<string> {

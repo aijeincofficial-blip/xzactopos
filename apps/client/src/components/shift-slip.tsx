@@ -40,6 +40,7 @@ export interface DayCloseSlipData {
   openingCash: number;
   cashSales?: number;
   cashUtang?: number;
+  cashServices?: number;
   cashExpenses?: number;
   expectedCash: number;
   countedCash?: number;
@@ -290,6 +291,14 @@ export function DayCloseSlipView({ slip }: { slip: DayCloseSlipData }) {
           <div className="flex justify-between">
             <span className="text-slate-600">+ {t("dayClose.cashUtangCollected")}:</span>
             <span className="tabular-nums">{fmt(slip.cashUtang)}</span>
+          </div>
+        ) : null}
+        {slip.cashServices !== undefined && slip.cashServices !== 0 ? (
+          <div className="flex justify-between">
+            <span className="text-slate-600">
+              {slip.cashServices >= 0 ? "+" : "-"} {t("dayClose.cashServices")}:
+            </span>
+            <span className="tabular-nums">{fmt(Math.abs(slip.cashServices))}</span>
           </div>
         ) : null}
         {slip.cashExpenses !== undefined ? (

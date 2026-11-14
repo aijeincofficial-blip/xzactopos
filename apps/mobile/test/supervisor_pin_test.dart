@@ -1,3 +1,6 @@
+import 'dart:convert';
+
+import 'package:crypto/crypto.dart';
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -362,9 +365,109 @@ void main() {
       expect(off!['approver_id'], '0190a000-0000-7000-8000-000000000088');
       expect(off['action'], 'void_sale');
       expect(off['ref_id'], 'sale-void-1');
+      expect(off['proof'], matches(RegExp(r'^[0-9a-f]{64}$')));
 
       await tester.pumpWidget(const SizedBox());
       await tester.pumpAndSettle();
+      await store.close();
+    });
+
+    test('v2 SHA-256 PIN verifier produces valid HMAC proof and rejects plain admin / cashier', () async {
+      const saltB64 = 'c2FsdHNhbHRzYWx0MTIz';
+      final rawHash = hashPinPbkdf2('2580', saltB64, 1000);
+      final parts = rawHash.split(r'$');
+      final dk = base64Decode(parts[3]);
+      final verifier = '${parts[0]}\$${parts[1]}\$${parts[2]}\$v2:${base64Encode(sha256.convert(dk).bytes)}';
+
+      expect(verifyPinPbkdf2('2580', verifier), isTrue);
+      expect(verifyPinPbkdf2('9999', verifier), isFalse);
+
+      final store = _newStore();
+      await store.ensureTenant('t-v2', baseCurrency: 'PHP', locationId: 'loc-v2');
+      await store.saveOfflinePins('loc-v2', [
+        {
+          'user_id': 'sup-v2',
+          'username': 'sup',
+          'full_name': 'Supervisor',
+          'role': 'admin',
+          'position': 'supervisor',
+          'pin_hash': verifier,
+        },
+        {
+          'user_id': 'adm-plain',
+          'username': 'adm',
+          'full_name': 'Plain Admin',
+          'role': 'admin',
+          'position': null,
+          'pin_hash': verifier,
+        },
+      ]);
+
+      final outcome = await SupervisorPinStorage.verifyOfflinePinDetailed(
+        locationId: 'loc-v2',
+        pin: '2580',
+        store: store,
+        approverId: 'sup-v2',
+        tenantId: 't-v2',
+        action: 'void_sale',
+        refId: 'sale-99',
+      );
+      expect(outcome.status, OfflinePinVerifyStatus.matched);
+      expect(outcome.proof, matches(RegExp(r'^[0-9a-f]{64}$')));
+      final canonical = 't-v2|sup-v2|void_sale|sale-99|${outcome.approvedAt}';
+      final expectedHex = Hmac(sha256, dk).convert(utf8.encode(canonical)).bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+      expect(outcome.proof, expectedHex);
+
+      // Plain admin without supervisor/manager position is rejected
+      final denied = await SupervisorPinStorage.verifyOfflinePinDetailed(
+        locationId: 'loc-v2',
+        pin: '2580',
+        store: store,
+        approverId: 'adm-plain',
+        tenantId: 't-v2',
+        action: 'void_sale',
+        refId: 'sale-99',
+      );
+      expect(denied.status, OfflinePinVerifyStatus.wrongPin);
+      await store.close();
+    });
+
+    test('clearSessionData and SupervisorPinStorage.clearAll wipe cached PINs and Drift tables on sign-out / user switch', () async {
+      SharedPreferences.setMockInitialValues({});
+      await SupervisorPinStorage.savePins('loc-s1', const [
+        SupervisorPin(
+          userId: 'sup-1',
+          displayName: 'Sup',
+          role: 'admin',
+          position: 'supervisor',
+          pinHash: 'h1',
+        ),
+      ]);
+      await SupervisorPinStorage.recordFailure('loc-s1');
+
+      final store = _newStore();
+      await store.ensureTenant('t1', baseCurrency: 'PHP', locationId: 'loc-s1', userId: 'u1');
+      await store.saveOfflinePins('loc-s1', [
+        {'user_id': 'sup-1', 'username': 'sup', 'role': 'admin', 'position': 'supervisor', 'pin_hash': 'h1'},
+      ]);
+      expect(await store.getOfflinePins(locationId: 'loc-s1'), hasLength(1));
+
+      // Same tenant, different user clears previous user's local store state
+      final switched = await store.ensureTenant('t1', baseCurrency: 'PHP', locationId: 'loc-s1', userId: 'u2');
+      expect(switched, isTrue);
+      expect(await store.getOfflinePins(locationId: 'loc-s1'), isEmpty);
+
+      // Explicit sign-out wipe clears both SharedPreferences PINs/failures and Drift tables
+      await store.saveOfflinePins('loc-s1', [
+        {'user_id': 'sup-2', 'username': 'sup2', 'role': 'superadmin', 'pin_hash': 'h2'},
+      ]);
+      await store.clearSessionData();
+      await SupervisorPinStorage.clearAll();
+
+      expect(await store.getOfflinePins(locationId: 'loc-s1'), isEmpty);
+      expect(await store.meta('tenant_id'), isNull);
+      expect(await SupervisorPinStorage.loadPins('loc-s1'), isEmpty);
+      expect(await SupervisorPinStorage.isLockedOut('loc-s1'), isFalse);
       await store.close();
     });
   });

@@ -33,6 +33,8 @@ import {
   type Category,
   type ProductInput,
   type ProductRow,
+  groupProductRows,
+  type VariantInput,
 } from "../lib/stock-api.ts";
 import {
   PRODUCTS_CSV_TEMPLATE,
@@ -43,7 +45,51 @@ import {
   type ParsedProductImport,
 } from "../lib/csv-helper.ts";
 
-type ProblemKey = "name" | "price" | "cost" | "tax" | "reorder" | "opening" | "qty" | "count";
+type ProblemKey = "name" | "price" | "cost" | "tax" | "reorder" | "opening" | "qty" | "count" | "variantName";
+
+interface VariantDraft {
+  id?: string;
+  name: string;
+  sku: string;
+  barcode: string;
+  price: string;
+  cost: string;
+  reorder: string;
+  opening: string;
+  isDefault: boolean;
+  active: boolean;
+}
+
+function draftsFromRows(row: ProductRow | null, variants: ProductRow[] | undefined, currency: string): VariantDraft[] {
+  const source = variants && variants.length > 0 ? variants : row ? [row] : [];
+  if (source.length === 0) {
+    return [
+      {
+        name: "Default",
+        sku: "",
+        barcode: "",
+        price: "",
+        cost: "",
+        reorder: "",
+        opening: "",
+        isDefault: true,
+        active: true,
+      },
+    ];
+  }
+  return source.map((v, idx) => ({
+    id: v.variantId,
+    name: v.variantName ?? (v.isDefault === false ? "" : "Default"),
+    sku: v.sku,
+    barcode: v.barcode ?? "",
+    price: v.price != null ? majorText(v.price, currency) : "",
+    cost: majorText(v.cost, currency),
+    reorder: v.reorderPoint ? formatQty(v.reorderPoint) : "",
+    opening: "",
+    isDefault: v.isDefault ?? idx === 0,
+    active: v.active,
+  }));
+}
 
 /** "12.50" for the form from minor units, without a currency symbol. */
 function majorText(minor: number, currency: string): string {
@@ -52,6 +98,7 @@ function majorText(minor: number, currency: string): string {
 
 interface FormProps {
   row: ProductRow | null;
+  variants?: ProductRow[];
   tenantId: string;
   currency: string;
   onSaved: () => void;
@@ -61,29 +108,65 @@ interface FormProps {
   availablePieces: ProductRow[];
 }
 
-/** Create (row = null) or edit one product and its default variant. */
-function ProductForm({ row, tenantId, currency, onSaved, onCancel, locationId, categories, availablePieces }: FormProps) {
+/** Create (row = null) or edit one product and all of its variants. */
+function ProductForm({ row, variants, tenantId, currency, onSaved, onCancel, locationId, categories, availablePieces }: FormProps) {
   const { t } = useTranslation("admin");
   const msg = useErrorMessage();
   const qc = useQueryClient();
   const toast = useToast();
   const photoInputRef = useRef<HTMLInputElement | null>(null);
-  const [name, setName] = useState(row?.name ?? "");
-  const [price, setPrice] = useState(row?.price != null ? majorText(row.price, currency) : "");
-  const [cost, setCost] = useState(row ? majorText(row.cost, currency) : "");
+  const [name, setName] = useState(row?.productName ?? row?.name ?? "");
+  const [variantDrafts, setVariantDrafts] = useState<VariantDraft[]>(() => draftsFromRows(row, variants, currency));
   const [unit, setUnit] = useState(row?.unit ?? "pc");
   const [tax, setTax] = useState(row ? taxPercentText(row.taxRate) : "");
-  const [sku, setSku] = useState(row?.sku ?? "");
-  const [barcode, setBarcode] = useState(row?.barcode ?? "");
-  const [reorder, setReorder] = useState(row && row.reorderPoint ? formatQty(row.reorderPoint) : "");
   const [tracked, setTracked] = useState(row?.tracked ?? true);
   const [active, setActive] = useState(row?.active ?? true);
-  const [opening, setOpening] = useState("");
   const [categoryId, setCategoryId] = useState<string>(row?.categoryId ?? "");
   const [pendingJpeg, setPendingJpeg] = useState<Blob | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [photoRemoved, setPhotoRemoved] = useState(false);
   const [compressingPhoto, setCompressingPhoto] = useState(false);
+
+  const patchVariant = (idx: number, patch: Partial<VariantDraft>) => {
+    setVariantDrafts((prev) =>
+      prev.map((v, i) => {
+        if (patch.isDefault) {
+          return i === idx ? { ...v, ...patch, isDefault: true } : { ...v, isDefault: false };
+        }
+        return i === idx ? { ...v, ...patch } : v;
+      }),
+    );
+  };
+
+  const addVariantDraft = () => {
+    setVariantDrafts((prev) => [
+      ...prev,
+      {
+        name: "",
+        sku: "",
+        barcode: "",
+        price: prev[0]?.price ?? "",
+        cost: prev[0]?.cost ?? "",
+        reorder: prev[0]?.reorder ?? "",
+        opening: "",
+        isDefault: false,
+        active: true,
+      },
+    ]);
+  };
+
+  const removeVariantDraft = (idx: number) => {
+    setVariantDrafts((prev) => {
+      if (prev.length <= 1) return prev;
+      const target = prev[idx];
+      if (target?.id) return prev;
+      const next = prev.filter((_, i) => i !== idx);
+      if (!next.some((v) => v.isDefault) && next[0]) {
+        next[0] = { ...next[0], isDefault: true };
+      }
+      return next;
+    });
+  };
 
   useEffect(() => {
     return () => {
@@ -134,22 +217,46 @@ function ProductForm({ row, tenantId, currency, onSaved, onCancel, locationId, c
 
   const save = useMutation({
     mutationFn: async () => {
-      const priceMinor = price.trim() === "" ? null : parseAmount(price, currency);
-      const costMinor = parseAmount(cost, currency);
       const taxRate = parseTaxPercent(tax);
-      const reorderPoint = reorder.trim() === "" ? 0 : parseQty(reorder, { allowZero: true });
-      const openingQty = opening.trim() === "" ? 0 : parseQty(opening, { allowZero: true });
-      const bad: ProblemKey | null =
-        name.trim() === "" ? "name"
-        : priceMinor === null ? "price"
-        : costMinor === null ? "cost"
-        : taxRate === null ? "tax"
-        : reorderPoint === null ? "reorder"
-        : openingQty === null ? "opening"
-        : null;
-      if (bad) {
-        setProblem(bad);
+      if (name.trim() === "") {
+        setProblem("name");
         return false;
+      }
+      if (taxRate === null) {
+        setProblem("tax");
+        return false;
+      }
+
+      const isMulti = variantDrafts.length > 1;
+      const parsedVariants: VariantInput[] = [];
+      for (const v of variantDrafts) {
+        const priceMinor = v.price.trim() === "" ? null : parseAmount(v.price, currency);
+        const costMinor = parseAmount(v.cost, currency);
+        const reorderPoint = v.reorder.trim() === "" ? 0 : parseQty(v.reorder, { allowZero: true });
+        const openingQty = !row || !v.id ? (v.opening.trim() === "" ? 0 : parseQty(v.opening, { allowZero: true })) : 0;
+        const vBad: ProblemKey | null =
+          isMulti && v.name.trim() === "" ? "variantName"
+          : priceMinor === null ? "price"
+          : costMinor === null ? "cost"
+          : reorderPoint === null ? "reorder"
+          : openingQty === null ? "opening"
+          : null;
+        if (vBad) {
+          setProblem(vBad);
+          return false;
+        }
+        parsedVariants.push({
+          id: v.id ?? uuidv7(),
+          name: isMulti ? v.name.trim() : v.name.trim() || "Default",
+          sku: v.sku,
+          barcode: v.barcode,
+          price: priceMinor as number,
+          cost: costMinor as number,
+          reorderPoint: reorderPoint as number,
+          isDefault: v.isDefault,
+          active: v.active,
+          openingQty: openingQty as number,
+        });
       }
       setProblem(null);
 
@@ -165,26 +272,28 @@ function ProductForm({ row, tenantId, currency, onSaved, onCancel, locationId, c
         photoPathUpdate = null;
       }
 
+      const primary = parsedVariants.find((v) => v.isDefault) ?? parsedVariants[0]!;
       const ratioNum = parseInt(piecesPerPack, 10);
       const input: ProductInput = {
         name,
-        price: priceMinor as number,
-        cost: costMinor as number,
+        price: primary.price,
+        cost: primary.cost,
         unit,
-        taxRate: taxRate as number,
+        taxRate,
         tracked,
         active,
-        sku,
-        barcode,
-        reorderPoint: reorderPoint as number,
+        sku: primary.sku,
+        barcode: primary.barcode,
+        reorderPoint: primary.reorderPoint,
         categoryId: categoryId.trim() ? categoryId : null,
         breaksIntoVariantId: isPack && pieceVariantId.trim() ? pieceVariantId : null,
         breaksIntoQty: isPack && !isNaN(ratioNum) && ratioNum > 0 ? ratioNum : null,
+        ...(isMulti ? { variants: parsedVariants } : {}),
         ...(photoPathUpdate !== undefined ? { photoPath: photoPathUpdate } : {}),
       };
 
-      if (row) await updateProduct(row, input);
-      else await createProduct(input, openingQty as number, locationId, targetProductId);
+      if (row) await updateProduct(row, input, locationId);
+      else await createProduct(input, primary.openingQty ?? 0, locationId, targetProductId);
       setPendingJpeg(null);
       return true;
     },
@@ -271,31 +380,183 @@ function ProductForm({ row, tenantId, currency, onSaved, onCancel, locationId, c
             ))}
           </Select>
         </Field>
-        <Field label={t("products.price")}>
-          <Input data-testid="pf-price" inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} />
-        </Field>
-        <Field label={t("products.cost")}>
-          <Input data-testid="pf-cost" inputMode="decimal" value={cost} onChange={(e) => setCost(e.target.value)} />
-        </Field>
         <Field label={t("products.unit")}>
           <Input value={unit} maxLength={16} onChange={(e) => setUnit(e.target.value)} />
         </Field>
         <Field label={t("products.tax")}>
           <Input inputMode="decimal" value={tax} onChange={(e) => setTax(e.target.value)} />
         </Field>
-        <Field label={t("products.reorder")}>
-          <Input inputMode="decimal" value={reorder} onChange={(e) => setReorder(e.target.value)} />
-        </Field>
-        <Field label={t("products.sku")}>
-          <Input value={sku} maxLength={40} placeholder={t("products.skuAuto")} onChange={(e) => setSku(e.target.value)} />
-        </Field>
-        <Field label={t("products.barcode")}>
-          <Input value={barcode} maxLength={64} onChange={(e) => setBarcode(e.target.value)} />
-        </Field>
-        {!row ? (
-          <Field label={t("products.opening")}>
-            <Input data-testid="pf-opening" inputMode="decimal" value={opening} onChange={(e) => setOpening(e.target.value)} />
-          </Field>
+        {variantDrafts.length === 1 ? (
+          <>
+            <Field label={t("products.price")}>
+              <Input
+                data-testid="pf-price"
+                inputMode="decimal"
+                value={variantDrafts[0]!.price}
+                onChange={(e) => patchVariant(0, { price: e.target.value })}
+              />
+            </Field>
+            <Field label={t("products.cost")}>
+              <Input
+                data-testid="pf-cost"
+                inputMode="decimal"
+                value={variantDrafts[0]!.cost}
+                onChange={(e) => patchVariant(0, { cost: e.target.value })}
+              />
+            </Field>
+            <Field label={t("products.reorder")}>
+              <Input
+                inputMode="decimal"
+                value={variantDrafts[0]!.reorder}
+                onChange={(e) => patchVariant(0, { reorder: e.target.value })}
+              />
+            </Field>
+            <Field label={t("products.sku")}>
+              <Input
+                value={variantDrafts[0]!.sku}
+                maxLength={40}
+                placeholder={t("products.skuAuto")}
+                onChange={(e) => patchVariant(0, { sku: e.target.value })}
+              />
+            </Field>
+            <Field label={t("products.barcode")}>
+              <Input
+                value={variantDrafts[0]!.barcode}
+                maxLength={64}
+                onChange={(e) => patchVariant(0, { barcode: e.target.value })}
+              />
+            </Field>
+            {!row ? (
+              <Field label={t("products.opening")}>
+                <Input
+                  data-testid="pf-opening"
+                  inputMode="decimal"
+                  value={variantDrafts[0]!.opening}
+                  onChange={(e) => patchVariant(0, { opening: e.target.value })}
+                />
+              </Field>
+            ) : null}
+          </>
+        ) : null}
+      </div>
+
+      {/* Variants */}
+      <div className="rounded border border-slate-200 bg-slate-50 p-3 grid gap-2.5">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+            {t("products.variantsSection")}
+          </span>
+          <Button type="button" size="sm" variant="outline" data-testid="pf-add-variant" onClick={addVariantDraft}>
+            <Plus size={14} aria-hidden />
+            <span>{t("products.addVariant")}</span>
+          </Button>
+        </div>
+        {variantDrafts.length > 1 ? (
+          <div className="grid gap-2.5">
+            {variantDrafts.map((v, idx) => (
+              <div key={v.id ?? `new-${idx}`} className="rounded-lg border border-slate-200 bg-white p-2.5 grid gap-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-3 text-xs">
+                    <label className="flex items-center gap-1.5 font-medium text-slate-700 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="pf-default-variant"
+                        data-testid={`pf-variant-default-${idx}`}
+                        checked={v.isDefault}
+                        onChange={() => patchVariant(idx, { isDefault: true })}
+                      />
+                      <span>{t("products.defaultVariant")}</span>
+                    </label>
+                    {v.id ? (
+                      <label className="flex items-center gap-1.5 text-slate-600 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          data-testid={`pf-variant-active-${idx}`}
+                          checked={v.active}
+                          onChange={(e) => patchVariant(idx, { active: e.target.checked })}
+                        />
+                        <span>{t("products.active")}</span>
+                      </label>
+                    ) : null}
+                  </div>
+                  {!v.id && variantDrafts.length > 1 ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      data-testid={`pf-variant-remove-${idx}`}
+                      onClick={() => removeVariantDraft(idx)}
+                    >
+                      <Trash2 size={13} aria-hidden />
+                      <span>{t("products.removeVariant")}</span>
+                    </Button>
+                  ) : null}
+                </div>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <Field label={t("products.variantLabel")}>
+                    <Input
+                      data-testid={`pf-variant-name-${idx}`}
+                      value={v.name}
+                      maxLength={80}
+                      placeholder={t("products.variantLabelPlaceholder")}
+                      onChange={(e) => patchVariant(idx, { name: e.target.value })}
+                    />
+                  </Field>
+                  <Field label={t("products.price")}>
+                    <Input
+                      data-testid={`pf-variant-price-${idx}`}
+                      inputMode="decimal"
+                      value={v.price}
+                      onChange={(e) => patchVariant(idx, { price: e.target.value })}
+                    />
+                  </Field>
+                  <Field label={t("products.cost")}>
+                    <Input
+                      data-testid={`pf-variant-cost-${idx}`}
+                      inputMode="decimal"
+                      value={v.cost}
+                      onChange={(e) => patchVariant(idx, { cost: e.target.value })}
+                    />
+                  </Field>
+                  <Field label={t("products.reorder")}>
+                    <Input
+                      data-testid={`pf-variant-reorder-${idx}`}
+                      inputMode="decimal"
+                      value={v.reorder}
+                      onChange={(e) => patchVariant(idx, { reorder: e.target.value })}
+                    />
+                  </Field>
+                  <Field label={t("products.sku")}>
+                    <Input
+                      data-testid={`pf-variant-sku-${idx}`}
+                      value={v.sku}
+                      maxLength={40}
+                      placeholder={t("products.skuAuto")}
+                      onChange={(e) => patchVariant(idx, { sku: e.target.value })}
+                    />
+                  </Field>
+                  <Field label={t("products.barcode")}>
+                    <Input
+                      data-testid={`pf-variant-barcode-${idx}`}
+                      value={v.barcode}
+                      maxLength={64}
+                      onChange={(e) => patchVariant(idx, { barcode: e.target.value })}
+                    />
+                  </Field>
+                  {!row || !v.id ? (
+                    <Field label={t("products.opening")}>
+                      <Input
+                        data-testid={`pf-variant-opening-${idx}`}
+                        inputMode="decimal"
+                        value={v.opening}
+                        onChange={(e) => patchVariant(idx, { opening: e.target.value })}
+                      />
+                    </Field>
+                  ) : null}
+                </div>
+              </div>
+            ))}
+          </div>
         ) : null}
       </div>
 
@@ -342,7 +603,7 @@ function ProductForm({ row, tenantId, currency, onSaved, onCancel, locationId, c
           {t("products.active")}
         </label>
       </div>
-      {problem ? <Alert>{t(`products.problem.${problem}`)}</Alert> : null}
+      {problem ? <Alert>{problem === "variantName" ? t("products.variantLabelMissing") : t(`products.problem.${problem}`)}</Alert> : null}
       {error ? <Alert>{error}</Alert> : null}
       {saved && row ? <Alert tone="info">{t("products.saved")}</Alert> : null}
       <div className="flex gap-2">
@@ -359,13 +620,15 @@ function ProductForm({ row, tenantId, currency, onSaved, onCancel, locationId, c
 
 /** Stock in, counting, tingi repack conversions, and expiry dates. */
 function StockPanel({
-  row,
+  row: defaultRow,
+  variants,
   currency,
   locationId,
   fmt,
   availablePieces,
 }: {
   row: ProductRow;
+  variants?: ProductRow[];
   currency: string;
   locationId: string;
   fmt: (n: number) => string;
@@ -375,6 +638,9 @@ function StockPanel({
   const msg = useErrorMessage();
   const qc = useQueryClient();
   const toast = useToast();
+  const variantList = variants && variants.length > 0 ? variants : [defaultRow];
+  const [selectedVariantId, setSelectedVariantId] = useState(defaultRow.variantId);
+  const row = variantList.find((v) => v.variantId === selectedVariantId) ?? defaultRow;
   const [inQty, setInQty] = useState("");
   const [inCost, setInCost] = useState("");
   const [inExpiry, setInExpiry] = useState("");
@@ -382,6 +648,10 @@ function StockPanel({
   const [reason, setReason] = useState<"counted" | "damage" | "other">("counted");
   const [expiryEdit, setExpiryEdit] = useState(row.expiresOn ?? "");
   const [note, setNote] = useState<{ tone: "info" | "error"; text: string } | null>(null);
+
+  useEffect(() => {
+    setExpiryEdit(row.expiresOn ?? "");
+  }, [row.variantId, row.expiresOn]);
 
   // Tingi Open Pack state
   const [openPacksCount, setOpenPacksCount] = useState("1");
@@ -533,6 +803,22 @@ function StockPanel({
           </Badge>
         ) : null}
       </div>
+
+      {variantList.length > 1 ? (
+        <Field label={t("products.variantLabel")}>
+          <Select
+            data-testid="stock-panel-variant"
+            value={row.variantId}
+            onChange={(e) => setSelectedVariantId(e.target.value)}
+          >
+            {variantList.map((v) => (
+              <option key={v.variantId} value={v.variantId}>
+                {v.variantName && v.variantName !== "Default" ? v.variantName : v.name} ({v.sku})
+              </option>
+            ))}
+          </Select>
+        </Field>
+      ) : null}
 
       <div className="text-sm flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2">
         <div>
@@ -1177,16 +1463,28 @@ export function ProductsPage() {
   }
 
   const needle = search.trim().toLowerCase();
-  const rows = (q.data ?? []).filter((r) => {
-    const matchesSearch = !needle || r.name.toLowerCase().includes(needle) || r.sku.toLowerCase().includes(needle) || r.barcode?.toLowerCase() === needle;
-    const matchesCategory = !filterCategory || r.categoryId === filterCategory;
-    const matchesLow = !onlyLow || ["out", "low"].includes(stockStatus(r));
-    const expiryStatus = getExpiryStatus(r.expiresOn);
-    const matchesExpiry = !onlyExpiring || ["expired", "expiring_soon"].includes(expiryStatus);
-    return matchesSearch && matchesCategory && matchesLow && matchesExpiry;
+  const allGroups = groupProductRows(q.data ?? []);
+  const groups = allGroups.filter((g) => {
+    const matchesCategory = !filterCategory || g.defaultRow.categoryId === filterCategory;
+    if (!matchesCategory) return false;
+    return g.variants.some((r) => {
+      const matchesSearch =
+        !needle ||
+        r.name.toLowerCase().includes(needle) ||
+        (r.productName?.toLowerCase().includes(needle) ?? false) ||
+        (r.variantName?.toLowerCase().includes(needle) ?? false) ||
+        r.sku.toLowerCase().includes(needle) ||
+        r.barcode?.toLowerCase() === needle;
+      const matchesLow = !onlyLow || ["out", "low"].includes(stockStatus(r));
+      const expiryStatus = getExpiryStatus(r.expiresOn);
+      const matchesExpiry = !onlyExpiring || ["expired", "expiring_soon"].includes(expiryStatus);
+      return matchesSearch && matchesLow && matchesExpiry;
+    });
   });
+  const rows = groups.map((g) => g.defaultRow);
 
-  const open = q.data?.find((r) => r.variantId === openId) ?? null;
+  const openGroup = allGroups.find((g) => g.productId === openId || g.variants.some((v) => v.variantId === openId)) ?? null;
+  const open = openGroup?.defaultRow ?? null;
   const canStock = store.type === "store" && can("stock.adjust_store", store.id);
   const categories = categoriesQuery.data ?? [];
 
@@ -1327,15 +1625,33 @@ export function ProductsPage() {
           />
         ) : null}
 
-        {rows.length > 0 ? (
+        {groups.length > 0 ? (
           <Card className="overflow-hidden p-0 sm:p-0">
             <ul className="divide-y divide-slate-100">
-              {rows.map((r) => {
-                const status = stockStatus(r);
+              {groups.map((g) => {
+                const r = g.defaultRow;
+                const isMulti = g.variants.length > 1;
+                const status = isMulti
+                  ? g.variants.some((v) => stockStatus(v) === "out")
+                    ? "out"
+                    : g.variants.some((v) => stockStatus(v) === "low")
+                      ? "low"
+                      : "ok"
+                  : stockStatus(r);
                 const expiry = getExpiryStatus(r.expiresOn);
-                const isSelected = r.variantId === openId;
+                const isSelected = openGroup?.productId === g.productId;
+                const prices = g.variants.map((v) => v.price).filter((p): p is number => p !== null);
+                const minPrice = prices.length > 0 ? Math.min(...prices) : null;
+                const maxPrice = prices.length > 0 ? Math.max(...prices) : null;
+                const priceText =
+                  minPrice === null
+                    ? t("admin:products.noPrice")
+                    : maxPrice !== null && minPrice !== maxPrice
+                      ? `${fmt(minPrice)} – ${fmt(maxPrice)}`
+                      : fmt(minPrice);
+                const totalQty = isMulti ? g.variants.reduce((sum, v) => sum + v.qty, 0) : r.qty;
                 return (
-                  <li key={r.variantId}>
+                  <li key={g.productId}>
                     <div
                       className={`flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm transition-colors ${
                         isSelected ? "bg-brand-50/60" : "hover:bg-slate-50/80"
@@ -1361,15 +1677,21 @@ export function ProductsPage() {
                       <button
                         type="button"
                         data-testid={`row-${r.sku}`}
-                        onClick={() => { setOpenId(r.variantId); setAdding(false); setArchiveError(null); }}
+                        onClick={() => { setOpenId(g.productId); setAdding(false); setArchiveError(null); }}
                         className="flex flex-1 cursor-pointer items-center justify-between gap-3 text-left"
                       >
                         <span className="flex min-w-0 items-center gap-3">
-                          <ProductThumb photoPath={r.photoPath} name={r.name} size="md" active={isSelected} />
+                          <ProductThumb photoPath={r.photoPath} name={g.productName} size="md" active={isSelected} />
                           <span className="min-w-0">
-                            <span className="block truncate font-semibold text-slate-900">{r.name}</span>
+                            <span className="block truncate font-semibold text-slate-900">{isMulti ? g.productName : r.name}</span>
                           <span className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                            <span className="font-mono text-slate-400">{r.sku}</span>
+                            {isMulti ? (
+                              <span className="rounded-md bg-brand-50 px-1.5 py-0.5 font-medium text-brand-text">
+                                {t("admin:sell.variantsCount", { count: g.variants.length })}
+                              </span>
+                            ) : (
+                              <span className="font-mono text-slate-400">{r.sku}</span>
+                            )}
                             {r.categoryName ? (
                               <span className="rounded-md bg-slate-100 px-1.5 py-0.5 font-medium text-slate-600">
                                 {r.categoryName}
@@ -1402,11 +1724,11 @@ export function ProductsPage() {
                           {status === "low" ? <Badge tone="warn">{t("admin:products.low")}</Badge> : null}
                           <span className="min-w-[80px] text-right">
                             <span className="block font-semibold text-slate-900 tabular-nums">
-                              {r.price === null ? t("admin:products.noPrice") : fmt(r.price)}
+                              {priceText}
                             </span>
                             {r.tracked ? (
                               <span className="text-xs text-slate-400 tabular-nums">
-                                {formatQty(r.qty)} {r.unit}
+                                {formatQty(totalQty)} {r.unit}
                               </span>
                             ) : null}
                           </span>
@@ -1460,8 +1782,9 @@ export function ProductsPage() {
                 </div>
               </div>
               <ProductForm
-                key={open.variantId}
+                key={openGroup!.productId}
                 row={open}
+                variants={openGroup!.variants}
                 tenantId={access.tenant.id}
                 currency={currency}
                 locationId={store.id}
@@ -1472,8 +1795,9 @@ export function ProductsPage() {
               />
               {canStock ? (
                 <StockPanel
-                  key={`s-${open.variantId}`}
+                  key={`s-${openGroup!.productId}`}
                   row={open}
+                  variants={openGroup!.variants}
                   currency={currency}
                   locationId={store.id}
                   fmt={fmt}

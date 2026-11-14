@@ -52,35 +52,54 @@ function mergeUtangSnapshot(base: CachedUtangSnapshot): CustomerBalanceInput[] {
   return computeCustomerBalances(Array.from(byId.values()), mergedLedger);
 }
 
+interface CustomerBalanceRpcRow {
+  customer_id: string;
+  name: string;
+  phone: string | null;
+  due_on: string | null;
+  balance: number;
+}
+
+export function mergeUtangBalances(base: ReadonlyArray<CustomerBalanceRpcRow>): CustomerBalanceInput[] {
+  const snapshot: CachedUtangSnapshot = {
+    customers: base.map((r) => ({
+      id: r.customer_id,
+      name: r.name,
+      phone: r.phone,
+      due_on: r.due_on,
+    })),
+    ledger: base
+      .filter((r) => Number(r.balance) !== 0)
+      .map((r) => ({
+        customer_id: r.customer_id,
+        amount: Number(r.balance),
+      })),
+  };
+  return mergeUtangSnapshot(snapshot);
+}
+
 export async function fetchCustomersWithBalances(): Promise<CustomerBalanceInput[]> {
-  const slot = "utang:balances";
+  const slot = "utang:balances:v2";
   try {
-    const [custRes, ledgerRes] = await Promise.all([
-      supabase
-        .from("customers")
-        .select("id, name, phone, due_on")
-        .is("deleted_at", null)
-        .order("name")
-        .limit(1000),
-      supabase
-        .from("customer_ledger")
-        .select("customer_id, amount")
-        .limit(50000),
-    ]);
+    const pageSize = 1000;
+    const rows: CustomerBalanceRpcRow[] = [];
+    for (let offset = 0; offset < 50_000; offset += pageSize) {
+      const { data, error } = await supabase.rpc("customer_utang_balances", {
+        p_limit: pageSize,
+        p_offset: offset,
+      });
+      if (error) throw fromRaw(error);
+      const batch = (data ?? []) as CustomerBalanceRpcRow[];
+      rows.push(...batch);
+      if (batch.length < pageSize) break;
+    }
 
-    if (custRes.error) throw fromRaw(custRes.error);
-    if (ledgerRes.error) throw fromRaw(ledgerRes.error);
-
-    const snapshot: CachedUtangSnapshot = {
-      customers: custRes.data,
-      ledger: ledgerRes.data,
-    };
-    savePosCache(slot, snapshot);
-    return mergeUtangSnapshot(snapshot);
+    savePosCache(slot, rows);
+    return mergeUtangBalances(rows);
   } catch (err) {
     if (isNetworkFailure(err)) {
-      const cached = loadPosCache<CachedUtangSnapshot>(slot);
-      if (cached) return mergeUtangSnapshot(cached);
+      const cached = loadPosCache<CustomerBalanceRpcRow[]>(slot);
+      if (cached) return mergeUtangBalances(cached);
     }
     throw err;
   }

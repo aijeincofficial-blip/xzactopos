@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { ApiError } from "./api.ts";
+import { salePayload } from "./sale-math.ts";
 import {
   applyOptimisticStockDeltas,
   describeQueuedPosOp,
@@ -290,5 +291,33 @@ describe("pos-outbox", () => {
       primaryRef: "LOAD",
       amountMinor: 5000,
     });
+  });
+
+  it("applies optimistic stock deltas for real salePayload items arrays and skips untracked items (F02)", () => {
+    const storage = new MemoryStorage();
+    const payload = salePayload({
+      id: "sale-mv-1",
+      localNo: "WAB-261114-0001",
+      locationId: "store-1",
+      soldAt: new Date("2026-11-14T01:00:00Z"),
+      discount: 0,
+      lines: [
+        { variantId: "v-tracked", name: "Iced Latte (Large)", qty: 3, unitPrice: 15000, unitCost: 5000, taxRate: 0, tracked: true },
+        { variantId: "v-untracked", name: "Service Bag", qty: 2, unitPrice: 500, unitCost: 100, taxRate: 0, tracked: false },
+      ],
+      payments: [{ method: "cash", amount: 46000, tendered: 50000 }],
+    });
+    enqueuePosOp({ opId: "op-sale-items", kind: "record_sale", locationId: "store-1", payload }, storage);
+
+    const next = applyOptimisticStockDeltas(
+      new Map([
+        ["v-tracked", 12],
+        ["v-untracked", 9],
+      ]),
+      "store-1",
+      loadPosOutbox(storage),
+    );
+    expect(next.get("v-tracked")).toBe(9);
+    expect(next.get("v-untracked")).toBe(9);
   });
 });

@@ -126,12 +126,13 @@ class _StockScreenState extends State<StockScreen> {
     final scope = CatalogScope.of(context);
     return Scaffold(
       appBar: AppBar(title: Text(t.stockTitle), actions: [
-        IconButton(
-          key: const Key('open-restock'),
-          tooltip: t.restockTitle,
-          icon: const Icon(Icons.shopping_basket_outlined),
-          onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => scope.wrap(const RestockScreen()))),
-        ),
+        if (scope.canManageStock)
+          IconButton(
+            key: const Key('open-restock'),
+            tooltip: t.restockTitle,
+            icon: const Icon(Icons.shopping_basket_outlined),
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => scope.wrap(const RestockScreen()))),
+          ),
         const SyncBadge(),
       ]),
       body: StreamBuilder<List<StockRow>>(
@@ -236,8 +237,8 @@ class _StockScreenState extends State<StockScreen> {
                           child: ListTile(
                             contentPadding: EdgeInsets.zero,
                             dense: true,
-                            leading: ProductThumb(productId: r.product.id, name: r.product.name, path: r.product.photoPath, size: 38),
-                            title: Text(r.product.name, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                            leading: ProductThumb(productId: r.product.id, name: r.product.displayName, path: r.product.photoPath, size: 38),
+                            title: Text(r.product.displayName, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
                             subtitle: _stockSubtitle(t, scheme, r, today),
                             trailing: Row(mainAxisSize: MainAxisSize.min, children: [
                               if (r.pending)
@@ -285,7 +286,7 @@ class _ActionSheet extends StatelessWidget {
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          Text(row.product.name, style: Theme.of(context).textTheme.titleLarge),
+          Text(row.product.displayName, style: Theme.of(context).textTheme.titleLarge),
           Text(row.counted ? t.stockNow(fmtQty(row.qty!)) : t.stockNotCounted),
           const SizedBox(height: 16),
           if (row.low) ...[
@@ -309,7 +310,7 @@ class _ActionSheet extends StatelessWidget {
                         initialLine: TransferDraftLine(
                           variantId: row.product.variantId,
                           sku: row.product.sku,
-                          productName: row.product.name,
+                          productName: row.product.displayName,
                           unit: row.product.unit,
                           qty: row.reorderPoint > (row.qty ?? 0)
                               ? (row.reorderPoint - (row.qty ?? 0))
@@ -409,7 +410,7 @@ Future<void> showStockInDialog(BuildContext context, CatalogScope scope, StockRo
     context: context,
     builder: (ctx) => StatefulBuilder(
       builder: (ctx, setState) => AlertDialog(
-        title: Text(t.stockInTitle(row.product.name)),
+        title: Text(t.stockInTitle(row.product.displayName)),
         content: Column(mainAxisSize: MainAxisSize.min, children: [
           TextField(
             key: const Key('stockin-qty'),
@@ -490,7 +491,7 @@ Future<void> showCountDialog(BuildContext context, CatalogScope scope, StockRow 
     context: context,
     builder: (ctx) => StatefulBuilder(
       builder: (ctx, setState) => AlertDialog(
-        title: Text(t.stockCountTitle(row.product.name)),
+        title: Text(t.stockCountTitle(row.product.displayName)),
         content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
           TextField(
             key: const Key('count-qty'),

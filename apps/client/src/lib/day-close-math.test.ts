@@ -26,6 +26,28 @@ describe("day-close-math", () => {
     expect(to).toBe("2026-11-08T16:00:00.000Z");
   });
 
+  it("computes expected cash including net service drawer effects (F09)", () => {
+    expect(
+      computeExpectedCash({
+        openingCash: 100000,
+        cashSales: 250000,
+        cashUtangPayments: 50000,
+        cashServices: 302000, // e.g. +3020 PHP from cash-in / load minus cash-out
+        cashExpenses: 40000,
+      }),
+    ).toBe(662000);
+
+    expect(
+      computeExpectedCash({
+        openingCash: 100000,
+        cashSales: 100000,
+        cashUtangPayments: 0,
+        cashServices: -45000, // net cash-out / float top-up reduces drawer cash
+        cashExpenses: 10000,
+      }),
+    ).toBe(145000);
+  });
+
   it("computes dayUtcBounds for UTC", () => {
     const { from, to } = dayUtcBounds("2026-11-08", "UTC");
     expect(from).toBe("2026-11-08T00:00:00.000Z");

@@ -122,6 +122,9 @@ class SyncEngine {
   static const _minBackoff = Duration(seconds: 15);
   static const _maxBackoff = Duration(minutes: 15);
   static const _maxPagesPerRun = 20;
+  static const _pinPullInterval = Duration(minutes: 15);
+
+  final Map<String, DateTime> _lastPinPullByLoc = {};
 
   final status = ValueNotifier(const SyncStatus());
   Timer? _timer;
@@ -438,16 +441,26 @@ class SyncEngine {
         if (s.id.isNotEmpty) locIds.add(s.id);
       }
     } catch (_) {}
-    for (final locId in locIds) {
-      try {
-        final pins = await pinApi.pullOfflinePins(locationId: locId);
-        if (pins.isNotEmpty) {
-          await store.saveOfflinePins(locId, pins);
-        }
-      } catch (_) {
-        // Best-effort per branch; never fail POS sync if offline PIN pull fails.
-      }
-    }
+    final now = DateTime.now();
+    final staleLocs = [
+      for (final locId in locIds)
+        if (_lastPinPullByLoc[locId] == null || now.difference(_lastPinPullByLoc[locId]!) >= _pinPullInterval) locId,
+    ];
+    if (staleLocs.isEmpty) return;
+    await Future.wait([
+      for (final locId in staleLocs)
+        () async {
+          try {
+            final pins = await pinApi.pullOfflinePins(locationId: locId);
+            if (pins.isNotEmpty) {
+              await store.saveOfflinePins(locId, pins);
+            }
+            _lastPinPullByLoc[locId] = DateTime.now();
+          } catch (_) {
+            // Best-effort per branch; never fail POS sync if offline PIN pull fails.
+          }
+        }(),
+    ]);
   }
 
   void dispose() {

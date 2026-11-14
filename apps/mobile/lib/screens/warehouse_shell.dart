@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../app.dart' show LanguageButton;
@@ -181,19 +183,8 @@ Future<void> showWarehousePicker(BuildContext context, LocalStore store, List<Wa
 }
 
 /// A pushed screen is outside the shell's CatalogScope, so carry it along.
-Route<void> _scoped(BuildContext context, Widget child) {
-  final scope = CatalogScope.of(context);
-  return MaterialPageRoute<void>(
-    builder: (_) => CatalogScope(
-      store: scope.store,
-      engine: scope.engine,
-      photos: scope.photos,
-      canManageStock: scope.canManageStock,
-      role: scope.role,
-      child: child,
-    ),
-  );
-}
+Route<void> _scoped(BuildContext context, Widget child) =>
+    MaterialPageRoute<void>(builder: (_) => CatalogScope.of(context).wrap(child));
 
 /// Whole quantities as ints so they print without a trailing .0.
 num _whole(num v) => v == v.roundToDouble() ? v.toInt() : v;
@@ -443,11 +434,13 @@ class StockTab extends StatefulWidget {
 
 class _StockTabState extends State<StockTab> {
   final _searchController = TextEditingController();
+  Timer? _searchDebounce;
   String _query = '';
   WhStockFilter _filter = WhStockFilter.all;
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -461,6 +454,7 @@ class _StockTabState extends State<StockTab> {
     if (trimmed.isEmpty) return;
     final found = await store.findByBarcode(trimmed);
     if (!mounted) return;
+    _searchDebounce?.cancel();
     _searchController.text = trimmed;
     setState(() => _query = trimmed);
     if (found == null) {
@@ -540,6 +534,7 @@ class _StockTabState extends State<StockTab> {
                     tooltip: t.whStockClearSearch,
                     icon: const Icon(Icons.close_rounded, size: 18),
                     onPressed: () {
+                      _searchDebounce?.cancel();
                       _searchController.clear();
                       setState(() => _query = '');
                     },
@@ -566,7 +561,12 @@ class _StockTabState extends State<StockTab> {
                           ? null
                           : Row(mainAxisSize: MainAxisSize.min, children: suffixButtons),
                     ),
-                    onChanged: (v) => setState(() => _query = v),
+                    onChanged: (v) {
+                      _searchDebounce?.cancel();
+                      _searchDebounce = Timer(const Duration(milliseconds: 150), () {
+                        if (mounted) setState(() => _query = v);
+                      });
+                    },
                   ),
                 ),
                 Align(
@@ -600,12 +600,12 @@ class _StockTabState extends State<StockTab> {
                           text: allRows.isEmpty ? t.whNoStock : t.whStockNoFiltered,
                           textKey: const Key('no-stock'),
                         )
-                      : ListView(
+                      : ListView.builder(
                           padding: const EdgeInsets.fromLTRB(Gap.l, Gap.xs, Gap.l, Gap.xxl),
-                          children: [
-                            for (final r in rows)
-                              Builder(builder: (context) {
-                                final p = byVariant[r.variantId];
+                          itemCount: rows.length,
+                          itemBuilder: (context, index) {
+                            final r = rows[index];
+                            final p = byVariant[r.variantId];
                                 final name = p?.name ?? t.whUnknownProduct;
                                 final reorder = p?.reorderPoint ?? 0;
                                 final isNeg = r.qty < 0;
@@ -704,8 +704,7 @@ class _StockTabState extends State<StockTab> {
                                     ]),
                                   ),
                                 );
-                              }),
-                          ],
+                          },
                         ),
                 ),
               ]);

@@ -1,8 +1,8 @@
 // Shared UI primitives styled in the "Receipt paper at a night market" system (docs/design.md).
-import { createContext, useCallback, useContext, useMemo, useState, type ComponentProps, type ReactNode } from "react";
+import { type ComponentProps, type ReactNode } from "react";
 import { cva, type VariantProps } from "class-variance-authority";
-import { Dialog as RadixDialog, Tabs as RadixTabs, Toast as RadixToast } from "radix-ui";
-import { AlertTriangle, CheckCircle2, Inbox, Info, X } from "lucide-react";
+import { Dialog as RadixDialog, Tabs as RadixTabs } from "radix-ui";
+import { AlertTriangle, Inbox, X } from "lucide-react";
 import { cn } from "../lib/utils.ts";
 
 const buttonVariants = cva(
@@ -329,124 +329,10 @@ export function TabPanel({ value, children }: { value: string; children: ReactNo
   return <RadixTabs.Content value={value}>{children}</RadixTabs.Content>;
 }
 
-export type ToastTone = "good" | "warn" | "error" | "info";
-
-export interface ToastMessage {
-  id: string;
-  title?: string;
-  message: string;
-  tone: ToastTone;
-  duration?: number;
-}
-
-export interface ToastContextValue {
-  toast: (message: string, opts?: { title?: string; tone?: ToastTone; duration?: number }) => void;
-  good: (message: string, opts?: { title?: string; duration?: number }) => void;
-  error: (message: string, opts?: { title?: string; duration?: number }) => void;
-  warn: (message: string, opts?: { title?: string; duration?: number }) => void;
-  info: (message: string, opts?: { title?: string; duration?: number }) => void;
-}
-
-const ToastContext = createContext<ToastContextValue | null>(null);
-
-export function ToastProvider({ children }: { children: ReactNode }) {
-  const [toasts, setToasts] = useState<ToastMessage[]>([]);
-
-  const dismiss = useCallback((id: string) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  }, []);
-
-  const addToast = useCallback((message: string, opts?: { title?: string; tone?: ToastTone; duration?: number }) => {
-    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-    const tone = opts?.tone ?? "info";
-    const item: ToastMessage = {
-      id,
-      title: opts?.title,
-      message,
-      tone,
-      duration: opts?.duration ?? (tone === "error" ? 6000 : 3500),
-    };
-    setToasts((prev) => [...prev, item]);
-  }, []);
-
-  const value = useMemo<ToastContextValue>(
-    () => ({
-      toast: addToast,
-      good: (msg, opts) => addToast(msg, { ...opts, tone: "good" }),
-      error: (msg, opts) => addToast(msg, { ...opts, tone: "error" }),
-      warn: (msg, opts) => addToast(msg, { ...opts, tone: "warn" }),
-      info: (msg, opts) => addToast(msg, { ...opts, tone: "info" }),
-    }),
-    [addToast],
-  );
-
-  return (
-    <ToastContext.Provider value={value}>
-      <RadixToast.Provider swipeDirection="right">
-        {children}
-        {toasts.map((t) => {
-          const isError = t.tone === "error";
-          const isGood = t.tone === "good";
-          const isWarn = t.tone === "warn";
-          return (
-            <RadixToast.Root
-              key={t.id}
-              duration={t.duration}
-              onOpenChange={(open) => {
-                if (!open) dismiss(t.id);
-              }}
-              className={cn(
-                "receipt-float group pointer-events-auto relative flex w-full items-start gap-3 rounded-[20px] border-[1.5px] bg-white p-4 transition-all",
-                isGood && "border-emerald-200 bg-emerald-50 text-emerald-900",
-                isError && "border-red-200 bg-red-50 text-red-900",
-                isWarn && "border-amber-200 bg-amber-50 text-amber-900",
-                !isGood && !isError && !isWarn && "border-slate-200 text-slate-900",
-              )}
-            >
-              <span className="mt-0.5 shrink-0">
-                {isGood ? (
-                  <CheckCircle2 size={18} className="text-emerald-600" aria-hidden />
-                ) : isError ? (
-                  <AlertTriangle size={18} className="text-red-600" aria-hidden />
-                ) : isWarn ? (
-                  <AlertTriangle size={18} className="text-amber-600" aria-hidden />
-                ) : (
-                  <Info size={18} className="text-slate-700" aria-hidden />
-                )}
-              </span>
-              <div className="grid flex-1 gap-0.5 text-sm">
-                {t.title ? (
-                  <RadixToast.Title className="font-mono text-xs font-semibold tracking-wide uppercase">
-                    {t.title}
-                  </RadixToast.Title>
-                ) : null}
-                <RadixToast.Description className="text-sm font-medium">{t.message}</RadixToast.Description>
-              </div>
-              <RadixToast.Close
-                aria-label="Close"
-                className="shrink-0 rounded-full p-1 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
-              >
-                <X size={16} />
-              </RadixToast.Close>
-            </RadixToast.Root>
-          );
-        })}
-        <RadixToast.Viewport className="pointer-events-none fixed right-4 bottom-4 z-50 flex max-h-screen w-full max-w-sm flex-col gap-2 p-4 outline-none sm:right-6 sm:bottom-6" />
-      </RadixToast.Provider>
-    </ToastContext.Provider>
-  );
-}
-
-export function useToast(): ToastContextValue {
-  const ctx = useContext(ToastContext);
-  if (!ctx) {
-    return {
-      toast: () => {},
-      good: () => {},
-      error: () => {},
-      warn: () => {},
-      info: () => {},
-    };
-  }
-  return ctx;
-}
+export {
+  ToastProvider,
+  useToast,
+  type ToastContextValue,
+  type ToastMessage,
+  type ToastTone,
+} from "./toast.tsx";

@@ -23,6 +23,31 @@ create function pg_temp.push1(k text, kind text, payload jsonb) returns jsonb la
   select public.sync_push(jsonb_build_array(pg_temp.op(k, kind, payload))) -> 0
 $$;
 
+create function pg_temp.offline_appr(p_user text, p_action text, p_ref uuid) returns jsonb language sql stable as $$
+  with info as (
+    select p.pin_hash, to_char(now() at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as approved_at
+    from public.profiles p where p.user_id = pg_temp.u(p_user)
+  )
+  select jsonb_build_object(
+    'approver_id', pg_temp.u(p_user),
+    'approved_at', info.approved_at,
+    'action', p_action,
+    'ref_id', p_ref,
+    'proof', encode(
+      extensions.hmac(
+        convert_to(
+          lower(pg_temp.t('A')::text) || '|' || lower(pg_temp.u(p_user)::text) || '|' || p_action
+            || '|' || coalesce(lower(p_ref::text), '') || '|' || info.approved_at,
+          'UTF8'
+        ),
+        decode((string_to_array(info.pin_hash, '$'))[4], 'base64'),
+        'sha256'
+      ),
+      'hex'
+    )
+  ) from info;
+$$;
+
 -- Setup tenant & users
 insert into auth.users (id, email)
 select pg_temp.u(n), n || '@test051.invalid' from unnest(array['owner', 'maria', 'sara', 'juan']) n;
@@ -97,12 +122,7 @@ select is(
     'expected_cash', 100000,
     'counted_cash', 100000,
     'opening_cash', 50000,
-    'offline_approval', jsonb_build_object(
-      'approver_id', pg_temp.u('maria'),
-      'approved_at', to_char(now(), 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
-      'action', 'close_day',
-      'ref_id', pg_temp.id('dc:1')
-    )
+    'offline_approval', pg_temp.offline_appr('maria', 'close_day', pg_temp.id('dc:1'))
   )) ->> 'status'),
   'ok',
   '2. Supervisor close_day with offline approval succeeds'
@@ -140,12 +160,7 @@ select is(
     'kind', 'float_topup',
     'wallet', 'gcash',
     'amount', 500000,
-    'offline_approval', jsonb_build_object(
-      'approver_id', pg_temp.u('sara'),
-      'approved_at', to_char(now(), 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
-      'action', 'record_service_txn',
-      'ref_id', pg_temp.id('svc:1')
-    )
+    'offline_approval', pg_temp.offline_appr('sara', 'record_service_txn', pg_temp.id('svc:1'))
   )) ->> 'status'),
   'ok',
   '5. Supervisor float_topup with offline approval succeeds'
@@ -156,12 +171,7 @@ select is(
   (pg_temp.push1('svc_void_off', 'void_service_txn', jsonb_build_object(
     'txn_id', pg_temp.id('svc:1'),
     'reason', 'Wrong wallet selected',
-    'offline_approval', jsonb_build_object(
-      'approver_id', pg_temp.u('maria'),
-      'approved_at', to_char(now(), 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
-      'action', 'void_service_txn',
-      'ref_id', pg_temp.id('svc:1')
-    )
+    'offline_approval', pg_temp.offline_appr('maria', 'void_service_txn', pg_temp.id('svc:1'))
   )) ->> 'status'),
   'ok',
   '6. Supervisor void_service_txn with offline approval succeeds'
@@ -216,12 +226,7 @@ select is(
     'sale_id', pg_temp.id('sale:1'),
     'refund_method', 'cash',
     'items', jsonb_build_array(jsonb_build_object('variant_id', pg_temp.id('v:rice'), 'qty', 1)),
-    'offline_approval', jsonb_build_object(
-      'approver_id', pg_temp.u('sara'),
-      'approved_at', to_char(now(), 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
-      'action', 'sale_discount',
-      'ref_id', pg_temp.id('sale:1')
-    )
+    'offline_approval', pg_temp.offline_appr('sara', 'sale_discount', pg_temp.id('sale:1'))
   )) ->> 'hint'),
   'approval_invalid',
   '10. Offline approval bound to wrong action is rejected'
@@ -233,12 +238,7 @@ select is(
     'sale_id', pg_temp.id('sale:1'),
     'refund_method', 'cash',
     'items', jsonb_build_array(jsonb_build_object('variant_id', pg_temp.id('v:rice'), 'qty', 1)),
-    'offline_approval', jsonb_build_object(
-      'approver_id', pg_temp.u('sara'),
-      'approved_at', to_char(now(), 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
-      'action', 'void_sale',
-      'ref_id', pg_temp.id('sale:other')
-    )
+    'offline_approval', pg_temp.offline_appr('sara', 'void_sale', pg_temp.id('sale:other'))
   )) ->> 'hint'),
   'approval_invalid',
   '11. Offline approval bound to wrong ref_id is rejected'
@@ -250,12 +250,7 @@ select is(
     'sale_id', pg_temp.id('sale:1'),
     'refund_method', 'cash',
     'items', jsonb_build_array(jsonb_build_object('variant_id', pg_temp.id('v:rice'), 'qty', 1)),
-    'offline_approval', jsonb_build_object(
-      'approver_id', pg_temp.u('sara'),
-      'approved_at', to_char(now(), 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
-      'action', 'void_sale',
-      'ref_id', pg_temp.id('sale:1')
-    )
+    'offline_approval', pg_temp.offline_appr('sara', 'void_sale', pg_temp.id('sale:1'))
   )) ->> 'status'),
   'ok',
   '12. Cashier return_sale_items with valid offline supervisor approval succeeds'

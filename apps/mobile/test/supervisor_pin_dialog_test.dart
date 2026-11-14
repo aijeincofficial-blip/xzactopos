@@ -104,7 +104,8 @@ void main() {
       SupervisorPin(
         userId: 'usr-offline-super',
         displayName: 'Offline Supervisor',
-        role: 'manager',
+        role: 'admin',
+        position: 'supervisor',
         pinHash: hash,
       ),
     ]);

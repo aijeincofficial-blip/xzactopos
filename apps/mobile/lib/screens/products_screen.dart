@@ -41,11 +41,13 @@ class _ProductsScreenState extends State<ProductsScreen> {
     final hit = await scope.store.findByBarcode(code);
     if (!mounted) return;
     if (hit != null) {
-      _clearSearch();
-      await _open(product: hit);
+      if (scope.canManageCatalog) {
+        _clearSearch();
+        await _open(product: hit);
+      }
       return;
     }
-    if (!looksLikeBarcode(code)) return; // a name search: the list already shows the matches
+    if (!looksLikeBarcode(code) || !scope.canManageCatalog) return; // a name search or read-only role
     final add = await showDialog<bool>(
       context: context,
       builder: (c) => AlertDialog(
@@ -103,12 +105,14 @@ class _ProductsScreenState extends State<ProductsScreen> {
     final locale = Localizations.localeOf(context).languageCode;
     return Scaffold(
       appBar: AppBar(title: Text(t.products), actions: const [SyncBadge()]),
-      floatingActionButton: FloatingActionButton.extended(
-        key: const Key('add-product'),
-        onPressed: () => _open(),
-        icon: const Icon(Icons.add),
-        label: Text(t.addProduct),
-      ),
+      floatingActionButton: scope.canManageCatalog
+          ? FloatingActionButton.extended(
+              key: const Key('add-product'),
+              onPressed: () => _open(),
+              icon: const Icon(Icons.add),
+              label: Text(t.addProduct),
+            )
+          : null,
       body: Column(
         children: [
           const _NeedsAttentionBanner(),
@@ -147,31 +151,54 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     text: _query.isEmpty ? t.noProductsYet : t.noMatches,
                   );
                 }
+                final groups = groupProducts(items);
                 final scheme = Theme.of(context).colorScheme;
                 return ListView.separated(
                   padding: const EdgeInsets.fromLTRB(Gap.l, Gap.xs, Gap.l, 88),
-                  itemCount: items.length,
+                  itemCount: groups.length,
                   separatorBuilder: (_, _) => const SizedBox(height: Gap.s),
                   itemBuilder: (context, i) {
-                    final p = items[i];
+                    final g = groups[i];
+                    final p = g.primary;
+                    final isMulti = g.variants.length > 1;
+                    final prices = g.variants.map((v) => v.price).whereType<int>().toList();
+                    final String priceText;
+                    if (prices.isEmpty) {
+                      priceText = '—';
+                    } else {
+                      final minP = prices.reduce((a, b) => a < b ? a : b);
+                      final maxP = prices.reduce((a, b) => a > b ? a : b);
+                      priceText = minP == maxP
+                          ? Money(minP, p.currency).format(locale)
+                          : '${Money(minP, p.currency).format(locale)}–${Money(maxP, p.currency).format(locale)}';
+                    }
+                    final subtitleParts = <String>[
+                      if (isMulti) t.variantsCount(g.variants.length),
+                      if (p.barcode != null && p.barcode!.isNotEmpty) p.barcode!,
+                    ];
                     return AppCard(
                       padding: const EdgeInsets.symmetric(horizontal: Gap.l, vertical: 8),
                       radius: Gap.radiusL,
-                      onTap: () => _open(product: p),
+                      onTap: scope.canManageCatalog ? () => _open(product: p) : null,
                       child: ListTile(
                         contentPadding: EdgeInsets.zero,
                         dense: true,
-                        leading: ProductThumb(productId: p.id, name: p.name, path: p.photoPath, size: 38),
-                        title: Text(p.name, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
-                        subtitle: p.barcode == null ? null : Text(p.barcode!, style: NightMarketText.mono(context, size: 12, weight: FontWeight.w500, color: scheme.outline)),
+                        leading: ProductThumb(productId: p.id, name: g.productName, path: p.photoPath, size: 38),
+                        title: Text(g.productName, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                        subtitle: subtitleParts.isEmpty
+                            ? null
+                            : Text(
+                                subtitleParts.join(' · '),
+                                style: NightMarketText.mono(context, size: 12, weight: FontWeight.w500, color: scheme.outline),
+                              ),
                         trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-                          if (p.pending)
+                          if (g.variants.any((v) => v.pending))
                             Padding(
                               padding: const EdgeInsets.only(right: 8),
                               child: Icon(Icons.cloud_upload_outlined, size: 18, color: scheme.primary, semanticLabel: t.notSentYet),
                             ),
                           Text(
-                            p.price == null ? '—' : Money(p.price!, p.currency).format(locale),
+                            priceText,
                             style: NightMarketText.mono(context, size: 15.5, weight: FontWeight.w600),
                           ),
                         ]),

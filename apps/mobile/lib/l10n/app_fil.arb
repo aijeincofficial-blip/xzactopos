@@ -1532,5 +1532,29 @@
   "whStockBadgeNegative": "Mas mababa sa zero",
   "whStockScanBarcode": "Mag-scan ng barcode",
   "whStockClearSearch": "Burahin ang hinahanap",
-  "whStockNoFiltered": "Walang stock na tumugma sa filter."
+  "whStockNoFiltered": "Walang stock na tumugma sa filter.",
+  "variantsSection": "Mga sukat at klase",
+  "addVariant": "Magdagdag ng variant",
+  "variantLabel": "Pangalan ng variant",
+  "variantLabelHint": "hal. Regular, Large",
+  "defaultVariant": "Default",
+  "removeVariant": "Alisin",
+  "variantsCount": "{count} na sukat",
+  "@variantsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "chooseVariant": "Pumili ng klase para sa {product}",
+  "@chooseVariant": {
+    "placeholders": {
+      "product": {
+        "type": "String"
+      }
+    }
+  },
+  "posDisabledTitle": "Naka-off ang POS",
+  "posDisabledBody": "Hindi naka-on ang POS para sa negosyong ito."
 }

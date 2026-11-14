@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:uuid/uuid.dart';
@@ -52,14 +54,95 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
 
   // ids are made once per screen, so saving twice never creates two products
   late final String _productId = widget.product?.id ?? const Uuid().v7();
-  late final String _variantId = widget.product?.variantId ?? const Uuid().v7();
+  late String _variantId = widget.product?.variantId ?? const Uuid().v7();
+  late String _singleVariantName = widget.product?.variantName ?? 'Default';
+  final List<_VariantRowState> _variants = [];
+  bool _loadedVariants = false;
 
   bool get _isNew => widget.product == null;
+  bool get _multiVariant => _variants.length > 1;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_loadedVariants && widget.product != null) {
+      _loadedVariants = true;
+      unawaited(_loadVariants());
+    }
+  }
+
+  Future<void> _loadVariants() async {
+    final rows = await CatalogScope.of(context).store.productVariants(_productId);
+    if (!mounted || rows.length <= 1) return;
+    setState(() {
+      for (final v in _variants) {
+        v.dispose();
+      }
+      _variants.clear();
+      for (final r in rows) {
+        _variants.add(_VariantRowState(
+          id: r.variantId,
+          name: r.variantName,
+          barcode: r.barcode ?? '',
+          price: r.price == null ? '' : Money(r.price!, r.currency).toDecimalString(),
+          reorderPoint: r.reorderPoint > 0 ? r.reorderPoint.toString().replaceAll(RegExp(r'\.0$'), '') : '',
+          isDefault: r.isDefault,
+          isNew: false,
+        ));
+      }
+      if (!_variants.any((v) => v.isDefault) && _variants.isNotEmpty) {
+        _variants.first.isDefault = true;
+      }
+    });
+  }
+
+  void _addVariant() {
+    setState(() {
+      if (_variants.isEmpty) {
+        _variants.add(_VariantRowState(
+          id: _variantId,
+          name: _singleVariantName == 'Default' ? 'Regular' : _singleVariantName,
+          barcode: _barcode.text,
+          price: _price.text,
+          cost: _cost.text,
+          reorderPoint: _reorder.text,
+          stock: _stock.text,
+          isDefault: true,
+          isNew: _isNew,
+        ));
+      }
+      _variants.add(_VariantRowState(id: const Uuid().v7(), isDefault: false, isNew: true));
+    });
+  }
+
+  void _removeVariant(int idx) {
+    if (_variants.length <= 1) return;
+    setState(() {
+      final removed = _variants.removeAt(idx);
+      removed.dispose();
+      if (_variants.length == 1) {
+        final only = _variants.removeAt(0);
+        _variantId = only.id;
+        _singleVariantName = only.nameCtrl.text.trim().isEmpty ? 'Default' : only.nameCtrl.text.trim();
+        _price.text = only.priceCtrl.text;
+        _barcode.text = only.barcodeCtrl.text;
+        _cost.text = only.costCtrl.text;
+        _reorder.text = only.reorderCtrl.text;
+        _stock.text = only.stockCtrl.text;
+        only.dispose();
+      } else if (!_variants.any((v) => v.isDefault)) {
+        _variants.first.isDefault = true;
+      }
+    });
+  }
 
   @override
   void dispose() {
     for (final c in [_name, _price, _barcode, _stock, _unit, _cost, _reorder, _pieces, _pieceName, _piecePrice]) {
       c.dispose();
+    }
+    for (final v in _variants) {
+      v.dispose();
     }
     super.dispose();
   }
@@ -72,8 +155,80 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
   Future<void> _save() async {
     final t = AppLocalizations.of(context);
     final scope = CatalogScope.of(context);
-    setState(() => _barcodeError = null);
+    setState(() {
+      _barcodeError = null;
+      for (final v in _variants) {
+        v.barcodeError = null;
+      }
+    });
     if (!_form.currentState!.validate()) return;
+
+    final currency = scope.store.baseCurrency;
+    final unitText = _unit.text.trim().isEmpty ? 'pc' : _unit.text.trim();
+
+    if (_multiVariant) {
+      final seenCodes = <String>{};
+      var hasBarcodeErr = false;
+      for (final v in _variants) {
+        final code = v.barcodeCtrl.text.trim();
+        if (code.isEmpty) continue;
+        if (!seenCodes.add(code)) {
+          v.barcodeError = t.barcodeUsedBy(_name.text.trim());
+          hasBarcodeErr = true;
+          continue;
+        }
+        final other = await scope.store.findByBarcode(code);
+        if (other != null && other.id != _productId) {
+          v.barcodeError = t.barcodeUsedBy(other.name);
+          hasBarcodeErr = true;
+        }
+      }
+      if (hasBarcodeErr) {
+        if (mounted) setState(() {});
+        return;
+      }
+      setState(() => _busy = true);
+      final def = _variants.firstWhere((v) => v.isDefault, orElse: () => _variants.first);
+      final draftVariants = [
+        for (final v in _variants)
+          VariantDraft(
+            id: v.id,
+            name: v.nameCtrl.text.trim().isEmpty ? 'Default' : v.nameCtrl.text.trim(),
+            barcode: v.barcodeCtrl.text.trim(),
+            price: Money.parse(v.priceCtrl.text, currency).amount,
+            cost: v.costCtrl.text.trim().isEmpty ? null : Money.parse(v.costCtrl.text, currency).amount,
+            reorderPoint: v.reorderCtrl.text.trim().isEmpty
+                ? null
+                : double.parse(v.reorderCtrl.text.trim().replaceAll(',', '.')),
+            openingQty: v.isNew && v.stockCtrl.text.trim().isNotEmpty
+                ? double.parse(v.stockCtrl.text.trim())
+                : null,
+            isDefault: v.id == def.id,
+          ),
+      ];
+      await scope.store.saveProduct(
+        ProductDraft(
+          id: _productId,
+          variantId: def.id,
+          name: _name.text.trim(),
+          price: Money.parse(def.priceCtrl.text, currency).amount,
+          unit: unitText,
+          barcode: def.barcodeCtrl.text.trim(),
+          cost: def.costCtrl.text.trim().isEmpty ? null : Money.parse(def.costCtrl.text, currency).amount,
+          reorderPoint: def.reorderCtrl.text.trim().isEmpty
+              ? null
+              : double.parse(def.reorderCtrl.text.trim().replaceAll(',', '.')),
+          variants: draftVariants,
+        ),
+        opId: const Uuid().v7(),
+      );
+      if (_newPhoto != null) {
+        await scope.store.setPhoto(_productId, def.id, _newPhoto!, opId: const Uuid().v7());
+      }
+      scope.engine.poke();
+      if (mounted) Navigator.of(context).pop();
+      return;
+    }
 
     final code = _barcode.text.trim();
     if (code.isNotEmpty) {
@@ -85,18 +240,35 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     }
 
     setState(() => _busy = true);
-    final currency = scope.store.baseCurrency;
+    final singlePrice = Money.parse(_price.text, currency).amount;
+    final singleCost = _cost.text.trim().isEmpty ? null : Money.parse(_cost.text, currency).amount;
+    final singleOpening = _stock.text.trim().isEmpty ? null : double.parse(_stock.text.trim());
+    final singleReorder = _reorder.text.trim().isEmpty ? null : double.parse(_reorder.text.trim().replaceAll(',', '.'));
     await scope.store.saveProduct(
       ProductDraft(
         id: _productId,
         variantId: _variantId,
         name: _name.text.trim(),
-        price: Money.parse(_price.text, currency).amount,
-        unit: _unit.text.trim().isEmpty ? 'pc' : _unit.text.trim(),
+        price: singlePrice,
+        unit: unitText,
         barcode: code,
-        cost: _cost.text.trim().isEmpty ? null : Money.parse(_cost.text, currency).amount,
-        openingQty: _stock.text.trim().isEmpty ? null : double.parse(_stock.text.trim()),
-        reorderPoint: _reorder.text.trim().isEmpty ? null : double.parse(_reorder.text.trim().replaceAll(',', '.')),
+        cost: singleCost,
+        openingQty: singleOpening,
+        reorderPoint: singleReorder,
+        variants: _singleVariantName != 'Default'
+            ? [
+                VariantDraft(
+                  id: _variantId,
+                  name: _singleVariantName,
+                  barcode: code,
+                  price: singlePrice,
+                  cost: singleCost,
+                  reorderPoint: singleReorder,
+                  openingQty: _isNew ? singleOpening : null,
+                  isDefault: true,
+                ),
+              ]
+            : null,
       ),
       opId: const Uuid().v7(),
     );
@@ -297,59 +469,172 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                     ),
                     validator: (v) => (v == null || v.trim().isEmpty) ? t.errRequired : null,
                   ),
-                  const SizedBox(height: Gap.m),
-                  TextFormField(
-                    key: const Key('field-price'),
-                    controller: _price,
-                    style: big,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]'))],
-                    textInputAction: TextInputAction.next,
-                    decoration: InputDecoration(
-                      labelText: t.sellingPrice,
-                      prefixText: '$symbol ',
-                      prefixIcon: const Icon(Icons.sell_outlined, size: 20),
-                    ),
-                    validator: (v) => _money(v, t, required: true),
-                  ),
-                  const SizedBox(height: Gap.m),
-                  TextFormField(
-                    key: const Key('field-barcode'),
-                    controller: _barcode,
-                    keyboardType: TextInputType.number,
-                    textInputAction: TextInputAction.next,
-                    decoration: InputDecoration(
-                      labelText: t.barcodeOptional,
-                      prefixIcon: cameraScanner.available
-                          ? IconButton(
-                              key: const Key('barcode-camera'),
-                              tooltip: t.scanWithCamera,
-                              icon: const Icon(Icons.qr_code_scanner_rounded),
-                              onPressed: _scanBarcode,
-                            )
-                          : const Icon(Icons.qr_code_scanner_rounded),
-                      errorText: _barcodeError,
-                    ),
-                  ),
-                  if (_isNew) ...[
+                  if (!_multiVariant) ...[
                     const SizedBox(height: Gap.m),
                     TextFormField(
-                      key: const Key('field-stock'),
-                      controller: _stock,
+                      key: const Key('field-price'),
+                      controller: _price,
+                      style: big,
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
+                      inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]'))],
+                      textInputAction: TextInputAction.next,
                       decoration: InputDecoration(
-                        labelText: t.openingStockOptional,
-                        helperText: t.openingStockHelp,
-                        prefixIcon: const Icon(Icons.inventory_2_outlined, size: 20),
+                        labelText: t.sellingPrice,
+                        prefixText: '$symbol ',
+                        prefixIcon: const Icon(Icons.sell_outlined, size: 20),
                       ),
-                      validator: (v) {
-                        final s = v?.trim() ?? '';
-                        if (s.isEmpty) return null;
-                        final q = double.tryParse(s);
-                        return (q == null || q < 0) ? t.errBadAmount : null;
-                      },
+                      validator: (v) => _money(v, t, required: true),
                     ),
+                    const SizedBox(height: Gap.m),
+                    TextFormField(
+                      key: const Key('field-barcode'),
+                      controller: _barcode,
+                      keyboardType: TextInputType.number,
+                      textInputAction: TextInputAction.next,
+                      decoration: InputDecoration(
+                        labelText: t.barcodeOptional,
+                        prefixIcon: cameraScanner.available
+                            ? IconButton(
+                                key: const Key('barcode-camera'),
+                                tooltip: t.scanWithCamera,
+                                icon: const Icon(Icons.qr_code_scanner_rounded),
+                                onPressed: _scanBarcode,
+                              )
+                            : const Icon(Icons.qr_code_scanner_rounded),
+                        errorText: _barcodeError,
+                      ),
+                    ),
+                    if (_isNew) ...[
+                      const SizedBox(height: Gap.m),
+                      TextFormField(
+                        key: const Key('field-stock'),
+                        controller: _stock,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
+                        decoration: InputDecoration(
+                          labelText: t.openingStockOptional,
+                          helperText: t.openingStockHelp,
+                          prefixIcon: const Icon(Icons.inventory_2_outlined, size: 20),
+                        ),
+                        validator: (v) {
+                          final s = v?.trim() ?? '';
+                          if (s.isEmpty) return null;
+                          final q = double.tryParse(s);
+                          return (q == null || q < 0) ? t.errBadAmount : null;
+                        },
+                      ),
+                    ],
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: Gap.m),
+
+            // Sizes & variants section
+            AppCard(
+              padding: const EdgeInsets.all(Gap.l),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(t.variantsSection, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                      ),
+                      OutlinedButton.icon(
+                        key: const Key('pf-add-variant'),
+                        onPressed: _busy ? null : _addVariant,
+                        icon: const Icon(Icons.add_rounded, size: 18),
+                        label: Text(t.addVariant),
+                      ),
+                    ],
+                  ),
+                  if (_multiVariant) ...[
+                    const SizedBox(height: Gap.m),
+                    for (var i = 0; i < _variants.length; i++) ...[
+                      Container(
+                        padding: const EdgeInsets.all(Gap.m),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(Gap.radiusM),
+                          border: Border.all(color: scheme.outlineVariant),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Row(
+                              children: [
+                                ChoiceChip(
+                                  key: Key('pf-variant-default-$i'),
+                                  label: Text(t.defaultVariant),
+                                  selected: _variants[i].isDefault,
+                                  onSelected: (_) => setState(() {
+                                    for (var j = 0; j < _variants.length; j++) {
+                                      _variants[j].isDefault = j == i;
+                                    }
+                                  }),
+                                ),
+                                const Spacer(),
+                                IconButton(
+                                  key: Key('pf-variant-remove-$i'),
+                                  tooltip: t.removeVariant,
+                                  icon: Icon(Icons.delete_outline_rounded, color: scheme.error),
+                                  onPressed: _busy ? null : () => _removeVariant(i),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: Gap.s),
+                            TextFormField(
+                              key: Key('pf-variant-name-$i'),
+                              controller: _variants[i].nameCtrl,
+                              decoration: InputDecoration(
+                                labelText: t.variantLabel,
+                                hintText: t.variantLabelHint,
+                              ),
+                              validator: (val) => (val == null || val.trim().isEmpty) ? t.errRequired : null,
+                            ),
+                            const SizedBox(height: Gap.s),
+                            TextFormField(
+                              key: Key('pf-variant-price-$i'),
+                              controller: _variants[i].priceCtrl,
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]'))],
+                              decoration: InputDecoration(
+                                labelText: t.sellingPrice,
+                                prefixText: '$symbol ',
+                              ),
+                              validator: (val) => _money(val, t, required: true),
+                            ),
+                            const SizedBox(height: Gap.s),
+                            TextFormField(
+                              key: Key('pf-variant-barcode-$i'),
+                              controller: _variants[i].barcodeCtrl,
+                              keyboardType: TextInputType.number,
+                              decoration: InputDecoration(
+                                labelText: t.barcodeOptional,
+                                errorText: _variants[i].barcodeError,
+                              ),
+                            ),
+                            if (_variants[i].isNew) ...[
+                              const SizedBox(height: Gap.s),
+                              TextFormField(
+                                key: Key('pf-variant-stock-$i'),
+                                controller: _variants[i].stockCtrl,
+                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
+                                decoration: InputDecoration(labelText: t.openingStockOptional),
+                                validator: (val) {
+                                  final s = val?.trim() ?? '';
+                                  if (s.isEmpty) return null;
+                                  final q = double.tryParse(s);
+                                  return (q == null || q < 0) ? t.errBadAmount : null;
+                                },
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      if (i < _variants.length - 1) const SizedBox(height: Gap.m),
+                    ],
                   ],
                 ],
               ),
@@ -357,7 +642,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
             const SizedBox(height: Gap.m),
 
             // Tingi: sold by piece too (owner / managers)
-            if (CatalogScope.of(context).canManageStock) ...[
+            if (!_multiVariant && CatalogScope.of(context).canManageStock) ...[
               AppCard(
                 padding: const EdgeInsets.symmetric(horizontal: Gap.m, vertical: Gap.xs),
                 child: Column(children: [
@@ -434,33 +719,35 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                             prefixIcon: const Icon(Icons.straighten_outlined, size: 20),
                           ),
                         ),
-                        const SizedBox(height: Gap.m),
-                        TextFormField(
-                          controller: _cost,
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          decoration: InputDecoration(
-                            labelText: t.costOptional,
-                            prefixText: '$symbol ',
-                            prefixIcon: const Icon(Icons.request_quote_outlined, size: 20),
+                        if (!_multiVariant) ...[
+                          const SizedBox(height: Gap.m),
+                          TextFormField(
+                            controller: _cost,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            decoration: InputDecoration(
+                              labelText: t.costOptional,
+                              prefixText: '$symbol ',
+                              prefixIcon: const Icon(Icons.request_quote_outlined, size: 20),
+                            ),
+                            validator: (v) => _money(v, t, required: false),
                           ),
-                          validator: (v) => _money(v, t, required: false),
-                        ),
-                        const SizedBox(height: Gap.m),
-                        TextFormField(
-                          key: const Key('field-reorder'),
-                          controller: _reorder,
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          decoration: InputDecoration(
-                            labelText: t.reorderPoint,
-                            helperText: t.reorderPointHelp,
-                            prefixIcon: const Icon(Icons.notifications_active_outlined, size: 20),
+                          const SizedBox(height: Gap.m),
+                          TextFormField(
+                            key: const Key('field-reorder'),
+                            controller: _reorder,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            decoration: InputDecoration(
+                              labelText: t.reorderPoint,
+                              helperText: t.reorderPointHelp,
+                              prefixIcon: const Icon(Icons.notifications_active_outlined, size: 20),
+                            ),
+                            validator: (v) {
+                              if (v == null || v.trim().isEmpty) return null;
+                              final q = double.tryParse(v.trim().replaceAll(',', '.'));
+                              return (q == null || q < 0) ? t.errBadAmount : null;
+                            },
                           ),
-                          validator: (v) {
-                            if (v == null || v.trim().isEmpty) return null;
-                            final q = double.tryParse(v.trim().replaceAll(',', '.'));
-                            return (q == null || q < 0) ? t.errBadAmount : null;
-                          },
-                        ),
+                        ],
                       ],
                     ),
                   ),
@@ -496,5 +783,44 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
         ),
       ),
     );
+  }
+}
+
+class _VariantRowState {
+  _VariantRowState({
+    required this.id,
+    String name = '',
+    String barcode = '',
+    String price = '',
+    String cost = '',
+    String reorderPoint = '',
+    String stock = '',
+    this.isDefault = false,
+    this.isNew = true,
+  })  : nameCtrl = TextEditingController(text: name),
+        barcodeCtrl = TextEditingController(text: barcode),
+        priceCtrl = TextEditingController(text: price),
+        costCtrl = TextEditingController(text: cost),
+        reorderCtrl = TextEditingController(text: reorderPoint),
+        stockCtrl = TextEditingController(text: stock);
+
+  final String id;
+  final TextEditingController nameCtrl;
+  final TextEditingController barcodeCtrl;
+  final TextEditingController priceCtrl;
+  final TextEditingController costCtrl;
+  final TextEditingController reorderCtrl;
+  final TextEditingController stockCtrl;
+  bool isDefault;
+  final bool isNew;
+  String? barcodeError;
+
+  void dispose() {
+    nameCtrl.dispose();
+    barcodeCtrl.dispose();
+    priceCtrl.dispose();
+    costCtrl.dispose();
+    reorderCtrl.dispose();
+    stockCtrl.dispose();
   }
 }

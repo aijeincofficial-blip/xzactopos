@@ -6,6 +6,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'backend.dart';
 import 'core/access_cache.dart';
+import 'core/pin_auth.dart';
 import 'core/theme.dart';
 import 'l10n/app_localizations.dart';
 import 'screens/auth_screen.dart';
@@ -143,6 +144,7 @@ class _GateState extends State<Gate> {
   Future<Map<String, dynamic>?>? _access;
   Timer? _refresh;
   Map<String, dynamic>? _shown;
+  Object? _revalidationError;
 
   @override
   void initState() {
@@ -154,13 +156,16 @@ class _GateState extends State<Gate> {
       // the stream repeats the current state on start and on token refresh; only real changes matter
       if (!mounted || v == _signedIn) return;
       if (!v) {
-        // signing out takes the saved access with it, and closes any screen (Settings, an order) opened over the old session
+        // signing out takes saved access, cached offline PINs, and closes any screen opened over the old session
         _refresh?.cancel();
-        accessCache.clear();
+        _shown = null;
+        unawaited(accessCache.clear());
+        unawaited(SupervisorPinStorage.clearAll());
         Navigator.of(context).popUntil((r) => r.isFirst);
       }
       setState(() {
         _signedIn = v;
+        _revalidationError = null;
         _access = v ? _loadAccess() : null;
       });
     });
@@ -175,35 +180,47 @@ class _GateState extends State<Gate> {
     super.dispose();
   }
 
-  /// The user's access from the server. When the server cannot be reached at all, the copy saved on the phone (same user, not
-  /// too old) is used instead, so the app opens with no signal; it keeps asking the server and swaps in the real answer.
+  /// Opens from the saved copy immediately when present and still valid, and confirms with the server in the
+  /// background (stale-while-revalidate). Falls back to blocking fetch only when no saved copy exists.
   Future<Map<String, dynamic>?> _loadAccess() async {
-    try {
-      final a = await widget.backend.myAccess();
-      final id = widget.backend.userId;
-      if (a == null) {
-        await accessCache.clear();
-      } else if (id != null) {
-        await accessCache.write(id, a);
-      }
-      _refresh?.cancel();
-      return _shown = a;
-    } catch (e) {
-      if (serverAnswered(e)) rethrow;
-      final saved = await accessCache.read(widget.backend.userId);
-      if (saved == null) rethrow;
+    final saved = await accessCache.read(widget.backend.userId);
+    if (saved != null) {
+      _shown = saved;
       _refresh?.cancel();
       _refresh = Timer.periodic(const Duration(seconds: 60), (_) => _confirmSavedAccess());
-      return _shown = saved;
+      unawaited(_confirmSavedAccess());
+      return saved;
     }
+    return _fetchFreshAccess();
   }
 
-  /// While running on the saved copy: ask the server again; once it answers, show what it says.
+  Future<Map<String, dynamic>?> _fetchFreshAccess() async {
+    final a = await widget.backend.myAccess();
+    final id = widget.backend.userId;
+    if (a == null) {
+      await accessCache.clear();
+    } else if (id != null) {
+      await accessCache.write(id, a);
+    }
+    _refresh?.cancel();
+    _revalidationError = null;
+    return _shown = a;
+  }
+
+  /// Confirms the saved copy with the server; swaps in updates or surfaces server errors (non-network failures).
   Future<void> _confirmSavedAccess() async {
     final Map<String, dynamic>? a;
     try {
       a = await widget.backend.myAccess();
-    } catch (_) {
+    } catch (e) {
+      if (serverAnswered(e)) {
+        _refresh?.cancel();
+        if (!mounted) return;
+        setState(() {
+          _shown = null;
+          _revalidationError = e;
+        });
+      }
       return; // still no answer: stay on the saved copy
     }
     _refresh?.cancel();
@@ -213,20 +230,32 @@ class _GateState extends State<Gate> {
     } else if (id != null) {
       await accessCache.write(id, a);
     }
-    if (!mounted || jsonEncode(a) == jsonEncode(_shown)) return;
+    if (!mounted) return;
+    if (_revalidationError == null && jsonEncode(a) == jsonEncode(_shown)) return;
     final fresh = a;
     setState(() {
+      _revalidationError = null;
       _shown = fresh;
       _access = Future.value(fresh);
     });
   }
 
   void _reload() {
-    final next = _loadAccess();
+    final next = _fetchFreshAccess();
     setState(() {
+      _revalidationError = null;
       _access = next;
     });
   }
+
+  Widget _accessErrorScaffold(BuildContext context) => Scaffold(
+        body: Center(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Text(AppLocalizations.of(context).errGeneric),
+            TextButton(onPressed: _reload, child: const Icon(Icons.refresh)),
+          ]),
+        ),
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -239,6 +268,7 @@ class _GateState extends State<Gate> {
       );
     }
     if (!_signedIn) return AuthScreen(backend: widget.backend);
+    if (_revalidationError != null) return _accessErrorScaffold(context);
     return FutureBuilder<Map<String, dynamic>?>(
       future: _access,
       builder: (context, snap) {
@@ -246,14 +276,7 @@ class _GateState extends State<Gate> {
           return const Scaffold(body: Center(child: CircularProgressIndicator()));
         }
         if (snap.hasError) {
-          return Scaffold(
-            body: Center(
-              child: Column(mainAxisSize: MainAxisSize.min, children: [
-                Text(AppLocalizations.of(context).errGeneric),
-                TextButton(onPressed: _reload, child: const Icon(Icons.refresh)),
-              ]),
-            ),
-          );
+          return _accessErrorScaffold(context);
         }
         final access = snap.data;
         if (access == null) {
@@ -261,11 +284,16 @@ class _GateState extends State<Gate> {
               backend: widget.backend, locale: widget.locale, onDone: _reload);
         }
         final name = ((access['tenant'] as Map?)?['name'] as String?) ?? '';
+        final role = access['role'] as String?;
+        final posEnabled = posEnabledForAccess(access);
+        if (role == 'cashier' && !posEnabled) {
+          return PosDisabledScreen(backend: widget.backend, storeName: name);
+        }
         return StoreSession(
           backend: widget.backend,
           access: access,
           openStore: widget.openStore,
-          child: syncScopeForRole(access['role'] as String?).warehouse
+          child: syncScopeForRole(role, posEnabled: posEnabled).warehouse
               ? WarehouseShell(backend: widget.backend, storeName: name)
               : HomeShell(backend: widget.backend, storeName: name),
         );

@@ -55,6 +55,7 @@ class Products extends Table {
 class Variants extends Table {
   TextColumn get id => text()();
   TextColumn get productId => text()();
+  TextColumn get name => text().withDefault(const Constant('Default'))();
   TextColumn get sku => text()();
   TextColumn get barcode => text().nullable()();
   BoolColumn get isDefault => boolean().withDefault(const Constant(true))();
@@ -684,7 +685,7 @@ class AppDatabase extends _$AppDatabase {
   static const _name = 'xzactopos';
 
   @override
-  int get schemaVersion => 16;
+  int get schemaVersion => 18;
 
   /// Adds a column unless it is there already (a database made by a newer build and stepped back in a test, or a
   /// table an earlier step created with today's definition). Skips a table that does not exist.
@@ -696,6 +697,10 @@ class AppDatabase extends _$AppDatabase {
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
+        onCreate: (m) async {
+          await m.createAll();
+          await _ensurePerformanceIndexes();
+        },
         onUpgrade: (m, from, to) async {
           if (from < 2) {
             await m.addColumn(products, products.searchName);
@@ -719,7 +724,10 @@ class AppDatabase extends _$AppDatabase {
                     "select 1 from sqlite_master where type = 'table' and name = 'opening_stock'")
                 .get();
             for (final o in hasOpening.isEmpty ? <OpeningStockData>[] : await select(openingStock).get()) {
-              final v = await (select(variants)..where((x) => x.id.equals(o.variantId))).getSingleOrNull();
+              final v = await customSelect(
+                'SELECT product_id FROM variants WHERE id = ?',
+                variables: [Variable.withString(o.variantId)],
+              ).getSingleOrNull();
               if (v == null || o.qty <= 0) continue;
               final opId = openingOpId(o.variantId);
               await into(localMovements).insert(
@@ -727,7 +735,7 @@ class AppDatabase extends _$AppDatabase {
               await into(outbox).insert(OutboxCompanion.insert(
                 opId: opId,
                 kind: 'post_opening_stock',
-                entityId: v.productId,
+                entityId: v.read<String>('product_id'),
                 payload: jsonEncode({'variant_id': o.variantId, 'qty': o.qty}),
                 createdAt: DateTime.now().toUtc(),
               ));
@@ -825,8 +833,62 @@ class AppDatabase extends _$AppDatabase {
             // shift and the last 30 days.
             await m.createTable(shifts);
           }
+          if (from < 17) {
+            await _addColumnIfMissing(m, variants, variants.name);
+            final hasCursors = await customSelect("select 1 from sqlite_master where type = 'table' and name = 'sync_cursors'").get();
+            if (hasCursors.isNotEmpty) {
+              await customStatement("delete from sync_cursors where table_key = 'product_variants'");
+            }
+          }
+          if (from < 18) {
+            await _ensurePerformanceIndexes();
+          }
         },
       );
+
+  static const _perfIndexes = <(String table, List<String> columns, String sql)>[
+    ('products', ['deleted_at', 'search_name'],
+        'CREATE INDEX IF NOT EXISTS idx_products_active_search ON products(deleted_at, search_name)'),
+    ('variants', ['product_id', 'deleted_at'],
+        'CREATE INDEX IF NOT EXISTS idx_variants_product_deleted ON variants(product_id, deleted_at)'),
+    ('variants', ['sku'],
+        'CREATE INDEX IF NOT EXISTS idx_variants_sku ON variants(sku)'),
+    ('variants', ['breaks_into_variant_id'],
+        'CREATE INDEX IF NOT EXISTS idx_variants_breaks_into ON variants(breaks_into_variant_id)'),
+    ('prices', ['variant_id', 'currency'],
+        'CREATE INDEX IF NOT EXISTS idx_prices_variant_currency ON prices(variant_id, currency)'),
+    ('stock_levels', ['variant_id', 'location_id'],
+        'CREATE INDEX IF NOT EXISTS idx_stock_levels_variant_loc ON stock_levels(variant_id, location_id)'),
+    ('stock_expiry', ['variant_id', 'location_id'],
+        'CREATE INDEX IF NOT EXISTS idx_stock_expiry_variant_loc ON stock_expiry(variant_id, location_id)'),
+    ('outbox', ['entity_id'],
+        'CREATE INDEX IF NOT EXISTS idx_outbox_entity ON outbox(entity_id)'),
+    ('outbox', ['status'],
+        'CREATE INDEX IF NOT EXISTS idx_outbox_status ON outbox(status)'),
+    ('server_ledger', ['customer_id'],
+        'CREATE INDEX IF NOT EXISTS idx_server_ledger_customer ON server_ledger(customer_id)'),
+    ('local_ledger', ['customer_id', 'op_id'],
+        'CREATE INDEX IF NOT EXISTS idx_local_ledger_customer_op ON local_ledger(customer_id, op_id)'),
+    ('local_movements', ['variant_id', 'op_id'],
+        'CREATE INDEX IF NOT EXISTS idx_local_movements_variant_op ON local_movements(variant_id, op_id)'),
+    ('shifts', ['cashier_id', 'closed_at'],
+        'CREATE INDEX IF NOT EXISTS idx_shifts_cashier_closed ON shifts(cashier_id, closed_at)'),
+  ];
+
+  Future<void> _ensurePerformanceIndexes() async {
+    final tableRows = await customSelect("select name from sqlite_master where type = 'table'").get();
+    final existingTables = {for (final r in tableRows) r.read<String>('name')};
+    final columnsByTable = <String, Set<String>>{};
+    for (final spec in _perfIndexes) {
+      if (!existingTables.contains(spec.$1)) continue;
+      final cols = columnsByTable[spec.$1] ??= {
+        for (final r in await customSelect('PRAGMA table_info(${spec.$1})').get()) r.read<String>('name'),
+      };
+      if (spec.$2.every(cols.contains)) {
+        await customStatement(spec.$3);
+      }
+    }
+  }
 
   /// Schema v14 (F-02, server sale number and devices). Every row and every unsent op is kept.
   ///  * `sales.sale_no` and `sales.device_id` (nullable; existing rows: null = not confirmed / unknown);

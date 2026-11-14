@@ -79,7 +79,7 @@ select throws_matching(
 select pg_temp.login('X', 'juan');
 select throws_matching(
   $$ select public.enable_warehouse_bins(pg_temp.lid('X', 'WH01')) $$,
-  'cashiers cannot manage warehouse bins',
+  'only managers or warehouse staff can manage warehouse bins',
   'cashier cannot enable bins'
 );
 
@@ -135,7 +135,7 @@ select is(
 select pg_temp.login('X', 'juan');
 select throws_matching(
   $$ select public.upsert_warehouse_zone(pg_temp.lid('X', 'WH01'), 'COLD', 'Cold Storage', 'storage') $$,
-  'cashiers cannot manage warehouse zones',
+  'only managers or warehouse staff can manage warehouse zones',
   'cashier cannot create zone'
 );
 

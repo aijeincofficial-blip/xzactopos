@@ -332,13 +332,15 @@ class _ShiftScreenState extends State<ShiftScreen> {
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: Gap.l),
                       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                        OutlinedButton.icon(
-                          key: const Key('shift-cash-drop-btn'),
-                          icon: const Icon(Icons.arrow_downward_rounded, size: 18),
-                          label: Text(t.shiftCashDrop),
-                          onPressed: () => _openCashDrop(shift, x),
-                        ),
-                        const SizedBox(height: Gap.s),
+                        if (CatalogScope.of(context).canCashDrop) ...[
+                          OutlinedButton.icon(
+                            key: const Key('shift-cash-drop-btn'),
+                            icon: const Icon(Icons.arrow_downward_rounded, size: 18),
+                            label: Text(t.shiftCashDrop),
+                            onPressed: () => _openCashDrop(shift, x),
+                          ),
+                          const SizedBox(height: Gap.s),
+                        ],
                         FilledButton(key: const Key('shift-close'), onPressed: () => _close(shift, x), child: Text(t.shiftClose)),
                         const SizedBox(height: Gap.s),
                         Row(children: [

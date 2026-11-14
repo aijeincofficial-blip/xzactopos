@@ -30,7 +30,7 @@ import {
   recordExpense,
   type ExpenseCategory,
 } from "../lib/expense-api.ts";
-import { usePosOutboxSnapshot } from "../lib/pos-outbox.ts";
+import { usePollInterval } from "../lib/polling.ts";
 
 export function PosShiftControl({
   storeId,
@@ -47,7 +47,7 @@ export function PosShiftControl({
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { access, can } = useSession();
-  const outboxOps = usePosOutboxSnapshot();
+  const pollInterval = usePollInterval(120_000);
 
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<"close" | "drop">("close");
@@ -80,9 +80,9 @@ export function PosShiftControl({
   };
 
   const shiftQuery = useQuery({
-    queryKey: ["my-open-shift", access.user_id, outboxOps.length],
+    queryKey: ["my-open-shift", access.user_id],
     queryFn: () => fetchMyOpenShift(access.user_id, currency),
-    refetchInterval: 45_000,
+    refetchInterval: pollInterval,
   });
 
   const openShift = shiftQuery.data ?? null;

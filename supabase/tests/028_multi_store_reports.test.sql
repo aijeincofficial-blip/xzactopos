@@ -259,11 +259,14 @@ select throws_ok(
 
 select pg_temp.login('cashier');
 
-select is(
-  (public.report_multi_store('2026-11-08'::date, '2026-11-08'::date) -> 'totals' ->> 'net'),
-  '0',
-  'cashier receives empty report totals'
+select throws_ok(
+  $$ select public.report_multi_store('2026-11-08'::date, '2026-11-08'::date) $$,
+  '42501',
+  null,
+  'cashier is forbidden from viewing multi-store management reports'
 );
+
+select pg_temp.login('owner');
 
 select throws_ok(
   $$ select public.report_multi_store('2026-11-09'::date, '2026-11-08'::date) $$,

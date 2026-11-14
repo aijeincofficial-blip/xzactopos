@@ -37,11 +37,11 @@ class PinCrypto {
     return Uint8List.sublistView(result, 0, dkLen);
   }
 
-  /// Verifies a plain text PIN against a pbkdf2_sha256 hash string.
-  static bool verifyPin(String pin, String pinHash) {
-    if (pin.isEmpty || pinHash.isEmpty) return false;
+  /// Verifies a plain text PIN against a pbkdf2_sha256 hash or `v2:` verifier string, returning `dk` on match.
+  static Uint8List? deriveAndVerifyPinKey(String pin, String pinHash) {
+    if (pin.isEmpty || pinHash.isEmpty) return null;
     final parts = pinHash.split(r'$');
-    if (parts.length != 4) return false;
+    if (parts.length != 4) return null;
 
     final scheme = parts[0];
     final iterStr = parts[1];
@@ -49,27 +49,53 @@ class PinCrypto {
     final expectedHashB64 = parts[3];
 
     if (scheme != 'pbkdf2_sha256' || iterStr.isEmpty || saltB64.isEmpty || expectedHashB64.isEmpty) {
-      return false;
+      return null;
     }
 
     final iterations = int.tryParse(iterStr);
-    if (iterations == null || iterations <= 0) return false;
+    if (iterations == null || iterations <= 0) return null;
 
     try {
       final salt = base64Decode(saltB64);
-      final expectedHash = base64Decode(expectedHashB64);
       final derived = pbkdf2HmacSha256(
         password: utf8.encode(pin),
         salt: salt,
         iterations: iterations,
-        dkLen: expectedHash.length,
+        dkLen: 32,
       );
 
-      return constantTimeEquals(derived, expectedHash);
+      if (expectedHashB64.startsWith('v2:')) {
+        final expectedDigest = base64Decode(expectedHashB64.substring(3));
+        final actualDigest = sha256.convert(derived).bytes;
+        return constantTimeEquals(actualDigest, expectedDigest) ? derived : null;
+      }
+
+      final expectedHash = base64Decode(expectedHashB64);
+      final slice = expectedHash.length == 32 ? derived : Uint8List.sublistView(derived, 0, expectedHash.length);
+      return constantTimeEquals(slice, expectedHash) ? derived : null;
     } catch (_) {
-      return false;
+      return null;
     }
   }
+
+  /// Signs a canonical offline approval message using derived PIN key `dk`.
+  static String signWithDerivedKey({
+    required Uint8List dk,
+    required String tenantId,
+    required String approverId,
+    required String action,
+    required String refId,
+    required String approvedAt,
+  }) {
+    final msg =
+        '${tenantId.toLowerCase()}|${approverId.toLowerCase()}|$action|${refId.toLowerCase()}|$approvedAt';
+    final digest = Hmac(sha256, dk).convert(utf8.encode(msg));
+    return digest.bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+  }
+
+  /// Verifies a plain text PIN against a pbkdf2_sha256 hash or `v2:` verifier string.
+  static bool verifyPin(String pin, String pinHash) =>
+      deriveAndVerifyPinKey(pin, pinHash) != null;
 
   /// Hashes a plain text PIN with the given salt and iteration count.
   static String hashPin(String pin, String saltB64, {int iterations = 20000}) {
@@ -113,10 +139,9 @@ class SupervisorPin {
   /// True only for roles/positions authorized to approve store supervisor actions
   /// (`superadmin`, or `admin` with store `manager`/`supervisor` position; never `cashier` or `warehouse`).
   bool get isStoreApprover {
-    if (role == 'cashier' || role == 'warehouse') return false;
-    if (role == 'superadmin' || role == 'manager' || role == 'supervisor') return true;
+    if (role == 'superadmin') return true;
     if (role == 'admin') {
-      return position == null || position == 'manager' || position == 'supervisor';
+      return position == 'manager' || position == 'supervisor';
     }
     return false;
   }
@@ -137,7 +162,7 @@ class SupervisorPin {
                   : (name != null && name.isNotEmpty)
                       ? name
                       : 'Supervisor',
-      role: json['role'] as String? ?? 'supervisor',
+      role: json['role'] as String? ?? '',
       position: json['position'] as String?,
       pinHash: json['pin_hash'] as String? ?? '',
     );
@@ -155,10 +180,18 @@ class SupervisorPin {
 enum OfflinePinVerifyStatus { matched, wrongPin, locked, noPins }
 
 class OfflinePinVerifyOutcome {
-  const OfflinePinVerifyOutcome._(this.status, [this.approver]);
+  const OfflinePinVerifyOutcome._(this.status, {this.approver, this.approvedAt, this.proof});
 
-  const OfflinePinVerifyOutcome.matched(SupervisorPin approver)
-      : this._(OfflinePinVerifyStatus.matched, approver);
+  const OfflinePinVerifyOutcome.matched(
+    SupervisorPin approver, {
+    String? approvedAt,
+    String? proof,
+  }) : this._(
+          OfflinePinVerifyStatus.matched,
+          approver: approver,
+          approvedAt: approvedAt,
+          proof: proof,
+        );
   const OfflinePinVerifyOutcome.wrongPin()
       : this._(OfflinePinVerifyStatus.wrongPin);
   const OfflinePinVerifyOutcome.locked()
@@ -168,6 +201,8 @@ class OfflinePinVerifyOutcome {
 
   final OfflinePinVerifyStatus status;
   final SupervisorPin? approver;
+  final String? approvedAt;
+  final String? proof;
 }
 
 /// Stores and retrieves supervisor PIN hashes for offline branch authentication,
@@ -185,7 +220,10 @@ class SupervisorPinStorage {
 
   static Future<void> savePins(String locationId, List<SupervisorPin> pins) async {
     final prefs = await SharedPreferences.getInstance();
-    final jsonList = pins.map((p) => jsonEncode(p.toJson())).toList();
+    final jsonList = pins
+        .where((p) => p.isStoreApprover)
+        .map((p) => jsonEncode(p.toJson()))
+        .toList();
     await prefs.setStringList('$_prefix$locationId', jsonList);
   }
 
@@ -291,14 +329,33 @@ class SupervisorPinStorage {
     } catch (_) {}
   }
 
+  /// Removes all cached offline supervisor PIN verifiers and lockout counters on sign-out.
+  static Future<void> clearAll() async {
+    _memoryFailures.clear();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final keys = prefs
+          .getKeys()
+          .where((k) => k.startsWith(_prefix) || k.startsWith(_failurePrefix))
+          .toList();
+      for (final k in keys) {
+        await prefs.remove(k);
+      }
+    } catch (_) {}
+  }
+
   /// Verifies [pin] against cached store approvers from Drift ([store] / [extraRawPins]) or [SharedPreferences]
   /// (when [store] is null), rejecting non-approver staff (`cashier`/`warehouse`) and enforcing 5-strike lockout.
+  /// When [tenantId] and [action] are supplied, also derives an HMAC-SHA256 approval `proof`.
   static Future<OfflinePinVerifyOutcome> verifyOfflinePinDetailed({
     required String locationId,
     required String pin,
     LocalStore? store,
     List<Map<String, dynamic>> extraRawPins = const [],
     String? approverId,
+    String? tenantId,
+    String? action,
+    String? refId,
     DateTime? now,
   }) async {
     final ts = now ?? DateTime.now();
@@ -346,9 +403,26 @@ class SupervisorPinStorage {
     }
 
     for (final candidate in approvers) {
-      if (PinCrypto.verifyPin(pin, candidate.pinHash)) {
+      final dk = PinCrypto.deriveAndVerifyPinKey(pin, candidate.pinHash);
+      if (dk != null) {
         await clearFailures(locationId, store: store);
-        return OfflinePinVerifyOutcome.matched(candidate);
+        final approvedAt = ts.toUtc().toIso8601String();
+        String? proof;
+        if (tenantId != null && tenantId.isNotEmpty && action != null) {
+          proof = PinCrypto.signWithDerivedKey(
+            dk: dk,
+            tenantId: tenantId,
+            approverId: candidate.userId,
+            action: action,
+            refId: refId ?? '',
+            approvedAt: approvedAt,
+          );
+        }
+        return OfflinePinVerifyOutcome.matched(
+          candidate,
+          approvedAt: approvedAt,
+          proof: proof,
+        );
       }
     }
 

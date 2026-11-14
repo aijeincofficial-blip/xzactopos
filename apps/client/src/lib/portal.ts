@@ -1,4 +1,4 @@
-import type { Role } from "@pos/core";
+import { can, contextFromAccess, type MyAccessPayload, type PermissionKey, type Role } from "@pos/core";
 import type { TenantMode } from "./mode.ts";
 
 export type PortalKind = "pos" | "warehouse";
@@ -70,22 +70,26 @@ export function portalForPath(pathname: string): PortalKind | null {
 }
 
 export function resolveAllowedPortals(access: PortalAccessInput, mode: TenantMode): PortalKind[] {
-  if (mode === "solo" || !access.modules.warehouse) {
-    return ["pos"];
+  if (mode === "solo") {
+    return access.modules.pos ? ["pos"] : [];
+  }
+  if (!access.modules.warehouse) {
+    if (access.role === "warehouse") return [];
+    return access.modules.pos ? ["pos"] : [];
   }
   if (access.role === "warehouse") {
     return ["warehouse"];
   }
   if (access.role === "cashier") {
-    return ["pos"];
+    return access.modules.pos ? ["pos"] : [];
   }
   const hasStore = access.locations.some((l) => l.type === "store");
   const hasWarehouse = access.locations.some((l) => l.type === "warehouse");
   if (access.role === "superadmin") {
-    return ["pos", "warehouse"];
+    return access.modules.pos ? ["pos", "warehouse"] : ["warehouse"];
   }
   const out: PortalKind[] = [];
-  if (hasStore || !hasWarehouse) out.push("pos");
+  if (access.modules.pos && (hasStore || !hasWarehouse)) out.push("pos");
   if (hasWarehouse) out.push("warehouse");
   return out;
 }
@@ -97,6 +101,9 @@ export function resolveEffectivePortal(
   savedPortal: PortalKind | null,
 ): PortalKind {
   const allowed = resolveAllowedPortals(access, mode);
+  if (allowed.length === 0) {
+    return access.role === "warehouse" ? "warehouse" : "pos";
+  }
   if (allowed.length === 1) return allowed[0]!;
 
   const fromPath = portalForPath(pathname);
@@ -113,11 +120,40 @@ export function resolveRoleLandingPath(
 ): "/app" | "/app/sell" | "/app/warehouses" {
   if (!access.tenant.setup_completed) return "/app";
   if (mode === "solo") return "/app";
-  if (access.role === "warehouse") return "/app/warehouses";
-  if (access.role === "cashier") return "/app/sell";
+  if (access.role === "warehouse") return access.modules.warehouse ? "/app/warehouses" : "/app";
+  if (access.role === "cashier") return access.modules.pos ? "/app/sell" : "/app";
   const allowed = resolveAllowedPortals(access, mode);
   if (savedPortal === "warehouse" && allowed.includes("warehouse")) {
     return "/app/warehouses";
   }
   return "/app";
+}
+
+/** Shared Web route & capability guard helpers (also enforced by Postgres RLS & RPCs). */
+export function canAccessPosRoute(
+  access: MyAccessPayload,
+  perm: PermissionKey,
+  opts?: { excludeCashier?: boolean },
+): boolean {
+  if (!access.modules.pos) return false;
+  if (opts?.excludeCashier && access.role === "cashier") return false;
+  return can(contextFromAccess(access), perm);
+}
+
+export function canAccessReceiveStockRoute(access: MyAccessPayload): boolean {
+  if (!access.modules.warehouse || access.role === "warehouse") return false;
+  const ctx = contextFromAccess(access);
+  return can(ctx, "sale.create") || can(ctx, "stock.adjust_store") || can(ctx, "transfer.manage");
+}
+
+export function canAccessReportsRoute(access: MyAccessPayload): boolean {
+  if (access.role === "cashier") return false;
+  const ctx = contextFromAccess(access);
+  const storeOk = access.modules.pos && can(ctx, "reports.store");
+  const whOk = access.modules.warehouse && can(ctx, "reports.warehouse");
+  return storeOk || whOk;
+}
+
+export function canCloseDayForRole(role: Role): boolean {
+  return role === "superadmin" || role === "admin";
 }

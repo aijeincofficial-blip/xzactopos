@@ -109,6 +109,7 @@ export interface SaleDraft {
     action: string;
     ref_id: string;
     approved_at: string;
+    proof: string;
   } | undefined;
   lines: readonly CartLine[];
   payments: readonly PaymentDraft[];
@@ -169,6 +170,7 @@ export function salePayload(d: SaleDraft): Record<string, unknown> {
         unit_price: l.unitPrice,
         unit_cost: l.unitCost,
         ...(disc > 0 ? { discount: disc } : {}),
+        ...(l.tracked === false ? { tracked: false } : {}),
         tax: lineTax(total, l.taxRate),
         line_total: total,
       };

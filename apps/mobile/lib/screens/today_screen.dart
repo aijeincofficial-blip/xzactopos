@@ -275,13 +275,12 @@ class _TodayScreenState extends State<TodayScreen> {
                     ),
 
                     // Expenses and Day Close tiles
-                    if (scope.canManageStock)
-                      if (scope.canAccessExpenses || scope.canCloseDay)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: Gap.l,
-                            vertical: Gap.xs,
-                          ),
+                    if (scope.canAccessExpenses || scope.canCloseDay)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: Gap.l,
+                          vertical: Gap.xs,
+                        ),
                           child: IntrinsicHeight(
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.stretch,

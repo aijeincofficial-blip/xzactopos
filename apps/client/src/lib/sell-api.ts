@@ -1,6 +1,7 @@
 import { uuidv7 } from "@pos/core";
-import { ApiError, fromRaw, rpc } from "./api.ts";
+import { ApiError, fetchAllPages, fromRaw, rpc } from "./api.ts";
 import { isOnline } from "./network.ts";
+import { loadPosIdbCache, savePosIdbCache } from "./pos-idb-cache.ts";
 import {
   enqueuePosOp,
   isNetworkFailure,
@@ -12,7 +13,7 @@ import { supabase } from "./supabase.ts";
 import { localReceiptNo, salePayload, type SaleDraft } from "./sale-math.ts";
 
 // ---------------------------------------------------------------------------
-// Catalog: what can be sold. One RPC (`sync_pull_catalog`, RLS-scoped), paged until every table is complete.
+// Catalog: what can be sold. Cold bootstrap via `sync_pull_catalog` RPC, then incremental delta sync backed by IndexedDB.
 // ---------------------------------------------------------------------------
 
 interface Page<T> {
@@ -21,25 +22,55 @@ interface Page<T> {
   has_more: boolean;
 }
 
+type CategoryRow = { id: string; parent_id: string | null; name: string; updated_at?: string; deleted_at: string | null };
+type ProductCatalogRow = {
+  id: string;
+  category_id?: string | null;
+  name: string;
+  unit: string;
+  tax_rate: number;
+  track_stock: boolean;
+  active: boolean;
+  photo_path?: string | null;
+  updated_at?: string;
+  deleted_at: string | null;
+};
+type VariantCatalogRow = {
+  id: string;
+  product_id: string;
+  name?: string;
+  sku: string;
+  barcode: string | null;
+  is_default: boolean;
+  cost: number;
+  reorder_point: number;
+  active: boolean;
+  breaks_into_variant_id?: string | null;
+  breaks_into_qty?: number | null;
+  updated_at?: string;
+  deleted_at: string | null;
+};
+type PriceCatalogRow = {
+  variant_id: string;
+  currency: string;
+  price: number;
+  updated_at?: string;
+  deleted_at: string | null;
+};
+
 export interface CatalogPull {
-  categories?: Page<{ id: string; parent_id: string | null; name: string; deleted_at: string | null }>;
-  products: Page<{
-    id: string;
-    category_id?: string | null;
-    name: string;
-    unit: string;
-    tax_rate: number;
-    track_stock: boolean;
-    active: boolean;
-    photo_path?: string | null;
-    deleted_at: string | null;
-  }>;
-  product_variants: Page<{ id: string; product_id: string; sku: string; barcode: string | null; is_default: boolean; cost: number; reorder_point: number; active: boolean; breaks_into_variant_id?: string | null; breaks_into_qty?: number | null; deleted_at: string | null }>;
-  variant_prices: Page<{ variant_id: string; currency: string; price: number; deleted_at: string | null }>;
+  categories?: Page<CategoryRow>;
+  products: Page<ProductCatalogRow>;
+  product_variants: Page<VariantCatalogRow>;
+  variant_prices: Page<PriceCatalogRow>;
 }
 
 export interface Sellable {
   variantId: string;
+  productId?: string;
+  productName?: string;
+  variantName?: string;
+  isDefault?: boolean;
   name: string;
   sku: string;
   barcode: string | null;
@@ -51,70 +82,339 @@ export interface Sellable {
   categoryId?: string | null;
   reorderPoint?: number;
   photoPath?: string | null;
+  searchText?: string;
 }
 
-/** Joins products, their default variant and the price in `currency`; hides inactive, deleted and unpriced items. */
+export interface SellableProductGroup {
+  productId: string;
+  productName: string;
+  primary: Sellable;
+  variants: Sellable[];
+}
+
+/** Joins products, their active variants and the price in `currency`; hides inactive, deleted and unpriced items. */
 export function toSellables(pull: CatalogPull, currency: string): Sellable[] {
   const products = new Map(pull.products.rows.filter((p) => p.active && !p.deleted_at).map((p) => [p.id, p]));
   const prices = new Map(pull.variant_prices.rows.filter((p) => p.currency === currency && !p.deleted_at).map((p) => [p.variant_id, p.price]));
-  const out: Sellable[] = [];
+
+  const byProduct = new Map<string, Array<{ v: CatalogPull["product_variants"]["rows"][number]; p: NonNullable<ReturnType<typeof products.get>>; price: number }>>();
   for (const v of pull.product_variants.rows) {
-    if (!v.active || v.deleted_at || !v.is_default) continue; // Solo sells the default variant only
+    if (!v.active || v.deleted_at) continue;
     const p = products.get(v.product_id);
     const price = prices.get(v.id);
     if (!p || price === undefined) continue;
-    out.push({
-      variantId: v.id,
-      name: p.name,
-      sku: v.sku,
-      barcode: v.barcode,
-      unit: p.unit,
-      price,
-      cost: v.cost,
-      taxRate: Number(p.tax_rate),
-      tracked: p.track_stock,
-      ...(p.category_id !== undefined ? { categoryId: p.category_id } : {}),
-      ...(v.reorder_point !== undefined ? { reorderPoint: Number(v.reorder_point) } : {}),
-      ...(p.photo_path ? { photoPath: p.photo_path } : {}),
-    });
+    const arr = byProduct.get(p.id) ?? [];
+    arr.push({ v, p, price });
+    byProduct.set(p.id, arr);
   }
-  return out.sort((a, b) => a.name.localeCompare(b.name));
-}
 
-/** Every product, default variant and price the caller can see, paged until each table is complete. */
-export async function pullCatalog(): Promise<CatalogPull> {
-  const acc: CatalogPull = {
-    products: { rows: [], cursor: null, has_more: true },
-    product_variants: { rows: [], cursor: null, has_more: true },
-    variant_prices: { rows: [], cursor: null, has_more: true },
-  };
-  const tables = ["products", "product_variants", "variant_prices"] as const;
-  for (let guard = 0; guard < 200 && tables.some((t) => acc[t].has_more); guard++) {
-    const cursors = Object.fromEntries(tables.filter((t) => acc[t].cursor).map((t) => [t, acc[t].cursor]));
-    const page = await rpc<Record<(typeof tables)[number], Page<never>>>("sync_pull_catalog", { p_cursors: cursors, p_limit: 1000 });
-    for (const t of tables) {
-      if (!acc[t].has_more) continue;
-      (acc[t].rows as unknown[]).push(...page[t].rows);
-      acc[t].cursor = page[t].cursor;
-      acc[t].has_more = page[t].has_more;
+  const out: Sellable[] = [];
+  for (const items of byProduct.values()) {
+    const multi = items.length > 1;
+    for (const { v, p, price } of items) {
+      const variantName = (v.name ?? "Default").trim() || "Default";
+      const showVariantLabel = multi || variantName !== "Default";
+      const displayName = showVariantLabel ? `${p.name} (${variantName})` : p.name;
+      out.push({
+        variantId: v.id,
+        productId: p.id,
+        productName: p.name,
+        variantName,
+        isDefault: v.is_default,
+        name: displayName,
+        sku: v.sku,
+        barcode: v.barcode,
+        unit: p.unit,
+        price,
+        cost: v.cost,
+        taxRate: Number(p.tax_rate),
+        tracked: p.track_stock,
+        ...(p.category_id !== undefined ? { categoryId: p.category_id } : {}),
+        ...(v.reorder_point !== undefined ? { reorderPoint: Number(v.reorder_point) } : {}),
+        ...(p.photo_path ? { photoPath: p.photo_path } : {}),
+        searchText: `${displayName} ${p.name} ${variantName} ${v.sku} ${v.barcode ?? ""}`.toLowerCase(),
+      });
     }
   }
-  return acc;
+  return out.sort((a, b) => {
+    const pCmp = (a.productName ?? a.name).localeCompare(b.productName ?? b.name);
+    if (pCmp !== 0) return pCmp;
+    const dCmp = Number(b.isDefault ?? false) - Number(a.isDefault ?? false);
+    if (dCmp !== 0) return dCmp;
+    return (a.variantName ?? a.name).localeCompare(b.variantName ?? b.name);
+  });
+}
+
+/** Groups flat `Sellable` variants into per-product tiles for the Sell grid. */
+export function groupSellableProducts(sellables: ReadonlyArray<Sellable>): SellableProductGroup[] {
+  const byProduct = new Map<string, Sellable[]>();
+  for (const s of sellables) {
+    const pid = s.productId ?? s.variantId;
+    const list = byProduct.get(pid);
+    if (list) list.push(s);
+    else byProduct.set(pid, [s]);
+  }
+  const groups: SellableProductGroup[] = [];
+  for (const [productId, variants] of byProduct) {
+    const primary = variants.find((v) => v.isDefault) ?? variants[0]!;
+    groups.push({
+      productId,
+      productName: primary.productName ?? primary.name,
+      primary,
+      variants,
+    });
+  }
+  return groups;
+}
+
+/**
+ * Filters a catalog snapshot by category/search across ALL items before grouping & slicing to `maxGroups`,
+ * so multi-variant products are never truncated mid-group at 2,000+ SKUs.
+ */
+export function filterAndGroupSellables(
+  pool: ReadonlyArray<Sellable>,
+  opts: { query?: string; categoryId?: string | null; maxGroups?: number } = {},
+): SellableProductGroup[] {
+  const maxGroups = opts.maxGroups ?? 80;
+  const q = (opts.query ?? "").trim().toLowerCase();
+  const cat = opts.categoryId ?? null;
+
+  let filtered: ReadonlyArray<Sellable> = pool;
+  if (cat) {
+    filtered = filtered.filter((s) => s.categoryId === cat);
+  }
+  if (q) {
+    filtered = filtered.filter((s) => {
+      if (s.searchText) return s.searchText.includes(q);
+      return (
+        s.name.toLowerCase().includes(q) ||
+        (s.productName?.toLowerCase().includes(q) ?? false) ||
+        (s.variantName?.toLowerCase().includes(q) ?? false) ||
+        s.sku.toLowerCase().includes(q) ||
+        s.barcode?.toLowerCase() === q
+      );
+    });
+  }
+  return groupSellableProducts(filtered).slice(0, maxGroups);
+}
+
+const CATALOG_IDB_SLOT = "catalog:snapshot:v1";
+
+interface CatalogSnapshot {
+  lastSyncedAt: string;
+  categories: Record<string, CategoryRow>;
+  products: Record<string, ProductCatalogRow>;
+  product_variants: Record<string, VariantCatalogRow>;
+  variant_prices: Record<string, PriceCatalogRow>;
+}
+
+interface SyncPullCatalogResponse {
+  server_time: string;
+  categories: Page<CategoryRow>;
+  products: Page<ProductCatalogRow>;
+  product_variants: Page<VariantCatalogRow>;
+  variant_prices: Page<PriceCatalogRow>;
+}
+
+let inflightCatalogPull: Promise<CatalogPull> | null = null;
+
+function priceKey(row: { variant_id: string; currency: string }): string {
+  return `${row.variant_id}|${row.currency}`;
+}
+
+function emptyCatalogSnapshot(lastSyncedAt: string): CatalogSnapshot {
+  return {
+    lastSyncedAt,
+    categories: {},
+    products: {},
+    product_variants: {},
+    variant_prices: {},
+  };
+}
+
+function newerIsoTimestamp(current: string, candidate?: string | null): string {
+  if (!candidate) return current;
+  const candMs = Date.parse(candidate);
+  if (Number.isNaN(candMs)) return current;
+  const curMs = current ? Date.parse(current) : NaN;
+  if (Number.isNaN(curMs) || candMs > curMs) {
+    return new Date(candMs).toISOString();
+  }
+  return current;
+}
+
+function mergeRows<T extends { deleted_at: string | null; updated_at?: string }>(
+  target: Record<string, T>,
+  rows: ReadonlyArray<T>,
+  keyOf: (row: T) => string,
+  maxTs: { value: string },
+): number {
+  let changed = 0;
+  for (const row of rows) {
+    changed++;
+    const key = keyOf(row);
+    if (row.deleted_at) {
+      delete target[key];
+    } else {
+      target[key] = row;
+    }
+    maxTs.value = newerIsoTimestamp(maxTs.value, row.updated_at);
+  }
+  return changed;
+}
+
+function mergeSnapshotRows(
+  snap: CatalogSnapshot,
+  delta: {
+    categories: ReadonlyArray<CategoryRow>;
+    products: ReadonlyArray<ProductCatalogRow>;
+    product_variants: ReadonlyArray<VariantCatalogRow>;
+    variant_prices: ReadonlyArray<PriceCatalogRow>;
+  },
+): { changed: number; maxUpdatedAt: string } {
+  const maxTs = { value: snap.lastSyncedAt };
+  const changed =
+    mergeRows(snap.categories, delta.categories, (r) => r.id, maxTs) +
+    mergeRows(snap.products, delta.products, (r) => r.id, maxTs) +
+    mergeRows(snap.product_variants, delta.product_variants, (r) => r.id, maxTs) +
+    mergeRows(snap.variant_prices, delta.variant_prices, priceKey, maxTs);
+  return { changed, maxUpdatedAt: maxTs.value };
+}
+
+function snapshotToCatalogPull(snap: CatalogSnapshot): CatalogPull {
+  return {
+    categories: { rows: Object.values(snap.categories), cursor: null, has_more: false },
+    products: { rows: Object.values(snap.products), cursor: null, has_more: false },
+    product_variants: { rows: Object.values(snap.product_variants), cursor: null, has_more: false },
+    variant_prices: { rows: Object.values(snap.variant_prices), cursor: null, has_more: false },
+  };
+}
+
+async function fetchDeltaSince(sinceIso: string) {
+  const [categories, products, product_variants, variant_prices] = await Promise.all([
+    fetchAllPages<CategoryRow>((from, to) =>
+      supabase
+        .from("categories")
+        .select("id, parent_id, name, updated_at, deleted_at")
+        .gte("updated_at", sinceIso)
+        .order("updated_at")
+        .order("id")
+        .range(from, to),
+    ),
+    fetchAllPages<ProductCatalogRow>((from, to) =>
+      supabase
+        .from("products")
+        .select("id, category_id, name, unit, tax_rate, track_stock, active, photo_path, updated_at, deleted_at")
+        .gte("updated_at", sinceIso)
+        .order("updated_at")
+        .order("id")
+        .range(from, to),
+    ),
+    fetchAllPages<VariantCatalogRow>((from, to) =>
+      supabase
+        .from("product_variants")
+        .select(
+          "id, product_id, name, sku, barcode, is_default, cost, reorder_point, active, breaks_into_variant_id, breaks_into_qty, updated_at, deleted_at",
+        )
+        .gte("updated_at", sinceIso)
+        .order("updated_at")
+        .order("id")
+        .range(from, to),
+    ),
+    fetchAllPages<PriceCatalogRow>((from, to) =>
+      supabase
+        .from("variant_prices")
+        .select("variant_id, currency, price, updated_at, deleted_at")
+        .gte("updated_at", sinceIso)
+        .order("updated_at")
+        .order("variant_id")
+        .order("currency")
+        .range(from, to),
+    ),
+  ]);
+  return { categories, products, product_variants, variant_prices };
+}
+
+async function coldPullCatalogSnapshot(): Promise<CatalogSnapshot> {
+  const snap = emptyCatalogSnapshot("");
+  const cursors: Record<string, unknown> = {};
+  let serverTime = "";
+
+  for (let page = 0; page < 500; page++) {
+    const res = await rpc<SyncPullCatalogResponse>("sync_pull_catalog", {
+      p_cursors: cursors,
+      p_limit: 1000,
+    });
+    serverTime = res.server_time;
+    mergeSnapshotRows(snap, {
+      categories: res.categories.rows,
+      products: res.products.rows,
+      product_variants: res.product_variants.rows,
+      variant_prices: res.variant_prices.rows,
+    });
+    if (res.categories.cursor) cursors.categories = res.categories.cursor;
+    if (res.products.cursor) cursors.products = res.products.cursor;
+    if (res.product_variants.cursor) cursors.product_variants = res.product_variants.cursor;
+    if (res.variant_prices.cursor) cursors.variant_prices = res.variant_prices.cursor;
+    if (
+      !res.categories.has_more &&
+      !res.products.has_more &&
+      !res.product_variants.has_more &&
+      !res.variant_prices.has_more
+    ) {
+      break;
+    }
+  }
+
+  // Catch any writes inside `sync_pull_catalog`'s 5s MVCC holdback window so new/edited items show immediately.
+  const baseMs = Date.parse(serverTime);
+  const cutoffIso = Number.isNaN(baseMs)
+    ? new Date(Date.now() - 10_000).toISOString()
+    : new Date(baseMs - 6000).toISOString();
+  snap.lastSyncedAt = Number.isNaN(baseMs) ? new Date().toISOString() : new Date(baseMs).toISOString();
+  const recent = await fetchDeltaSince(cutoffIso);
+  const { maxUpdatedAt } = mergeSnapshotRows(snap, recent);
+  snap.lastSyncedAt = newerIsoTimestamp(snap.lastSyncedAt, maxUpdatedAt);
+  await savePosIdbCache(CATALOG_IDB_SLOT, snap);
+  return snap;
+}
+
+/**
+ * Current catalog for web views (RLS-scoped), backed by IndexedDB + incremental delta sync.
+ */
+export function pullCatalog(): Promise<CatalogPull> {
+  if (inflightCatalogPull) return inflightCatalogPull;
+  inflightCatalogPull = (async () => {
+    const existing = await loadPosIdbCache<CatalogSnapshot>(CATALOG_IDB_SLOT);
+    const parsedSince = existing ? Date.parse(existing.lastSyncedAt) : NaN;
+    if (!existing || Number.isNaN(parsedSince)) {
+      const fresh = await coldPullCatalogSnapshot();
+      return snapshotToCatalogPull(fresh);
+    }
+
+    try {
+      const overlapIso = new Date(parsedSince - 6000).toISOString();
+      const delta = await fetchDeltaSince(overlapIso);
+      const { changed, maxUpdatedAt } = mergeSnapshotRows(existing, delta);
+      if (changed > 0) {
+        existing.lastSyncedAt = newerIsoTimestamp(existing.lastSyncedAt, maxUpdatedAt);
+        await savePosIdbCache(CATALOG_IDB_SLOT, existing);
+      }
+      return snapshotToCatalogPull(existing);
+    } catch (err) {
+      if (isNetworkFailure(err)) {
+        return snapshotToCatalogPull(existing);
+      }
+      throw err;
+    }
+  })().finally(() => {
+    inflightCatalogPull = null;
+  });
+  return inflightCatalogPull;
 }
 
 export async function fetchSellables(currency: string): Promise<Sellable[]> {
-  const slot = `sellables:${currency}`;
-  try {
-    const rows = toSellables(await pullCatalog(), currency);
-    savePosCache(slot, rows);
-    return rows;
-  } catch (err) {
-    if (isNetworkFailure(err)) {
-      const cached = loadPosCache<Sellable[]>(slot);
-      if (cached) return cached;
-    }
-    throw err;
-  }
+  return toSellables(await pullCatalog(), currency);
 }
 
 // ---------------------------------------------------------------------------
@@ -529,6 +829,7 @@ export const voidSale = (
     action: string;
     ref_id: string;
     approved_at: string;
+    proof: string;
   },
 ) =>
   pushOp("void_sale", {
@@ -550,6 +851,7 @@ export const returnSaleItems = (params: {
     action: string;
     ref_id: string;
     approved_at: string;
+    proof: string;
   };
 }) =>
   pushOp<{

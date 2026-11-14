@@ -578,6 +578,7 @@ void main() {
     await v7.receiveStock(variantId: _vKaha, qty: 4, opId: 'r1');
     await v7.commitSale(pieceSale('s1', _vKaha, 1), opId: 's1');
     await v7.db.customStatement('drop table conversions');
+    await v7.db.customStatement('drop index if exists idx_variants_breaks_into');
     for (final (t, c) in [
       ('variants', 'breaks_into_variant_id'), ('variants', 'breaks_into_qty'),
       ('local_movements', 'unit_cost'), ('local_movements', 'total_cost'),

@@ -20,7 +20,7 @@ class CartLine {
 
   SaleLine toSaleLine() => SaleLine(
         variantId: product.variantId,
-        name: product.name,
+        name: product.displayName,
         qty: qty,
         unitPrice: unitPrice,
         unitCost: product.cost,
@@ -33,6 +33,9 @@ class CartLine {
         'id': product.id,
         'variantId': product.variantId,
         'name': product.name,
+        'variantName': product.variantName,
+        'isDefault': product.isDefault,
+        'variantCount': product.variantCount,
         'unit': product.unit,
         'sku': product.sku,
         'barcode': product.barcode,
@@ -51,6 +54,9 @@ class CartLine {
           id: m['id'] as String,
           variantId: m['variantId'] as String,
           name: m['name'] as String,
+          variantName: (m['variantName'] as String?) ?? 'Default',
+          isDefault: (m['isDefault'] as bool?) ?? true,
+          variantCount: (m['variantCount'] as num?)?.toInt() ?? 1,
           unit: m['unit'] as String,
           sku: m['sku'] as String,
           barcode: m['barcode'] as String?,

@@ -4,12 +4,13 @@ export interface CashFlowSummary {
   openingCash: number;
   cashSales: number;
   cashUtangPayments: number;
+  cashServices?: number;
   cashExpenses: number;
 }
 
-/** Expected cash in the drawer = opening cash + cash sales + cash utang payments - cash expenses. */
+/** Expected cash in the drawer = opening cash + cash sales + cash utang payments + net cash services - cash expenses. */
 export function computeExpectedCash(flow: CashFlowSummary): number {
-  return flow.openingCash + flow.cashSales + flow.cashUtangPayments - flow.cashExpenses;
+  return flow.openingCash + flow.cashSales + flow.cashUtangPayments + (flow.cashServices ?? 0) - flow.cashExpenses;
 }
 
 /** Difference = counted cash - expected cash. Positive = Over, negative = Short. */

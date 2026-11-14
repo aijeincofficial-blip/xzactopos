@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { usePollInterval } from "../lib/polling.ts";
 import { AlertTriangle, Check, Download, Printer } from "lucide-react";
 import { Alert, Badge, Button, Card, Dialog, ErrorState, Field, Input, PageHeader, Select, Table, useToast } from "../components/ui.tsx";
 import { downloadCsv, exportTransfersCsv } from "../lib/csv-helper.ts";
@@ -15,6 +16,7 @@ import {
   createTransfer,
   generatePickList,
   getPickListForTransfer,
+  listTransferDestinations,
   listTransfers,
   receiveTransfer,
   shipTransfer,
@@ -28,6 +30,7 @@ export function TransfersPage() {
   const msg = useErrorMessage();
   const toast = useToast();
   const { access, can } = useSession();
+  const pollInterval = usePollInterval(120_000);
   const { activeWarehouseId } = useActiveLocation();
   const qc = useQueryClient();
 
@@ -84,7 +87,7 @@ export function TransfersPage() {
   const transfersQuery = useQuery({
     queryKey: ["transfers", statusFilter, locationFilter],
     queryFn: () => listTransfers({ status: statusFilter, locationId: locationFilter }),
-    refetchInterval: 30_000,
+    refetchInterval: pollInterval,
   });
 
   const locationsQuery = useQuery({
@@ -128,6 +131,38 @@ export function TransfersPage() {
   const activeLocations = useMemo(() => {
     return (locationsQuery.data ?? []).filter((l) => l.active);
   }, [locationsQuery.data]);
+
+  const destinationsQuery = useQuery({
+    queryKey: ["transfer-destinations"],
+    queryFn: listTransferDestinations,
+    staleTime: 60_000,
+  });
+
+  const destinationLocations = useMemo(() => {
+    return destinationsQuery.data ?? activeLocations;
+  }, [destinationsQuery.data, activeLocations]);
+
+  const destinationById = useMemo(() => {
+    const map = new Map<
+      string,
+      { id: string; code: string; name: string; type: "store" | "warehouse"; address?: string | null }
+    >();
+    for (const loc of activeLocations) {
+      map.set(loc.id, loc);
+    }
+    for (const loc of destinationLocations) {
+      map.set(loc.id, loc);
+    }
+    return map;
+  }, [activeLocations, destinationLocations]);
+
+  function resolveLocation(
+    embedded: TransferRow["from_location"] | TransferRow["to_location"],
+    id: string | undefined,
+  ) {
+    if (embedded) return embedded;
+    return id ? destinationById.get(id) : undefined;
+  }
 
   // Mutations
   const createMutation = useMutation({
@@ -217,8 +252,11 @@ export function TransfersPage() {
   });
 
   function resetCreateForm() {
-    const defaultWh = activeWarehouseId ?? activeLocations.find((l) => l.type === "warehouse")?.id ?? "";
-    const defaultStore = activeLocations.find((l) => l.type === "store")?.id ?? "";
+    const defaultWh = activeWarehouseId ?? activeLocations.find((l) => l.type === "warehouse")?.id ?? activeLocations[0]?.id ?? "";
+    const defaultStore =
+      destinationLocations.find((l) => l.id !== defaultWh && l.type === "store")?.id ??
+      destinationLocations.find((l) => l.id !== defaultWh)?.id ??
+      "";
     setFromLocId(defaultWh);
     setToLocId(defaultStore);
     setNotes("");
@@ -359,11 +397,13 @@ export function TransfersPage() {
           trf.status === "received"
             ? items.reduce((sum, i) => sum + Number(i.qty_received ?? 0), 0)
             : null;
-        const origin = trf.from_location
-          ? `${trf.from_location.name} (${trf.from_location.code})`
+        const fromLoc = resolveLocation(trf.from_location, trf.from_location_id);
+        const toLoc = resolveLocation(trf.to_location, trf.to_location_id);
+        const origin = fromLoc
+          ? `${fromLoc.name} (${fromLoc.code})`
           : trf.from_location_id;
-        const destination = trf.to_location
-          ? `${trf.to_location.name} (${trf.to_location.code})`
+        const destination = toLoc
+          ? `${toLoc.name} (${toLoc.code})`
           : trf.to_location_id;
         return {
           transferNo: trf.transfer_no,
@@ -485,6 +525,8 @@ export function TransfersPage() {
               </tr>
             ) : (
               (transfersQuery.data ?? []).map((trf) => {
+                const fromLoc = resolveLocation(trf.from_location, trf.from_location_id);
+                const toLoc = resolveLocation(trf.to_location, trf.to_location_id);
                 const totalQty = (trf.transfer_items ?? []).reduce(
                   (acc, item) => acc + Number(item.qty_shipped),
                   0,
@@ -493,7 +535,7 @@ export function TransfersPage() {
                 const canShip = trf.status === "draft" && (access.role === "superadmin" || access.locations.some((l) => l.id === trf.from_location_id));
                 const canReceive =
                   trf.status === "shipped" &&
-                  trf.to_location?.type === "warehouse" &&
+                  toLoc?.type === "warehouse" &&
                   (access.role === "superadmin" || access.locations.some((l) => l.id === trf.to_location_id));
                 const canCancel = trf.status === "draft" && (access.role === "superadmin" || access.locations.some((l) => l.id === trf.from_location_id));
 
@@ -504,19 +546,23 @@ export function TransfersPage() {
                     </td>
                     <td className="px-4 py-3">
                       <span className="font-medium text-slate-800">
-                        {trf.from_location?.name ?? trf.from_location_id}
+                        {fromLoc?.name ?? trf.from_location_id}
                       </span>
-                      <span className="ml-1 text-xs text-slate-400">
-                        ({trf.from_location?.code})
-                      </span>
+                      {fromLoc?.code ? (
+                        <span className="ml-1 text-xs text-slate-400">
+                          ({fromLoc.code})
+                        </span>
+                      ) : null}
                     </td>
                     <td className="px-4 py-3">
                       <span className="font-medium text-slate-800">
-                        {trf.to_location?.name ?? trf.to_location_id}
+                        {toLoc?.name ?? trf.to_location_id}
                       </span>
-                      <span className="ml-1 text-xs text-slate-400">
-                        ({trf.to_location?.code})
-                      </span>
+                      {toLoc?.code ? (
+                        <span className="ml-1 text-xs text-slate-400">
+                          ({toLoc.code})
+                        </span>
+                      ) : null}
                     </td>
                     <td className="px-4 py-3">
                       {itemCount} {t("admin:transfers.lines")} · {totalQty} {t("admin:transfers.units")}
@@ -629,7 +675,7 @@ export function TransfersPage() {
                 required
               >
                 <option value="">{t("admin:transfers.selectDestination")}</option>
-                {activeLocations
+                {destinationLocations
                   .filter((loc) => loc.id !== fromLocId)
                   .map((loc) => (
                     <option key={loc.id} value={loc.id}>
@@ -865,26 +911,32 @@ export function TransfersPage() {
             </div>
 
             {/* Location Details */}
-            <div className="grid grid-cols-2 gap-4 rounded-md border border-slate-100 bg-slate-50 p-3 text-xs">
-              <div>
-                <div className="font-semibold uppercase tracking-wider text-slate-400">
-                  {t("admin:transfers.dispatchedFrom")}
+            {(() => {
+              const fromLoc = resolveLocation(manifestTransfer?.from_location, manifestTransfer?.from_location_id);
+              const toLoc = resolveLocation(manifestTransfer?.to_location, manifestTransfer?.to_location_id);
+              return (
+                <div className="grid grid-cols-2 gap-4 rounded-md border border-slate-100 bg-slate-50 p-3 text-xs">
+                  <div>
+                    <div className="font-semibold uppercase tracking-wider text-slate-400">
+                      {t("admin:transfers.dispatchedFrom")}
+                    </div>
+                    <div className="font-bold text-slate-800">
+                      {fromLoc?.name ?? manifestTransfer?.from_location_id} ({fromLoc?.code ?? "—"})
+                    </div>
+                    <div className="text-slate-500">{fromLoc?.address}</div>
+                  </div>
+                  <div>
+                    <div className="font-semibold uppercase tracking-wider text-slate-400">
+                      {t("admin:transfers.destination")}
+                    </div>
+                    <div className="font-bold text-slate-800">
+                      {toLoc?.name ?? manifestTransfer?.to_location_id} ({toLoc?.code ?? "—"})
+                    </div>
+                    <div className="text-slate-500">{toLoc?.address}</div>
+                  </div>
                 </div>
-                <div className="font-bold text-slate-800">
-                  {manifestTransfer?.from_location?.name} ({manifestTransfer?.from_location?.code})
-                </div>
-                <div className="text-slate-500">{manifestTransfer?.from_location?.address}</div>
-              </div>
-              <div>
-                <div className="font-semibold uppercase tracking-wider text-slate-400">
-                  {t("admin:transfers.destination")}
-                </div>
-                <div className="font-bold text-slate-800">
-                  {manifestTransfer?.to_location?.name} ({manifestTransfer?.to_location?.code})
-                </div>
-                <div className="text-slate-500">{manifestTransfer?.to_location?.address}</div>
-              </div>
-            </div>
+              );
+            })()}
 
             {manifestTransfer?.notes && (
               <div className="rounded-md border border-slate-100 p-2.5 text-xs text-slate-600">
@@ -1041,8 +1093,11 @@ export function TransfersPage() {
                     {t("admin:transfers.warehousePickList")}
                   </div>
                   <div className="mt-1 text-xs text-slate-500">
-                    {pickListTransfer?.from_location?.name} ({pickListTransfer?.from_location?.code}) →{" "}
-                    {pickListTransfer?.to_location?.name} ({pickListTransfer?.to_location?.code})
+                    {(() => {
+                      const fromLoc = resolveLocation(pickListTransfer?.from_location, pickListTransfer?.from_location_id);
+                      const toLoc = resolveLocation(pickListTransfer?.to_location, pickListTransfer?.to_location_id);
+                      return `${fromLoc?.name ?? pickListTransfer?.from_location_id ?? ""} (${fromLoc?.code ?? "—"}) → ${toLoc?.name ?? pickListTransfer?.to_location_id ?? ""} (${toLoc?.code ?? "—"})`;
+                    })()}
                   </div>
                 </div>
                 <div className="text-right">

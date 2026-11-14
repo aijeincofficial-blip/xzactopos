@@ -128,20 +128,25 @@ Future<SupervisorApprovalResult?> askSupervisorApproval(
                       }
                       // Offline fallback: verify against cached store approver PIN hashes
                       final effectiveLoc = loc ?? 'global';
+                      final tenantId = await scope.store.meta('tenant_id');
                       final outcome = await SupervisorPinStorage.verifyOfflinePinDetailed(
                         locationId: effectiveLoc,
                         pin: enteredPin,
                         store: scope.store,
                         approverId: approverId,
+                        tenantId: tenantId,
+                        action: action,
+                        refId: refId,
                       );
 
                       if (outcome.status == OfflinePinVerifyStatus.matched && outcome.approver != null) {
                         final matched = outcome.approver!;
                         final offlineApproval = {
                           'approver_id': matched.userId,
-                          'approved_at': DateTime.now().toUtc().toIso8601String(),
+                          'approved_at': outcome.approvedAt ?? DateTime.now().toUtc().toIso8601String(),
                           'action': action,
                           'ref_id': refId,
+                          if (outcome.proof != null) 'proof': outcome.proof!,
                         };
                         if (ctx.mounted) {
                           Navigator.pop(

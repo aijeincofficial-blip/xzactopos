@@ -386,7 +386,7 @@ export function PlatformPage() {
             <div className="flex justify-between items-center text-xs">
               <span className="text-slate-500 font-medium uppercase">{t("platform.storageQuota")}</span>
               <Badge tone={m.storage.status === "healthy" ? "good" : "warn"}>
-                {m.storage.used_mb} MB / 500 MB
+                {m.storage.used_mb ?? 0} MB / {m.storage.limit_mb ?? 500} MB
               </Badge>
             </div>
             <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden mt-1">
@@ -398,10 +398,10 @@ export function PlatformPage() {
                     ? "bg-amber-500"
                     : "bg-emerald-500"
                 }`}
-                style={{ width: `${Math.min(m.storage.percent_used, 100)}%` }}
+                style={{ width: `${Math.min(m.storage.percent_used ?? 0, 100)}%` }}
               />
             </div>
-            <span className="text-xs text-slate-500 text-right">{m.storage.percent_used}% used</span>
+            <span className="text-xs text-slate-500 text-right">{m.storage.percent_used ?? 0}% used</span>
           </Card>
         </div>
       ) : null}

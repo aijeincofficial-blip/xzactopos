@@ -172,9 +172,12 @@ export function SettingsPage() {
     },
   });
 
+  const canViewStorage = Boolean(access?.role === "superadmin" || access?.is_platform_admin);
+
   const storageQuery = useQuery({
     queryKey: ["storage-metrics"],
     queryFn: fetchStorageMetrics,
+    enabled: canViewStorage,
   });
 
   const archiveMutation = useMutation({
@@ -699,27 +702,50 @@ export function SettingsPage() {
               </Badge>
             </div>
 
-            {/* Storage Progress Bar */}
-            <div className="grid gap-1.5">
-              <div className="flex justify-between text-xs font-medium text-muted-on-light">
-                <span>
-                  {storageQuery.data.used_mb} MB {t("settings.usedOf")} {storageQuery.data.limit_mb} MB
-                </span>
-                <span className="font-mono">{storageQuery.data.percent_used}%</span>
+            {/* Storage Progress Bar (global DB metrics returned only for platform admins) */}
+            {storageQuery.data.used_mb !== null &&
+            storageQuery.data.limit_mb !== null &&
+            storageQuery.data.percent_used !== null ? (
+              <div className="grid gap-1.5">
+                <div className="flex justify-between text-xs font-medium text-muted-on-light">
+                  <span>
+                    {storageQuery.data.used_mb} MB {t("settings.usedOf")} {storageQuery.data.limit_mb} MB
+                  </span>
+                  <span className="font-mono">{storageQuery.data.percent_used}%</span>
+                </div>
+                <div className="h-2.5 w-full overflow-hidden rounded-full bg-sand">
+                  <div
+                    className={`h-full transition-all ${
+                      storageQuery.data.status === "critical"
+                        ? "bg-sw-meal-fg"
+                        : storageQuery.data.status === "warning"
+                        ? "bg-sw-pastry-fg"
+                        : "bg-ok-dot"
+                    }`}
+                    style={{ width: `${Math.min(storageQuery.data.percent_used, 100)}%` }}
+                  />
+                </div>
               </div>
-              <div className="h-2.5 w-full overflow-hidden rounded-full bg-sand">
-                <div
-                  className={`h-full transition-all ${
-                    storageQuery.data.status === "critical"
-                      ? "bg-sw-meal-fg"
-                      : storageQuery.data.status === "warning"
-                      ? "bg-sw-pastry-fg"
-                      : "bg-ok-dot"
-                  }`}
-                  style={{ width: `${Math.min(storageQuery.data.percent_used, 100)}%` }}
-                />
+            ) : (
+              <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
+                <div className="rounded border border-slate-200 p-2">
+                  <div className="text-slate-500">Products</div>
+                  <div className="font-mono font-semibold">{storageQuery.data.tenant_stats.products.toLocaleString()}</div>
+                </div>
+                <div className="rounded border border-slate-200 p-2">
+                  <div className="text-slate-500">Sales</div>
+                  <div className="font-mono font-semibold">{storageQuery.data.tenant_stats.sales.toLocaleString()}</div>
+                </div>
+                <div className="rounded border border-slate-200 p-2">
+                  <div className="text-slate-500">Stock movements</div>
+                  <div className="font-mono font-semibold">{storageQuery.data.tenant_stats.stock_movements.toLocaleString()}</div>
+                </div>
+                <div className="rounded border border-slate-200 p-2">
+                  <div className="text-slate-500">Processed ops</div>
+                  <div className="font-mono font-semibold">{storageQuery.data.tenant_stats.processed_ops.toLocaleString()}</div>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Actions & Health Ping */}
             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-sand-line pt-3">
@@ -762,34 +788,36 @@ export function SettingsPage() {
               </div>
             </div>
 
-            {/* Top Tables breakdown */}
-            <div className="mt-2">
-              <div className="text-xs font-semibold uppercase text-slate-500 mb-2">
-                {t("settings.largestTables")}
-              </div>
-              <div className="max-h-48 overflow-y-auto rounded border border-slate-200 text-xs">
-                <Table bare>
-                  <thead className="bg-slate-50 text-slate-500 uppercase">
-                    <tr>
-                      <th className="p-2">{t("settings.tableName")}</th>
-                      <th className="p-2 text-right">{t("settings.estRows")}</th>
-                      <th className="p-2 text-right">{t("settings.totalSize")}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {storageQuery.data.tables.slice(0, 8).map((tbl) => (
-                      <tr key={tbl.table_name} className="border-t border-slate-100 font-mono">
-                        <td className="p-2 text-slate-900 font-sans">{tbl.table_name}</td>
-                        <td className="p-2 text-right text-slate-600">
-                          {Number(tbl.estimated_rows).toLocaleString()}
-                        </td>
-                        <td className="p-2 text-right text-slate-900 font-semibold">{tbl.formatted_size}</td>
+            {/* Top Tables breakdown (platform admins only) */}
+            {storageQuery.data.tables.length > 0 ? (
+              <div className="mt-2">
+                <div className="text-xs font-semibold uppercase text-slate-500 mb-2">
+                  {t("settings.largestTables")}
+                </div>
+                <div className="max-h-48 overflow-y-auto rounded border border-slate-200 text-xs">
+                  <Table bare>
+                    <thead className="bg-slate-50 text-slate-500 uppercase">
+                      <tr>
+                        <th className="p-2">{t("settings.tableName")}</th>
+                        <th className="p-2 text-right">{t("settings.estRows")}</th>
+                        <th className="p-2 text-right">{t("settings.totalSize")}</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </Table>
+                    </thead>
+                    <tbody>
+                      {storageQuery.data.tables.slice(0, 8).map((tbl) => (
+                        <tr key={tbl.table_name} className="border-t border-slate-100 font-mono">
+                          <td className="p-2 text-slate-900 font-sans">{tbl.table_name}</td>
+                          <td className="p-2 text-right text-slate-600">
+                            {Number(tbl.estimated_rows).toLocaleString()}
+                          </td>
+                          <td className="p-2 text-right text-slate-900 font-semibold">{tbl.formatted_size}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </Table>
+                </div>
               </div>
-            </div>
+            ) : null}
           </Card>
         ) : null}
 

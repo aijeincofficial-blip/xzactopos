@@ -9,26 +9,25 @@ import {
   Warehouse,
   WifiOff,
 } from "lucide-react";
-import { hasSession } from "../lib/session.tsx";
+import { hasStoredSessionHint } from "../lib/session-hint.ts";
 import { cn } from "../lib/utils.ts";
 import { LanguageSelect } from "../components/LanguageSelect.tsx";
-import {
-  GHOST_BUTTON_CLASSES,
-  LIME_BUTTON_CLASSES,
-  MoneyText,
-  Receipt,
-  ReceiptDash,
-} from "../ui/index.ts";
+import { GHOST_BUTTON_CLASSES, LIME_BUTTON_CLASSES } from "../ui/LimeButton.tsx";
+import { MoneyText } from "../ui/MoneyText.tsx";
+import { Receipt, ReceiptDash } from "../ui/Receipt.tsx";
 
 export function LandingPage() {
   const { t } = useTranslation("auth");
   const [signedIn, setSignedIn] = useState(false);
 
   useEffect(() => {
+    if (!hasStoredSessionHint()) return;
     let active = true;
-    void hasSession().then((ok) => {
-      if (active) setSignedIn(ok);
-    });
+    void import("../lib/session.tsx")
+      .then(({ hasSession }) => hasSession())
+      .then((ok) => {
+        if (active) setSignedIn(ok);
+      });
     return () => {
       active = false;
     };
@@ -138,6 +137,7 @@ export function LandingPage() {
         </div>
       </header>
 
+      <main>
       {/* 2. Asymmetric Hero (--ink + tilted paper receipt) */}
       <section className="mx-auto max-w-6xl px-4 pt-10 pb-14 sm:px-8 sm:pt-12 sm:pb-16 lg:pt-16 lg:pb-24">
         <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-12">
@@ -269,7 +269,10 @@ export function LandingPage() {
       </div>
 
       {/* 4. Features 4-Card Grid (--ink) */}
-      <section id="features" className="mx-auto max-w-6xl px-4 py-20 sm:px-8 lg:py-24">
+      <section
+        id="features"
+        className="mx-auto max-w-6xl px-4 py-20 [content-visibility:auto] [contain-intrinsic-size:auto_520px] sm:px-8 lg:py-24"
+      >
         <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <h2 className="max-w-2xl font-display text-[clamp(2rem,4vw,3rem)] leading-[1.06] font-extrabold tracking-[-0.025em] text-text-on-dark">
             {t("landing.featuresHeader")}
@@ -304,7 +307,10 @@ export function LandingPage() {
       </section>
 
       {/* 5. How It Works (--paper receipt section) */}
-      <section id="how" className="bg-paper py-20 text-text-on-light lg:py-24">
+      <section
+        id="how"
+        className="bg-paper py-20 text-text-on-light [content-visibility:auto] [contain-intrinsic-size:auto_600px] lg:py-24"
+      >
         <div className="mx-auto max-w-6xl px-4 sm:px-8">
           <h2 className="max-w-2xl font-display text-[clamp(2rem,4vw,3rem)] leading-[1.06] font-extrabold tracking-[-0.025em] text-text-on-light">
             {t("landing.howTitle")}
@@ -335,7 +341,10 @@ export function LandingPage() {
       </section>
 
       {/* 6. Pricing (One full --lime container + --ink pricing card) */}
-      <section id="pricing" className="bg-ink py-20 lg:py-24">
+      <section
+        id="pricing"
+        className="bg-ink py-20 [content-visibility:auto] [contain-intrinsic-size:auto_560px] lg:py-24"
+      >
         <div className="mx-auto max-w-6xl px-4 sm:px-8">
           <div className="grid gap-10 rounded-[40px] bg-lime p-7 text-ink sm:p-12 lg:grid-cols-12 lg:items-center">
             <div className="space-y-5 lg:col-span-6">
@@ -401,6 +410,7 @@ export function LandingPage() {
           </div>
         </div>
       </section>
+      </main>
 
       {/* 7. Footer (--ink) */}
       <footer className="border-t-[1.5px] border-ink-line bg-ink">

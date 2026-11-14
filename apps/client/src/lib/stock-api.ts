@@ -18,6 +18,10 @@ export interface Category {
 export interface ProductRow {
   productId: string;
   variantId: string;
+  productName?: string;
+  variantName?: string;
+  isDefault?: boolean;
+  variantCount?: number;
   name: string;
   sku: string;
   barcode: string | null;
@@ -41,7 +45,14 @@ export interface ProductRow {
   photoPath?: string | null;
 }
 
-/** Joins products, default variant, price, store's stock level, categories, expiry, and per-location reorder overrides. Archived products are left out; inactive ones stay. */
+export interface ProductGroup {
+  productId: string;
+  productName: string;
+  defaultRow: ProductRow;
+  variants: ProductRow[];
+}
+
+/** Joins products, their variants, prices, stock levels, categories, expiry, and per-location reorder overrides. Archived products/variants are left out; inactive ones stay. */
 export function toProductRows(
   pull: CatalogPull,
   currency: string,
@@ -52,17 +63,31 @@ export function toProductRows(
   const catMap = new Map((pull.categories?.rows ?? []).filter((c) => !c.deleted_at).map((c) => [c.id, c.name]));
   const products = new Map(pull.products.rows.filter((p) => !p.deleted_at).map((p) => [p.id, p]));
   const prices = new Map(pull.variant_prices.rows.filter((p) => p.currency === currency && !p.deleted_at).map((p) => [p.variant_id, p.price]));
+
+  const variantCounts = new Map<string, number>();
+  for (const v of pull.product_variants.rows) {
+    if (v.deleted_at || !products.has(v.product_id)) continue;
+    variantCounts.set(v.product_id, (variantCounts.get(v.product_id) ?? 0) + 1);
+  }
+
   const out: ProductRow[] = [];
   for (const v of pull.product_variants.rows) {
-    if (v.deleted_at || !v.is_default) continue;
+    if (v.deleted_at) continue;
     const p = products.get(v.product_id);
     if (!p) continue;
+    const variantCount = variantCounts.get(p.id) ?? 1;
+    const variantName = (v.name ?? "Default").trim() || "Default";
+    const showVariantLabel = variantCount > 1 || variantName !== "Default";
     const defaultReorder = Number(v.reorder_point);
     const overrideReorder = reorderOverrides?.get(v.id);
     out.push({
       productId: p.id,
       variantId: v.id,
-      name: p.name,
+      productName: p.name,
+      variantName,
+      isDefault: v.is_default,
+      variantCount,
+      name: showVariantLabel ? `${p.name} (${variantName})` : p.name,
       sku: v.sku,
       barcode: v.barcode,
       unit: p.unit,
@@ -83,7 +108,34 @@ export function toProductRows(
       ...(p.photo_path ? { photoPath: p.photo_path } : {}),
     });
   }
-  return out.sort((a, b) => a.name.localeCompare(b.name));
+  return out.sort((a, b) => {
+    const pCmp = (a.productName ?? a.name).localeCompare(b.productName ?? b.name);
+    if (pCmp !== 0) return pCmp;
+    const dCmp = Number(b.isDefault ?? false) - Number(a.isDefault ?? false);
+    if (dCmp !== 0) return dCmp;
+    return (a.variantName ?? a.name).localeCompare(b.variantName ?? b.name);
+  });
+}
+
+/** Groups per-variant `ProductRow` entries into product cards while preserving sort order. */
+export function groupProductRows(rows: ReadonlyArray<ProductRow>): ProductGroup[] {
+  const byProduct = new Map<string, ProductRow[]>();
+  for (const r of rows) {
+    const list = byProduct.get(r.productId);
+    if (list) list.push(r);
+    else byProduct.set(r.productId, [r]);
+  }
+  const out: ProductGroup[] = [];
+  for (const [productId, variants] of byProduct) {
+    const defaultRow = variants.find((v) => v.isDefault) ?? variants[0]!;
+    out.push({
+      productId,
+      productName: defaultRow.productName ?? defaultRow.name,
+      defaultRow,
+      variants,
+    });
+  }
+  return out;
 }
 
 export async function fetchStockLevels(locationId: string): Promise<Map<string, number>> {
@@ -287,9 +339,21 @@ export async function upsertCategory(input: { id?: string; name: string; parentI
 export const archiveCategory = (categoryId: string) =>
   rpc("archive_category", { p_op_id: uuidv7(), p_category_id: categoryId });
 
+export interface VariantInput {
+  id?: string;
+  name: string;
+  sku: string;
+  barcode: string;
+  price: number;
+  cost: number;
+  reorderPoint: number;
+  isDefault?: boolean;
+  active?: boolean;
+  openingQty?: number;
+}
+
 export interface ProductInput {
   name: string;
-  /** Selling price, minor units. */
   price: number;
   cost: number;
   unit: string;
@@ -303,11 +367,86 @@ export interface ProductInput {
   breaksIntoVariantId?: string | null;
   breaksIntoQty?: number | null;
   photoPath?: string | null;
+  variants?: VariantInput[];
 }
 
-function productBody(i: ProductInput, ids: { productId: string; variantId: string }): Record<string, unknown> {
+interface ResolvedVariant {
+  id: string;
+  name: string;
+  sku: string;
+  barcode: string;
+  price: number;
+  cost: number;
+  reorderPoint: number;
+  isDefault: boolean;
+  active: boolean;
+  openingQty: number;
+}
+
+function resolveVariants(i: ProductInput, fallbackVariantId: string): ResolvedVariant[] {
+  if (i.variants && i.variants.length > 0) {
+    const hasExplicitDefault = i.variants.some((v) => v.isDefault);
+    return i.variants.map((v, idx) => ({
+      id: v.id ?? uuidv7(),
+      name: v.name.trim() || "Default",
+      sku: v.sku.trim(),
+      barcode: v.barcode.trim(),
+      price: v.price,
+      cost: v.cost,
+      reorderPoint: v.reorderPoint,
+      isDefault: hasExplicitDefault ? Boolean(v.isDefault) : idx === 0,
+      active: v.active ?? i.active,
+      openingQty: v.openingQty ?? 0,
+    }));
+  }
+  return [
+    {
+      id: fallbackVariantId,
+      name: "Default",
+      sku: i.sku.trim(),
+      barcode: i.barcode.trim(),
+      price: i.price,
+      cost: i.cost,
+      reorderPoint: i.reorderPoint,
+      isDefault: true,
+      active: i.active,
+      openingQty: 0,
+    },
+  ];
+}
+
+function productBody(
+  i: ProductInput,
+  productId: string,
+  resolvedVariants: ResolvedVariant[],
+): Record<string, unknown> {
+  const usesArray = Boolean(i.variants && i.variants.length > 0);
+  if (usesArray) {
+    return {
+      id: productId,
+      name: i.name.trim(),
+      unit: i.unit.trim() || "pc",
+      tax_rate: i.taxRate,
+      track_stock: i.tracked,
+      active: i.active,
+      ...(i.categoryId !== undefined ? { category_id: i.categoryId } : {}),
+      ...(i.photoPath !== undefined ? { photo_path: i.photoPath } : {}),
+      variants: resolvedVariants.map((v) => ({
+        id: v.id,
+        name: v.name,
+        ...(v.sku ? { sku: v.sku } : {}),
+        barcode: v.barcode || null,
+        price: v.price,
+        cost: v.cost,
+        reorder_point: v.reorderPoint,
+        is_default: v.isDefault,
+        active: v.active,
+      })),
+    };
+  }
+  const single = resolvedVariants[0]!;
   return {
-    id: ids.productId,
+    id: productId,
     name: i.name.trim(),
     unit: i.unit.trim() || "pc",
     tax_rate: i.taxRate,
@@ -317,41 +456,66 @@ function productBody(i: ProductInput, ids: { productId: string; variantId: strin
     ...(i.categoryId !== undefined ? { category_id: i.categoryId } : {}),
     ...(i.photoPath !== undefined ? { photo_path: i.photoPath } : {}),
     variant: {
-      id: ids.variantId,
-      ...(i.sku.trim() ? { sku: i.sku.trim() } : {}),
-      barcode: i.barcode.trim() || null,
-      cost: i.cost,
-      reorder_point: i.reorderPoint,
+      id: single.id,
+      name: single.name,
+      ...(single.sku ? { sku: single.sku } : {}),
+      barcode: single.barcode || null,
+      cost: single.cost,
+      reorder_point: single.reorderPoint,
       active: i.active,
     },
   };
 }
 
-/** Creates a product with its one default variant; `openingQty` (when above zero) is posted as opening stock. */
+/** Creates a product with one or more variants; `openingQty` / per-variant `openingQty` above zero are posted as opening stock. */
 export async function createProduct(
   i: ProductInput,
   openingQty: number,
   locationId: string,
   explicitProductId?: string,
 ): Promise<{ productId: string; variantId: string }> {
-  const ids = { productId: explicitProductId ?? uuidv7(), variantId: uuidv7() };
-  await rpc("upsert_product", { p_op_id: uuidv7(), p_product: productBody(i, ids) });
-  if (openingQty > 0 && i.tracked) {
-    await pushOp("post_opening_stock", { variant_id: ids.variantId, qty: openingQty, location_id: locationId });
+  const productId = explicitProductId ?? uuidv7();
+  const fallbackVariantId = uuidv7();
+  const resolved = resolveVariants(i, fallbackVariantId);
+  const defaultVariant = resolved.find((v) => v.isDefault) ?? resolved[0]!;
+  await rpc("upsert_product", { p_op_id: uuidv7(), p_product: productBody(i, productId, resolved) });
+  if (i.tracked) {
+    if (i.variants && i.variants.length > 0) {
+      for (const v of resolved) {
+        if (v.openingQty > 0) {
+          await pushOp("post_opening_stock", { variant_id: v.id, qty: v.openingQty, location_id: locationId });
+        }
+      }
+    } else if (openingQty > 0) {
+      await pushOp("post_opening_stock", { variant_id: defaultVariant.id, qty: openingQty, location_id: locationId });
+    }
   }
   if (i.breaksIntoVariantId && i.breaksIntoQty && i.breaksIntoQty > 0) {
-    await setTingiLink(ids.variantId, i.breaksIntoVariantId, i.breaksIntoQty);
+    await setTingiLink(defaultVariant.id, i.breaksIntoVariantId, i.breaksIntoQty);
   }
-  return { productId: ids.productId, variantId: ids.variantId };
+  return { productId, variantId: defaultVariant.id };
 }
 
-export async function updateProduct(row: Pick<ProductRow, "productId" | "variantId">, i: ProductInput): Promise<void> {
-  await rpc("upsert_product", { p_op_id: uuidv7(), p_product: productBody(i, row) });
+export async function updateProduct(
+  row: Pick<ProductRow, "productId" | "variantId">,
+  i: ProductInput,
+  openingLocationId?: string,
+): Promise<void> {
+  const resolved = resolveVariants(i, row.variantId);
+  const defaultVariant = resolved.find((v) => v.isDefault) ?? resolved[0]!;
+  await rpc("upsert_product", { p_op_id: uuidv7(), p_product: productBody(i, row.productId, resolved) });
+  if (i.tracked && openingLocationId && i.variants && i.variants.length > 0) {
+    for (const v of resolved) {
+      if (v.openingQty > 0) {
+        await pushOp("post_opening_stock", { variant_id: v.id, qty: v.openingQty, location_id: openingLocationId });
+      }
+    }
+  }
   if (i.breaksIntoVariantId !== undefined) {
     if (i.breaksIntoVariantId && i.breaksIntoQty && i.breaksIntoQty > 0) {
-      await setTingiLink(row.variantId, i.breaksIntoVariantId, i.breaksIntoQty);
+      await setTingiLink(defaultVariant.id, i.breaksIntoVariantId, i.breaksIntoQty);
     } else {
-      await setTingiLink(row.variantId, null, 0);
+      await setTingiLink(defaultVariant.id, null, 0);
     }
   }
 }

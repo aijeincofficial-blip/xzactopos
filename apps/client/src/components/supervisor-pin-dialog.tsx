@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Alert, Button, Dialog, Field, Input, Select } from "./ui.tsx";
+import { ApiError } from "../lib/api.ts";
 import { approveSupervisorAction, fetchStoreApprovers, type ApprovalAction } from "../lib/approvals-api.ts";
 import {
   pullOfflinePins,
@@ -9,7 +10,9 @@ import {
   verifyOfflineSupervisorPin,
   type OfflineApprovalPayload,
 } from "../lib/offline-pin-api.ts";
-import { useDynamicT } from "../lib/i18n-helpers.ts";
+import { isNetworkFailure } from "../lib/pos-outbox.ts";
+import { useSession } from "../lib/session.tsx";
+import { useDynamicT, useErrorMessage } from "../lib/i18n-helpers.ts";
 
 export interface SupervisorPinDialogProps {
   open: boolean;
@@ -34,6 +37,8 @@ export function SupervisorPinDialog({
 }: SupervisorPinDialogProps) {
   const { t } = useTranslation(["admin", "common"]);
   const tr = useDynamicT();
+  const errMsg = useErrorMessage();
+  const { access } = useSession();
   const [approverId, setApproverId] = useState("");
   const [pin, setPin] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -49,6 +54,7 @@ export function SupervisorPinDialog({
         ]);
         return approvers;
       } catch (err) {
+        if (!isNetworkFailure(err)) throw err;
         const cached = getCachedOfflinePins(locationId);
         if (cached.length > 0) {
           return cached.map((c) => ({
@@ -100,13 +106,19 @@ export function SupervisorPinDialog({
           locationId,
           approverId || undefined,
         );
-      } catch {
-        // Fallback to offline verification if network fails
+      } catch (err) {
+        if (!isNetworkFailure(err)) {
+          setError(err instanceof ApiError ? errMsg(err) : err instanceof Error ? err.message : errMsg(err));
+          setLoading(false);
+          return;
+        }
+        // Fallback to offline verification ONLY when the network/transport fails
         const offlineRes = await verifyOfflineSupervisorPin(
           approverId,
           pin,
           action,
           refId,
+          access?.tenant?.id ?? "",
           locationId,
         );
         if (offlineRes.ok && offlineRes.offlineApproval) {

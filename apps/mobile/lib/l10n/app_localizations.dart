@@ -4663,6 +4663,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No stock items match your filter.'**
   String get whStockNoFiltered;
+
+  /// No description provided for @variantsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Sizes & variants'**
+  String get variantsSection;
+
+  /// No description provided for @addVariant.
+  ///
+  /// In en, this message translates to:
+  /// **'Add variant'**
+  String get addVariant;
+
+  /// No description provided for @variantLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Variant name'**
+  String get variantLabel;
+
+  /// No description provided for @variantLabelHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Regular, Large'**
+  String get variantLabelHint;
+
+  /// No description provided for @defaultVariant.
+  ///
+  /// In en, this message translates to:
+  /// **'Default'**
+  String get defaultVariant;
+
+  /// No description provided for @removeVariant.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get removeVariant;
+
+  /// No description provided for @variantsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} sizes'**
+  String variantsCount(int count);
+
+  /// No description provided for @chooseVariant.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose variant for {product}'**
+  String chooseVariant(String product);
+
+  /// No description provided for @posDisabledTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'POS is turned off'**
+  String get posDisabledTitle;
+
+  /// No description provided for @posDisabledBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Point of sale is disabled for this business.'**
+  String get posDisabledBody;
 }
 
 class _AppLocalizationsDelegate

@@ -140,16 +140,75 @@ export function allocate(a: Money, parts: number): Money[] {
   });
 }
 
+const MONEY_FORMATTERS = new Map<string, Intl.NumberFormat>();
+
+const FAST_CURRENCY_PREFIX: Readonly<Record<string, string>> = {
+  PHP: "₱",
+  USD: "$",
+  EUR: "€",
+  GBP: "£",
+  SGD: "SGD\u00a0",
+  JPY: "¥",
+  KRW: "₩",
+  KWD: "KWD\u00a0",
+  BHD: "BHD\u00a0",
+};
+
+function isFastMoneyLocale(locale: string): boolean {
+  const norm = locale.trim().toLowerCase();
+  return norm === "en" || norm.startsWith("en-") || norm === "fil" || norm.startsWith("fil-");
+}
+
+/** Avoids V8's ~25-40ms cold ICU currency table load during initial Landing/POS mount. */
+function formatFastMoney(amount: number, currency: string, exp: number): string | null {
+  const prefix = FAST_CURRENCY_PREFIX[currency];
+  if (!prefix || DEFAULT_EXPONENTS[currency] !== exp) return null;
+  const neg = amount < 0 ? "-" : "";
+  const abs = Math.abs(amount);
+  const scale = 10 ** exp;
+  const wholeStr = String(Math.floor(abs / scale));
+  let grouped = wholeStr;
+  if (wholeStr.length > 3) {
+    let out = "";
+    let count = 0;
+    for (let i = wholeStr.length - 1; i >= 0; i--) {
+      if (count > 0 && count % 3 === 0) out = "," + out;
+      out = wholeStr[i]! + out;
+      count++;
+    }
+    grouped = out;
+  }
+  if (exp === 0) return `${neg}${prefix}${grouped}`;
+  const frac = String(abs % scale).padStart(exp, "0");
+  return `${neg}${prefix}${grouped}.${frac}`;
+}
+
+function getMoneyFormatter(locale: string, currency: string, exp: number): Intl.NumberFormat {
+  const key = `${locale}|${currency}|${exp}`;
+  let fmt = MONEY_FORMATTERS.get(key);
+  if (!fmt) {
+    // Keep cache bounded in long-lived POS sessions while covering common locale/currency pairs.
+    if (MONEY_FORMATTERS.size >= 64) MONEY_FORMATTERS.clear();
+    fmt = new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency,
+      minimumFractionDigits: exp,
+      maximumFractionDigits: exp,
+    });
+    MONEY_FORMATTERS.set(key, fmt);
+  }
+  return fmt;
+}
+
 export function formatMoney(
   m: Money,
   locale: string,
   table: ExponentTable = DEFAULT_EXPONENTS,
 ): string {
   const exp = exponentOf(m.currency, table);
-  return new Intl.NumberFormat(locale, {
-    style: "currency",
-    currency: m.currency,
-    minimumFractionDigits: exp,
-    maximumFractionDigits: exp,
-  }).format(m.amount / 10 ** exp);
+  if (isFastMoneyLocale(locale)) {
+    const fast = formatFastMoney(m.amount, m.currency, exp);
+    if (fast !== null) return fast;
+  }
+  return getMoneyFormatter(locale, m.currency, exp).format(m.amount / 10 ** exp);
 }

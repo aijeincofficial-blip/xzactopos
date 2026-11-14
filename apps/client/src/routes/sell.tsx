@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatMoney, money, uuidv7 } from "@pos/core";
@@ -50,13 +50,14 @@ import {
 } from "../lib/sale-math.ts";
 import {
   createCustomer,
-  fetchCustomers,
   fetchSellables,
+  filterAndGroupSellables,
   nextLocalNo,
   registerWebDevice,
   submitSale,
   webDevice,
   type Sellable,
+  type SellableProductGroup,
   type SoldReceipt,
 } from "../lib/sell-api.ts";
 import {
@@ -83,7 +84,6 @@ import {
   getStoredPinned,
   saveStoredPinned,
   resolveFastKeyProducts,
-  isSkuPinned,
   togglePinnedSku,
 } from "../lib/fast-keys.ts";
 import { resolvePosHotkey } from "../lib/sell-hotkeys.ts";
@@ -118,17 +118,316 @@ function formatMajorInput(minorAmount: number): string {
   return Number.isInteger(major) ? String(major) : major.toFixed(2);
 }
 
+interface ProductTileProps {
+  group: SellableProductGroup;
+  pinned: boolean;
+  inCartQty: number;
+  isOut: boolean;
+  isLow: boolean;
+  expStatus: ReturnType<typeof getExpiryStatus> | null;
+  priceLabel: string;
+  chipToneClass: string;
+  variantsCountLabel: string;
+  expiredLabel: string;
+  expiringSoonLabel: string;
+  outOfStockLabel: string;
+  stockBadgeLabel: string | null;
+  pinTitle: string;
+  onSelect: (group: SellableProductGroup) => void;
+  onTogglePin: (sku: string) => void;
+}
+
+const ProductTile = memo(function ProductTile({
+  group,
+  pinned,
+  inCartQty,
+  isOut,
+  isLow,
+  expStatus,
+  priceLabel,
+  chipToneClass,
+  variantsCountLabel,
+  expiredLabel,
+  expiringSoonLabel,
+  outOfStockLabel,
+  stockBadgeLabel,
+  pinTitle,
+  onSelect,
+  onTogglePin,
+}: ProductTileProps) {
+  const s = group.primary;
+  const isMulti = group.variants.length > 1;
+  const variantSubtitle = useMemo(
+    () => (isMulti ? group.variants.map((v) => v.variantName || v.sku).join(" · ") : s.sku),
+    [isMulti, group.variants, s.sku],
+  );
+
+  return (
+    <li
+      className={`group relative flex flex-col rounded-[20px] border-[1.5px] transition-colors [content-visibility:auto] [contain-intrinsic-size:auto_164px] ${
+        inCartQty > 0
+          ? "border-ink bg-paper ring-1 ring-ink"
+          : "border-sand-line bg-paper hover:border-ink"
+      }`}
+    >
+      <button
+        type="button"
+        data-testid={`product-${s.sku}`}
+        onClick={() => onSelect(group)}
+        className="flex flex-1 cursor-pointer flex-col justify-between gap-2.5 p-3.5 text-left focus:outline-none"
+      >
+        <div className="flex w-full items-start justify-between gap-2 pr-6">
+          <div className="relative">
+            <ProductThumb
+              photoPath={s.photoPath}
+              name={group.productName}
+              size="md"
+              active={inCartQty > 0}
+            />
+            {s.categoryId ? (
+              <span
+                className={`-bottom-1 -right-1 absolute h-3.5 w-3.5 rounded-full border-2 border-paper ${chipToneClass}`}
+                aria-hidden
+              />
+            ) : null}
+          </div>
+          <div className="flex min-h-[24px] flex-wrap items-center justify-end gap-1">
+            {isMulti ? <Badge tone="neutral">{variantsCountLabel}</Badge> : null}
+            {expStatus === "expired" ? (
+              <Badge tone="danger">{expiredLabel}</Badge>
+            ) : expStatus === "expiring_soon" ? (
+              <Badge tone="warn">{expiringSoonLabel}</Badge>
+            ) : null}
+            {inCartQty > 0 ? (
+              <span className="rounded-full bg-lime px-2.5 py-0.5 font-mono text-xs font-extrabold text-ink tabular-nums">
+                ×{inCartQty}
+              </span>
+            ) : null}
+          </div>
+        </div>
+
+        <div className="min-w-0">
+          <div className="font-display line-clamp-2 text-sm leading-snug font-bold text-text-on-light">
+            {isMulti ? group.productName : s.name}
+          </div>
+          <div className="mt-0.5 truncate font-mono text-[11px] text-muted-on-light">{variantSubtitle}</div>
+        </div>
+
+        <div className="flex w-full items-baseline justify-between gap-2 pt-1">
+          <span className="font-mono text-base font-bold text-text-on-light tabular-nums">{priceLabel}</span>
+          {isOut ? (
+            <span className="rounded-full bg-ink px-2 py-0.5 font-mono text-[11px] font-semibold text-text-on-dark">
+              {outOfStockLabel}
+            </span>
+          ) : !isMulti && stockBadgeLabel !== null ? (
+            isLow ? (
+              <span className="rounded-full bg-sw-meal px-2 py-0.5 font-mono text-[11px] font-semibold text-sw-meal-fg">
+                {stockBadgeLabel}
+              </span>
+            ) : (
+              <span className="font-mono text-[11px] text-muted-on-light tabular-nums">{stockBadgeLabel}</span>
+            )
+          ) : null}
+        </div>
+      </button>
+
+      <button
+        type="button"
+        data-testid={`pin-toggle-${s.sku}`}
+        title={pinTitle}
+        aria-label={pinTitle}
+        onClick={() => onTogglePin(s.sku)}
+        className={`absolute top-2.5 right-2.5 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full text-xs transition-all ${
+          pinned
+            ? "bg-sw-pastry text-sw-pastry-fg hover:opacity-90"
+            : "text-muted-on-light/50 opacity-0 group-hover:opacity-100 focus:opacity-100 hover:bg-sand hover:text-ink"
+        }`}
+      >
+        ★
+      </button>
+    </li>
+  );
+});
+
+interface CartLineRowProps {
+  line: CartLine;
+  isEditing: boolean;
+  editPriceText: string;
+  editDiscText: string;
+  fmt: (minor: number) => string;
+  onToggleEdit: (line: CartLine) => void;
+  onStepQty: (variantId: string, delta: number) => void;
+  onSetQty: (variantId: string, text: string) => void;
+  onRemove: (variantId: string) => void;
+  onPriceChange: (variantId: string, text: string) => void;
+  onDiscChange: (variantId: string, text: string) => void;
+  onResetLine: (line: CartLine) => void;
+  onCloseEditor: () => void;
+}
+
+const CartLineRow = memo(function CartLineRow({
+  line,
+  isEditing,
+  editPriceText,
+  editDiscText,
+  fmt,
+  onToggleEdit,
+  onStepQty,
+  onSetQty,
+  onRemove,
+  onPriceChange,
+  onDiscChange,
+  onResetLine,
+  onCloseEditor,
+}: CartLineRowProps) {
+  const { t } = useTranslation("admin");
+  const lineDisc = line.discount ?? 0;
+  const gross = lineGrossTotal(line.qty, line.unitPrice);
+  const net = lineTotal(line.qty, line.unitPrice, lineDisc);
+  const isPriceChanged = line.catalogPrice !== undefined && line.unitPrice !== line.catalogPrice;
+
+  return (
+    <li className="grid gap-1.5 py-2.5 first:pt-0 last:pb-0">
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="truncate text-sm font-semibold text-text-on-light">{line.name}</span>
+        <span className="flex items-baseline gap-1.5 font-mono tabular-nums">
+          {lineDisc > 0 ? <span className="text-xs text-muted-on-light line-through">{fmt(gross)}</span> : null}
+          <span className="text-sm font-bold text-text-on-light">{fmt(net)}</span>
+        </span>
+      </div>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <button
+            type="button"
+            data-testid={`edit-line-${line.variantId}`}
+            title={t("sell.editLine")}
+            aria-label={t("sell.editLine")}
+            onClick={() => onToggleEdit(line)}
+            className={`inline-flex cursor-pointer items-center gap-1 rounded-full border px-2 py-0.5 font-mono text-[11px] tabular-nums transition-colors ${
+              isEditing || isPriceChanged || lineDisc > 0
+                ? "border-ink bg-lime/40 font-semibold text-ink"
+                : "border-transparent text-muted-on-light hover:border-sand-line hover:bg-sand hover:text-ink"
+            }`}
+          >
+            <Tag size={11} aria-hidden />
+            <span>{fmt(line.unitPrice)}</span>
+            {lineDisc > 0 ? <span className="text-ok-fg">(-{fmt(lineDisc)})</span> : null}
+          </button>
+        </div>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            aria-label={`Decrease ${line.name}`}
+            onClick={() => onStepQty(line.variantId, -1)}
+            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border-[1.5px] border-sand-line bg-sand text-ink transition-colors hover:border-ink"
+          >
+            <Minus size={13} aria-hidden />
+          </button>
+          <Input
+            aria-label={t("sell.qty")}
+            data-testid={`qty-${line.variantId}`}
+            inputMode="decimal"
+            value={String(line.qty)}
+            onChange={(e) => onSetQty(line.variantId, e.target.value)}
+            className="h-8 min-h-[32px] w-13 rounded-[10px] px-1 py-0.5 text-center font-mono text-xs font-semibold tabular-nums"
+          />
+          <button
+            type="button"
+            aria-label={`Increase ${line.name}`}
+            onClick={() => onStepQty(line.variantId, 1)}
+            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border-[1.5px] border-sand-line bg-sand text-ink transition-colors hover:border-ink"
+          >
+            <Plus size={13} aria-hidden />
+          </button>
+          <button
+            type="button"
+            aria-label={t("sell.remove")}
+            onClick={() => onRemove(line.variantId)}
+            className="ml-0.5 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-muted-on-light transition-colors hover:bg-sw-meal hover:text-sw-meal-fg"
+          >
+            <X size={14} aria-hidden />
+          </button>
+        </div>
+      </div>
+
+      {isPriceChanged && !isEditing && line.catalogPrice !== undefined ? (
+        <div className="font-mono text-[11px] text-sw-pastry-fg">
+          {t("sell.priceOverridden", { catalog: fmt(line.catalogPrice) })}
+        </div>
+      ) : null}
+
+      {isEditing ? (
+        <div
+          data-testid={`line-editor-${line.variantId}`}
+          className="mt-1 grid gap-2 rounded-[14px] border-[1.5px] border-sand-line bg-sand p-2.5 text-xs"
+        >
+          <div className="grid grid-cols-2 gap-2">
+            <label className="grid gap-1 text-text-on-light">
+              <span className="font-medium">{t("sell.unitPrice")}</span>
+              <Input
+                data-testid={`line-price-${line.variantId}`}
+                inputMode="decimal"
+                value={editPriceText}
+                onChange={(e) => onPriceChange(line.variantId, e.target.value)}
+                className="h-8 min-h-[32px] bg-paper text-right font-mono text-xs tabular-nums"
+              />
+            </label>
+            <label className="grid gap-1 text-text-on-light">
+              <span className="font-medium">{t("sell.lineDiscount")}</span>
+              <Input
+                data-testid={`line-discount-${line.variantId}`}
+                inputMode="decimal"
+                placeholder="0.00"
+                value={editDiscText}
+                onChange={(e) => onDiscChange(line.variantId, e.target.value)}
+                className="h-8 min-h-[32px] bg-paper text-right font-mono text-xs tabular-nums"
+              />
+            </label>
+          </div>
+          <div className="flex items-center justify-between gap-2 pt-0.5">
+            {isPriceChanged || lineDisc > 0 ? (
+              <Button
+                size="sm"
+                variant="ghost"
+                data-testid={`reset-line-${line.variantId}`}
+                onClick={() => onResetLine(line)}
+                className="h-7 px-2 text-xs"
+              >
+                {t("sell.resetLinePricing")}
+              </Button>
+            ) : (
+              <span />
+            )}
+            <Button
+              size="sm"
+              variant="outline"
+              data-testid={`close-line-${line.variantId}`}
+              onClick={onCloseEditor}
+              className="h-7 px-2.5 text-xs"
+            >
+              {t("sell.applyLinePricing")}
+            </Button>
+          </div>
+        </div>
+      ) : null}
+    </li>
+  );
+});
+
 /** Kiosk-style Web POS Terminal: calm search & category bar, crisp product grid, and focused order register. */
 export function SellPage() {
   const { t, i18n } = useTranslation("admin");
   const msg = useErrorMessage();
   const { access, can } = useSession();
-  setPosOutboxTenant(access.tenant.id);
   const online = useOnlineStatus();
   const outboxOps = usePosOutboxSnapshot();
   const [syncingOutbox, setSyncingOutbox] = useState(false);
   const currency = access.tenant.base_currency;
-  const fmt = (n: number) => formatMoney(money(n, currency), i18n.language);
+  const fmt = useCallback((n: number) => formatMoney(money(n, currency), i18n.language), [currency, i18n.language]);
+
+  useEffect(() => {
+    setPosOutboxTenant(access.tenant.id);
+  }, [access.tenant.id]);
 
   const { activeStore } = useActiveLocation();
   const store =
@@ -155,17 +454,24 @@ export function SellPage() {
     staleTime: 15_000,
   });
 
+  // Defer non-critical background badges/settings/balances until initial POS render settles (or cashier starts a cart).
+  const [secondaryReady, setSecondaryReady] = useState(false);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setSecondaryReady(true), 150);
+    return () => window.clearTimeout(timer);
+  }, []);
+
   const expiryQuery = useQuery({
     queryKey: ["pos-stock-expiries", store?.id],
     queryFn: () => fetchStockExpiries(store!.id).catch(() => new Map<string, string | null>()),
-    enabled: Boolean(store?.id),
+    enabled: Boolean(store?.id) && secondaryReady,
     staleTime: 30_000,
   });
 
   const reorderQuery = useQuery({
     queryKey: ["pos-reorder-points", store?.id],
     queryFn: () => fetchLocationReorderPoints(store!.id).catch(() => new Map<string, number>()),
-    enabled: Boolean(store?.id),
+    enabled: Boolean(store?.id) && secondaryReady,
     staleTime: 30_000,
   });
 
@@ -197,6 +503,7 @@ export function SellPage() {
   const [holdLabel, setHoldLabel] = useState("");
   const [showHeldListDialog, setShowHeldListDialog] = useState(false);
   const [mobileCartOpen, setMobileCartOpen] = useState(false);
+  const [pickerProductId, setPickerProductId] = useState<string | null>(null);
   const toast = useToast();
   const attempt = useRef<{ key: string; id: string; opId: string } | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
@@ -205,8 +512,9 @@ export function SellPage() {
   const payMethodSelectRef = useRef<HTMLSelectElement | null>(null);
 
   useEffect(() => {
+    if (!secondaryReady) return;
     void registerWebDevice();
-  }, []);
+  }, [secondaryReady]);
 
   useEffect(() => {
     setHeldOrders(store?.id ? loadHeldOrders(store.id) : []);
@@ -260,6 +568,7 @@ export function SellPage() {
       if (error) return null;
       return data;
     },
+    enabled: secondaryReady || cart.length > 0,
     staleTime: 60_000,
   });
 
@@ -295,33 +604,18 @@ export function SellPage() {
   const splitExceeded = splitTenders.length > 0 && splitResult.lockedTotal > total;
   const onUtang = splitResult.onUtang;
   const change = splitResult.change;
-  const customers = useQuery({ queryKey: ["customers"], queryFn: fetchCustomers, staleTime: 30_000 });
   const customerBalances = useQuery({
     queryKey: ["customers", "balances"],
     queryFn: fetchCustomersWithBalances,
+    enabled: secondaryReady || cart.length > 0,
     staleTime: 30_000,
   });
   const [customerQuery, setCustomerQuery] = useState("");
-  const todayInStoreTz = useMemo(() => dayInTimezone(access.tenant.timezone), [access.tenant.timezone]);
 
-  const allCustomerBalances = useMemo<CustomerBalanceInput[]>(() => {
-    const byId = new Map<string, CustomerBalanceInput>();
-    for (const b of customerBalances.data ?? []) {
-      byId.set(b.customerId, b);
-    }
-    for (const c of customers.data ?? []) {
-      if (!byId.has(c.id)) {
-        byId.set(c.id, {
-          customerId: c.id,
-          name: c.name,
-          phone: c.phone,
-          dueOn: null,
-          balance: 0,
-        });
-      }
-    }
-    return Array.from(byId.values());
-  }, [customerBalances.data, customers.data]);
+  const allCustomerBalances = useMemo<CustomerBalanceInput[]>(
+    () => customerBalances.data ?? [],
+    [customerBalances.data],
+  );
 
   const filteredCustomerOptions = useMemo(() => {
     const matches = filterCustomersForPos(allCustomerBalances, customerQuery);
@@ -335,6 +629,18 @@ export function SellPage() {
   const selectedCustomerBalance = useMemo(
     () => (customerId ? allCustomerBalances.find((c) => c.customerId === customerId) ?? null : null),
     [allCustomerBalances, customerId],
+  );
+
+  // Lazily initialize ICU timezone lookup only when a customer actually carries a balance with a due date.
+  const needsOverdueDate = useMemo(
+    () =>
+      selectedCustomerBalance !== null ||
+      allCustomerBalances.some((c) => c.balance > 0 && c.dueOn !== null),
+    [selectedCustomerBalance, allCustomerBalances],
+  );
+  const todayInStoreTz = useMemo(
+    () => (needsOverdueDate ? dayInTimezone(access.tenant.timezone) : ""),
+    [needsOverdueDate, access.tenant.timezone],
   );
 
   const creditStatus = useMemo(
@@ -423,113 +729,140 @@ export function SellPage() {
     return count;
   }, [cart, expiryMap]);
 
-  const shown = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    let pool = catalog.data ?? [];
-    if (activeFilter === "pinned") {
-      pool = fastKeyProducts;
-    } else if (activeFilter !== "all") {
-      pool = pool.filter((s) => s.categoryId === activeFilter);
-    }
-    if (q) {
-      pool = pool.filter(
-        (s) =>
-          s.name.toLowerCase().includes(q) ||
-          s.sku.toLowerCase().includes(q) ||
-          s.barcode?.toLowerCase() === q,
-      );
-    }
-    return pool.slice(0, 80);
-  }, [catalog.data, fastKeyProducts, activeFilter, search]);
+  const deferredSearch = useDeferredValue(search);
 
-  function isPinned(sku: string): boolean {
-    return isSkuPinned(sku, catalog.data ?? [], customPinned);
-  }
+  const pinnedSet = useMemo(
+    () => new Set(customPinned ?? (catalog.data ?? []).slice(0, 6).map((s) => s.sku)),
+    [customPinned, catalog.data],
+  );
 
-  function togglePin(sku: string) {
-    const next = togglePinnedSku(sku, catalog.data ?? [], customPinned);
-    setCustomPinned(next);
-    saveStoredPinned(next);
-  }
+  const shownGroups = useMemo(() => {
+    const pool = activeFilter === "pinned" ? fastKeyProducts : (catalog.data ?? []);
+    const categoryId = activeFilter !== "all" && activeFilter !== "pinned" ? activeFilter : null;
+    return filterAndGroupSellables(pool, { query: deferredSearch, categoryId, maxGroups: 80 });
+  }, [catalog.data, fastKeyProducts, activeFilter, deferredSearch]);
 
-  function clearApproval() {
+  const pickerGroup = useMemo(
+    () => (pickerProductId ? shownGroups.find((g) => g.productId === pickerProductId) ?? null : null),
+    [pickerProductId, shownGroups],
+  );
+
+  const catalogData = catalog.data;
+  const togglePin = useCallback(
+    (sku: string) => {
+      setCustomPinned((prev) => {
+        const next = togglePinnedSku(sku, catalogData ?? [], prev);
+        saveStoredPinned(next);
+        return next;
+      });
+    },
+    [catalogData],
+  );
+
+  const clearApproval = useCallback(() => {
     setApprovalId(null);
     setOfflineApproval(null);
-  }
+  }, []);
 
-  function add(s: Sellable, qty = 1) {
-    setProblem(null);
-    clearApproval();
-    setCart((c) => {
-      const i = c.findIndex((l) => l.variantId === s.variantId);
-      if (i >= 0) return c.map((l, k) => (k === i ? { ...l, qty: Number((l.qty + qty).toFixed(3)) } : l));
-      return [
-        ...c,
-        {
-          variantId: s.variantId,
-          name: s.name,
-          qty,
-          unitPrice: s.price,
-          catalogPrice: s.price,
-          discount: 0,
-          unitCost: s.cost,
-          taxRate: s.taxRate,
-          tracked: s.tracked,
-        },
-      ];
+  const add = useCallback(
+    (s: Sellable, qty = 1) => {
+      setProblem(null);
+      clearApproval();
+      setCart((c) => {
+        const i = c.findIndex((l) => l.variantId === s.variantId);
+        if (i >= 0) return c.map((l, k) => (k === i ? { ...l, qty: Number((l.qty + qty).toFixed(3)) } : l));
+        return [
+          ...c,
+          {
+            variantId: s.variantId,
+            name: s.name,
+            qty,
+            unitPrice: s.price,
+            catalogPrice: s.price,
+            discount: 0,
+            unitCost: s.cost,
+            taxRate: s.taxRate,
+            tracked: s.tracked,
+          },
+        ];
+      });
+    },
+    [clearApproval],
+  );
+
+  const handleSelectGroup = useCallback(
+    (group: SellableProductGroup) => {
+      if (group.variants.length > 1) {
+        setPickerProductId(group.productId);
+      } else {
+        add(group.primary);
+      }
+    },
+    [add],
+  );
+
+  const toggleLineEditor = useCallback((l: CartLine) => {
+    setEditingVariantId((prev) => {
+      if (prev === l.variantId) return null;
+      setLinePriceText(formatMajorInput(l.unitPrice));
+      setLineDiscText((l.discount ?? 0) > 0 ? formatMajorInput(l.discount ?? 0) : "");
+      return l.variantId;
     });
-  }
+  }, []);
 
-  function openLineEditor(l: CartLine) {
-    if (editingVariantId === l.variantId) {
-      setEditingVariantId(null);
-      return;
-    }
-    setEditingVariantId(l.variantId);
-    setLinePriceText(formatMajorInput(l.unitPrice));
-    setLineDiscText((l.discount ?? 0) > 0 ? formatMajorInput(l.discount ?? 0) : "");
-  }
+  const closeLineEditor = useCallback(() => {
+    setEditingVariantId(null);
+  }, []);
 
-  function applyLinePriceText(variantId: string, text: string) {
-    setLinePriceText(text);
-    const parsed = parseAmount(text, currency);
-    if (parsed === null) return;
-    setProblem(null);
-    clearApproval();
-    setCart((c) =>
-      c.map((l) => {
-        if (l.variantId !== variantId) return l;
-        const gross = lineGrossTotal(l.qty, parsed);
-        const clampedDisc = Math.min(l.discount ?? 0, gross);
-        return { ...l, unitPrice: parsed, discount: clampedDisc };
-      }),
-    );
-  }
+  const applyLinePriceText = useCallback(
+    (variantId: string, text: string) => {
+      setLinePriceText(text);
+      const parsed = parseAmount(text, currency);
+      if (parsed === null) return;
+      setProblem(null);
+      clearApproval();
+      setCart((c) =>
+        c.map((l) => {
+          if (l.variantId !== variantId) return l;
+          const gross = lineGrossTotal(l.qty, parsed);
+          const clampedDisc = Math.min(l.discount ?? 0, gross);
+          return { ...l, unitPrice: parsed, discount: clampedDisc };
+        }),
+      );
+    },
+    [currency, clearApproval],
+  );
 
-  function applyLineDiscText(variantId: string, text: string) {
-    setLineDiscText(text);
-    const parsed = text.trim() === "" ? 0 : parseAmount(text, currency);
-    if (parsed === null) return;
-    setProblem(null);
-    clearApproval();
-    setCart((c) =>
-      c.map((l) => {
-        if (l.variantId !== variantId) return l;
-        return { ...l, discount: parsed };
-      }),
-    );
-  }
+  const applyLineDiscText = useCallback(
+    (variantId: string, text: string) => {
+      setLineDiscText(text);
+      const parsed = text.trim() === "" ? 0 : parseAmount(text, currency);
+      if (parsed === null) return;
+      setProblem(null);
+      clearApproval();
+      setCart((c) =>
+        c.map((l) => {
+          if (l.variantId !== variantId) return l;
+          return { ...l, discount: parsed };
+        }),
+      );
+    },
+    [currency, clearApproval],
+  );
 
-  function resetLinePricing(l: CartLine) {
-    const orig = l.catalogPrice ?? l.unitPrice;
-    setLinePriceText(formatMajorInput(orig));
-    setLineDiscText("");
-    setProblem(null);
-    clearApproval();
-    setCart((c) =>
-      c.map((x) => (x.variantId === l.variantId ? { ...x, unitPrice: orig, discount: 0 } : x)),
-    );
-  }
+  const resetLinePricing = useCallback(
+    (l: CartLine) => {
+      const orig = l.catalogPrice ?? l.unitPrice;
+      setLinePriceText(formatMajorInput(orig));
+      setLineDiscText("");
+      setProblem(null);
+      clearApproval();
+      setCart((c) =>
+        c.map((x) => (x.variantId === l.variantId ? { ...x, unitPrice: orig, discount: 0 } : x)),
+      );
+    },
+    [clearApproval],
+  );
 
   function onSearchEnter() {
     const q = search.trim().toLowerCase();
@@ -542,24 +875,39 @@ export function SellPage() {
     }
   }
 
-  function setQty(variantId: string, text: string) {
-    const qty = Number(text);
-    clearApproval();
-    setCart((c) => c.map((l) => (l.variantId === variantId ? { ...l, qty: Number.isFinite(qty) ? qty : 0 } : l)));
-  }
+  const setQty = useCallback(
+    (variantId: string, text: string) => {
+      const qty = Number(text);
+      clearApproval();
+      setCart((c) => c.map((l) => (l.variantId === variantId ? { ...l, qty: Number.isFinite(qty) ? qty : 0 } : l)));
+    },
+    [clearApproval],
+  );
 
-  function stepCartQty(variantId: string, delta: number) {
-    clearApproval();
-    setCart((c) =>
-      c
-        .map((l) => {
-          if (l.variantId !== variantId) return l;
-          const next = Number((l.qty + delta).toFixed(3));
-          return { ...l, qty: next };
-        })
-        .filter((l) => l.qty > 0),
-    );
-  }
+  const stepCartQty = useCallback(
+    (variantId: string, delta: number) => {
+      clearApproval();
+      setCart((c) =>
+        c
+          .map((l) => {
+            if (l.variantId !== variantId) return l;
+            const next = Number((l.qty + delta).toFixed(3));
+            return { ...l, qty: next };
+          })
+          .filter((l) => l.qty > 0),
+      );
+    },
+    [clearApproval],
+  );
+
+  const removeCartLine = useCallback(
+    (variantId: string) => {
+      clearApproval();
+      setEditingVariantId((prev) => (prev === variantId ? null : prev));
+      setCart((c) => c.filter((x) => x.variantId !== variantId));
+    },
+    [clearApproval],
+  );
 
   function reset() {
     setCart([]);
@@ -660,7 +1008,7 @@ export function SellPage() {
             receiptNo: r.saleNo ?? r.localNo,
             soldAt: new Date(),
             cashierName: access.full_name || access.username,
-            customerName: (customers.data ?? []).find((c) => c.id === customerId)?.name || null,
+            customerName: allCustomerBalances.find((c) => c.customerId === customerId)?.name || null,
             items: cart.map((line) => ({
               product_name: line.name,
               qty: line.qty,
@@ -710,14 +1058,14 @@ export function SellPage() {
 
   function openHoldDialog() {
     if (!store || cart.length === 0) return;
-    const selectedCustomer = (customers.data ?? []).find((c) => c.id === customerId);
+    const selectedCustomer = allCustomerBalances.find((c) => c.customerId === customerId);
     setHoldLabel(selectedCustomer?.name ?? "");
     setShowHoldDialog(true);
   }
 
   function confirmHoldOrder() {
     if (!store || cart.length === 0) return;
-    const selectedCustomer = (customers.data ?? []).find((c) => c.id === customerId);
+    const selectedCustomer = allCustomerBalances.find((c) => c.customerId === customerId);
     const { held, orders } = parkOrder(store.id, {
       label: holdLabel,
       customerId,
@@ -735,7 +1083,7 @@ export function SellPage() {
 
   function handleResumeHeld(heldId: string) {
     if (!store) return;
-    const selectedCustomer = (customers.data ?? []).find((c) => c.id === customerId);
+    const selectedCustomer = allCustomerBalances.find((c) => c.customerId === customerId);
     const { resumed, swapped, orders } = resumeHeldOrder(
       store.id,
       heldId,
@@ -775,63 +1123,66 @@ export function SellPage() {
     charge.mutate(undefined);
   }
 
-  useEffect(() => {
-    function onKeyDown(e: KeyboardEvent) {
-      const el = e.target as HTMLElement | null;
-      const tag = el?.tagName?.toLowerCase();
-      const inField = tag === "input" || tag === "textarea" || tag === "select" || Boolean(el?.isContentEditable);
-      const action = resolvePosHotkey({
-        key: e.key,
-        altKey: e.altKey,
-        ctrlKey: e.ctrlKey,
-        metaKey: e.metaKey,
-        shiftKey: e.shiftKey,
-        inField,
-        modalOpen: showApprovalDialog || showHoldDialog || showHeldListDialog,
-        isDoneScreen: done !== null,
-        canCharge: cart.length > 0 && !charge.isPending,
-      });
-      if (!action) return;
-      e.preventDefault();
-      switch (action.type) {
-        case "focus_search":
-          searchInputRef.current?.focus();
-          searchInputRef.current?.select();
-          break;
-        case "focus_discount":
-          discountInputRef.current?.focus();
-          discountInputRef.current?.select();
-          break;
-        case "hold_order":
-          openHoldDialog();
-          break;
-        case "focus_payment":
-          if (method === "cash" && tenderedInputRef.current) {
-            tenderedInputRef.current.focus();
-            tenderedInputRef.current.select();
-          } else {
-            payMethodSelectRef.current?.focus();
-          }
-          break;
-        case "fast_key": {
-          const item = fastKeyProducts[action.index];
-          if (item) add(item);
-          break;
+  const onKeyDownRef = useRef<(e: KeyboardEvent) => void>(() => {});
+  onKeyDownRef.current = (e: KeyboardEvent) => {
+    const el = e.target as HTMLElement | null;
+    const tag = el?.tagName?.toLowerCase();
+    const inField = tag === "input" || tag === "textarea" || tag === "select" || Boolean(el?.isContentEditable);
+    const action = resolvePosHotkey({
+      key: e.key,
+      altKey: e.altKey,
+      ctrlKey: e.ctrlKey,
+      metaKey: e.metaKey,
+      shiftKey: e.shiftKey,
+      inField,
+      modalOpen: showApprovalDialog || showHoldDialog || showHeldListDialog,
+      isDoneScreen: done !== null,
+      canCharge: cart.length > 0 && !charge.isPending,
+    });
+    if (!action) return;
+    e.preventDefault();
+    switch (action.type) {
+      case "focus_search":
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
+        break;
+      case "focus_discount":
+        discountInputRef.current?.focus();
+        discountInputRef.current?.select();
+        break;
+      case "hold_order":
+        openHoldDialog();
+        break;
+      case "focus_payment":
+        if (method === "cash" && tenderedInputRef.current) {
+          tenderedInputRef.current.focus();
+          tenderedInputRef.current.select();
+        } else {
+          payMethodSelectRef.current?.focus();
         }
-        case "charge":
-          handleCharge();
-          break;
-        case "new_sale":
-          setDone(null);
-          break;
-        case "print_receipt":
-          window.print();
-          break;
+        break;
+      case "fast_key": {
+        const item = fastKeyProducts[action.index];
+        if (item) add(item);
+        break;
       }
+      case "charge":
+        handleCharge();
+        break;
+      case "new_sale":
+        setDone(null);
+        break;
+      case "print_receipt":
+        window.print();
+        break;
     }
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  });
+  };
+
+  useEffect(() => {
+    const listener = (e: KeyboardEvent) => onKeyDownRef.current(e);
+    window.addEventListener("keydown", listener);
+    return () => window.removeEventListener("keydown", listener);
+  }, []);
 
   if (!store) {
     return (
@@ -1121,119 +1472,83 @@ export function SellPage() {
           {catalog.isPending ? (
             <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
               {Array.from({ length: 10 }).map((_, i) => (
-                <li key={i} className="h-32 animate-pulse rounded-[20px] border-[1.5px] border-sand-line bg-paper" />
+                <li key={i} className="h-32 rounded-[20px] border-[1.5px] border-sand-line bg-paper" />
               ))}
             </ul>
           ) : null}
           {catalog.isError ? <Alert>{t("sell.loadError")}</Alert> : null}
           {catalog.data && catalog.data.length === 0 ? <EmptyState title={t("sell.noProducts")} /> : null}
-          {catalog.data && catalog.data.length > 0 && shown.length === 0 ? (
+          {catalog.data && catalog.data.length > 0 && shownGroups.length === 0 ? (
             <EmptyState title={t("sell.noMatch")} />
           ) : null}
 
-          {shown.length > 0 ? (
+          {shownGroups.length > 0 ? (
             <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-              {shown.map((s) => {
-                const pinned = isPinned(s.sku);
-                const inCartQty = cartQtyByVariant.get(s.variantId) ?? 0;
-                const stockQty = s.tracked && stockMap ? (stockMap.get(s.variantId) ?? 0) : null;
+              {shownGroups.map((group) => {
+                const s = group.primary;
+                const isMulti = group.variants.length > 1;
+                const pinned = group.variants.some((v) => pinnedSet.has(v.sku));
+                const inCartQty = group.variants.reduce((sum, v) => sum + (cartQtyByVariant.get(v.variantId) ?? 0), 0);
+                const stockQty = isMulti
+                  ? null
+                  : s.tracked && stockMap
+                    ? (stockMap.get(s.variantId) ?? 0)
+                    : null;
                 const effectiveReorder = reorderMap?.get(s.variantId) ?? s.reorderPoint ?? 0;
-                const isOut = stockQty !== null && stockQty <= 0;
+                const isOut = isMulti
+                  ? group.variants.every((v) => v.tracked && stockMap && (stockMap.get(v.variantId) ?? 0) <= 0)
+                  : stockQty !== null && stockQty <= 0;
                 const isLow =
+                  !isMulti &&
                   stockQty !== null &&
                   stockQty > 0 &&
                   effectiveReorder > 0 &&
                   stockQty <= effectiveReorder;
-                const expStatus = getExpiryStatus(expiryMap?.get(s.variantId) ?? null);
+                const expStatus = isMulti
+                  ? null
+                  : getExpiryStatus(expiryMap?.get(s.variantId) ?? null);
+
+                let priceLabel: string;
+                if (isMulti) {
+                  let minP = group.variants[0]!.price;
+                  let maxP = minP;
+                  for (let i = 1; i < group.variants.length; i++) {
+                    const p = group.variants[i]!.price;
+                    if (p < minP) minP = p;
+                    if (p > maxP) maxP = p;
+                  }
+                  priceLabel = minP !== maxP ? `${fmt(minP)} – ${fmt(maxP)}` : fmt(s.price);
+                } else {
+                  priceLabel = fmt(s.price);
+                }
+
+                const stockBadgeLabel =
+                  !isMulti && stockQty !== null && !isOut
+                    ? isLow
+                      ? t("sell.lowStock", { qty: stockQty })
+                      : t("sell.stockLeft", { qty: stockQty })
+                    : null;
 
                 return (
-                  <li
-                    key={s.variantId}
-                    className={`group relative flex flex-col rounded-[20px] border-[1.5px] transition-colors ${
-                      inCartQty > 0
-                        ? "border-ink bg-paper ring-1 ring-ink"
-                        : "border-sand-line bg-paper hover:border-ink"
-                    }`}
-                  >
-                    <button
-                      type="button"
-                      data-testid={`product-${s.sku}`}
-                      onClick={() => add(s)}
-                      className="flex flex-1 cursor-pointer flex-col justify-between gap-2.5 p-3.5 text-left focus:outline-none"
-                    >
-                      <div className="flex w-full items-start justify-between gap-2 pr-6">
-                        <div className="relative">
-                          <ProductThumb
-                            photoPath={s.photoPath}
-                            name={s.name}
-                            size="md"
-                            active={inCartQty > 0}
-                          />
-                          {s.categoryId ? (
-                            <span
-                              className={`-bottom-1 -right-1 absolute h-3.5 w-3.5 rounded-full border-2 border-paper ${chipTone(s.categoryId)}`}
-                              aria-hidden
-                            />
-                          ) : null}
-                        </div>
-                        <div className="flex flex-wrap items-center justify-end gap-1">
-                          {expStatus === "expired" ? (
-                            <Badge tone="danger">{t("sell.expiredBadge")}</Badge>
-                          ) : expStatus === "expiring_soon" ? (
-                            <Badge tone="warn">{t("sell.expiringSoonBadge")}</Badge>
-                          ) : null}
-                          {inCartQty > 0 ? (
-                            <span className="rounded-full bg-lime px-2.5 py-0.5 font-mono text-xs font-extrabold text-ink tabular-nums">
-                              ×{inCartQty}
-                            </span>
-                          ) : null}
-                        </div>
-                      </div>
-
-                      <div className="min-w-0">
-                        <div className="font-display line-clamp-2 text-sm leading-snug font-bold text-text-on-light">
-                          {s.name}
-                        </div>
-                        <div className="mt-0.5 truncate font-mono text-[11px] text-muted-on-light">{s.sku}</div>
-                      </div>
-
-                      <div className="flex w-full items-baseline justify-between gap-2 pt-1">
-                        <span className="font-mono text-base font-bold text-text-on-light tabular-nums">
-                          {fmt(s.price)}
-                        </span>
-                        {stockQty !== null ? (
-                          isOut ? (
-                            <span className="rounded-full bg-ink px-2 py-0.5 font-mono text-[11px] font-semibold text-text-on-dark">
-                              {t("sell.outOfStock")}
-                            </span>
-                          ) : isLow ? (
-                            <span className="rounded-full bg-sw-meal px-2 py-0.5 font-mono text-[11px] font-semibold text-sw-meal-fg">
-                              {t("sell.lowStock", { qty: stockQty })}
-                            </span>
-                          ) : (
-                            <span className="font-mono text-[11px] text-muted-on-light tabular-nums">
-                              {t("sell.stockLeft", { qty: stockQty })}
-                            </span>
-                          )
-                        ) : null}
-                      </div>
-                    </button>
-
-                    <button
-                      type="button"
-                      data-testid={`pin-toggle-${s.sku}`}
-                      title={pinned ? t("sell.unpinFromFastKeys") : t("sell.pinToFastKeys")}
-                      aria-label={pinned ? t("sell.unpinFromFastKeys") : t("sell.pinToFastKeys")}
-                      onClick={() => togglePin(s.sku)}
-                      className={`absolute top-2.5 right-2.5 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full text-xs transition-all ${
-                        pinned
-                          ? "bg-sw-pastry text-sw-pastry-fg hover:opacity-90"
-                          : "text-muted-on-light/50 opacity-0 group-hover:opacity-100 focus:opacity-100 hover:bg-sand hover:text-ink"
-                      }`}
-                    >
-                      ★
-                    </button>
-                  </li>
+                  <ProductTile
+                    key={group.productId}
+                    group={group}
+                    pinned={pinned}
+                    inCartQty={inCartQty}
+                    isOut={isOut}
+                    isLow={isLow}
+                    expStatus={expStatus}
+                    priceLabel={priceLabel}
+                    chipToneClass={chipTone(s.categoryId)}
+                    variantsCountLabel={isMulti ? t("sell.variantsCount", { count: group.variants.length }) : ""}
+                    expiredLabel={t("sell.expiredBadge")}
+                    expiringSoonLabel={t("sell.expiringSoonBadge")}
+                    outOfStockLabel={t("sell.outOfStock")}
+                    stockBadgeLabel={stockBadgeLabel}
+                    pinTitle={pinned ? t("sell.unpinFromFastKeys") : t("sell.pinToFastKeys")}
+                    onSelect={handleSelectGroup}
+                    onTogglePin={togglePin}
+                  />
                 );
               })}
             </ul>
@@ -1492,144 +1807,24 @@ export function SellPage() {
               ) : (
                 <ul className="divide-y-[1.5px] divide-dashed divide-dash">
                   {cart.map((l) => {
-                    const lineDisc = l.discount ?? 0;
-                    const gross = lineGrossTotal(l.qty, l.unitPrice);
-                    const net = lineTotal(l.qty, l.unitPrice, lineDisc);
-                    const isPriceChanged = l.catalogPrice !== undefined && l.unitPrice !== l.catalogPrice;
                     const isEditing = editingVariantId === l.variantId;
                     return (
-                      <li key={l.variantId} className="grid gap-1.5 py-2.5 first:pt-0 last:pb-0">
-                        <div className="flex items-baseline justify-between gap-2">
-                          <span className="truncate text-sm font-semibold text-text-on-light">{l.name}</span>
-                          <span className="flex items-baseline gap-1.5 font-mono tabular-nums">
-                            {lineDisc > 0 ? (
-                              <span className="text-xs text-muted-on-light line-through">{fmt(gross)}</span>
-                            ) : null}
-                            <span className="text-sm font-bold text-text-on-light">{fmt(net)}</span>
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex flex-wrap items-center gap-1.5">
-                            <button
-                              type="button"
-                              data-testid={`edit-line-${l.variantId}`}
-                              title={t("sell.editLine")}
-                              aria-label={t("sell.editLine")}
-                              onClick={() => openLineEditor(l)}
-                              className={`inline-flex cursor-pointer items-center gap-1 rounded-full border px-2 py-0.5 font-mono text-[11px] tabular-nums transition-colors ${
-                                isEditing || isPriceChanged || lineDisc > 0
-                                  ? "border-ink bg-lime/40 font-semibold text-ink"
-                                  : "border-transparent text-muted-on-light hover:border-sand-line hover:bg-sand hover:text-ink"
-                              }`}
-                            >
-                              <Tag size={11} aria-hidden />
-                              <span>{fmt(l.unitPrice)}</span>
-                              {lineDisc > 0 ? (
-                                <span className="text-ok-fg">(-{fmt(lineDisc)})</span>
-                              ) : null}
-                            </button>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <button
-                              type="button"
-                              aria-label={`Decrease ${l.name}`}
-                              onClick={() => stepCartQty(l.variantId, -1)}
-                              className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border-[1.5px] border-sand-line bg-sand text-ink transition-colors hover:border-ink"
-                            >
-                              <Minus size={13} aria-hidden />
-                            </button>
-                            <Input
-                              aria-label={t("sell.qty")}
-                              data-testid={`qty-${l.variantId}`}
-                              inputMode="decimal"
-                              value={String(l.qty)}
-                              onChange={(e) => setQty(l.variantId, e.target.value)}
-                              className="h-8 min-h-[32px] w-13 rounded-[10px] px-1 py-0.5 text-center font-mono text-xs font-semibold tabular-nums"
-                            />
-                            <button
-                              type="button"
-                              aria-label={`Increase ${l.name}`}
-                              onClick={() => stepCartQty(l.variantId, 1)}
-                              className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border-[1.5px] border-sand-line bg-sand text-ink transition-colors hover:border-ink"
-                            >
-                              <Plus size={13} aria-hidden />
-                            </button>
-                            <button
-                              type="button"
-                              aria-label={t("sell.remove")}
-                              onClick={() => {
-                                clearApproval();
-                                if (editingVariantId === l.variantId) setEditingVariantId(null);
-                                setCart((c) => c.filter((x) => x.variantId !== l.variantId));
-                              }}
-                              className="ml-0.5 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-muted-on-light transition-colors hover:bg-sw-meal hover:text-sw-meal-fg"
-                            >
-                              <X size={14} aria-hidden />
-                            </button>
-                          </div>
-                        </div>
-
-                        {isPriceChanged && !isEditing && l.catalogPrice !== undefined ? (
-                          <div className="font-mono text-[11px] text-sw-pastry-fg">
-                            {t("sell.priceOverridden", { catalog: fmt(l.catalogPrice) })}
-                          </div>
-                        ) : null}
-
-                        {isEditing ? (
-                          <div
-                            data-testid={`line-editor-${l.variantId}`}
-                            className="mt-1 grid gap-2 rounded-[14px] border-[1.5px] border-sand-line bg-sand p-2.5 text-xs"
-                          >
-                            <div className="grid grid-cols-2 gap-2">
-                              <label className="grid gap-1 text-text-on-light">
-                                <span className="font-medium">{t("sell.unitPrice")}</span>
-                                <Input
-                                  data-testid={`line-price-${l.variantId}`}
-                                  inputMode="decimal"
-                                  value={linePriceText}
-                                  onChange={(e) => applyLinePriceText(l.variantId, e.target.value)}
-                                  className="h-8 min-h-[32px] bg-paper text-right font-mono text-xs tabular-nums"
-                                />
-                              </label>
-                              <label className="grid gap-1 text-text-on-light">
-                                <span className="font-medium">{t("sell.lineDiscount")}</span>
-                                <Input
-                                  data-testid={`line-discount-${l.variantId}`}
-                                  inputMode="decimal"
-                                  placeholder="0.00"
-                                  value={lineDiscText}
-                                  onChange={(e) => applyLineDiscText(l.variantId, e.target.value)}
-                                  className="h-8 min-h-[32px] bg-paper text-right font-mono text-xs tabular-nums"
-                                />
-                              </label>
-                            </div>
-                            <div className="flex items-center justify-between gap-2 pt-0.5">
-                              {isPriceChanged || lineDisc > 0 ? (
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  data-testid={`reset-line-${l.variantId}`}
-                                  onClick={() => resetLinePricing(l)}
-                                  className="h-7 px-2 text-xs"
-                                >
-                                  {t("sell.resetLinePricing")}
-                                </Button>
-                              ) : (
-                                <span />
-                              )}
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                data-testid={`close-line-${l.variantId}`}
-                                onClick={() => setEditingVariantId(null)}
-                                className="h-7 px-2.5 text-xs"
-                              >
-                                {t("sell.applyLinePricing")}
-                              </Button>
-                            </div>
-                          </div>
-                        ) : null}
-                      </li>
+                      <CartLineRow
+                        key={l.variantId}
+                        line={l}
+                        isEditing={isEditing}
+                        editPriceText={isEditing ? linePriceText : ""}
+                        editDiscText={isEditing ? lineDiscText : ""}
+                        fmt={fmt}
+                        onToggleEdit={toggleLineEditor}
+                        onStepQty={stepCartQty}
+                        onSetQty={setQty}
+                        onRemove={removeCartLine}
+                        onPriceChange={applyLinePriceText}
+                        onDiscChange={applyLineDiscText}
+                        onResetLine={resetLinePricing}
+                        onCloseEditor={closeLineEditor}
+                      />
                     );
                   })}
                 </ul>
@@ -2075,6 +2270,59 @@ export function SellPage() {
             </ul>
           )}
         </div>
+      </Dialog>
+
+      <Dialog
+        open={Boolean(pickerGroup)}
+        onOpenChange={(open) => {
+          if (!open) setPickerProductId(null);
+        }}
+        title={pickerGroup ? t("sell.chooseVariant", { product: pickerGroup.productName }) : ""}
+        closeLabel={t("sell.cancel")}
+      >
+        {pickerGroup ? (
+          <div className="grid gap-2" data-testid="variant-picker-dialog">
+            {pickerGroup.variants.map((v) => {
+              const vStock = v.tracked && stockMap ? (stockMap.get(v.variantId) ?? 0) : null;
+              const vOut = vStock !== null && vStock <= 0;
+              const inCart = cartQtyByVariant.get(v.variantId) ?? 0;
+              return (
+                <button
+                  key={v.variantId}
+                  type="button"
+                  data-testid={`pick-variant-${v.sku}`}
+                  onClick={() => {
+                    add(v);
+                    setPickerProductId(null);
+                  }}
+                  className="flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-sand-line bg-paper px-3.5 py-2.5 text-left transition-colors hover:border-ink hover:bg-sand/40"
+                >
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-text-on-light">
+                        {v.variantName && v.variantName !== "Default" ? v.variantName : v.name}
+                      </span>
+                      {inCart > 0 ? (
+                        <span className="rounded-full bg-lime px-2 py-0.5 font-mono text-[11px] font-bold text-ink tabular-nums">
+                          ×{inCart}
+                        </span>
+                      ) : null}
+                    </div>
+                    <div className="mt-0.5 font-mono text-xs text-muted-on-light">{v.sku}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-mono text-sm font-bold text-text-on-light tabular-nums">{fmt(v.price)}</div>
+                    {vStock !== null ? (
+                      <div className={`font-mono text-[11px] ${vOut ? "font-semibold text-red-700" : "text-muted-on-light"}`}>
+                        {vOut ? t("sell.outOfStock") : t("sell.stockLeft", { qty: vStock })}
+                      </div>
+                    ) : null}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
       </Dialog>
     </div>
   );

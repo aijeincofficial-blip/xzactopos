@@ -183,10 +183,14 @@ class _SupervisorPinSheetState extends State<_SupervisorPinSheet> {
       // 2. Offline fallback: verify against cached store approver PIN hashes
       final loc = widget.locationId ?? (store != null ? await store.activeStoreNow() : null);
       if (loc != null) {
+        final tenantId = store != null ? (await store.meta('tenant_id')) : null;
         final outcome = await SupervisorPinStorage.verifyOfflinePinDetailed(
           locationId: loc,
           pin: enteredPin,
           store: store,
+          tenantId: tenantId,
+          action: widget.action,
+          refId: widget.refId,
         );
 
         if (outcome.status == OfflinePinVerifyStatus.matched && outcome.approver != null) {
@@ -194,9 +198,10 @@ class _SupervisorPinSheetState extends State<_SupervisorPinSheet> {
           HapticFeedback.mediumImpact();
           final offlineApproval = {
             'approver_id': match.userId,
-            'approved_at': DateTime.now().toUtc().toIso8601String(),
+            'approved_at': outcome.approvedAt ?? DateTime.now().toUtc().toIso8601String(),
             'action': widget.action,
             'ref_id': widget.refId,
+            if (outcome.proof != null) 'proof': outcome.proof!,
           };
 
           if (mounted) {

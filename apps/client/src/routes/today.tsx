@@ -7,14 +7,16 @@ import { Button, Card, EmptyState, ErrorState, PageHeader, Skeleton } from "../c
 import { useSession } from "../lib/session.tsx";
 import { tenantMode } from "../lib/mode.ts";
 import { dayInTimezone, getDaySummary } from "../lib/today.ts";
+import { usePollInterval } from "../lib/polling.ts";
 
 /** Solo home: today's sales, tender breakdown, expenses, and customer utang in a calm, grouped layout. */
 export function TodayPage() {
   const { t, i18n } = useTranslation(["admin", "common"]);
   const { access, can } = useSession();
+  const pollInterval = usePollInterval(120_000);
   const mode = tenantMode(access);
   const day = dayInTimezone(access.tenant.timezone);
-  const q = useQuery({ queryKey: ["day-summary", day], queryFn: () => getDaySummary(day), refetchInterval: 120_000 });
+  const q = useQuery({ queryKey: ["day-summary", day], queryFn: () => getDaySummary(day), refetchInterval: pollInterval });
   const fmt = (n: number) => formatMoney(money(n, access.tenant.base_currency), i18n.language);
 
   if (q.isPending) {

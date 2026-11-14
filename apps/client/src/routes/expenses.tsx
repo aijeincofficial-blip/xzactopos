@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { usePollInterval } from "../lib/polling.ts";
 import { formatMoney, money } from "@pos/core";
 import { Download, Plus, X } from "lucide-react";
 import {
@@ -44,6 +45,8 @@ export function ExpensesPage() {
   const msg = useErrorMessage();
   const toast = useToast();
   const { access, can } = useSession();
+  const pollInterval = usePollInterval(120_000);
+  const canManageExpenses = access.role !== "cashier" && can("shift.manage");
   const qc = useQueryClient();
   const currency = access.tenant.base_currency;
   const fmt = (n: number) => formatMoney(money(n, currency), i18n.language);
@@ -78,7 +81,7 @@ export function ExpensesPage() {
     queryKey: ["expenses", store?.id],
     queryFn: () => fetchRecentExpenses(store?.id ?? "", currency),
     enabled: Boolean(store),
-    refetchInterval: 60_000,
+    refetchInterval: pollInterval,
   });
 
   const refreshAll = () =>
@@ -210,15 +213,17 @@ export function ExpensesPage() {
               <Download size={15} aria-hidden />
               <span>{t("expenses.exportCsv")}</span>
             </Button>
-            <Button
-              variant={showAdd ? "outline" : "primary"}
-              size="sm"
-              data-testid="add-expense-btn"
-              onClick={() => setShowAdd(!showAdd)}
-            >
-              {showAdd ? <X size={15} aria-hidden /> : <Plus size={15} aria-hidden />}
-              <span>{showAdd ? t("sell.cancel") : t("expenses.add")}</span>
-            </Button>
+            {canManageExpenses ? (
+              <Button
+                variant={showAdd ? "outline" : "primary"}
+                size="sm"
+                data-testid="add-expense-btn"
+                onClick={() => setShowAdd(!showAdd)}
+              >
+                {showAdd ? <X size={15} aria-hidden /> : <Plus size={15} aria-hidden />}
+                <span>{showAdd ? t("sell.cancel") : t("expenses.add")}</span>
+              </Button>
+            ) : null}
           </div>
         }
       />
@@ -466,7 +471,7 @@ export function ExpensesPage() {
                         <Badge tone="warn">{t("expenses.voided")}</Badge>
                       ) : exp.pending ? (
                         <Badge tone="warn">{t("common:offline.queuedBadge")}</Badge>
-                      ) : (
+                      ) : canManageExpenses ? (
                         <Button
                           size="sm"
                           variant="ghost"
@@ -479,7 +484,7 @@ export function ExpensesPage() {
                         >
                           {t("expenses.void")}
                         </Button>
-                      )}
+                      ) : null}
                     </div>
                   </div>
 

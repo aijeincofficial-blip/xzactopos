@@ -1,8 +1,8 @@
-import type { resources } from "./index.ts";
+import type { I18nResourcesSchema } from "./resources-type.ts";
 
 declare module "i18next" {
   interface CustomTypeOptions {
     defaultNS: "common";
-    resources: (typeof resources)["en"];
+    resources: I18nResourcesSchema;
   }
 }

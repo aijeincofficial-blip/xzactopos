@@ -15,11 +15,17 @@ abstract class LocalStore implements SalesStore, WarehouseStore, ShiftStore {
   /// this device if it is still allowed, else [locationId] if allowed, else the first store (the only one for a solo
   /// owner). [stores] null = just [locationId] when given (one store; how tests and older callers name it).
   Future<bool> ensureTenant(String tenantId,
-      {required String baseCurrency, String? locationId, List<StoreRef>? stores, bool discardUnsent = false});
+      {required String baseCurrency,
+      String? locationId,
+      List<StoreRef>? stores,
+      bool discardUnsent = false,
+      String? userId});
+  Future<void> clearSessionData();
   String get baseCurrency;
 
   // ---- reads (work offline) ----
   Stream<List<ProductView>> watchProducts({String query = ''});
+  Future<List<ProductView>> productVariants(String productId);
   Future<ProductView?> findByBarcode(String barcode);
 
   /// The hidden "open amount" product behind the Sell keypad (a typed amount, no stock count). Made on first use,
@@ -81,6 +87,9 @@ class ProductView {
     required this.name,
     required this.unit,
     required this.sku,
+    this.variantName = 'Default',
+    this.isDefault = true,
+    this.variantCount = 1,
     this.barcode,
     this.price,
     required this.currency,
@@ -101,6 +110,9 @@ class ProductView {
   final String name;
   final String unit;
   final String sku;
+  final String variantName;
+  final bool isDefault;
+  final int variantCount;
   final String? barcode;
 
   /// Base-currency minor units; null if no price row yet.
@@ -133,6 +145,10 @@ class ProductView {
   /// A pack that can be opened into pieces ([SalesStore.openPack]).
   bool get sellsByPiece => breaksIntoVariantId != null && piecesPerPack != null;
 
+  /// Product name with variant label when a product has multiple variants or a custom variant label.
+  String get displayName =>
+      (variantCount > 1 || (variantName.isNotEmpty && variantName != 'Default')) ? '$name ($variantName)' : name;
+
   /// The same product at another price (the keypad adds typed amounts onto one line).
   ProductView withPrice(int newPrice) => ProductView(
         id: id,
@@ -140,6 +156,9 @@ class ProductView {
         name: name,
         unit: unit,
         sku: sku,
+        variantName: variantName,
+        isDefault: isDefault,
+        variantCount: variantCount,
         barcode: barcode,
         price: newPrice,
         currency: currency,
@@ -156,6 +175,70 @@ class ProductView {
       );
 }
 
+class ProductGroup {
+  const ProductGroup({
+    required this.productId,
+    required this.productName,
+    required this.primary,
+    required this.variants,
+  });
+
+  final String productId;
+  final String productName;
+  final ProductView primary;
+  final List<ProductView> variants;
+}
+
+/// Groups active [ProductView] variant rows by `id` (keeping default variant first within each group).
+List<ProductGroup> groupProducts(Iterable<ProductView> items) {
+  final byId = <String, List<ProductView>>{};
+  for (final item in items) {
+    byId.putIfAbsent(item.id, () => <ProductView>[]).add(item);
+  }
+  return [
+    for (final entry in byId.entries)
+      () {
+        final list = [...entry.value]..sort((a, b) {
+            if (a.isDefault != b.isDefault) return a.isDefault ? -1 : 1;
+            return a.variantName.toLowerCase().compareTo(b.variantName.toLowerCase());
+          });
+        final primary = list.first;
+        return ProductGroup(
+          productId: entry.key,
+          productName: primary.name,
+          primary: primary,
+          variants: list,
+        );
+      }(),
+  ];
+}
+
+class VariantDraft {
+  const VariantDraft({
+    required this.id,
+    this.name = 'Default',
+    this.sku,
+    this.barcode,
+    required this.price,
+    this.cost,
+    this.reorderPoint,
+    this.openingQty,
+    this.isDefault = false,
+    this.active = true,
+  });
+
+  final String id;
+  final String name;
+  final String? sku;
+  final String? barcode;
+  final int price;
+  final int? cost;
+  final double? reorderPoint;
+  final double? openingQty;
+  final bool isDefault;
+  final bool active;
+}
+
 class ProductDraft {
   const ProductDraft({
     required this.id,
@@ -169,6 +252,7 @@ class ProductDraft {
     this.openingQty,
     this.reorderPoint,
     this.trackStock,
+    this.variants,
   });
 
   final String id;
@@ -189,21 +273,49 @@ class ProductDraft {
   /// false = no stock count for this product; null keeps the current value (new products count stock).
   final bool? trackStock;
 
+  /// Multiple variants (when non-empty, `toPayload()` emits the full `variants` array).
+  final List<VariantDraft>? variants;
+
   /// Payload for the upsert_product RPC.
-  Map<String, dynamic> toPayload() => {
+  Map<String, dynamic> toPayload() {
+    final vs = variants;
+    if (vs != null && vs.isNotEmpty) {
+      return {
         'id': id,
         'name': name,
-        'price': price,
         'unit': unit,
-        'variant': {
-          'id': variantId,
-          if (sku != null && sku!.isNotEmpty) 'sku': sku,
-          'barcode': (barcode == null || barcode!.isEmpty) ? null : barcode,
-          if (cost != null) 'cost': cost,
-          'reorder_point': ?reorderPoint,
-        },
+        'variants': [
+          for (final v in vs)
+            {
+              'id': v.id,
+              'name': v.name.trim().isEmpty ? 'Default' : v.name.trim(),
+              if (v.sku != null && v.sku!.isNotEmpty) 'sku': v.sku,
+              'barcode': (v.barcode == null || v.barcode!.isEmpty) ? null : v.barcode,
+              'price': v.price,
+              if (v.cost != null) 'cost': v.cost,
+              'reorder_point': ?v.reorderPoint,
+              'is_default': v.isDefault,
+              'active': v.active,
+            },
+        ],
         'track_stock': ?trackStock,
       };
+    }
+    return {
+      'id': id,
+      'name': name,
+      'price': price,
+      'unit': unit,
+      'variant': {
+        'id': variantId,
+        if (sku != null && sku!.isNotEmpty) 'sku': sku,
+        'barcode': (barcode == null || barcode!.isEmpty) ? null : barcode,
+        if (cost != null) 'cost': cost,
+        'reorder_point': ?reorderPoint,
+      },
+      'track_stock': ?trackStock,
+    };
+  }
 }
 
 class OutboxOp {

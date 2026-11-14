@@ -201,9 +201,11 @@ void main() {
     expect(find.text('40'), findsOneWidget);
     expect(find.text('Cooking oil'), findsNothing, reason: 'that stock is in the other warehouse');
     await tester.enterText(find.byKey(const Key('stock-search')), 'zzz');
+    await tester.pump(const Duration(milliseconds: 200));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('no-stock')), findsOneWidget);
     await tester.enterText(find.byKey(const Key('stock-search')), 'ric');
+    await tester.pump(const Duration(milliseconds: 200));
     await tester.pumpAndSettle();
     expect(find.text('Rice 25kg'), findsOneWidget);
     await leave(tester);
@@ -385,6 +387,7 @@ void main() {
     await tester.tap(find.byKey(const Key('stock-filter-all')));
     await tester.pumpAndSettle();
     await tester.enterText(find.byKey(const Key('stock-search')), 'SUG-1KG');
+    await tester.pump(const Duration(milliseconds: 200));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('stock-$vNeg')), findsOneWidget);
     expect(find.byKey(const Key('stock-$_rice')), findsNothing);

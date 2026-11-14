@@ -6,6 +6,7 @@ import { Badge, Button, Card, Dialog, EmptyState, ErrorState, Field, Input, Page
 import { BarcodeLabelsDialog, formatBinBarcodeItem } from "../components/barcode-labels-dialog.tsx";
 import { useSession } from "../lib/session.tsx";
 import { useErrorMessage } from "../lib/i18n-helpers.ts";
+import { usePollInterval } from "../lib/polling.ts";
 import { supabase } from "../lib/supabase.ts";
 import {
   checkBinStockInvariant,
@@ -29,6 +30,7 @@ export function BinsPage() {
   const msg = useErrorMessage();
   const { access, can } = useSession();
   const qc = useQueryClient();
+  const pollInterval = usePollInterval(120_000);
   const toast = useToast();
 
   const warehouses = access.locations.filter(
@@ -120,7 +122,7 @@ export function BinsPage() {
     queryKey: ["bin-invariant", selectedWarehouseId],
     queryFn: () => checkBinStockInvariant(selectedWarehouseId),
     enabled: Boolean(selectedWarehouseId) && isBinsEnabled,
-    refetchInterval: 60_000,
+    refetchInterval: pollInterval,
   });
 
   const binStockQuery = useQuery({

@@ -1,5 +1,5 @@
 import { supabase } from "./supabase.ts";
-import { fromRaw, rpc } from "./api.ts";
+import { fetchAllPages, fromRaw, rpc } from "./api.ts";
 import type { PoItemPayload, PoStatus } from "./purchasing-math.ts";
 
 export interface Supplier {
@@ -99,15 +99,16 @@ export async function listSuppliers(): Promise<Supplier[]> {
 }
 
 export async function listVariantOptions(): Promise<VariantOption[]> {
-  const { data, error } = await supabase
-    .from("product_variants")
-    .select("id, sku, product:products(name, unit)")
-    .is("deleted_at", null)
-    .eq("active", true)
-    .order("sku")
-    .limit(1000);
-  if (error) throw fromRaw(error);
-  return (data ?? []) as unknown as VariantOption[];
+  return await fetchAllPages<VariantOption>((from, to) =>
+    supabase
+      .from("product_variants")
+      .select("id, sku, product:products(name, unit)")
+      .is("deleted_at", null)
+      .eq("active", true)
+      .order("sku")
+      .order("id")
+      .range(from, to),
+  );
 }
 
 export async function listPurchaseOrders(): Promise<PurchaseOrder[]> {

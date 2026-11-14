@@ -22,6 +22,31 @@ create function pg_temp.push1(k text, kind text, payload jsonb) returns jsonb la
   select public.sync_push(jsonb_build_array(pg_temp.op(k, kind, payload))) -> 0
 $$;
 
+create function pg_temp.offline_appr(p_user text, p_action text, p_ref uuid) returns jsonb language sql stable as $$
+  with info as (
+    select p.pin_hash, to_char(now() at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as approved_at
+    from public.profiles p where p.user_id = pg_temp.u(p_user)
+  )
+  select jsonb_build_object(
+    'approver_id', pg_temp.u(p_user),
+    'approved_at', info.approved_at,
+    'action', p_action,
+    'ref_id', p_ref,
+    'proof', encode(
+      extensions.hmac(
+        convert_to(
+          lower(pg_temp.t('A')::text) || '|' || lower(pg_temp.u(p_user)::text) || '|' || p_action
+            || '|' || coalesce(lower(p_ref::text), '') || '|' || info.approved_at,
+          'UTF8'
+        ),
+        decode((string_to_array(info.pin_hash, '$'))[4], 'base64'),
+        'sha256'
+      ),
+      'hex'
+    )
+  ) from info;
+$$;
+
 create function pg_temp.hint(p_sql text) returns text language plpgsql as $$
 declare h text;
 begin
@@ -122,23 +147,23 @@ select is(
   '2. Juan cannot pull offline pins across tenants'
 );
 
--- 3. Juan pulls offline pins for S01
+-- 3. Juan pulls offline pins for S01 (only approvers: owner, maria, sara; cashier juan & no-PIN pedro excluded)
 select is(
   (select count(*) from public.pull_offline_pins(pg_temp.id('S01'))),
-  4::bigint,
-  '3. Pulls 4 active users with PINs for S01 (owner, maria, sara, juan; pedro excluded as he has no PIN)'
+  3::bigint,
+  '3. Pulls 3 active store approvers with PINs for S01 (owner, maria, sara; cashier juan and no-PIN pedro excluded)'
 );
 
--- 4. Pedro without PIN is not in the list
+-- 4. Pedro without PIN and cashier Juan are not in the list
 select ok(
-  not exists (select 1 from public.pull_offline_pins(pg_temp.id('S01')) where username = 'pedro'),
-  '4. User without a PIN (pedro) is excluded from offline pins'
+  not exists (select 1 from public.pull_offline_pins(pg_temp.id('S01')) where username in ('pedro', 'juan')),
+  '4. Non-approver cashier (juan) and user without PIN (pedro) are excluded from offline pins'
 );
 
--- 5. Returned pin hashes are valid PBKDF2 formats
+-- 5. Returned pin hashes use v2 SHA-256 verifiers (no raw derived key exported)
 select ok(
-  (select bool_and(pin_hash like 'pbkdf2_sha256$%') from public.pull_offline_pins(pg_temp.id('S01'))),
-  '5. All returned pin hashes follow pbkdf2_sha256 format'
+  (select bool_and(pin_hash like 'pbkdf2_sha256$%$v2:%') from public.pull_offline_pins(pg_temp.id('S01'))),
+  '5. All returned pin hashes use pbkdf2_sha256 v2 verifier format'
 );
 
 -- 6. Manager and supervisor have correct positions returned
@@ -184,10 +209,7 @@ select is(
       jsonb_build_array(pg_temp.item('coke', 1, 10000, 2000)),
       jsonb_build_array(pg_temp.pay('cash', 8000)),
       jsonb_build_object(
-        'offline_approval', jsonb_build_object(
-          'approver_id', pg_temp.u('sara'),
-          'approved_at', to_char(now(), 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
-        )
+        'offline_approval', pg_temp.offline_appr('sara', 'sale_discount', pg_temp.id('sale:s_off_appr'))
       )
     )
   ) ->> 'status'),
@@ -259,10 +281,7 @@ select is(
     jsonb_build_object(
       'sale_id', pg_temp.id('sale:s_off_appr'),
       'reason', 'Customer return with manager override',
-      'offline_approval', jsonb_build_object(
-        'approver_id', pg_temp.u('maria'),
-        'approved_at', to_char(now(), 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
-      )
+      'offline_approval', pg_temp.offline_appr('maria', 'void_sale', pg_temp.id('sale:s_off_appr'))
     )
   ) ->> 'status'),
   'ok',
@@ -312,10 +331,7 @@ select is(
       'amount', 25000,
       'category', 'utilities',
       'location_id', pg_temp.id('S01'),
-      'offline_approval', jsonb_build_object(
-        'approver_id', pg_temp.u('owner'),
-        'approved_at', to_char(now(), 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
-      )
+      'offline_approval', pg_temp.offline_appr('owner', 'record_expense', pg_temp.id('exp:1'))
     )
   ) ->> 'status'),
   'ok',
@@ -346,10 +362,7 @@ select is(
       jsonb_build_array(pg_temp.item('coke', 1, 10000, 2000)),
       jsonb_build_array(pg_temp.pay('cash', 8000)),
       jsonb_build_object(
-        'offline_approval', jsonb_build_object(
-          'approver_id', pg_temp.u('sara'),
-          'approved_at', to_char(now(), 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
-        )
+        'offline_approval', pg_temp.offline_appr('sara', 'sale_discount', pg_temp.id('sale:s_locked'))
       )
     )
   ) ->> 'hint'),

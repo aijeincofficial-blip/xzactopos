@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { usePollInterval } from "../lib/polling.ts";
 import { formatMoney, money } from "@pos/core";
 import { Calculator } from "lucide-react";
 import {
@@ -21,6 +22,7 @@ import {
   useToast,
 } from "../components/ui.tsx";
 import { useSession } from "../lib/session.tsx";
+import { canCloseDayForRole } from "../lib/portal.ts";
 import { useActiveLocation } from "../lib/location-context.tsx";
 import { useErrorMessage } from "../lib/i18n-helpers.ts";
 import { parseAmount } from "../lib/sale-math.ts";
@@ -30,6 +32,7 @@ import { listUsers } from "../lib/api.ts";
 import {
   closeDay,
   fetchDayCloses,
+  fetchTodayCashServices,
   fetchTodayCashUtang,
   type DayCloseRow,
 } from "../lib/day-close-api.ts";
@@ -52,6 +55,7 @@ export function DayClosePage() {
   const msg = useErrorMessage();
   const toast = useToast();
   const { access, can } = useSession();
+  const pollInterval = usePollInterval(120_000);
   const qc = useQueryClient();
   const currency = access.tenant.base_currency;
   const timezone = access.tenant.timezone;
@@ -62,7 +66,8 @@ export function DayClosePage() {
     ? activeStore
     : access.locations.find((l) => l.type === "store" && can("shift.manage", l.id));
 
-  const [activeTab, setActiveTab] = useState<"day-closes" | "shifts">("day-closes");
+  const canCloseDay = canCloseDayForRole(access.role);
+  const [activeTab, setActiveTab] = useState<"day-closes" | "shifts">(canCloseDay ? "day-closes" : "shifts");
 
   // Day close drawer inputs
   const [openingText, setOpeningText] = useState("");
@@ -84,29 +89,37 @@ export function DayClosePage() {
   const [closingShift, setClosingShift] = useState<ShiftRow | null>(null);
 
   const daySummaryQuery = useQuery({
-    queryKey: ["day-summary", today],
-    queryFn: () => getDaySummary(today),
-    refetchInterval: 60_000,
+    queryKey: ["day-summary", today, store?.id],
+    queryFn: () => getDaySummary(today, store?.id),
+    enabled: canCloseDay && Boolean(store),
+    refetchInterval: pollInterval,
   });
 
   const cashUtangQuery = useQuery({
     queryKey: ["today-cash-utang", store?.id, today],
     queryFn: () => fetchTodayCashUtang(store?.id ?? "", today, timezone),
-    enabled: Boolean(store),
-    refetchInterval: 60_000,
+    enabled: canCloseDay && Boolean(store),
+    refetchInterval: pollInterval,
+  });
+
+  const cashServicesQuery = useQuery({
+    queryKey: ["today-cash-services", store?.id, today],
+    queryFn: () => fetchTodayCashServices(store?.id ?? "", today, timezone),
+    enabled: canCloseDay && Boolean(store),
+    refetchInterval: pollInterval,
   });
 
   const dayClosesQuery = useQuery({
     queryKey: ["day-closes", store?.id],
     queryFn: () => fetchDayCloses(store?.id ?? ""),
-    enabled: Boolean(store),
+    enabled: canCloseDay && Boolean(store),
   });
 
   const storeShiftsQuery = useQuery({
     queryKey: ["store-shifts", store?.id],
     queryFn: () => fetchStoreShifts(store?.id ?? ""),
     enabled: Boolean(store),
-    refetchInterval: 30_000,
+    refetchInterval: pollInterval,
   });
 
   const usersQuery = useQuery({
@@ -126,6 +139,7 @@ export function DayClosePage() {
   const cashSales = daySummaryQuery.data?.totals.cash ?? 0;
   const cashExpenses = daySummaryQuery.data?.expenses.cash ?? 0;
   const cashUtang = cashUtangQuery.data ?? 0;
+  const cashServices = cashServicesQuery.data ?? 0;
 
   const parsedOpening = openingText.trim() === "" ? 0 : parseAmount(openingText, currency);
   const parsedCounted = countedText.trim() === "" ? null : parseAmount(countedText, currency);
@@ -135,6 +149,7 @@ export function DayClosePage() {
     openingCash,
     cashSales,
     cashUtangPayments: cashUtang,
+    cashServices,
     cashExpenses,
   });
 
@@ -206,33 +221,38 @@ export function DayClosePage() {
         title={t("dayClose.title")}
         subtitle={`${today} · ${store.name} (${store.code}) · ${timezone}`}
         actions={
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setShowXReport(true)}>
-              {t("dayClose.xReportBtn")}
-            </Button>
-            {todayClose ? (
-              <Badge tone="good">
-                {t("dayClose.statusClosed", { time: todayClose.closed_at.slice(11, 16) })}
-              </Badge>
-            ) : (
-              <Badge tone="warn">{t("dayClose.statusOpen")}</Badge>
-            )}
-          </div>
+          canCloseDay ? (
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setShowXReport(true)}>
+                {t("dayClose.xReportBtn")}
+              </Button>
+              {todayClose ? (
+                <Badge tone="good">
+                  {t("dayClose.statusClosed", { time: todayClose.closed_at.slice(11, 16) })}
+                </Badge>
+              ) : (
+                <Badge tone="warn">{t("dayClose.statusOpen")}</Badge>
+              )}
+            </div>
+          ) : null
         }
       />
 
       {successNote ? <Alert tone="info">{successNote}</Alert> : null}
 
       <Tabs
-        value={activeTab}
+        value={canCloseDay ? activeTab : "shifts"}
         onValueChange={(v) => setActiveTab(v as "day-closes" | "shifts")}
         label={t("dayClose.title")}
         tabs={[
-          { value: "day-closes", label: t("dayClose.tabDayClose"), testId: "tab-day-closes" },
+          ...(canCloseDay
+            ? [{ value: "day-closes", label: t("dayClose.tabDayClose"), testId: "tab-day-closes" }]
+            : []),
           { value: "shifts", label: t("dayClose.tabShifts"), testId: "tab-shifts" },
         ]}
       >
-        <TabPanel value="day-closes">
+        {canCloseDay ? (
+          <TabPanel value="day-closes">
           <div className="grid gap-4">
             <div className="grid gap-4 md:grid-cols-2">
               {/* Drawer cash breakdown */}
@@ -260,6 +280,12 @@ export function DayClosePage() {
                   <div className="flex justify-between text-slate-600">
                     <span>+ {t("dayClose.cashUtangCollected")}:</span>
                     <span>{fmt(cashUtang)}</span>
+                  </div>
+                  <div className="flex justify-between text-slate-600">
+                    <span>
+                      {cashServices >= 0 ? "+" : "-"} {t("dayClose.cashServices")}:
+                    </span>
+                    <span data-testid="cash-services-total">{fmt(Math.abs(cashServices))}</span>
                   </div>
                   <div className="flex justify-between text-slate-600">
                     <span>- {t("dayClose.cashExpenses")}:</span>
@@ -432,6 +458,7 @@ export function DayClosePage() {
             </Card>
           </div>
         </TabPanel>
+        ) : null}
 
         <TabPanel value="shifts">
           {/* Cashier Shifts Tab */}
@@ -584,7 +611,7 @@ export function DayClosePage() {
       </Tabs>
 
       {/* Day Close X-Report Dialog */}
-      {showXReport ? (
+      {canCloseDay && showXReport ? (
         <XReportDialog
           store={store}
           today={today}
@@ -592,6 +619,7 @@ export function DayClosePage() {
           openingCash={openingCash}
           cashSales={cashSales}
           cashUtang={cashUtang}
+          cashServices={cashServices}
           cashExpenses={cashExpenses}
           expectedCash={expectedCash}
           totals={daySummaryQuery.data?.totals ?? null}
@@ -667,6 +695,7 @@ function XReportDialog({
   openingCash,
   cashSales,
   cashUtang,
+  cashServices,
   cashExpenses,
   expectedCash,
   totals,
@@ -678,6 +707,7 @@ function XReportDialog({
   openingCash: number;
   cashSales: number;
   cashUtang: number;
+  cashServices: number;
   cashExpenses: number;
   expectedCash: number;
   totals: { gross: number; net: number; txns: number; ewallet: number; card?: number; utang: number } | null;
@@ -704,6 +734,7 @@ function XReportDialog({
             openingCash,
             cashSales,
             cashUtang,
+            cashServices,
             cashExpenses,
             expectedCash,
             totals,

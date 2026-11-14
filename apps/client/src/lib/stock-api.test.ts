@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { classifyMovementCategory, getExpiryStatus, toProductRows, toStockMovementRows } from "./stock-api.ts";
+import { classifyMovementCategory, getExpiryStatus, groupProductRows, toProductRows, toStockMovementRows } from "./stock-api.ts";
 
 const cat = (id: string, name: string, over: Record<string, unknown> = {}) => ({ id, name, parent_id: null, updated_at: "2026-01-01", deleted_at: null, ...over });
 const prod = (id: string, over: Record<string, unknown> = {}) => ({ id, name: `P-${id}`, unit: "pc", tax_rate: "0.1200", track_stock: true, active: true, deleted_at: null, ...over });
@@ -25,17 +25,28 @@ describe("toProductRows", () => {
     ]);
   });
 
-  it("leaves out archived products, deleted and non-default variants", () => {
+  it("includes all active non-deleted variants and leaves out archived products and deleted variants", () => {
     const rows = toProductRows(
       {
         products: page([prod("a"), prod("gone", { deleted_at: "2026-01-01" })]),
-        product_variants: page([vari("va", "a"), vari("vg", "gone"), vari("vx", "a", { is_default: false }), vari("vd", "a", { deleted_at: "2026-01-01" })]),
+        product_variants: page([
+          vari("va", "a", { name: "Default", sku: "A-1" }),
+          vari("vg", "gone"),
+          vari("vx", "a", { name: "Large", sku: "A-2", is_default: false }),
+          vari("vd", "a", { deleted_at: "2026-01-01" }),
+        ]),
         variant_prices: page([]),
       } as never,
       "PHP",
       new Map(),
     );
-    expect(rows.map((r) => r.variantId)).toEqual(["va"]);
+    expect(rows.map((r) => r.variantId)).toEqual(["va", "vx"]);
+    expect(rows[0]?.variantCount).toBe(2);
+    expect(rows[1]?.name).toBe("P-a (Large)");
+    const groups = groupProductRows(rows);
+    expect(groups).toHaveLength(1);
+    expect(groups[0]?.defaultRow.variantId).toBe("va");
+    expect(groups[0]?.variants.map((v) => v.variantId)).toEqual(["va", "vx"]);
   });
 
   it("correctly attaches category, tingi repack links, and expiry dates", () => {

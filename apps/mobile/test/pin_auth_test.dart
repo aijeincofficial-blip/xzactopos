@@ -47,12 +47,14 @@ void main() {
           userId: 'usr-1',
           displayName: 'Boss Maria',
           role: 'admin',
+          position: 'manager',
           pinHash: hash1,
         ),
         SupervisorPin(
           userId: 'usr-2',
           displayName: 'Lead Carlo',
-          role: 'supervisor',
+          role: 'admin',
+          position: 'supervisor',
           pinHash: hash2,
         ),
       ];

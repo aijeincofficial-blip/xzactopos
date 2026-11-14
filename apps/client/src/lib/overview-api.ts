@@ -1,4 +1,4 @@
-import { rpc } from "./api.ts";
+import { fetchAllPages, rpc } from "./api.ts";
 import { supabase } from "./supabase.ts";
 import { buildStoreReplenishmentRows, type StoreReplenishmentRow } from "./overview-math.ts";
 
@@ -181,33 +181,51 @@ export async function fetchStoreReplenishment(args: {
   if (targetStores.length === 0) return [];
   const locationIds = [...targetStores.map((s) => s.id), ...args.warehouses.map((w) => w.id)];
 
-  const [variantsRes, levelsRes, overridesRes] = await Promise.all([
-    supabase
-      .from("product_variants")
-      .select("id, sku, reorder_point, product:products!inner(name, track_stock, active, deleted_at)")
-      .eq("active", true)
-      .is("deleted_at", null)
-      .limit(1000),
-    supabase
-      .from("stock_levels")
-      .select("location_id, variant_id, qty_on_hand")
-      .in("location_id", locationIds)
-      .limit(5000),
-    supabase
-      .from("location_reorder_points")
-      .select("location_id, variant_id, reorder_point")
-      .in(
-        "location_id",
-        targetStores.map((s) => s.id),
-      )
-      .limit(2000),
+  const storeIds = targetStores.map((s) => s.id);
+  const [variantsRaw, levelsRaw, overridesRaw] = await Promise.all([
+    fetchAllPages<{
+      id: string;
+      sku: string;
+      reorder_point: number;
+      product: unknown;
+    }>((from, to) =>
+      supabase
+        .from("product_variants")
+        .select("id, sku, reorder_point, product:products!inner(name, track_stock, active, deleted_at)")
+        .eq("active", true)
+        .is("deleted_at", null)
+        .order("id")
+        .range(from, to),
+    ),
+    fetchAllPages<{
+      location_id: string;
+      variant_id: string;
+      qty_on_hand: number;
+    }>((from, to) =>
+      supabase
+        .from("stock_levels")
+        .select("location_id, variant_id, qty_on_hand")
+        .in("location_id", locationIds)
+        .order("location_id")
+        .order("variant_id")
+        .range(from, to),
+    ),
+    fetchAllPages<{
+      location_id: string;
+      variant_id: string;
+      reorder_point: number;
+    }>((from, to) =>
+      supabase
+        .from("location_reorder_points")
+        .select("location_id, variant_id, reorder_point")
+        .in("location_id", storeIds)
+        .order("location_id")
+        .order("variant_id")
+        .range(from, to),
+    ),
   ]);
 
-  if (variantsRes.error) throw variantsRes.error;
-  if (levelsRes.error) throw levelsRes.error;
-  if (overridesRes.error) throw overridesRes.error;
-
-  const variants = (variantsRes.data ?? [])
+  const variants = variantsRaw
     .map((r) => {
       const prod = r.product as unknown as {
         name: string;
@@ -230,14 +248,14 @@ export async function fetchStoreReplenishment(args: {
     stores: targetStores,
     warehouses: args.warehouses,
     variants,
-    stockLevels: (levelsRes.data ?? []).map((r) => ({
-      location_id: r.location_id as string,
-      variant_id: r.variant_id as string,
+    stockLevels: levelsRaw.map((r) => ({
+      location_id: r.location_id,
+      variant_id: r.variant_id,
       qty_on_hand: num(r.qty_on_hand),
     })),
-    reorderOverrides: (overridesRes.data ?? []).map((r) => ({
-      location_id: r.location_id as string,
-      variant_id: r.variant_id as string,
+    reorderOverrides: overridesRaw.map((r) => ({
+      location_id: r.location_id,
+      variant_id: r.variant_id,
       reorder_point: num(r.reorder_point),
     })),
   });

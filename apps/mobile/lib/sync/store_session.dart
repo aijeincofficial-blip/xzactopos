@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../backend.dart';
+import '../core/pin_auth.dart';
 import '../data/local_store.dart';
 import '../data/sales_models.dart';
 import '../l10n/app_localizations.dart';
@@ -24,8 +27,34 @@ List<StoreRef> storesOf(Map<String, dynamic> access) => [
 /// What a phone pulls for a signed-in role (F-13h). A warehouse clerk works in a warehouse, not a store: warehouse data and
 /// none of the store pulls. Everyone else (owner, admin, cashier, a solo owner whose role is null) pulls the store data and
 /// never asks for warehouse data.
-({bool store, bool warehouse}) syncScopeForRole(String? role) =>
-    role == 'warehouse' ? (store: false, warehouse: true) : (store: true, warehouse: false);
+({bool store, bool warehouse}) syncScopeForRole(String? role, {bool posEnabled = true}) =>
+    role == 'warehouse' ? (store: false, warehouse: true) : (store: posEnabled, warehouse: false);
+
+bool posEnabledForAccess(Map<String, dynamic> access) =>
+    (access['modules'] as Map?)?['pos'] != false;
+
+/// Position ('manager' | 'supervisor') of the signed-in admin at [storeId], or null when not an admin or unassigned.
+String? positionForAccess(Map<String, dynamic> access, [String? storeId]) {
+  if (access['role'] != 'admin') return null;
+  final stores = ((access['locations'] as List?) ?? const [])
+      .whereType<Map>()
+      .where((l) => l['type'] == 'store' && l['id'] is String)
+      .toList();
+  if (stores.isEmpty) return null;
+  if (storeId != null) {
+    for (final s in stores) {
+      if (s['id'] == storeId) return s['position'] as String?;
+    }
+  }
+  return stores.first['position'] as String?;
+}
+
+bool canManageStockForAccess(Map<String, dynamic> access, [String? storeId]) {
+  final role = access['role'] as String?;
+  if (role == null || role == 'superadmin' || role == 'warehouse') return true;
+  if (role == 'admin') return positionForAccess(access, storeId) == 'manager';
+  return false;
+}
 
 /// Opens the device store for the signed-in business and keeps sync running while it is on screen.
 class StoreSession extends StatefulWidget {
@@ -50,16 +79,40 @@ class _StoreSessionState extends State<StoreSession> {
   late LocalStore _store;
   late SyncEngine _engine;
   late PhotoLoader _photos;
+  String? _initialActiveStoreId;
   late Future<void> _ready;
 
   @override
   void initState() {
     super.initState();
+    _signOutSub = widget.backend.signedInChanges.listen((signedIn) {
+      if (!signedIn) {
+        unawaited(_clearOnSignOut());
+      }
+    });
     _ready = _open();
   }
 
   bool _opened = false;
+  bool _tenantBound = false;
   bool _discardUnsent = false;
+  StreamSubscription<bool>? _signOutSub;
+
+  Future<void> _clearOnSignOut() async {
+    await SupervisorPinStorage.clearAll();
+    if (!_opened) return;
+    _opened = false;
+    _engine.dispose();
+    if (_tenantBound) {
+      _tenantBound = false;
+      try {
+        await _store.clearSessionData();
+      } catch (_) {}
+    }
+    try {
+      await _store.close();
+    } catch (_) {}
+  }
 
   /// Opens a fresh connection each time, so "Try again" never reuses a connection that failed to start.
   /// If the normal open fails (e.g. a browser that blocks the shared worker from loading SQLite),
@@ -71,8 +124,10 @@ class _StoreSessionState extends State<StoreSession> {
     } on UnsentChangesException {
       rethrow; // not a storage problem: safe mode would hit the same thing
     } catch (e) {
+      if (!mounted) return;
       debugPrint('StoreSession: normal open failed ($e); trying safe mode');
       await _closeQuietly();
+      if (!mounted) return;
       try {
         await _start(safeMode: true);
       } catch (e2, s) {
@@ -85,7 +140,8 @@ class _StoreSessionState extends State<StoreSession> {
   Future<void> _start({required bool safeMode}) async {
     _store = widget.openStore(safeMode: safeMode);
     // a warehouse clerk works in a warehouse, not a store: warehouse data, and none of the store pulls
-    final scope = syncScopeForRole(widget.access['role'] as String?);
+    final role = widget.access['role'] as String?;
+    final scope = syncScopeForRole(role, posEnabled: posEnabledForAccess(widget.access));
     _engine = SyncEngine(_store, widget.backend, pullsStore: scope.store, pullsWarehouse: scope.warehouse);
     _photos = PhotoLoader(_store, widget.backend);
     _opened = true;
@@ -94,18 +150,24 @@ class _StoreSessionState extends State<StoreSession> {
         baseCurrency: tenant['base_currency'] as String? ?? 'PHP',
         // F-01: the stores this user may work at; the device keeps one active (a solo business has exactly one)
         stores: storesOf(widget.access),
-        discardUnsent: _discardUnsent);
+        discardUnsent: _discardUnsent,
+        userId: widget.backend.userId ?? widget.access['user_id'] as String?);
+    if (!mounted) {
+      await _closeQuietly();
+      return;
+    }
+    _tenantBound = true;
+    _initialActiveStoreId = await _store.activeStoreNow();
     await _store.setMeta('store_name', tenant['name'] as String?);
     final header = (tenant['receipt_header'] as String?)?.trim();
     final footer = (tenant['receipt_footer'] as String?)?.trim();
     await _store.setMeta('receipt_header', header != null && header.isNotEmpty ? header : null);
     await _store.setMeta('receipt_footer', footer != null && footer.isNotEmpty ? footer : null);
+    if (!mounted) {
+      await _closeQuietly();
+      return;
+    }
     _engine.start();
-  }
-
-  bool get _canManageStock {
-    final role = widget.access['role'];
-    return role == null || role == 'superadmin' || role == 'admin' || role == 'warehouse';
   }
 
   Future<void> _closeQuietly() async {
@@ -119,6 +181,7 @@ class _StoreSessionState extends State<StoreSession> {
 
   @override
   void dispose() {
+    _signOutSub?.cancel();
     _closeQuietly();
     super.dispose();
   }
@@ -182,13 +245,25 @@ class _StoreSessionState extends State<StoreSession> {
             ),
           );
         }
-        return CatalogScope(
-            store: _store,
-            engine: _engine,
-            photos: _photos,
-            canManageStock: _canManageStock,
-            role: widget.access['role'] as String?,
-            child: widget.child);
+        final role = widget.access['role'] as String?;
+        final posEnabled = posEnabledForAccess(widget.access);
+        return StreamBuilder<String?>(
+          stream: _store.watchActiveStore(),
+          initialData: _initialActiveStoreId,
+          builder: (context, storeSnap) {
+            final storeId = storeSnap.data;
+            return CatalogScope(
+              store: _store,
+              engine: _engine,
+              photos: _photos,
+              canManageStock: canManageStockForAccess(widget.access, storeId),
+              role: role,
+              position: positionForAccess(widget.access, storeId),
+              posEnabled: posEnabled,
+              child: widget.child,
+            );
+          },
+        );
       },
     );
   }
@@ -200,34 +275,54 @@ class CatalogScope extends InheritedWidget {
     required this.store,
     required this.engine,
     required this.photos,
-    this.canManageStock = true,
+    bool? canManageStock,
     this.role,
+    this.position,
+    this.posEnabled = true,
     required super.child,
-  });
+  }) : _canManageStock = canManageStock;
 
   final LocalStore store;
   final SyncEngine engine;
   final PhotoLoader photos;
-
-  /// Superadmin, admins, and warehouse may stock in and count; cashiers only look.
-  final bool canManageStock;
+  final bool? _canManageStock;
 
   /// Role of the signed-in user ('superadmin', 'admin', 'warehouse', 'cashier', or null for solo owner).
   final String? role;
 
+  /// Per-store position when [role] == 'admin': 'manager' or 'supervisor'.
+  final String? position;
+
+  /// Whether the POS module is enabled for the active tenant.
+  final bool posEnabled;
+
   bool get isCashier => role == 'cashier';
   bool get isWarehouse => role == 'warehouse';
-  bool get isAdminOrSuperadmin => role == null || role == 'superadmin' || role == 'admin';
+  bool get isSuperadmin => role == null || role == 'superadmin';
+  bool get isManager => role == 'admin' && position == 'manager';
+  bool get isSupervisor => role == 'admin' && position == 'supervisor';
+  bool get isAdminOrSuperadmin => isSuperadmin || role == 'admin';
+
+  /// Superadmin, solo owners, managers, and warehouse clerks may stock in and count; supervisors and cashiers only look.
+  bool get canManageStock =>
+      _canManageStock ?? (!isCashier && !isSupervisor && (isWarehouse || isManager || isSuperadmin));
+
+  bool get canManageCatalog => isSuperadmin || isManager;
+  bool get canManageStaff => isSuperadmin || isManager;
   bool get canAccessExpenses => isAdminOrSuperadmin;
   bool get canCloseDay => isAdminOrSuperadmin;
+  bool get canViewReports => isAdminOrSuperadmin;
+  bool get canCashDrop => isAdminOrSuperadmin;
 
   /// Same scope around [child]; for screens pushed on the navigator (they sit outside this widget).
   CatalogScope wrap(Widget child) => CatalogScope(
         store: store,
         engine: engine,
         photos: photos,
-        canManageStock: canManageStock,
+        canManageStock: _canManageStock,
         role: role,
+        position: position,
+        posEnabled: posEnabled,
         child: child,
       );
 
@@ -243,5 +338,10 @@ class CatalogScope extends InheritedWidget {
 
   @override
   bool updateShouldNotify(CatalogScope old) =>
-      store != old.store || engine != old.engine || role != old.role || canManageStock != old.canManageStock;
+      store != old.store ||
+      engine != old.engine ||
+      role != old.role ||
+      position != old.position ||
+      posEnabled != old.posEnabled ||
+      canManageStock != old.canManageStock;
 }

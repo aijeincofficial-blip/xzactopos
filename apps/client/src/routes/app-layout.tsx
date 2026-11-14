@@ -43,10 +43,13 @@ import {
 import { accessQuery, useSession } from "../lib/session.tsx";
 import type { PermissionKey } from "@pos/core";
 import { saveMyLocale, signOut } from "../lib/api.ts";
+import { setPosOutboxTenant } from "../lib/pos-outbox.ts";
 import { tenantMode } from "../lib/mode.ts";
 import { pickLocale, storeLocale } from "../i18n/index.ts";
 import { useActiveLocation } from "../lib/location-context.tsx";
 import {
+  canAccessReceiveStockRoute,
+  canAccessReportsRoute,
   portalForPath,
   readStoredPortal,
   resolveAllowedPortals,
@@ -60,6 +63,7 @@ import { Badge, Button, Card, PageHeader } from "../components/ui.tsx";
 import { LanguageSelect } from "../components/LanguageSelect.tsx";
 import { SyncStatusPill } from "../components/sync-status-pill.tsx";
 import { useOnlineStatus } from "../lib/network.ts";
+import { usePollInterval, useVisibilityResumeInvalidation } from "../lib/polling.ts";
 
 type NavGroup = "daily" | "warehouseOps" | "stock" | "business";
 type NavPortalScope = "pos" | "warehouse" | "both";
@@ -68,7 +72,16 @@ const NAV = [
   // POS Portal routes
   { to: "/app", key: "dashboard", icon: Home, group: "daily", portal: "pos", perm: null, fullOnly: false },
   { to: "/app/sell", key: "sell", icon: ShoppingCart, group: "daily", portal: "pos", perm: "sale.create", fullOnly: false },
-  { to: "/app/receive-stock", key: "receiveStock", icon: ArrowDownToLine, group: "daily", portal: "pos", perm: "sale.create", fullOnly: true },
+  {
+    to: "/app/receive-stock",
+    key: "receiveStock",
+    icon: ArrowDownToLine,
+    group: "daily",
+    portal: "pos",
+    perm: null,
+    perms: ["sale.create", "stock.adjust_store", "transfer.manage"] as const,
+    fullOnly: true,
+  },
   { to: "/app/sales", key: "sales", icon: Receipt, group: "daily", portal: "pos", perm: "sale.create", fullOnly: false },
   { to: "/app/utang", key: "utang", icon: HandCoins, group: "daily", portal: "pos", perm: "sale.create", fullOnly: false },
   { to: "/app/services", key: "services", icon: Smartphone, group: "daily", portal: "pos", perm: "sale.create", fullOnly: false },
@@ -146,6 +159,11 @@ export function AppLayout() {
   const isOnline = useOnlineStatus();
   const mode = tenantMode(access);
   const qc = useQueryClient();
+  useVisibilityResumeInvalidation(qc);
+  const pollInterval = usePollInterval(120_000);
+  useEffect(() => {
+    setPosOutboxTenant(access.tenant.id);
+  }, [access.tenant.id]);
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [savedPortal, setSavedPortal] = useState<PortalKind | null>(() => readStoredPortal());
@@ -179,17 +197,26 @@ export function AppLayout() {
     }
   }, [path, allowedPortals, savedPortal]);
 
-  // Poll incoming warehouse shipments for the active POS store so POS staff see a live badge
+  // Poll incoming warehouse shipments for the active POS store so store staff see a live badge
+  const canReceiveStoreStock = can("sale.create") || can("stock.adjust_store") || can("transfer.manage");
+  // Defer non-critical nav transfer badge query past initial route paint/hydration.
+  const [navBadgeReady, setNavBadgeReady] = useState(false);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setNavBadgeReady(true), 150);
+    return () => window.clearTimeout(timer);
+  }, []);
+
   const incomingPosQuery = useQuery({
     queryKey: ["pos-incoming-transfers", activeStoreId, "shipped-count"],
     queryFn: () => listStoreIncomingTransfers(activeStoreId!, false),
     enabled:
+      navBadgeReady &&
       !isWarehousePortal &&
       mode === "full" &&
       access.modules.warehouse &&
       Boolean(activeStoreId) &&
-      can("sale.create"),
-    refetchInterval: 30_000,
+      canReceiveStoreStock,
+    refetchInterval: pollInterval,
     staleTime: 15_000,
   });
   const incomingCount = incomingPosQuery.data?.length ?? 0;
@@ -245,7 +272,9 @@ export function AppLayout() {
 
   useEffect(() => {
     const l = pickLocale(access.locale, null);
-    void i18n.changeLanguage(l);
+    if (i18n.language !== l) {
+      void i18n.changeLanguage(l);
+    }
     storeLocale(l);
   }, [access.user_id]);
 
@@ -261,6 +290,7 @@ export function AppLayout() {
   async function leave() {
     const wasWarehouseStaff = access.role === "warehouse";
     await signOut();
+    setPosOutboxTenant(null);
     qc.clear();
     if (wasWarehouseStaff) {
       await navigate({ to: "/warehouse" });
@@ -272,8 +302,15 @@ export function AppLayout() {
   const visible = NAV.filter((n) => {
     if ("platformAdminOnly" in n && n.platformAdminOnly && !access.is_platform_admin) return false;
     if (n.to === "/app" && (access.role === "cashier" || access.role === "warehouse")) return false;
-    if (n.to === "/app/receive-stock" && !access.modules.warehouse) return false;
-    if (n.portal !== "both" && n.portal !== activePortal) return false;
+    if (n.to === "/app/receive-stock" && !canAccessReceiveStockRoute(access)) return false;
+    if (n.portal === "pos" && n.to !== "/app/receive-stock" && !access.modules.pos) return false;
+    if (n.to === "/app/expenses" && access.role === "cashier") return false;
+    if (n.to === "/app/reports" && !canAccessReportsRoute(access)) {
+      return false;
+    }
+    if (n.portal !== "both" && n.portal !== activePortal && !(n.to === "/app/receive-stock" && !access.modules.pos)) {
+      return false;
+    }
     const permOk =
       "perms" in n && n.perms
         ? (n.perms as readonly PermissionKey[]).some((p) => can(p))
@@ -457,16 +494,18 @@ export function AppLayout() {
                   aria-label="POS quick links"
                   className="ml-1 hidden min-w-0 flex-1 items-center gap-0.5 overflow-x-auto [scrollbar-width:none] lg:flex"
                 >
-                  <Link
-                    to="/app/sell"
-                    className="shrink-0 whitespace-nowrap rounded-full px-2.5 py-1.5 text-xs font-medium transition-colors [&:not([aria-current='page'])]:text-muted-on-dark [&:not([aria-current='page'])]:hover:bg-ink-2 [&:not([aria-current='page'])]:hover:text-lime"
-                    activeProps={{
-                      className: "bg-lime font-semibold text-ink hover:bg-lime-hover hover:text-ink",
-                      "aria-current": "page",
-                    }}
-                  >
-                    {t("admin:nav.sell")}
-                  </Link>
+                  {access.modules.pos ? (
+                    <Link
+                      to="/app/sell"
+                      className="shrink-0 whitespace-nowrap rounded-full px-2.5 py-1.5 text-xs font-medium transition-colors [&:not([aria-current='page'])]:text-muted-on-dark [&:not([aria-current='page'])]:hover:bg-ink-2 [&:not([aria-current='page'])]:hover:text-lime"
+                      activeProps={{
+                        className: "bg-lime font-semibold text-ink hover:bg-lime-hover hover:text-ink",
+                        "aria-current": "page",
+                      }}
+                    >
+                      {t("admin:nav.sell")}
+                    </Link>
+                  ) : null}
                   <Link
                     to="/app/inventory"
                     data-testid="kiosk-inventory-link"
@@ -492,37 +531,41 @@ export function AppLayout() {
                       {incomingCount > 0 ? <Badge tone="warn">{incomingCount}</Badge> : null}
                     </Link>
                   ) : null}
-                  <Link
-                    to="/app/sales"
-                    className="shrink-0 whitespace-nowrap rounded-full px-2.5 py-1.5 text-xs font-medium transition-colors [&:not([aria-current='page'])]:text-muted-on-dark [&:not([aria-current='page'])]:hover:bg-ink-2 [&:not([aria-current='page'])]:hover:text-lime"
-                    activeProps={{
-                      className: "bg-lime font-semibold text-ink hover:bg-lime-hover hover:text-ink",
-                      "aria-current": "page",
-                    }}
-                  >
-                    {t("admin:nav.sales")}
-                  </Link>
-                  <Link
-                    to="/app/utang"
-                    className="shrink-0 whitespace-nowrap rounded-full px-2.5 py-1.5 text-xs font-medium transition-colors [&:not([aria-current='page'])]:text-muted-on-dark [&:not([aria-current='page'])]:hover:bg-ink-2 [&:not([aria-current='page'])]:hover:text-lime"
-                    activeProps={{
-                      className: "bg-lime font-semibold text-ink hover:bg-lime-hover hover:text-ink",
-                      "aria-current": "page",
-                    }}
-                  >
-                    {t("admin:nav.utang")}
-                  </Link>
-                  {can("shift.manage") ? (
-                    <Link
-                      to="/app/day-close"
-                      className="shrink-0 whitespace-nowrap rounded-full px-2.5 py-1.5 text-xs font-medium transition-colors [&:not([aria-current='page'])]:text-muted-on-dark [&:not([aria-current='page'])]:hover:bg-ink-2 [&:not([aria-current='page'])]:hover:text-lime"
-                      activeProps={{
-                        className: "bg-lime font-semibold text-ink hover:bg-lime-hover hover:text-ink",
-                        "aria-current": "page",
-                      }}
-                    >
-                      {t("admin:nav.dayClose")}
-                    </Link>
+                  {access.modules.pos ? (
+                    <>
+                      <Link
+                        to="/app/sales"
+                        className="shrink-0 whitespace-nowrap rounded-full px-2.5 py-1.5 text-xs font-medium transition-colors [&:not([aria-current='page'])]:text-muted-on-dark [&:not([aria-current='page'])]:hover:bg-ink-2 [&:not([aria-current='page'])]:hover:text-lime"
+                        activeProps={{
+                          className: "bg-lime font-semibold text-ink hover:bg-lime-hover hover:text-ink",
+                          "aria-current": "page",
+                        }}
+                      >
+                        {t("admin:nav.sales")}
+                      </Link>
+                      <Link
+                        to="/app/utang"
+                        className="shrink-0 whitespace-nowrap rounded-full px-2.5 py-1.5 text-xs font-medium transition-colors [&:not([aria-current='page'])]:text-muted-on-dark [&:not([aria-current='page'])]:hover:bg-ink-2 [&:not([aria-current='page'])]:hover:text-lime"
+                        activeProps={{
+                          className: "bg-lime font-semibold text-ink hover:bg-lime-hover hover:text-ink",
+                          "aria-current": "page",
+                        }}
+                      >
+                        {t("admin:nav.utang")}
+                      </Link>
+                      {can("shift.manage") ? (
+                        <Link
+                          to="/app/day-close"
+                          className="shrink-0 whitespace-nowrap rounded-full px-2.5 py-1.5 text-xs font-medium transition-colors [&:not([aria-current='page'])]:text-muted-on-dark [&:not([aria-current='page'])]:hover:bg-ink-2 [&:not([aria-current='page'])]:hover:text-lime"
+                          activeProps={{
+                            className: "bg-lime font-semibold text-ink hover:bg-lime-hover hover:text-ink",
+                            "aria-current": "page",
+                          }}
+                        >
+                          {t("admin:nav.dayClose")}
+                        </Link>
+                      ) : null}
+                    </>
                   ) : null}
                 </nav>
               ) : null}

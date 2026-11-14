@@ -3,6 +3,7 @@ import { fromRaw } from "./api.ts";
 import { supabase } from "./supabase.ts";
 import { pushOp } from "./sell-api.ts";
 import { dayUtcBounds } from "./day-close-math.ts";
+import { serviceCashEffect, type ServiceKind } from "./services-api.ts";
 
 export interface DayCloseRow {
   id: string;
@@ -46,6 +47,24 @@ export async function fetchTodayCashUtang(locationId: string, day: string, timez
   if (error) throw fromRaw(error);
   // payment amounts in ledger are negative, so negate to get positive cash inflow
   return (data ?? []).reduce((acc, row) => acc + -row.amount, 0);
+}
+
+/** Net drawer cash effect (in centavos) from active service transactions & wallet float cash transfers today. */
+export async function fetchTodayCashServices(locationId: string, day: string, timezone: string): Promise<number> {
+  const { from, to } = dayUtcBounds(day, timezone);
+  const { data, error } = await supabase
+    .from("service_txns")
+    .select("kind, amount, fee, price")
+    .eq("location_id", locationId)
+    .is("voided_at", null)
+    .gte("txn_at", from)
+    .lt("txn_at", to);
+
+  if (error) throw fromRaw(error);
+  return (data ?? []).reduce(
+    (acc, row) => acc + serviceCashEffect(row.kind as ServiceKind, row.amount, row.fee ?? 0, row.price),
+    0,
+  );
 }
 
 export interface CloseDayInput {

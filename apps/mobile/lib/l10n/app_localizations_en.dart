@@ -2709,4 +2709,38 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get whStockNoFiltered => 'No stock items match your filter.';
+
+  @override
+  String get variantsSection => 'Sizes & variants';
+
+  @override
+  String get addVariant => 'Add variant';
+
+  @override
+  String get variantLabel => 'Variant name';
+
+  @override
+  String get variantLabelHint => 'e.g. Regular, Large';
+
+  @override
+  String get defaultVariant => 'Default';
+
+  @override
+  String get removeVariant => 'Remove';
+
+  @override
+  String variantsCount(int count) {
+    return '$count sizes';
+  }
+
+  @override
+  String chooseVariant(String product) {
+    return 'Choose variant for $product';
+  }
+
+  @override
+  String get posDisabledTitle => 'POS is turned off';
+
+  @override
+  String get posDisabledBody => 'Point of sale is disabled for this business.';
 }
