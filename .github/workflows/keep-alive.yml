@@ -12,15 +12,28 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Ping Supabase health RPC
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
-          if [ -z "${{ secrets.SUPABASE_URL }}" ] || [ -z "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" ]; then
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
             echo "SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY secret is not set. Skipping keep-alive ping."
             exit 0
           fi
-          RESPONSE=$(curl -s -X POST "${{ secrets.SUPABASE_URL }}/rest/v1/rpc/health_ping" \
-            -H "apikey: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
-            -H "Content-Type: application/json")
+          URL="${SUPABASE_URL%/}/rest/v1/rpc/health_ping"
+          case "$SUPABASE_SERVICE_ROLE_KEY" in
+            sb_secret_*)
+              RESPONSE=$(curl -s -X POST "$URL" \
+                -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+                -H "Content-Type: application/json")
+              ;;
+            *)
+              RESPONSE=$(curl -s -X POST "$URL" \
+                -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+                -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+                -H "Content-Type: application/json")
+              ;;
+          esac
           echo "Response: $RESPONSE"
           if echo "$RESPONSE" | grep -q '"ok":true'; then
             echo "Health ping succeeded!"
