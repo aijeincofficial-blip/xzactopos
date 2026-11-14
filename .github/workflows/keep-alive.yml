@@ -21,23 +21,28 @@ jobs:
             exit 0
           fi
           URL="${SUPABASE_URL%/}/rest/v1/rpc/health_ping"
+          RESP_FILE="/tmp/health_ping_response.json"
           case "$SUPABASE_SERVICE_ROLE_KEY" in
             sb_secret_*)
-              RESPONSE=$(curl -s -X POST "$URL" \
+              HTTP_CODE=$(curl -sS -o "$RESP_FILE" -w '%{http_code}' -X POST "$URL" \
                 -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
-                -H "Content-Type: application/json")
+                -H "Content-Type: application/json" \
+                -d '{}')
               ;;
             *)
-              RESPONSE=$(curl -s -X POST "$URL" \
+              HTTP_CODE=$(curl -sS -o "$RESP_FILE" -w '%{http_code}' -X POST "$URL" \
                 -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
                 -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
-                -H "Content-Type: application/json")
+                -H "Content-Type: application/json" \
+                -d '{}')
               ;;
           esac
+          RESPONSE=$(cat "$RESP_FILE" 2>/dev/null || true)
+          echo "HTTP $HTTP_CODE"
           echo "Response: $RESPONSE"
-          if echo "$RESPONSE" | grep -q '"ok":true'; then
+          if [ "$HTTP_CODE" = "200" ] && printf '%s' "$RESPONSE" | grep -Eq '"ok"[[:space:]]*:[[:space:]]*true'; then
             echo "Health ping succeeded!"
           else
-            echo "Health ping did not return ok:true"
+            echo "Health ping failed (expected HTTP 200 and ok: true)"
             exit 1
           fi
