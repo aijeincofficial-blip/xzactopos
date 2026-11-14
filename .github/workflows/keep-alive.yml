@@ -20,19 +20,25 @@ jobs:
             echo "SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY secret is not set. Skipping keep-alive ping."
             exit 0
           fi
-          URL="${SUPABASE_URL%/}/rest/v1/rpc/health_ping"
+          CLEAN_URL=$(printf '%s' "$SUPABASE_URL" | tr -d '[:space:]')
+          BASE_URL=$(printf '%s' "$CLEAN_URL" | sed -E 's#^(https?://[^/]+).*#\1#')
+          if [ "$BASE_URL" != "$CLEAN_URL" ]; then
+            echo "Warning: SUPABASE_URL secret contained a path or trailing slash; trimmed to project origin."
+          fi
+          CLEAN_KEY=$(printf '%s' "$SUPABASE_SERVICE_ROLE_KEY" | tr -d '[:space:]')
+          URL="${BASE_URL}/rest/v1/rpc/health_ping"
           RESP_FILE="/tmp/health_ping_response.json"
-          case "$SUPABASE_SERVICE_ROLE_KEY" in
+          case "$CLEAN_KEY" in
             sb_secret_*)
               HTTP_CODE=$(curl -sS -o "$RESP_FILE" -w '%{http_code}' -X POST "$URL" \
-                -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+                -H "apikey: $CLEAN_KEY" \
                 -H "Content-Type: application/json" \
                 -d '{}')
               ;;
             *)
               HTTP_CODE=$(curl -sS -o "$RESP_FILE" -w '%{http_code}' -X POST "$URL" \
-                -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
-                -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+                -H "apikey: $CLEAN_KEY" \
+                -H "Authorization: Bearer $CLEAN_KEY" \
                 -H "Content-Type: application/json" \
                 -d '{}')
               ;;
