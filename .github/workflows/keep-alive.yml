@@ -2,8 +2,8 @@ name: keep-alive
 
 on:
   schedule:
-    # Run every 3 days at 00:00 UTC to prevent Supabase 7-day idle pause
-    - cron: '0 0 */3 * *'
+    # Run every 6 hours at off-peak jittered minutes to guarantee daily DB & API activity
+    - cron: '17 2,8,14,20 * * *'
   workflow_dispatch:
 
 jobs:
@@ -11,44 +11,80 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Ping Supabase health RPC
+      - name: Ping Supabase tables, RPC, Auth, and Storage
+        shell: bash
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
+          set -euo pipefail
           if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
             echo "SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY secret is not set. Skipping keep-alive ping."
             exit 0
           fi
+
           CLEAN_URL=$(printf '%s' "$SUPABASE_URL" | tr -d '[:space:]')
           BASE_URL=$(printf '%s' "$CLEAN_URL" | sed -E 's#^(https?://[^/]+).*#\1#')
           if [ "$BASE_URL" != "$CLEAN_URL" ]; then
             echo "Warning: SUPABASE_URL secret contained a path or trailing slash; trimmed to project origin."
           fi
           CLEAN_KEY=$(printf '%s' "$SUPABASE_SERVICE_ROLE_KEY" | tr -d '[:space:]')
-          URL="${BASE_URL}/rest/v1/rpc/health_ping"
-          RESP_FILE="/tmp/health_ping_response.json"
+
+          AUTH_HEADERS=(-H "apikey: $CLEAN_KEY")
           case "$CLEAN_KEY" in
-            sb_secret_*)
-              HTTP_CODE=$(curl -sS -o "$RESP_FILE" -w '%{http_code}' -X POST "$URL" \
-                -H "apikey: $CLEAN_KEY" \
-                -H "Content-Type: application/json" \
-                -d '{}')
-              ;;
-            *)
-              HTTP_CODE=$(curl -sS -o "$RESP_FILE" -w '%{http_code}' -X POST "$URL" \
-                -H "apikey: $CLEAN_KEY" \
-                -H "Authorization: Bearer $CLEAN_KEY" \
-                -H "Content-Type: application/json" \
-                -d '{}')
-              ;;
+            sb_secret_*) ;;
+            *) AUTH_HEADERS+=(-H "Authorization: Bearer $CLEAN_KEY") ;;
           esac
-          RESPONSE=$(cat "$RESP_FILE" 2>/dev/null || true)
-          echo "HTTP $HTTP_CODE"
-          echo "Response: $RESPONSE"
-          if [ "$HTTP_CODE" = "200" ] && printf '%s' "$RESPONSE" | grep -Eq '"ok"[[:space:]]*:[[:space:]]*true'; then
-            echo "Health ping succeeded!"
-          else
+
+          RESP_FILE="/tmp/keep_alive_response.json"
+
+          request_endpoint() {
+            local label="$1"
+            local method="$2"
+            local path="$3"
+            local body="${4:-}"
+            local extra_header="${5:-}"
+            local url="${BASE_URL}${path}"
+            local args=(-sS -o "$RESP_FILE" -w '%{http_code}' -X "$method" "$url" "${AUTH_HEADERS[@]}")
+            if [ -n "$extra_header" ]; then
+              args+=(-H "$extra_header")
+            fi
+            if [ "$method" = "POST" ]; then
+              args+=(-H "Content-Type: application/json" -d "$body")
+            fi
+            HTTP_CODE=$(curl "${args[@]}")
+            RESPONSE=$(cat "$RESP_FILE" 2>/dev/null || true)
+            echo "[$label] HTTP $HTTP_CODE"
+          }
+
+          # 1. Execute RPC health check
+          request_endpoint "rpc/health_ping" "POST" "/rest/v1/rpc/health_ping" "{}"
+          echo "[rpc/health_ping] Response: $RESPONSE"
+          if [ "$HTTP_CODE" != "200" ] || ! printf '%s' "$RESPONSE" | grep -Eq '"ok"[[:space:]]*:[[:space:]]*true'; then
             echo "Health ping failed (expected HTTP 200 and ok: true)"
             exit 1
           fi
+
+          # 2. Execute real PostgREST table SELECT queries (single RPCs with no table access can fail idle checks)
+          for table in tenants locations products; do
+            request_endpoint "rest/$table" "GET" "/rest/v1/${table}?select=id&limit=1" "" "Prefer: count=exact"
+            if { [ "$HTTP_CODE" != "200" ] && [ "$HTTP_CODE" != "206" ]; } || ! printf '%s' "$RESPONSE" | grep -Eq '^\['; then
+              echo "Table query failed for $table (HTTP $HTTP_CODE): $RESPONSE"
+              exit 1
+            fi
+          done
+
+          # 3. Touch Auth and Storage gateways as well
+          request_endpoint "auth/settings" "GET" "/auth/v1/settings"
+          if [ "$HTTP_CODE" -ge 500 ]; then
+            echo "Auth settings check failed with server error (HTTP $HTTP_CODE): $RESPONSE"
+            exit 1
+          fi
+
+          request_endpoint "storage/bucket" "GET" "/storage/v1/bucket"
+          if [ "$HTTP_CODE" -ge 500 ]; then
+            echo "Storage bucket check failed with server error (HTTP $HTTP_CODE): $RESPONSE"
+            exit 1
+          fi
+
+          echo "Keep-alive succeeded across RPC, tables (tenants, locations, products), Auth, and Storage!"

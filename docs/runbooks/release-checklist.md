@@ -116,7 +116,7 @@ Never commit `.env`, `.env.local`, `android/key.properties`, or `service_role` k
 
 > [!NOTE]
 > **Keep-Alive Configuration (`.github/workflows/keep-alive.yml`)**:
-> `keep-alive.yml` runs every 3 days (`00:00 UTC`) and calls `POST /rest/v1/rpc/health_ping` with `apikey` + `Authorization: Bearer` using `SUPABASE_SERVICE_ROLE_KEY` (allowed in migration `20261114000300_qa04_keepalive_and_lint_fix.sql`, while `anon` remains blocked and `authenticated` callers require `assert_active_user()`). Add `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` repository secrets in GitHub Actions and verify via `workflow_dispatch`.
+> `keep-alive.yml` runs every 6 hours at off-peak minutes (`17 2,8,14,20 * * *` UTC) and executes `POST /rest/v1/rpc/health_ping`, read-only table queries (`tenants`, `locations`, `products` via PostgREST), `/auth/v1/settings`, and `/storage/v1/bucket` using `SUPABASE_SERVICE_ROLE_KEY` (allowed in migration `20261114000300_qa04_keepalive_and_lint_fix.sql`, while `anon` remains blocked and `authenticated` callers require `assert_active_user()`). Add `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` repository secrets in GitHub Actions and verify via `workflow_dispatch`.
 
 ## 5. Supabase Advisors & `db lint` Posture
 

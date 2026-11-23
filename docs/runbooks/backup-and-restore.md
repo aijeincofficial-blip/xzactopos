@@ -38,10 +38,10 @@ ls -lh backups/backup_*.sql.gz
 
 ---
 
-## 3. Automated Keep-Alive Ping (Preventing Idle Project Pause)
-Supabase free tier automatically pauses projects after 7 consecutive days of database inactivity.
-- **Automated Workflow**: `.github/workflows/keep-alive.yml` runs every 3 days at 00:00 UTC.
-- **Lightweight Health Endpoint**: Calls the `public.health_ping()` RPC via HTTPS using `SUPABASE_SERVICE_ROLE_KEY` (`anon` is revoked; regular authenticated users must pass `assert_active_user()`; for new `sb_secret_...` keys send only `apikey`, omit `Authorization: Bearer`):
+## 3. Automated Keep-Alive Pings (Preventing Idle Project Pause)
+Supabase free tier automatically pauses projects after 7 consecutive days without sufficient database/API activity (an RPC that touches no tables or infrequent 3-day pings can fall short of the threshold).
+- **Primary Cloud Cron (`.github/workflows/keep-alive.yml`)**: Runs every 6 hours at off-peak jittered minutes (`17 2,8,14,20 * * *` UTC) and calls `POST /rest/v1/rpc/health_ping`, read-only PostgREST `SELECT` queries (`tenants`, `locations`, `products` with `limit=1`), `/auth/v1/settings`, and `/storage/v1/bucket` using `SUPABASE_SERVICE_ROLE_KEY`. Requires zero Supabase deployments.
+- **Lightweight RPC Health Endpoint**: `public.health_ping()` (`anon` is revoked; regular authenticated users must pass `assert_active_user()`; for new `sb_secret_...` keys send only `apikey`, omit `Authorization: Bearer`):
   ```bash
   curl -X POST "https://[PROJECT_REF].supabase.co/rest/v1/rpc/health_ping" \
     -H "apikey: [SERVICE_ROLE_KEY]" \
